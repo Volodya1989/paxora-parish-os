@@ -1,4 +1,5 @@
 import { prisma } from "@/server/db/prisma";
+import { rolloverOpenTasks } from "@/domain/tasks";
 
 export function getWeekStartMonday(date: Date): Date {
   const start = new Date(date);
@@ -35,21 +36,46 @@ export async function getOrCreateCurrentWeek(parishId: string) {
   const endsOn = getWeekEnd(startsOn);
   const label = getWeekLabel(startsOn);
 
-  const currentWeek = await prisma.week.upsert({
+  const existingWeek = await prisma.week.findUnique({
     where: {
       parishId_startsOn: {
         parishId,
         startsOn
       }
-    },
-    update: {},
-    create: {
-      parishId,
-      startsOn,
-      endsOn,
-      label
     }
   });
+
+  const currentWeek =
+    existingWeek ??
+    (await prisma.week.create({
+      data: {
+        parishId,
+        startsOn,
+        endsOn,
+        label
+      }
+    }));
+
+  if (!existingWeek) {
+    const previousStart = new Date(startsOn);
+    previousStart.setDate(previousStart.getDate() - 7);
+    const previousWeek = await prisma.week.findUnique({
+      where: {
+        parishId_startsOn: {
+          parishId,
+          startsOn: previousStart
+        }
+      }
+    });
+
+    if (previousWeek) {
+      await rolloverOpenTasks({
+        parishId,
+        fromWeekId: previousWeek.id,
+        toWeekId: currentWeek.id
+      });
+    }
+  }
 
   const nextStart = getWeekEnd(startsOn);
   const nextEnd = getWeekEnd(nextStart);

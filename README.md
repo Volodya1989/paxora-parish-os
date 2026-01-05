@@ -113,6 +113,33 @@ Paxora Parish OS is a people-serving, shepherd-anchored operating system for par
 - **Future Exit Ramp:** Python/FastAPI services may be introduced later for AI-heavy processing or background jobs without changing Paxora’s identity.
 - **Tooling posture:** choices serve the product philosophy and can evolve without redefining Paxora.
 
+## Local development
+
+### Prerequisites
+- Node.js 20+
+- PostgreSQL 16+
+
+### Setup
+```bash
+cp .env.example .env
+npm install
+npx prisma generate
+npx prisma migrate dev
+```
+
+### Run the app
+```bash
+npm run dev
+```
+
+### Validate locally
+```bash
+npm run lint
+npm run typecheck
+npm test
+npm run build
+```
+
 ## Product Constitution
 - The week is the primary organizing unit, not dates or dashboards.
 - Paxora is people-serving and shepherd-anchored, never admin-driven.
