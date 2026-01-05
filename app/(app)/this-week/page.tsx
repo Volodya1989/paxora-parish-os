@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Card from "@/components/ui/Card";
 import SectionTitle from "@/components/ui/SectionTitle";
 import Badge from "@/components/ui/Badge";
@@ -23,10 +24,15 @@ export default async function ThisWeekPage() {
 
   return (
     <div className="space-y-6">
-      <SectionTitle
-        title="This Week"
-        subtitle={`${summary.week.label} · ${formatDateRange(summary.week.startsOn, summary.week.endsOn)}`}
-      />
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <SectionTitle
+          title="This Week"
+          subtitle={`${summary.week.label} · ${formatDateRange(summary.week.startsOn, summary.week.endsOn)}`}
+        />
+        <Link className="text-sm font-medium text-ink-900 underline" href="/tasks">
+          View tasks
+        </Link>
+      </div>
 
       <Card>
         <div className="flex items-center justify-between">
