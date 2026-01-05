@@ -4,6 +4,7 @@ type CreateTaskInput = {
   parishId: string;
   weekId: string;
   ownerId: string;
+  groupId?: string;
   title: string;
   notes?: string;
 };
@@ -24,12 +25,20 @@ type RolloverTaskInput = {
   toWeekId: string;
 };
 
-export async function createTask({ parishId, weekId, ownerId, title, notes }: CreateTaskInput) {
+export async function createTask({
+  parishId,
+  weekId,
+  ownerId,
+  groupId,
+  title,
+  notes
+}: CreateTaskInput) {
   return prisma.task.create({
     data: {
       parishId,
       weekId,
       ownerId,
+      groupId,
       title,
       notes
     }
