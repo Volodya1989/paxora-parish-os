@@ -31,6 +31,21 @@ test("listGroups returns only groups in the requested parish", async () => {
   const parishB = await prisma.parish.create({
     data: { name: "St. Benedict", slug: "st-benedict" }
   });
+  const actor = await prisma.user.create({
+    data: {
+      email: "actor@example.com",
+      name: "Alex Actor",
+      passwordHash: "hashed",
+      activeParishId: parishA.id
+    }
+  });
+  await prisma.membership.create({
+    data: {
+      parishId: parishA.id,
+      userId: actor.id,
+      role: "MEMBER"
+    }
+  });
 
   const groupA = await prisma.group.create({
     data: { parishId: parishA.id, name: "Choir" }
@@ -39,7 +54,7 @@ test("listGroups returns only groups in the requested parish", async () => {
     data: { parishId: parishB.id, name: "Hospitality" }
   });
 
-  const groups = await listGroups(parishA.id);
+  const groups = await listGroups({ parishId: parishA.id, actorUserId: actor.id });
 
   assert.equal(groups.length, 1);
   assert.equal(groups[0]?.id, groupA.id);
@@ -65,6 +80,12 @@ test("getGroupDetail returns group members and current-week tasks", async () => 
       passwordHash: "hashed",
       activeParishId: parish.id
     }
+  });
+  await prisma.membership.createMany({
+    data: [
+      { parishId: parish.id, userId: leader.id, role: "SHEPHERD" },
+      { parishId: parish.id, userId: member.id, role: "MEMBER" }
+    ]
   });
 
   const group = await prisma.group.create({
@@ -124,7 +145,11 @@ test("getGroupDetail returns group members and current-week tasks", async () => 
     }
   });
 
-  const detail = await getGroupDetail({ parishId: parish.id, groupId: group.id });
+  const detail = await getGroupDetail({
+    parishId: parish.id,
+    groupId: group.id,
+    actorUserId: leader.id
+  });
 
   assert.equal(detail.group.id, group.id);
   assert.equal(detail.group.name, "Greeters");
