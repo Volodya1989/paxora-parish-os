@@ -1,0 +1,207 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ParishRole {
+  ADMIN
+  SHEPHERD
+  MEMBER
+}
+
+enum GroupRole {
+  LEAD
+  MEMBER
+}
+
+enum TaskStatus {
+  OPEN
+  DONE
+}
+
+enum DigestStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model Parish {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  memberships Membership[]
+  groups      Group[]
+  weeks       Week[]
+  tasks       Task[]
+  events      Event[]
+  digests     Digest[]
+}
+
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  name            String?
+  passwordHash    String
+  activeParishId  String?
+  createdAt       DateTime @default(now())
+
+  memberships      Membership[]
+  groupMemberships GroupMembership[]
+  tasks            Task[] @relation("TaskOwner")
+  digestsCreated   Digest[] @relation("DigestAuthor")
+  accounts         Account[]
+  sessions         Session[]
+}
+
+model Membership {
+  id       String     @id @default(cuid())
+  parishId String
+  userId   String
+  role     ParishRole @default(MEMBER)
+
+  parish Parish @relation(fields: [parishId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([parishId, userId])
+}
+
+model Week {
+  id        String   @id @default(cuid())
+  parishId  String
+  startsOn  DateTime
+  endsOn    DateTime
+  label     String
+  createdAt DateTime @default(now())
+
+  parish Parish  @relation(fields: [parishId], references: [id])
+  tasks  Task[]
+  events Event[]
+  digest Digest?
+
+  @@unique([parishId, startsOn], name: "parishId_startsOn")
+  @@index([parishId, startsOn])
+}
+
+model Group {
+  id          String   @id @default(cuid())
+  parishId    String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+
+  parish       Parish            @relation(fields: [parishId], references: [id])
+  memberships GroupMembership[]
+  tasks        Task[]
+
+  @@unique([parishId, name])
+}
+
+model GroupMembership {
+  id      String    @id @default(cuid())
+  groupId String
+  userId  String
+  role    GroupRole @default(MEMBER)
+
+  group Group @relation(fields: [groupId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@unique([groupId, userId])
+}
+
+model Task {
+  id               String     @id @default(cuid())
+  parishId         String
+  weekId           String
+  groupId          String?
+  ownerId          String
+  title            String
+  notes            String?
+  status           TaskStatus @default(OPEN)
+  createdAt        DateTime   @default(now())
+  completedAt      DateTime?
+  rolledFromTaskId String?
+
+  parish Parish @relation(fields: [parishId], references: [id])
+  week   Week   @relation(fields: [weekId], references: [id], onDelete: Cascade)
+  group  Group? @relation(fields: [groupId], references: [id])
+  owner  User   @relation("TaskOwner", fields: [ownerId], references: [id])
+
+  @@index([weekId])
+  @@index([ownerId])
+  @@index([groupId])
+  @@index([parishId, weekId])
+}
+
+model Event {
+  id        String   @id @default(cuid())
+  parishId  String
+  weekId    String
+  title     String
+  startsAt  DateTime
+  endsAt    DateTime
+  location  String?
+
+  parish Parish @relation(fields: [parishId], references: [id])
+  week   Week   @relation(fields: [weekId], references: [id], onDelete: Cascade)
+
+  @@index([weekId])
+  @@index([parishId, startsAt])
+}
+
+model Digest {
+  id          String       @id @default(cuid())
+  parishId    String
+  weekId      String @unique 
+  content     String
+  status      DigestStatus @default(DRAFT)
+  createdById String
+  publishedAt DateTime?
+
+  parish Parish @relation(fields: [parishId], references: [id])
+  week   Week   @relation(fields: [weekId], references: [id], onDelete: Cascade)
+  author User   @relation("DigestAuthor", fields: [createdById], references: [id])
+
+  @@unique([parishId, weekId])
+  @@index([parishId, weekId])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
