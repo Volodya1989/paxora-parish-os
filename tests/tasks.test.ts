@@ -6,6 +6,8 @@ import { getOrCreateCurrentWeek } from "@/domain/week";
 
 async function resetDatabase() {
   await prisma.task.deleteMany();
+  await prisma.groupMembership.deleteMany();
+  await prisma.group.deleteMany();
   await prisma.week.deleteMany();
   await prisma.parish.deleteMany();
   await prisma.user.deleteMany();
@@ -153,4 +155,48 @@ test("createTask assigns task to the current week", async () => {
 
   const storedTask = await prisma.task.findUnique({ where: { id: task.id } });
   assert.equal(storedTask?.weekId, currentWeek.id);
+});
+
+test("createTask assigns group tasks to the current week and group detail filters them", async () => {
+  const parish = await prisma.parish.create({
+    data: { name: "St. John", slug: "st-john" }
+  });
+  const owner = await prisma.user.create({
+    data: {
+      email: "group-owner@example.com",
+      name: "Group Owner",
+      passwordHash: "hashed",
+      activeParishId: parish.id
+    }
+  });
+  const group = await prisma.group.create({
+    data: {
+      parishId: parish.id,
+      name: "Hospitality Team",
+      description: "Greeters and hosts"
+    }
+  });
+
+  const currentWeek = await getOrCreateCurrentWeek(parish.id);
+  const groupTask = await createTask({
+    parishId: parish.id,
+    weekId: currentWeek.id,
+    ownerId: owner.id,
+    groupId: group.id,
+    title: "Prepare welcome packets"
+  });
+  await createTask({
+    parishId: parish.id,
+    weekId: currentWeek.id,
+    ownerId: owner.id,
+    title: "General task"
+  });
+
+  const storedTask = await prisma.task.findUnique({ where: { id: groupTask.id } });
+  assert.equal(storedTask?.weekId, currentWeek.id);
+  assert.equal(storedTask?.groupId, group.id);
+
+  const groupDetailTasks = await prisma.task.findMany({ where: { groupId: group.id } });
+  assert.equal(groupDetailTasks.length, 1);
+  assert.equal(groupDetailTasks[0]?.id, groupTask.id);
 });

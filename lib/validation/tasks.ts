@@ -17,6 +17,10 @@ export const createTaskSchema = z.object({
   weekId: z.string().min(1)
 });
 
+export const createGroupTaskSchema = createTaskSchema.extend({
+  groupId: z.string().min(1)
+});
+
 export const markTaskDoneSchema = z.object({
   taskId: z.string().min(1)
 });
