@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import { mock } from "node:test";
 import { prisma } from "@/server/db/prisma";
 
+const mockModule = (mock as unknown as { module: (specifier: string, factory: () => unknown) => void })
+  .module;
+
 let session = {
   user: {
     id: "user-1",
@@ -10,11 +13,11 @@ let session = {
   }
 };
 
-mock.module("next-auth", () => ({
+mockModule("next-auth", () => ({
   getServerSession: async () => session
 }));
 
-mock.module("next/cache", () => ({
+mockModule("next/cache", () => ({
   revalidatePath: () => {}
 }));
 
@@ -27,7 +30,7 @@ afterEach(() => {
 test("listWeekEvents rejects non-members", async () => {
   mock.method(prisma.membership, "findUnique", async () => null);
 
-  await assert.rejects(() => listWeekEvents("week-1"), /Unauthorized/);
+  await assert.rejects(() => listWeekEvents(), /Unauthorized/);
 });
 
 test("createEvent is restricted to parish leaders", async () => {

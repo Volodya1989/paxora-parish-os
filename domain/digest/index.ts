@@ -37,6 +37,28 @@ export function buildDigestSummary({
   return ["Tasks", ...tasksSection, "", "Events", ...eventsSection].join("\n");
 }
 
+export function buildDigestContent({
+  tasks,
+  events
+}: {
+  tasks: DigestTask[];
+  events: DigestEvent[];
+}) {
+  const taskLines = sortByTitle(tasks).map(
+    (task) => `- [${task.status === "DONE" ? "x" : " "}] ${task.title}`
+  );
+  const eventLines = [...events]
+    .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime() || a.title.localeCompare(b.title))
+    .map((event) => {
+      const start = event.startsAt.toISOString().slice(11, 16);
+      const end = event.endsAt.toISOString().slice(11, 16);
+      const location = event.location ? ` @ ${event.location}` : "";
+      return `- ${event.title} (${start}-${end})${location}`;
+    });
+
+  return ["Tasks", ...taskLines, "", "Events", ...eventLines].join("\n");
+}
+
 export function assertDigestTransition(current: DigestStatus, next: DigestStatus) {
   if (current === "PUBLISHED" && next === "DRAFT") {
     throw new Error("Cannot revert a published digest to draft");

@@ -25,7 +25,8 @@ test("getOrCreateCurrentWeek creates current and next week on demand", async () 
     label: string;
   }> = [];
 
-  const clock = mock.timers.enable({ now: new Date("2024-09-04T12:00:00.000Z") });
+  const clock = (mock.timers as unknown as { enable: (options: { now: Date }) => { restore: () => void } })
+    .enable({ now: new Date("2024-09-04T12:00:00.000Z") });
 
   mock.method(prisma.week, "findUnique", async ({ where }: any) => {
     const match = storedWeeks.find(

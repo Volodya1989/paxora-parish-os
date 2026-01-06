@@ -69,6 +69,7 @@ export async function markTaskDone(formData: FormData) {
 
   revalidatePath("/tasks");
   revalidatePath("/this-week");
+
 }
 
 export async function deferTask(formData: FormData) {

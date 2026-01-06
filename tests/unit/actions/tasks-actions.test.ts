@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import { mock } from "node:test";
 import { prisma } from "@/server/db/prisma";
 
+const mockModule = (mock as unknown as { module: (specifier: string, factory: () => unknown) => void })
+  .module;
+
 let session = {
   user: {
     id: "user-1",
@@ -10,11 +13,11 @@ let session = {
   }
 };
 
-mock.module("next-auth", () => ({
+mockModule("next-auth", () => ({
   getServerSession: async () => session
 }));
 
-mock.module("next/cache", () => ({
+mockModule("next/cache", () => ({
   revalidatePath: () => {}
 }));
 
@@ -46,11 +49,15 @@ test("markTaskDone denies non-owner unless parish leader", async () => {
   };
 
   mock.method(prisma.task, "findUnique", async () => task as any);
-  mock.method(prisma.task, "update", async ({ data }: any) => ({
-    ...task,
-    status: data.status,
-    completedAt: data.completedAt
-  }));
+  let updatedTask: typeof task & { status?: string; completedAt?: Date | null } | undefined;
+  mock.method(prisma.task, "update", async ({ data }: any) => {
+    updatedTask = {
+      ...task,
+      status: data.status,
+      completedAt: data.completedAt
+    };
+    return updatedTask as any;
+  });
 
   session = {
     user: {
@@ -68,7 +75,7 @@ test("markTaskDone denies non-owner unless parish leader", async () => {
 
   mock.method(prisma.membership, "findUnique", async () => ({ role: "ADMIN" } as any));
 
-  const result = await markTaskDone(formData);
-  assert.equal(result.status, "DONE");
-  assert.ok(result.completedAt);
+  await markTaskDone(formData);
+  assert.equal(updatedTask?.status, "DONE");
+  assert.ok(updatedTask?.completedAt);
 });
