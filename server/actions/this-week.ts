@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/server/auth/options";
-import { prisma } from "@/server/db/prisma";
 import { getOrCreateCurrentWeek } from "@/domain/week";
+import { getWeekDigestSummary } from "@/server/db/digest";
 
 export type ThisWeekSummary = {
   week: {
@@ -34,35 +34,24 @@ export async function getThisWeekSummary(): Promise<ThisWeekSummary> {
 
   const parishId = session.user.activeParishId;
   const week = await getOrCreateCurrentWeek(parishId);
+  const summary = await getWeekDigestSummary(parishId, week.id);
 
-  const [tasks, events, digest] = await Promise.all([
-    prisma.task.findMany({
-      where: { parishId, weekId: week.id },
-      orderBy: { createdAt: "asc" },
-      select: { id: true, title: true, status: true }
-    }),
-    prisma.event.findMany({
-      where: { parishId, weekId: week.id },
-      orderBy: { startsAt: "asc" },
-      select: { id: true, title: true, startsAt: true, endsAt: true, location: true }
-    }),
-    prisma.digest.findUnique({
-      where: { parishId_weekId: { parishId, weekId: week.id } },
-      select: { status: true }
-    })
-  ]);
+  if (!summary) {
+    throw new Error("Not found");
+  }
 
-  const digestStatus = digest?.status === "PUBLISHED" ? "published" : digest ? "draft" : "none";
+  const digestStatus =
+    summary.digest?.status === "PUBLISHED" ? "published" : summary.digest ? "draft" : "none";
 
   return {
     week: {
-      id: week.id,
-      label: week.label,
-      startsOn: week.startsOn,
-      endsOn: week.endsOn
+      id: summary.id,
+      label: summary.label,
+      startsOn: summary.startsOn,
+      endsOn: summary.endsOn
     },
-    tasks,
-    events,
+    tasks: summary.tasks,
+    events: summary.events,
     digestStatus
   };
 }

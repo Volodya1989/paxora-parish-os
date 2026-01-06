@@ -35,9 +35,23 @@ export default async function ThisWeekPage() {
       </div>
 
       <Card>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-ink-900">Weekly digest</h2>
+            <p className="text-sm text-ink-500">Share a recap of tasks and events.</p>
+          </div>
+          <Badge tone={digestTone}>{summary.digestStatus === "none" ? "No digest" : summary.digestStatus}</Badge>
+        </div>
+        <div className="mt-4">
+          <Link className="text-sm font-medium text-ink-900 underline" href="/digest">
+            Open digest workspace
+          </Link>
+        </div>
+      </Card>
+
+      <Card>
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-ink-900">Tasks</h2>
-          <Badge tone={digestTone}>{summary.digestStatus === "none" ? "No digest" : summary.digestStatus}</Badge>
         </div>
         <div className="mt-4">
           {summary.tasks.length === 0 ? (
