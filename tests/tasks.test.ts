@@ -4,9 +4,15 @@ import { prisma } from "@/server/db/prisma";
 import { createTask, markTaskDone, deferTask, rolloverOpenTasks } from "@/domain/tasks";
 import { getOrCreateCurrentWeek } from "@/domain/week";
 
+const hasDatabase = Boolean(process.env.DATABASE_URL);
+const dbTest = hasDatabase ? test : test.skip;
+
 async function resetDatabase() {
+  await prisma.digest.deleteMany();
+  await prisma.event.deleteMany();
   await prisma.task.deleteMany();
   await prisma.groupMembership.deleteMany();
+  await prisma.membership.deleteMany();
   await prisma.group.deleteMany();
   await prisma.week.deleteMany();
   await prisma.parish.deleteMany();
@@ -14,16 +20,22 @@ async function resetDatabase() {
 }
 
 before(async () => {
+  if (!hasDatabase) {
+    return;
+  }
   await prisma.$connect();
   await resetDatabase();
 });
 
 after(async () => {
+  if (!hasDatabase) {
+    return;
+  }
   await resetDatabase();
   await prisma.$disconnect();
 });
 
-test("tasks can be created, completed, deferred, and rolled over once", async () => {
+dbTest("tasks can be created, completed, deferred, and rolled over once", async () => {
   const parish = await prisma.parish.create({
     data: { name: "St. Mark", slug: "st-mark" }
   });
@@ -132,7 +144,7 @@ test("tasks can be created, completed, deferred, and rolled over once", async ()
   assert.equal(secondRollover, 0);
 });
 
-test("createTask assigns task to the current week", async () => {
+dbTest("createTask assigns task to the current week", async () => {
   const parish = await prisma.parish.create({
     data: { name: "St. Luke", slug: "st-luke" }
   });
@@ -157,7 +169,7 @@ test("createTask assigns task to the current week", async () => {
   assert.equal(storedTask?.weekId, currentWeek.id);
 });
 
-test("createTask assigns group tasks to the current week and group detail filters them", async () => {
+dbTest("createTask assigns group tasks to the current week and group detail filters them", async () => {
   const parish = await prisma.parish.create({
     data: { name: "St. John", slug: "st-john" }
   });

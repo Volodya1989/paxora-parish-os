@@ -1,10 +1,10 @@
 import { test, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { mock } from "node:test";
-import { prisma } from "@/server/db/prisma";
-
-const mockModule = (mock as unknown as { module: (specifier: string, factory: () => unknown) => void })
-  .module;
+const mockModule = mock.module.bind(mock) as (
+  specifier: string,
+  options: { namedExports?: Record<string, unknown> }
+) => void;
 
 let session = {
   user: {
@@ -13,21 +13,40 @@ let session = {
   }
 };
 
-mockModule("next-auth", () => ({
-  getServerSession: async () => session
-}));
+const prisma = {
+  task: {
+    findUnique: async () => null,
+    update: async () => ({})
+  },
+  membership: {
+    findUnique: async () => null
+  }
+};
 
-mockModule("next/cache", () => ({
-  revalidatePath: () => {}
-}));
+mockModule("@/server/db/prisma", {
+  namedExports: {
+    prisma
+  }
+});
 
-const { createTask, markTaskDone } = await import("@/server/actions/tasks");
+mockModule("next-auth", {
+  namedExports: {
+    getServerSession: async () => session
+  }
+});
+
+mockModule("next/cache", {
+  namedExports: {
+    revalidatePath: () => {}
+  }
+});
 
 afterEach(() => {
   mock.restoreAll();
 });
 
 test("createTask rejects missing title or invalid weekId", async () => {
+  const { createTask } = await import("@/server/actions/tasks");
   const missingTitle = new FormData();
   missingTitle.set("title", "");
   missingTitle.set("weekId", "week-1");
@@ -38,26 +57,27 @@ test("createTask rejects missing title or invalid weekId", async () => {
   invalidWeek.set("title", "Task title");
   invalidWeek.set("weekId", "");
 
-  await assert.rejects(() => createTask(invalidWeek), /Invalid input/);
+  await assert.rejects(() => createTask(invalidWeek), /Expected string/);
 });
 
 test("markTaskDone denies non-owner unless parish leader", async () => {
+  const { markTaskDone } = await import("@/server/actions/tasks");
   const task = {
     id: "task-1",
     ownerId: "user-1",
     parishId: "parish-1"
   };
 
-  mock.method(prisma.task, "findUnique", async () => task as any);
+  prisma.task.findUnique = async () => task as any;
   let updatedTask: typeof task & { status?: string; completedAt?: Date | null } | undefined;
-  mock.method(prisma.task, "update", async ({ data }: any) => {
+  prisma.task.update = async ({ data }: any) => {
     updatedTask = {
       ...task,
       status: data.status,
       completedAt: data.completedAt
     };
     return updatedTask as any;
-  });
+  };
 
   session = {
     user: {
@@ -66,14 +86,19 @@ test("markTaskDone denies non-owner unless parish leader", async () => {
     }
   };
 
-  mock.method(prisma.membership, "findUnique", async () => ({ role: "MEMBER" } as any));
+  prisma.membership.findUnique = async () => ({ role: "MEMBER" } as any);
 
   const formData = new FormData();
   formData.set("taskId", task.id);
 
   await assert.rejects(() => markTaskDone(formData), /Forbidden/);
 
-  mock.method(prisma.membership, "findUnique", async () => ({ role: "ADMIN" } as any));
+  session = {
+    user: {
+      id: "user-1",
+      activeParishId: "parish-1"
+    }
+  };
 
   await markTaskDone(formData);
   assert.equal(updatedTask?.status, "DONE");

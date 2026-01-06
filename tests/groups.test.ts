@@ -4,7 +4,12 @@ import { prisma } from "@/server/db/prisma";
 import { getOrCreateCurrentWeek } from "@/domain/week";
 import { getGroupDetail, listGroups } from "@/domain/groups";
 
+const hasDatabase = Boolean(process.env.DATABASE_URL);
+const dbTest = hasDatabase ? test : test.skip;
+
 async function resetDatabase() {
+  await prisma.digest.deleteMany();
+  await prisma.event.deleteMany();
   await prisma.task.deleteMany();
   await prisma.groupMembership.deleteMany();
   await prisma.group.deleteMany();
@@ -15,16 +20,22 @@ async function resetDatabase() {
 }
 
 before(async () => {
+  if (!hasDatabase) {
+    return;
+  }
   await prisma.$connect();
   await resetDatabase();
 });
 
 after(async () => {
+  if (!hasDatabase) {
+    return;
+  }
   await resetDatabase();
   await prisma.$disconnect();
 });
 
-test("listGroups returns only groups in the requested parish", async () => {
+dbTest("listGroups returns only groups in the requested parish", async () => {
   const parishA = await prisma.parish.create({
     data: { name: "St. Anne", slug: "st-anne" }
   });
@@ -60,7 +71,7 @@ test("listGroups returns only groups in the requested parish", async () => {
   assert.equal(groups[0]?.id, groupA.id);
 });
 
-test("getGroupDetail returns group members and current-week tasks", async () => {
+dbTest("getGroupDetail returns group members and current-week tasks", async () => {
   const parish = await prisma.parish.create({
     data: { name: "St. Catherine", slug: "st-catherine" }
   });
