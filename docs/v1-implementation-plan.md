@@ -505,6 +505,76 @@ export interface DigestDTO {
 - **Risks:** digest content drift if schema changes.
 - **Demo story:** generate weekly digest from tasks/events and publish.
 
+Milestone 6 (Weeks 13–14): UI/UX Pass + Visual Design + Accessibility (Appealing, production-ready)
+
+Goal: Make all five screens feel modern, calm, and delightful—not primitive—while keeping scope unchanged.
+
+Hard rule: No new product features, entities, or screens; only UI/UX, accessibility, and performance tuning.
+
+Deliverables
+
+Design system (components/ui)
+
+Button variants (primary/secondary/ghost/destructive) + loading state
+
+Inputs/Textareas with labels + help text + error state
+
+Cards with consistent padding/headers/footers + subtle elevation
+
+Badges (OPEN/DONE, DRAFT/PUBLISHED) and status pills
+
+Toast notifications (success/error)
+
+Empty state component (icon + title + guidance + CTA)
+
+Skeleton loaders for lists and key cards
+
+App shell and navigation
+
+Clean header with parish name, navigation, active state
+
+User menu (avatar fallback + sign out)
+
+Layout that feels intentional on mobile/tablet/desktop
+
+Screen polish
+
+This Week: scannable layout; tasks/events sections; digest card
+
+Tasks: open vs completed; better task card; “Defer to next week” fast path
+
+Groups: pleasant list cards + empty state
+
+Calendar: readable event cards (time-first), consistent spacing
+
+Digest: editor UX with Save Draft/Publish clarity + publish confirmation
+
+Accessibility baseline
+
+Keyboard navigation works for core flows
+
+Focus states visible
+
+Form labels and error messages properly connected
+
+Color contrast meets baseline expectations
+
+Perceived performance
+
+Avoid full-page jank during actions (loading states + targeted revalidation)
+
+Keep /this-week fast and smooth
+
+Acceptance criteria
+
+UI looks “ship-ready” on desktop/tablet/mobile.
+
+Every action has immediate feedback (loading/disabled/toast/errors).
+
+No page looks like raw forms; consistent hierarchy and whitespace.
+
+No additional product features introduced.
+
 ## H) Non-Goals / Guardrails (V1)
 - No dashboards, analytics, or metrics views.
 - No sacramental registers.

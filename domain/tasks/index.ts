@@ -15,6 +15,10 @@ type TaskActionInput = {
   actorUserId: string;
 };
 
+type MarkTaskDoneInput = TaskActionInput & {
+  allowNonOwner?: boolean;
+};
+
 type DeferTaskInput = TaskActionInput & {
   targetWeekId: string;
 };
@@ -45,7 +49,12 @@ export async function createTask({
   });
 }
 
-async function assertTaskOwnership({ taskId, parishId, actorUserId }: TaskActionInput) {
+async function assertTaskOwnership({
+  taskId,
+  parishId,
+  actorUserId,
+  allowNonOwner
+}: TaskActionInput & { allowNonOwner?: boolean }) {
   const task = await prisma.task.findUnique({
     where: { id: taskId },
     select: { id: true, ownerId: true, parishId: true }
@@ -55,15 +64,20 @@ async function assertTaskOwnership({ taskId, parishId, actorUserId }: TaskAction
     throw new Error("Task not found");
   }
 
-  if (task.ownerId !== actorUserId) {
+  if (task.ownerId !== actorUserId && !allowNonOwner) {
     throw new Error("Forbidden");
   }
 
   return task;
 }
 
-export async function markTaskDone({ taskId, parishId, actorUserId }: TaskActionInput) {
-  await assertTaskOwnership({ taskId, parishId, actorUserId });
+export async function markTaskDone({
+  taskId,
+  parishId,
+  actorUserId,
+  allowNonOwner
+}: MarkTaskDoneInput) {
+  await assertTaskOwnership({ taskId, parishId, actorUserId, allowNonOwner });
 
   return prisma.task.update({
     where: { id: taskId },
