@@ -6,8 +6,12 @@ const preferNamedExports = <T>(mod: Record<string, unknown>): T => {
   }
 
   const defaultExport = mod.default;
-  if (defaultExport && typeof defaultExport === "object") {
-    return { ...defaultExport, ...mod } as T;
+  if (defaultExport && (typeof defaultExport === "object" || typeof defaultExport === "function")) {
+    const descriptors = {
+      ...Object.getOwnPropertyDescriptors(defaultExport),
+      ...Object.getOwnPropertyDescriptors(mod)
+    };
+    return Object.defineProperties({}, descriptors) as T;
   }
 
   if (Object.keys(mod).length === 1) {
