@@ -1,13 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mock } from "node:test";
+import { loadModuleFromRoot } from "../../_helpers/load-module";
+import { resolveFromRoot } from "../../_helpers/resolve";
 import { buildParish } from "@/tests/unit/helpers/builders";
 
-const mockModule = mock.module.bind(mock) as (
+const mockModule = (mock as any).module.bind(mock) as (
   specifier: string,
   options: { namedExports?: Record<string, unknown> }
 ) => void;
-
 const prisma = {
   week: {
     findUnique: async () => null,
@@ -16,14 +17,16 @@ const prisma = {
   }
 };
 
-mockModule("@/server/db/prisma", {
+mockModule(resolveFromRoot("server/db/prisma"), {
   namedExports: {
     prisma
   }
 });
 
 test("week helpers use Monday start and ISO label", async () => {
-  const { getWeekStartMonday, getWeekEnd, getWeekLabel } = await import("@/domain/week");
+  const { getWeekStartMonday, getWeekEnd, getWeekLabel } = await loadModuleFromRoot<
+    typeof import("@/domain/week")
+  >("domain/week");
   const now = new Date("2024-09-04T12:00:00.000Z");
   const startsOn = getWeekStartMonday(now);
   const endsOn = getWeekEnd(startsOn);
@@ -36,7 +39,9 @@ test("week helpers use Monday start and ISO label", async () => {
 });
 
 test("week helpers handle Sunday boundary and year rollover labels", async () => {
-  const { getWeekStartMonday, getWeekLabel } = await import("@/domain/week");
+  const { getWeekStartMonday, getWeekLabel } = await loadModuleFromRoot<
+    typeof import("@/domain/week")
+  >("domain/week");
   const sunday = new Date(2023, 11, 31, 12, 0, 0, 0);
   const sundayStart = getWeekStartMonday(sunday);
   const expectedSundayStart = new Date(2023, 11, 25, 0, 0, 0, 0);
@@ -112,7 +117,9 @@ test("getOrCreateCurrentWeek creates current and next week on demand", async () 
     return week;
   };
 
-  const { getOrCreateCurrentWeek } = await import("@/domain/week");
+  const { getOrCreateCurrentWeek } = await loadModuleFromRoot<typeof import("@/domain/week")>(
+    "domain/week"
+  );
   const currentWeek = await getOrCreateCurrentWeek(parish.id);
 
   assert.equal(currentWeek.startsOn.getTime(), new Date(2024, 8, 2, 0, 0, 0, 0).getTime());

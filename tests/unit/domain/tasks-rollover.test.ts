@@ -1,13 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { mock } from "node:test";
+import { loadModuleFromRoot } from "../../_helpers/load-module";
+import { resolveFromRoot } from "../../_helpers/resolve";
 import { buildTask } from "@/tests/unit/helpers/builders";
 
-const mockModule = mock.module.bind(mock) as (
+const mockModule = (mock as any).module.bind(mock) as (
   specifier: string,
   options: { namedExports?: Record<string, unknown> }
 ) => void;
-
 const prisma = {
   task: {
     findMany: async () => [],
@@ -15,13 +16,14 @@ const prisma = {
   }
 };
 
-mockModule("@/server/db/prisma", {
+mockModule(resolveFromRoot("server/db/prisma"), {
   namedExports: {
     prisma
   }
 });
 
-const loadTasksModule = () => import("@/domain/tasks");
+const loadTasksModule = () =>
+  loadModuleFromRoot<typeof import("@/domain/tasks")>("domain/tasks");
 
 test("rollover creates new tasks for open items and is idempotent", async () => {
   const parishId = "parish-1";

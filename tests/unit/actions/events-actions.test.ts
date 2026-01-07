@@ -1,11 +1,12 @@
 import { test, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { mock } from "node:test";
-const mockModule = mock.module.bind(mock) as (
+import { loadModuleFromRoot } from "../../_helpers/load-module";
+import { resolveFromRoot } from "../../_helpers/resolve";
+const mockModule = (mock as any).module.bind(mock) as (
   specifier: string,
   options: { namedExports?: Record<string, unknown> }
 ) => void;
-
 let session = {
   user: {
     id: "user-1",
@@ -22,7 +23,7 @@ const prisma = {
   }
 };
 
-mockModule("@/server/db/prisma", {
+mockModule(resolveFromRoot("server/db/prisma"), {
   namedExports: {
     prisma
   }
@@ -45,14 +46,18 @@ afterEach(() => {
 });
 
 test("listWeekEvents rejects non-members", async () => {
-  const { listWeekEvents } = await import("@/server/actions/events");
+  const { listWeekEvents } = await loadModuleFromRoot<
+    typeof import("@/server/actions/events")
+  >("server/actions/events");
   prisma.membership.findUnique = async () => null;
 
   await assert.rejects(() => listWeekEvents(), /Unauthorized/);
 });
 
 test("createEvent is restricted to parish leaders", async () => {
-  const { createEvent } = await import("@/server/actions/events");
+  const { createEvent } = await loadModuleFromRoot<
+    typeof import("@/server/actions/events")
+  >("server/actions/events");
   prisma.membership.findUnique = async () => ({ role: "MEMBER" } as any);
   prisma.event.create = async () => ({} as any);
 

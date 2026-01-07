@@ -1,11 +1,12 @@
 import { test, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { mock } from "node:test";
-const mockModule = mock.module.bind(mock) as (
+import { loadModuleFromRoot } from "../../_helpers/load-module";
+import { resolveFromRoot } from "../../_helpers/resolve";
+const mockModule = (mock as any).module.bind(mock) as (
   specifier: string,
   options: { namedExports?: Record<string, unknown> }
 ) => void;
-
 let session = {
   user: {
     id: "user-1",
@@ -23,7 +24,7 @@ const prisma = {
   }
 };
 
-mockModule("@/server/db/prisma", {
+mockModule(resolveFromRoot("server/db/prisma"), {
   namedExports: {
     prisma
   }
@@ -46,7 +47,9 @@ afterEach(() => {
 });
 
 test("createTask rejects missing title or invalid weekId", async () => {
-  const { createTask } = await import("@/server/actions/tasks");
+  const { createTask } = await loadModuleFromRoot<typeof import("@/server/actions/tasks")>(
+    "server/actions/tasks"
+  );
   const missingTitle = new FormData();
   missingTitle.set("title", "");
   missingTitle.set("weekId", "week-1");
@@ -61,7 +64,9 @@ test("createTask rejects missing title or invalid weekId", async () => {
 });
 
 test("markTaskDone denies non-owner unless parish leader", async () => {
-  const { markTaskDone } = await import("@/server/actions/tasks");
+  const { markTaskDone } = await loadModuleFromRoot<typeof import("@/server/actions/tasks")>(
+    "server/actions/tasks"
+  );
   const task = {
     id: "task-1",
     ownerId: "user-1",

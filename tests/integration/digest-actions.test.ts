@@ -1,12 +1,13 @@
 import { test, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { mock } from "node:test";
+import { loadModuleFromRoot } from "../_helpers/load-module";
+import { resolveFromRoot } from "../_helpers/resolve";
 
-const mockModule = mock.module.bind(mock) as (
+const mockModule = (mock as any).module.bind(mock) as (
   specifier: string,
   options: { namedExports?: Record<string, unknown> }
 ) => void;
-
 let session = {
   user: {
     id: "user-1",
@@ -30,19 +31,19 @@ mockModule("next/cache", {
   }
 });
 
-mockModule("@/server/db/groups", {
+mockModule(resolveFromRoot("server/db/groups"), {
   namedExports: {
     getParishMembership: async () => ({ id: "membership-1", role: "ADMIN" })
   }
 });
 
-mockModule("@/domain/week", {
+mockModule(resolveFromRoot("domain/week"), {
   namedExports: {
     getOrCreateCurrentWeek: async () => ({ id: "week-1" })
   }
 });
 
-mockModule("@/server/db/digest", {
+mockModule(resolveFromRoot("server/db/digest"), {
   namedExports: {
     getWeekDigest: async () => existingDigest,
     upsertDigestDraft: async (input: any) => {
@@ -68,7 +69,9 @@ afterEach(() => {
 });
 
 test("saveDigestDraft stores draft content for the current week", async () => {
-  const { saveDigestDraft } = await import("@/server/actions/digest");
+  const { saveDigestDraft } = await loadModuleFromRoot<
+    typeof import("@/server/actions/digest")
+  >("server/actions/digest");
   const result = await saveDigestDraft("Draft content");
 
   assert.equal(result.status, "draft");
@@ -82,14 +85,18 @@ test("saveDigestDraft stores draft content for the current week", async () => {
 });
 
 test("saveDigestDraft rejects publishing regression", async () => {
-  const { saveDigestDraft } = await import("@/server/actions/digest");
+  const { saveDigestDraft } = await loadModuleFromRoot<
+    typeof import("@/server/actions/digest")
+  >("server/actions/digest");
   existingDigest = { status: "PUBLISHED" };
 
   await assert.rejects(() => saveDigestDraft("Draft content"), /Cannot revert a published digest/);
 });
 
 test("publishDigest publishes content for the current week", async () => {
-  const { publishDigest } = await import("@/server/actions/digest");
+  const { publishDigest } = await loadModuleFromRoot<
+    typeof import("@/server/actions/digest")
+  >("server/actions/digest");
   existingDigest = { status: "DRAFT" };
 
   const result = await publishDigest("Final content");
