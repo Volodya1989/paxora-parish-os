@@ -14,13 +14,13 @@ let session = {
   }
 };
 
-const prisma = {
+const prisma: any = {
   task: {
-    findUnique: async () => null,
-    update: async () => ({})
+    findUnique: async (_args?: any) => null,
+    update: async (_args?: any) => ({})
   },
   membership: {
-    findUnique: async () => null
+    findUnique: async (_args?: any) => null
   }
 };
 

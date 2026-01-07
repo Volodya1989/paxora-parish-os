@@ -9,10 +9,10 @@ const mockModule = (mock as any).module.bind(mock) as (
   specifier: string,
   options: { namedExports?: Record<string, unknown> }
 ) => void;
-const prisma = {
+const prisma: any = {
   task: {
-    findMany: async () => [],
-    createMany: async () => ({ count: 0 })
+    findMany: async (_args?: any) => [],
+    createMany: async (_args?: any) => ({ count: 0 })
   }
 };
 

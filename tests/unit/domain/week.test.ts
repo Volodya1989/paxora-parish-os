@@ -9,11 +9,11 @@ const mockModule = (mock as any).module.bind(mock) as (
   specifier: string,
   options: { namedExports?: Record<string, unknown> }
 ) => void;
-const prisma = {
+const prisma: any = {
   week: {
-    findUnique: async () => null,
-    create: async () => ({}),
-    upsert: async () => ({})
+    findUnique: async (_args?: any) => null,
+    create: async (_args?: any) => ({}),
+    upsert: async (_args?: any) => ({})
   }
 };
 
@@ -70,11 +70,12 @@ test("getOrCreateCurrentWeek creates current and next week on demand", async () 
   const RealDate = Date;
   const fixedNow = new RealDate("2024-09-04T12:00:00.000Z");
   global.Date = class extends RealDate {
-    constructor(...args: ConstructorParameters<DateConstructor>) {
+    constructor(...args: any[]) {
       if (args.length === 0) {
-        return new RealDate(fixedNow);
+        super(fixedNow);
+        return;
       }
-      return new RealDate(...args);
+      super(...(args as [any, any?, any?, any?, any?, any?, any?]));
     }
 
     static now() {
