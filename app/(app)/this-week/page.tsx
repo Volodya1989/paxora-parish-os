@@ -4,6 +4,7 @@ import SectionTitle from "@/components/ui/SectionTitle";
 import Badge from "@/components/ui/Badge";
 import ListRow from "@/components/ui/ListRow";
 import { getThisWeekSummary } from "@/server/actions/this-week";
+import { parseWeekSelection } from "@/domain/week";
 
 function formatDateRange(startsOn: Date, endsOn: Date) {
   const start = startsOn.toLocaleDateString("en-US", {
@@ -17,8 +18,13 @@ function formatDateRange(startsOn: Date, endsOn: Date) {
   return `${start} – ${end}`;
 }
 
-export default async function ThisWeekPage() {
-  const summary = await getThisWeekSummary();
+export default async function ThisWeekPage({
+  searchParams
+}: {
+  searchParams?: { week?: string | string[] };
+}) {
+  const weekSelection = parseWeekSelection(searchParams?.week);
+  const summary = await getThisWeekSummary(weekSelection);
   const digestTone =
     summary.digestStatus === "published" ? "published" : summary.digestStatus === "draft" ? "draft" : "neutral";
 

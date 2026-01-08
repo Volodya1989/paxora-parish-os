@@ -1,7 +1,9 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/server/auth/options";
-import { getOrCreateCurrentWeek } from "@/domain/week";
+import { getWeekForSelection, type WeekSelection } from "@/domain/week";
+import { ensureParishBootstrap } from "@/server/auth/bootstrap";
 import { getWeekDigestSummary } from "@/server/db/digest";
+import { prisma } from "@/server/db/prisma";
 
 export type ThisWeekSummary = {
   week: {
@@ -25,15 +27,25 @@ export type ThisWeekSummary = {
   digestStatus: "none" | "draft" | "published";
 };
 
-export async function getThisWeekSummary(): Promise<ThisWeekSummary> {
+export async function getThisWeekSummary(
+  weekSelection: WeekSelection = "current"
+): Promise<ThisWeekSummary> {
   const session = await getServerSession(authOptions);
 
-  if (!session?.user?.activeParishId) {
+  if (!session?.user?.id) {
     throw new Error("Unauthorized");
   }
 
-  const parishId = session.user.activeParishId;
-  const week = await getOrCreateCurrentWeek(parishId);
+  const activeParishId = session.user.activeParishId;
+  const parishId = activeParishId
+    ? await prisma.parish
+        .findUnique({
+          where: { id: activeParishId },
+          select: { id: true }
+        })
+        .then((parish) => parish?.id ?? ensureParishBootstrap(session.user.id))
+    : await ensureParishBootstrap(session.user.id);
+  const week = await getWeekForSelection(parishId, weekSelection);
   const summary = await getWeekDigestSummary(parishId, week.id);
 
   if (!summary) {

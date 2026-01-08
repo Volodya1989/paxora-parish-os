@@ -5,9 +5,11 @@ import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
 import { getOrCreateCurrentWeek } from "@/domain/week";
 import {
+  createGroupSchema,
   getGroupDetailSchema,
   updateGroupMembershipSchema
 } from "@/lib/validation/groups";
+import { revalidatePath } from "next/cache";
 
 // TODO: Wire to parish policy once stored in the database.
 const ALLOW_GROUP_LEADS_TO_MANAGE_MEMBERSHIP = true;
@@ -52,6 +54,32 @@ export async function listGroups() {
       description: true
     }
   });
+}
+
+export async function createGroup(formData: FormData) {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  await requireParishMembership(userId, parishId);
+
+  const parsed = createGroupSchema.safeParse({
+    name: formData.get("name"),
+    description: formData.get("description") || undefined
+  });
+
+  if (!parsed.success) {
+    throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
+  }
+
+  await prisma.group.create({
+    data: {
+      parishId,
+      name: parsed.data.name,
+      description: parsed.data.description
+    }
+  });
+
+  revalidatePath("/groups");
 }
 
 export async function getGroupDetail(groupId: string) {

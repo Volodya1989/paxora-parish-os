@@ -3,7 +3,7 @@
 import { getServerSession, type Session } from "next-auth";
 import { revalidatePath } from "next/cache";
 import { authOptions } from "@/server/auth/options";
-import { getOrCreateCurrentWeek } from "@/domain/week";
+import { getWeekForSelection, type WeekSelection } from "@/domain/week";
 import { createEventSchema } from "@/lib/validation/events";
 import {
   createEvent as createEventRecord,
@@ -30,12 +30,12 @@ async function requireParishMembership(userId: string, parishId: string) {
   return membership;
 }
 
-export async function listWeekEvents() {
+export async function listWeekEvents(weekSelection: WeekSelection = "current") {
   const session = await getServerSession(authOptions);
   const { userId, parishId } = assertSession(session);
 
   const membership = await requireParishMembership(userId, parishId);
-  const week = await getOrCreateCurrentWeek(parishId);
+  const week = await getWeekForSelection(parishId, weekSelection);
 
   const events = await listWeekEventsData(parishId, week.id);
 

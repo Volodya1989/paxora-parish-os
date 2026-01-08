@@ -1,6 +1,12 @@
 import { prisma } from "@/server/db/prisma";
 import { rolloverOpenTasks } from "@/domain/tasks";
 
+export type WeekSelection = "current" | "next";
+
+export function parseWeekSelection(value?: string | string[] | null): WeekSelection {
+  return value === "next" ? "next" : "current";
+}
+
 export function getWeekStartMonday(date: Date): Date {
   const start = new Date(date);
   const day = start.getDay();
@@ -28,6 +34,35 @@ export function getWeekLabel(date: Date): string {
     );
   const year = target.getUTCFullYear();
   return `${year}-W${String(weekNumber).padStart(2, "0")}`;
+}
+
+export async function getWeekForSelection(parishId: string, selection: WeekSelection) {
+  const currentWeek = await getOrCreateCurrentWeek(parishId);
+
+  if (selection === "current") {
+    return currentWeek;
+  }
+
+  const nextStart = getWeekEnd(currentWeek.startsOn);
+  const nextWeek =
+    (await prisma.week.findUnique({
+      where: {
+        parishId_startsOn: {
+          parishId,
+          startsOn: nextStart
+        }
+      }
+    })) ??
+    (await prisma.week.create({
+      data: {
+        parishId,
+        startsOn: nextStart,
+        endsOn: getWeekEnd(nextStart),
+        label: getWeekLabel(nextStart)
+      }
+    }));
+
+  return nextWeek;
 }
 
 export async function getOrCreateCurrentWeek(parishId: string) {
