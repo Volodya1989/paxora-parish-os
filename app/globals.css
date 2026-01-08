@@ -9,3 +9,43 @@
 body {
   @apply bg-mist-50 text-ink-900 antialiased;
 }
+
+@layer base {
+  .text-h1 {
+    @apply text-2xl font-semibold text-ink-900 md:text-3xl;
+  }
+
+  .text-h2 {
+    @apply text-xl font-semibold text-ink-900;
+  }
+
+  .text-h3 {
+    @apply text-lg font-medium text-ink-900;
+  }
+
+  .text-body {
+    @apply text-sm text-ink-700 md:text-base;
+  }
+
+  .text-caption {
+    @apply text-xs text-ink-500;
+  }
+}
+
+@layer components {
+  .page-padding {
+    @apply px-4 md:px-8;
+  }
+
+  .section-gap {
+    @apply space-y-6 md:space-y-8;
+  }
+
+  .card-padding {
+    @apply p-4 md:p-6;
+  }
+
+  .focus-ring {
+    @apply focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2;
+  }
+}
