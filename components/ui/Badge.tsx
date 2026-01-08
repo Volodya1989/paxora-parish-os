@@ -1,19 +1,31 @@
 import type { ReactNode } from "react";
+import { cn } from "@/lib/ui/cn";
 
 type BadgeProps = {
   children: ReactNode;
-  tone?: "neutral" | "draft" | "published";
+  /** Visual tone for the badge. */
+  tone?: "neutral" | "success" | "warning";
+  className?: string;
 };
 
 const toneClasses: Record<NonNullable<BadgeProps["tone"]>, string> = {
   neutral: "bg-mist-100 text-ink-700",
-  draft: "bg-amber-100 text-amber-800",
-  published: "bg-emerald-100 text-emerald-800"
+  success: "bg-emerald-100 text-emerald-800",
+  warning: "bg-amber-100 text-amber-800"
 };
 
-export default function Badge({ children, tone = "neutral" }: BadgeProps) {
+/**
+ * Badge component for small status labels.
+ */
+export default function Badge({ children, tone = "neutral", className }: BadgeProps) {
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${toneClasses[tone]}`}>
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium",
+        toneClasses[tone],
+        className
+      )}
+    >
       {children}
     </span>
   );

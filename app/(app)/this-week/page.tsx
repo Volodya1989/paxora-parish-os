@@ -26,7 +26,11 @@ export default async function ThisWeekPage({
   const weekSelection = parseWeekSelection(searchParams?.week);
   const summary = await getThisWeekSummary(weekSelection);
   const digestTone =
-    summary.digestStatus === "published" ? "published" : summary.digestStatus === "draft" ? "draft" : "neutral";
+    summary.digestStatus === "published"
+      ? "success"
+      : summary.digestStatus === "draft"
+        ? "warning"
+        : "neutral";
 
   return (
     <div className="space-y-6">
