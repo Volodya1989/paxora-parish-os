@@ -1,9 +1,12 @@
 import { prisma } from "@/server/db/prisma";
 import { rolloverOpenTasks } from "@/domain/tasks";
 
-export type WeekSelection = "current" | "next";
+export type WeekSelection = "previous" | "current" | "next";
 
 export function parseWeekSelection(value?: string | string[] | null): WeekSelection {
+  if (value === "previous") {
+    return "previous";
+  }
   return value === "next" ? "next" : "current";
 }
 
@@ -36,11 +39,39 @@ export function getWeekLabel(date: Date): string {
   return `${year}-W${String(weekNumber).padStart(2, "0")}`;
 }
 
-export async function getWeekForSelection(parishId: string, selection: WeekSelection) {
-  const currentWeek = await getOrCreateCurrentWeek(parishId);
+export async function getWeekForSelection(
+  parishId: string,
+  selection: WeekSelection,
+  now: Date = new Date()
+) {
+  const currentWeek = await getOrCreateCurrentWeek(parishId, now);
 
   if (selection === "current") {
     return currentWeek;
+  }
+
+  if (selection === "previous") {
+    const previousStart = new Date(currentWeek.startsOn);
+    previousStart.setDate(previousStart.getDate() - 7);
+    const previousWeek =
+      (await prisma.week.findUnique({
+        where: {
+          parishId_startsOn: {
+            parishId,
+            startsOn: previousStart
+          }
+        }
+      })) ??
+      (await prisma.week.create({
+        data: {
+          parishId,
+          startsOn: previousStart,
+          endsOn: getWeekEnd(previousStart),
+          label: getWeekLabel(previousStart)
+        }
+      }));
+
+    return previousWeek;
   }
 
   const nextStart = getWeekEnd(currentWeek.startsOn);
@@ -65,8 +96,7 @@ export async function getWeekForSelection(parishId: string, selection: WeekSelec
   return nextWeek;
 }
 
-export async function getOrCreateCurrentWeek(parishId: string) {
-  const now = new Date();
+export async function getOrCreateCurrentWeek(parishId: string, now: Date = new Date()) {
   const startsOn = getWeekStartMonday(now);
   const endsOn = getWeekEnd(startsOn);
   const label = getWeekLabel(startsOn);

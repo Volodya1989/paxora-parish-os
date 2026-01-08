@@ -39,33 +39,51 @@ const unwrapDefaultExport = (value: unknown) => {
 };
 
 const preferNamedExports = <T>(mod: Record<string, unknown>): T => {
-  if (!("default" in mod)) {
-    return mod as T;
-  }
+  if (!("default" in mod)) return mod as T;
 
   const exportKeys = getExportKeys(mod);
+
+  // Only default export
   if (exportKeys.length === 1 && exportKeys[0] === "default") {
     return unwrapDefaultExport(mod.default) as T;
   }
 
   const defaultExport = unwrapDefaultExport(mod.default);
-  if (defaultExport && (typeof defaultExport === "object" || typeof defaultExport === "function")) {
-    if (getExportKeys(mod).length === 1) {
-      return defaultExport as T;
-    }
-    const descriptors = {
-      ...getAllPropertyDescriptors(defaultExport as Record<string, unknown>),
-      ...Object.getOwnPropertyDescriptors(mod)
-    };
-    return Object.defineProperties({}, descriptors) as T;
-  }
 
-  if (getExportKeys(mod).length === 1) {
+  // ✅ If default is a function (Next.js page), preserve callability
+  if (typeof defaultExport === "function") {
+    const fn = defaultExport as unknown as Record<string, unknown>;
+    const modDescriptors = Object.getOwnPropertyDescriptors(mod);
+
+    for (const [key, desc] of Object.entries(modDescriptors)) {
+      if (key === "default" || key === "__esModule") continue;
+      Object.defineProperty(fn, key, desc);
+    }
+
     return defaultExport as T;
   }
 
+  // Default is object -> merge into a plain object (your original intent)
+  if (defaultExport && typeof defaultExport === "object") {
+    const defaultDescriptors = getAllPropertyDescriptors(defaultExport as Record<string, unknown>);
+    const modDescriptors = Object.getOwnPropertyDescriptors(mod);
+
+    // avoid carrying `default` / `__esModule` into merged result
+    delete modDescriptors.default;
+    delete modDescriptors.__esModule;
+
+    const descriptors = {
+      ...defaultDescriptors,
+      ...modDescriptors
+    };
+
+    return Object.defineProperties({}, descriptors) as T;
+  }
+
+  // Default is primitive, but module also has named exports
   return mod as T;
 };
+
 
 export const loadModuleFromRoot = async <T,>(path: string): Promise<T> => {
   const mod = (await import(resolveFromRoot(path))) as Record<string, unknown>;

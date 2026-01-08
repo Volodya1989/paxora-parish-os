@@ -1,7 +1,8 @@
-import type { ReactNode } from "react";
+import React, { type ReactNode } from "react";
 import { cn } from "@/lib/ui/cn";
 
 export type EmptyStateProps = {
+  icon?: ReactNode;
   title: string;
   description: string;
   action?: ReactNode;
@@ -11,7 +12,13 @@ export type EmptyStateProps = {
 /**
  * Empty state component for blank or no-data views.
  */
-export default function EmptyState({ title, description, action, className }: EmptyStateProps) {
+export default function EmptyState({
+  icon,
+  title,
+  description,
+  action,
+  className
+}: EmptyStateProps) {
   return (
     <div
       className={cn(
@@ -19,6 +26,7 @@ export default function EmptyState({ title, description, action, className }: Em
         className
       )}
     >
+      {icon ? <div className="text-ink-400">{icon}</div> : null}
       <div className="space-y-1">
         <h3 className="text-h3">{title}</h3>
         <p className="text-sm text-ink-500">{description}</p>
