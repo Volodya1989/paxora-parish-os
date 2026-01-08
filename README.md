@@ -113,6 +113,55 @@ Paxora Parish OS is a people-serving, shepherd-anchored operating system for par
 - **Future Exit Ramp:** Python/FastAPI services may be introduced later for AI-heavy processing or background jobs without changing Paxora’s identity.
 - **Tooling posture:** choices serve the product philosophy and can evolve without redefining Paxora.
 
+## 13. Page-by-Page Feature Guide
+
+### This Week (`/this-week`)
+- **Purpose:** provide a calm summary of the current week’s commitments.
+- **Key features:**
+  - Displays the active week range and label.
+  - Shows digest status with a neutral/warning/success badge.
+  - Lists tasks and events for the week with concise metadata.
+  - Provides quick navigation to the tasks view and digest workspace.
+
+### Tasks (`/tasks`)
+- **Purpose:** show weekly tasks assigned to the current user and group.
+- **Key features:**
+  - Organizes tasks by weekly context rather than dates.
+  - Highlights status (open vs. done) in a low-pressure format.
+  - Provides actions for creating and updating tasks.
+
+### Groups (`/groups`)
+- **Purpose:** list ministry groups and their members.
+- **Key features:**
+  - Displays all groups with membership counts and quick access.
+  - Allows leaders to view responsibilities and members in each group.
+
+### Group Detail (`/groups/[groupId]`)
+- **Purpose:** show a single group’s membership and weekly assignments.
+- **Key features:**
+  - Displays members with role badges (lead vs. member).
+  - Lists group tasks for the active week.
+  - Links back to the group list for quick navigation.
+
+### Calendar (`/calendar`)
+- **Purpose:** present weekly events as light context.
+- **Key features:**
+  - Shows events in the current week without heavy scheduling controls.
+  - Keeps the calendar scoped to parish context.
+
+### Weekly Digest (`/digest`)
+- **Purpose:** compose and preview a calm weekly summary.
+- **Key features:**
+  - Edit and preview weekly digest content side-by-side.
+  - Save drafts and publish with clear status indicators.
+  - Generate a preview from recent tasks and events.
+
+### Style Preview (`/style-preview`)
+- **Purpose:** internal UI kit preview for Direction A tokens.
+- **Key features:**
+  - Visual reference for typography, buttons, and cards.
+  - Helpful for verifying design system consistency.
+
 ## Local development
 
 ### Prerequisites

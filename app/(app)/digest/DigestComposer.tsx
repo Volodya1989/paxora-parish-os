@@ -13,10 +13,10 @@ type DigestComposerProps = {
   initialStatus: DigestStatus;
 };
 
-const statusTone: Record<DigestStatus, "neutral" | "draft" | "published"> = {
+const statusTone: Record<DigestStatus, "neutral" | "warning" | "success"> = {
   none: "neutral",
-  draft: "draft",
-  published: "published"
+  draft: "warning",
+  published: "success"
 };
 
 export default function DigestComposer({ initialContent, initialStatus }: DigestComposerProps) {

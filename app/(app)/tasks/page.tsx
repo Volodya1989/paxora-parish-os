@@ -4,10 +4,20 @@ import SectionTitle from "@/components/ui/SectionTitle";
 import Button from "@/components/ui/Button";
 import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
-import { getOrCreateCurrentWeek, getWeekEnd } from "@/domain/week";
+import {
+  getWeekForSelection,
+  getWeekEnd,
+  getWeekLabel,
+  parseWeekSelection
+} from "@/domain/week";
 import { createTask, deferTask, markTaskDone } from "@/server/actions/tasks";
+import { ScrollToCreate } from "@/components/shared/ScrollToCreate";
 
-export default async function TasksPage() {
+export default async function TasksPage({
+  searchParams
+}: {
+  searchParams?: { week?: string | string[]; create?: string };
+}) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.activeParishId) {
@@ -15,7 +25,8 @@ export default async function TasksPage() {
   }
 
   const parishId = session.user.activeParishId;
-  const week = await getOrCreateCurrentWeek(parishId);
+  const weekSelection = parseWeekSelection(searchParams?.week);
+  const week = await getWeekForSelection(parishId, weekSelection);
   const nextWeekStart = getWeekEnd(week.startsOn);
   const nextWeek = await prisma.week.findUnique({
     where: {
@@ -26,9 +37,16 @@ export default async function TasksPage() {
     }
   });
 
-  if (!nextWeek) {
-    throw new Error("Next week not found");
-  }
+  const resolvedNextWeek =
+    nextWeek ??
+    (await prisma.week.create({
+      data: {
+        parishId,
+        startsOn: nextWeekStart,
+        endsOn: getWeekEnd(nextWeekStart),
+        label: getWeekLabel(nextWeekStart)
+      }
+    }));
 
   const tasks = await prisma.task.findMany({
     where: {
@@ -50,7 +68,8 @@ export default async function TasksPage() {
     <div className="space-y-6">
       <SectionTitle title="Tasks" subtitle={`Week ${week.label}`} />
 
-      <Card>
+      <Card id="create-task" tabIndex={-1}>
+        <ScrollToCreate targetId="create-task" triggerValue="task" />
         <h2 className="text-lg font-semibold text-ink-900">Add task</h2>
         <form className="mt-4 space-y-4" action={createTask}>
           <input type="hidden" name="weekId" value={week.id} />
@@ -107,11 +126,11 @@ export default async function TasksPage() {
                     <input type="hidden" name="taskId" value={task.id} />
                     <select
                       name="targetWeekId"
-                      defaultValue={nextWeek.id}
+                      defaultValue={resolvedNextWeek.id}
                       className="rounded-md border border-mist-200 bg-white px-2 py-1 text-xs"
                     >
                       <option value={week.id}>This week</option>
-                      <option value={nextWeek.id}>Next week</option>
+                      <option value={resolvedNextWeek.id}>Next week</option>
                     </select>
                     <Button type="submit" className="px-3 py-1 text-xs">
                       Defer

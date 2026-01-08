@@ -2,7 +2,9 @@ import Card from "@/components/ui/Card";
 import ListRow from "@/components/ui/ListRow";
 import SectionTitle from "@/components/ui/SectionTitle";
 import EventForm from "@/components/shared/EventForm";
+import { ScrollToCreate } from "@/components/shared/ScrollToCreate";
 import { createEvent, listWeekEvents } from "@/server/actions/events";
+import { parseWeekSelection } from "@/domain/week";
 
 function formatDateRange(startsOn: Date, endsOn: Date) {
   const start = startsOn.toLocaleDateString("en-US", {
@@ -43,8 +45,13 @@ function formatEventMeta(event: {
   return `${date} · ${startTime}–${endTime} · ${location}`;
 }
 
-export default async function CalendarPage() {
-  const { week, events, canCreate } = await listWeekEvents();
+export default async function CalendarPage({
+  searchParams
+}: {
+  searchParams?: { week?: string | string[]; create?: string };
+}) {
+  const weekSelection = parseWeekSelection(searchParams?.week);
+  const { week, events, canCreate } = await listWeekEvents(weekSelection);
 
   const minDateTime = formatDateTimeInput(week.startsOn);
   const maxDateTime = formatDateTimeInput(new Date(week.endsOn.getTime() - 60 * 1000));
@@ -81,7 +88,8 @@ export default async function CalendarPage() {
         </div>
       </Card>
 
-      <Card>
+      <Card id="add-event" tabIndex={-1}>
+        <ScrollToCreate targetId="add-event" triggerValue="event" />
         <h2 className="text-lg font-semibold text-ink-900">Add an event</h2>
         {canCreate ? (
           <EventForm

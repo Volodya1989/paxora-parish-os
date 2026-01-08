@@ -106,7 +106,7 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
                   <p className="text-sm font-medium text-ink-900">
                     {membership.user.name ?? membership.user.email}
                   </p>
-                  <Badge tone={membership.role === "LEAD" ? "published" : "neutral"}>
+                  <Badge tone={membership.role === "LEAD" ? "success" : "neutral"}>
                     {membership.role === "LEAD" ? "Lead" : "Member"}
                   </Badge>
                 </div>
