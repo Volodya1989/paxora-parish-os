@@ -124,6 +124,7 @@ model Task {
   status           TaskStatus @default(OPEN)
   createdAt        DateTime   @default(now())
   completedAt      DateTime?
+  archivedAt       DateTime?
   rolledFromTaskId String?
 
   parish Parish @relation(fields: [parishId], references: [id])

@@ -1,3 +1,5 @@
+import { canManageGroupMembership } from "@/lib/permissions";
+import { getGroupMembership, getParishMembership } from "@/server/db/groups";
 import { prisma } from "@/server/db/prisma";
 
 type CreateTaskInput = {
@@ -13,10 +15,6 @@ type TaskActionInput = {
   taskId: string;
   parishId: string;
   actorUserId: string;
-};
-
-type MarkTaskDoneInput = TaskActionInput & {
-  allowNonOwner?: boolean;
 };
 
 type DeferTaskInput = TaskActionInput & {
@@ -49,12 +47,7 @@ export async function createTask({
   });
 }
 
-async function assertTaskOwnership({
-  taskId,
-  parishId,
-  actorUserId,
-  allowNonOwner
-}: TaskActionInput & { allowNonOwner?: boolean }) {
+async function assertTaskOwnership({ taskId, parishId, actorUserId }: TaskActionInput) {
   const task = await prisma.task.findUnique({
     where: { id: taskId },
     select: { id: true, ownerId: true, parishId: true }
@@ -64,26 +57,65 @@ async function assertTaskOwnership({
     throw new Error("Task not found");
   }
 
-  if (task.ownerId !== actorUserId && !allowNonOwner) {
+  if (task.ownerId !== actorUserId) {
     throw new Error("Forbidden");
   }
 
   return task;
 }
 
-export async function markTaskDone({
-  taskId,
-  parishId,
-  actorUserId,
-  allowNonOwner
-}: MarkTaskDoneInput) {
-  await assertTaskOwnership({ taskId, parishId, actorUserId, allowNonOwner });
+async function assertTaskAccess({ taskId, parishId, actorUserId }: TaskActionInput) {
+  const task = await prisma.task.findUnique({
+    where: { id: taskId },
+    select: { id: true, ownerId: true, parishId: true, groupId: true }
+  });
+
+  if (!task || task.parishId !== parishId) {
+    throw new Error("Task not found");
+  }
+
+  if (task.ownerId === actorUserId) {
+    return task;
+  }
+
+  const parishMembership = await getParishMembership(parishId, actorUserId);
+  if (!parishMembership) {
+    throw new Error("Forbidden");
+  }
+
+  const groupMembership = task.groupId
+    ? await getGroupMembership(task.groupId, actorUserId)
+    : null;
+
+  const allowed = canManageGroupMembership(parishMembership.role, groupMembership?.role ?? null);
+
+  if (!allowed) {
+    throw new Error("Forbidden");
+  }
+
+  return task;
+}
+
+export async function markTaskDone({ taskId, parishId, actorUserId }: TaskActionInput) {
+  await assertTaskAccess({ taskId, parishId, actorUserId });
 
   return prisma.task.update({
     where: { id: taskId },
     data: {
       status: "DONE",
       completedAt: new Date()
+    }
+  });
+}
+
+export async function unmarkTaskDone({ taskId, parishId, actorUserId }: TaskActionInput) {
+  await assertTaskAccess({ taskId, parishId, actorUserId });
+
+  return prisma.task.update({
+    where: { id: taskId },
+    data: {
+      status: "OPEN",
+      completedAt: null
     }
   });
 }
@@ -99,12 +131,35 @@ export async function deferTask({ taskId, parishId, actorUserId, targetWeekId }:
   });
 }
 
+export async function archiveTask({ taskId, parishId, actorUserId }: TaskActionInput) {
+  await assertTaskAccess({ taskId, parishId, actorUserId });
+
+  return prisma.task.update({
+    where: { id: taskId },
+    data: {
+      archivedAt: new Date()
+    }
+  });
+}
+
+export async function unarchiveTask({ taskId, parishId, actorUserId }: TaskActionInput) {
+  await assertTaskAccess({ taskId, parishId, actorUserId });
+
+  return prisma.task.update({
+    where: { id: taskId },
+    data: {
+      archivedAt: null
+    }
+  });
+}
+
 export async function rolloverOpenTasks({ parishId, fromWeekId, toWeekId }: RolloverTaskInput) {
   const openTasks = await prisma.task.findMany({
     where: {
       parishId,
       weekId: fromWeekId,
-      status: "OPEN"
+      status: "OPEN",
+      archivedAt: null
     },
     select: {
       id: true,
