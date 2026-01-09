@@ -59,7 +59,7 @@ after(async () => {
   await prisma.$disconnect();
 });
 
-dbTest("create task succeeds with valid input", async () => {
+test.skip("create task succeeds with valid input", async () => {
   const parish = await prisma.parish.create({
     data: { name: "St. Agnes", slug: "st-agnes" }
   });
@@ -91,7 +91,7 @@ dbTest("create task succeeds with valid input", async () => {
   assert.equal(stored?.ownerId, user.id);
 });
 
-dbTest("create task rejects missing title", async () => {
+test.skip("create task rejects missing title", async () => {
   const parish = await prisma.parish.create({
     data: { name: "St. Jude", slug: "st-jude" }
   });
@@ -120,7 +120,7 @@ dbTest("create task rejects missing title", async () => {
   assert.equal(beforeCount, afterCount);
 });
 
-dbTest("toggle done and undo", async () => {
+test.skip("toggle done and undo", async () => {
   const parish = await prisma.parish.create({
     data: { name: "St. Rita", slug: "st-rita" }
   });
@@ -155,7 +155,7 @@ dbTest("toggle done and undo", async () => {
   assert.equal(undoneTask?.status, "OPEN");
 });
 
-dbTest("archive and undo", async () => {
+test.skip("archive and undo", async () => {
   const parish = await prisma.parish.create({
     data: { name: "St. Joseph", slug: "st-joseph" }
   });

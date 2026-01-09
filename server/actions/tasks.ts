@@ -202,7 +202,7 @@ export async function rolloverTasksForWeek(formData: FormData) {
   revalidatePath("/this-week");
 }
 
-const taskActions = {
+export const taskActions = {
   createTask,
   markTaskDone,
   unmarkTaskDone,
@@ -212,5 +212,3 @@ const taskActions = {
   rolloverTasksForWeek,
   initialTaskActionState
 };
-
-export default taskActions;

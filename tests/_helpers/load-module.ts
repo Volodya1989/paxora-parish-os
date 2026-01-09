@@ -95,6 +95,11 @@ const unwrapDefaultIfPresent = <T,>(value: unknown) => {
     return value as T;
   }
 
+  const candidateKeys = getExportKeys(candidate);
+  if (candidateKeys.length > 1) {
+    return value as T;
+  }
+
   return unwrapDefaultExport(candidate.default) as T;
 };
 
