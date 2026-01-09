@@ -85,7 +85,26 @@ const preferNamedExports = <T>(mod: Record<string, unknown>): T => {
 };
 
 
+const unwrapDefaultIfPresent = <T,>(value: unknown) => {
+  if (!value || (typeof value !== "object" && typeof value !== "function")) {
+    return value as T;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  if (!("default" in candidate)) {
+    return value as T;
+  }
+
+  const candidateKeys = getExportKeys(candidate);
+  if (candidateKeys.length > 1) {
+    return value as T;
+  }
+
+  return unwrapDefaultExport(candidate.default) as T;
+};
+
 export const loadModuleFromRoot = async <T,>(path: string): Promise<T> => {
   const mod = (await import(resolveFromRoot(path))) as Record<string, unknown>;
-  return preferNamedExports<T>(mod);
+  const preferred = preferNamedExports<T>(mod);
+  return unwrapDefaultIfPresent<T>(preferred);
 };

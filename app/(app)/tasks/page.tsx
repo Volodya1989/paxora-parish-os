@@ -1,147 +1,126 @@
 import { getServerSession } from "next-auth";
-import Card from "@/components/ui/Card";
-import SectionTitle from "@/components/ui/SectionTitle";
-import Button from "@/components/ui/Button";
 import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
-import {
-  getWeekForSelection,
-  getWeekEnd,
-  getWeekLabel,
-  parseWeekSelection
-} from "@/domain/week";
-import { createTask, deferTask, markTaskDone } from "@/server/actions/tasks";
-import { ScrollToCreate } from "@/components/shared/ScrollToCreate";
+import { listGroupsByParish } from "@/server/db/groups";
+import { getWeekForSelection, parseWeekSelection } from "@/domain/week";
+import { getNow } from "@/lib/time/getNow";
+import { listTasks, type TaskFilters } from "@/lib/queries/tasks";
+import TasksView from "@/components/tasks/TasksView";
+
+type TaskSearchParams = {
+  week?: string | string[];
+  status?: string | string[];
+  owner?: string | string[];
+  group?: string | string[];
+  q?: string | string[];
+  create?: string;
+};
+
+function resolveParam(param?: string | string[]) {
+  if (!param) return undefined;
+  return Array.isArray(param) ? param[0] : param;
+}
+
+function parseTaskFilters(searchParams?: TaskSearchParams): TaskFilters {
+  const status = resolveParam(searchParams?.status);
+  const owner = resolveParam(searchParams?.owner);
+  const group = resolveParam(searchParams?.group);
+  const query = resolveParam(searchParams?.q);
+
+  return {
+    status: status === "open" || status === "done" ? status : "all",
+    ownership: owner === "mine" ? "mine" : "all",
+    groupId: group && group !== "all" ? group : undefined,
+    query: query?.trim() ? query.trim() : undefined
+  };
+}
+
+function formatDateRange(startsOn: Date, endsOn: Date) {
+  const start = startsOn.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric"
+  });
+  const end = new Date(endsOn.getTime() - 1).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric"
+  });
+  return `${start} – ${end}`;
+}
+
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .map((part) => part.trim()[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
+function getDisplayName(name: string | null, email: string | null) {
+  return name ?? email?.split("@")[0] ?? "Member";
+}
 
 export default async function TasksPage({
   searchParams
 }: {
-  searchParams?: { week?: string | string[]; create?: string };
+  searchParams?: TaskSearchParams;
 }) {
   const session = await getServerSession(authOptions);
 
-  if (!session?.user?.activeParishId) {
+  if (!session?.user?.id || !session.user.activeParishId) {
     throw new Error("Unauthorized");
   }
 
   const parishId = session.user.activeParishId;
-  const weekSelection = parseWeekSelection(searchParams?.week);
-  const week = await getWeekForSelection(parishId, weekSelection);
-  const nextWeekStart = getWeekEnd(week.startsOn);
-  const nextWeek = await prisma.week.findUnique({
-    where: {
-      parishId_startsOn: {
-        parishId,
-        startsOn: nextWeekStart
-      }
-    }
-  });
+  const weekSelection = parseWeekSelection(resolveParam(searchParams?.week));
+  const week = await getWeekForSelection(parishId, weekSelection, getNow());
+  const filters = parseTaskFilters(searchParams);
 
-  const resolvedNextWeek =
-    nextWeek ??
-    (await prisma.week.create({
-      data: {
-        parishId,
-        startsOn: nextWeekStart,
-        endsOn: getWeekEnd(nextWeekStart),
-        label: getWeekLabel(nextWeekStart)
-      }
-    }));
-
-  const tasks = await prisma.task.findMany({
-    where: {
+  const [taskList, groups, members] = await Promise.all([
+    listTasks({
       parishId,
+      actorUserId: session.user.id,
       weekId: week.id,
-      ownerId: session.user.id
-    },
-    orderBy: { createdAt: "asc" },
-    select: {
-      id: true,
-      title: true,
-      notes: true,
-      status: true,
-      weekId: true
-    }
+      filters
+    }),
+    listGroupsByParish(parishId),
+    prisma.membership.findMany({
+      where: { parishId },
+      orderBy: { user: { name: "asc" } },
+      select: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
+      }
+    })
+  ]);
+
+  const memberOptions = members.map((membership) => {
+    const name = getDisplayName(membership.user.name, membership.user.email);
+    return {
+      id: membership.user.id,
+      name,
+      initials: getInitials(name)
+    };
   });
 
   return (
-    <div className="space-y-6">
-      <SectionTitle title="Tasks" subtitle={`Week ${week.label}`} />
-
-      <Card id="create-task" tabIndex={-1}>
-        <ScrollToCreate targetId="create-task" triggerValue="task" />
-        <h2 className="text-lg font-semibold text-ink-900">Add task</h2>
-        <form className="mt-4 space-y-4" action={createTask}>
-          <input type="hidden" name="weekId" value={week.id} />
-          <label className="block text-sm text-ink-700">
-            Title
-            <input
-              className="mt-1 w-full rounded-md border border-mist-200 bg-white px-3 py-2 text-sm"
-              type="text"
-              name="title"
-              required
-            />
-          </label>
-          <label className="block text-sm text-ink-700">
-            Notes (optional)
-            <textarea
-              className="mt-1 w-full rounded-md border border-mist-200 bg-white px-3 py-2 text-sm"
-              name="notes"
-              rows={3}
-            />
-          </label>
-          <Button type="submit">Create task</Button>
-        </form>
-      </Card>
-
-      <Card>
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-ink-900">This week</h2>
-          <p className="text-sm text-ink-500">{tasks.length} tasks</p>
-        </div>
-        <div className="mt-4 space-y-3">
-          {tasks.length === 0 ? (
-            <p className="text-sm text-ink-500">No tasks yet for this week.</p>
-          ) : (
-            tasks.map((task) => (
-              <div
-                key={task.id}
-                className="flex flex-col gap-3 rounded-md border border-mist-200 bg-white p-3 sm:flex-row sm:items-start sm:justify-between"
-              >
-                <div>
-                  <p className="text-sm font-medium text-ink-900">{task.title}</p>
-                  {task.notes ? <p className="mt-1 text-sm text-ink-500">{task.notes}</p> : null}
-                  <p className="mt-1 text-xs text-ink-400">
-                    {task.status === "DONE" ? "Completed" : "Open"}
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2 sm:items-end">
-                  <form action={markTaskDone}>
-                    <input type="hidden" name="taskId" value={task.id} />
-                    <Button type="submit" className="px-3 py-1 text-xs" disabled={task.status === "DONE"}>
-                      Mark done
-                    </Button>
-                  </form>
-                  <form action={deferTask} className="flex items-center gap-2">
-                    <input type="hidden" name="taskId" value={task.id} />
-                    <select
-                      name="targetWeekId"
-                      defaultValue={resolvedNextWeek.id}
-                      className="rounded-md border border-mist-200 bg-white px-2 py-1 text-xs"
-                    >
-                      <option value={week.id}>This week</option>
-                      <option value={resolvedNextWeek.id}>Next week</option>
-                    </select>
-                    <Button type="submit" className="px-3 py-1 text-xs">
-                      Defer
-                    </Button>
-                  </form>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </Card>
-    </div>
+    <TasksView
+      weekLabel={week.label}
+      weekRange={formatDateRange(week.startsOn, week.endsOn)}
+      weekId={week.id}
+      tasks={taskList.tasks}
+      summary={taskList.summary}
+      filteredCount={taskList.filteredCount}
+      filters={taskList.filters}
+      groupOptions={groups.map((group) => ({ id: group.id, name: group.name }))}
+      memberOptions={memberOptions}
+      currentUserId={session.user.id}
+    />
   );
 }

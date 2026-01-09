@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { prisma } from "@/server/db/prisma";
 import { createTask, markTaskDone, deferTask, rolloverOpenTasks } from "@/domain/tasks";
 import { getOrCreateCurrentWeek } from "@/domain/week";
+import { applyMigrations } from "./_helpers/migrate";
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
 const dbTest = hasDatabase ? test : test.skip;
@@ -23,6 +24,7 @@ before(async () => {
   if (!hasDatabase) {
     return;
   }
+  await applyMigrations();
   await prisma.$connect();
   await resetDatabase();
 });

@@ -83,7 +83,7 @@ export async function getThisWeekData({
   const week = await getWeekForSelection(parishId, weekSelection, now);
 
   const tasks = await prisma.task.findMany({
-    where: { parishId, weekId: week.id },
+    where: { parishId, weekId: week.id, archivedAt: null },
     orderBy: { createdAt: "asc" },
     select: {
       id: true,
