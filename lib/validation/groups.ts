@@ -11,6 +11,18 @@ export const updateGroupMembershipSchema = z.object({
 });
 
 export const createGroupSchema = z.object({
-  name: z.string().min(1, "Group name is required."),
-  description: z.string().optional()
+  name: z
+    .string()
+    .trim()
+    .min(1, "Group name is required.")
+    .max(80, "Group name must be 80 characters or fewer."),
+  description: z
+    .string()
+    .trim()
+    .max(280, "Description must be 280 characters or fewer.")
+    .optional()
+});
+
+export const groupArchiveSchema = z.object({
+  groupId: z.string().min(1)
 });

@@ -1,15 +1,18 @@
 "use server";
 
 import { getServerSession, type Session } from "next-auth";
+import { revalidatePath } from "next/cache";
 import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
 import { getOrCreateCurrentWeek } from "@/domain/week";
 import {
   createGroupSchema,
   getGroupDetailSchema,
+  groupArchiveSchema,
   updateGroupMembershipSchema
 } from "@/lib/validation/groups";
-import { revalidatePath } from "next/cache";
+import { getParishMembership } from "@/server/db/groups";
+import { isParishLeader } from "@/lib/permissions";
 
 // TODO: Wire to parish policy once stored in the database.
 const ALLOW_GROUP_LEADS_TO_MANAGE_MEMBERSHIP = true;
@@ -23,20 +26,36 @@ function assertSession(session: Session | null) {
 }
 
 async function requireParishMembership(userId: string, parishId: string) {
-  const membership = await prisma.membership.findUnique({
-    where: {
-      parishId_userId: {
-        parishId,
-        userId
-      }
-    }
-  });
+  const membership = await getParishMembership(parishId, userId);
 
   if (!membership) {
     throw new Error("Unauthorized");
   }
 
   return membership;
+}
+
+async function requireParishLeader(userId: string, parishId: string) {
+  const membership = await requireParishMembership(userId, parishId);
+
+  if (!isParishLeader(membership.role)) {
+    throw new Error("Forbidden");
+  }
+
+  return membership;
+}
+
+function assertActorContext(
+  session: Session | null,
+  input: { parishId: string; actorUserId: string }
+) {
+  const { userId, parishId } = assertSession(session);
+
+  if (userId !== input.actorUserId || parishId !== input.parishId) {
+    throw new Error("Unauthorized");
+  }
+
+  return { userId, parishId };
 }
 
 export async function listGroups() {
@@ -56,28 +75,106 @@ export async function listGroups() {
   });
 }
 
-export async function createGroup(formData: FormData) {
+export async function createGroup(input: {
+  parishId: string;
+  actorUserId: string;
+  name: string;
+  description?: string | null;
+}) {
   const session = await getServerSession(authOptions);
-  const { userId, parishId } = assertSession(session);
+  const { parishId, userId } = assertActorContext(session, input);
 
-  await requireParishMembership(userId, parishId);
+  await requireParishLeader(userId, parishId);
 
   const parsed = createGroupSchema.safeParse({
-    name: formData.get("name"),
-    description: formData.get("description") || undefined
+    name: input.name,
+    description: input.description ?? undefined
   });
 
   if (!parsed.success) {
     throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
   }
 
-  await prisma.group.create({
+  const group = await prisma.group.create({
     data: {
       parishId,
       name: parsed.data.name,
-      description: parsed.data.description
+      description: parsed.data.description?.trim() || undefined
+    },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      createdAt: true,
+      archivedAt: true
     }
-  });
+  } as any);
+
+  revalidatePath("/groups");
+
+  return group;
+}
+
+export async function archiveGroup(input: {
+  parishId: string;
+  actorUserId: string;
+  groupId: string;
+}) {
+  const session = await getServerSession(authOptions);
+  const { parishId, userId } = assertActorContext(session, input);
+
+  const parsed = groupArchiveSchema.safeParse({ groupId: input.groupId });
+  if (!parsed.success) {
+    throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
+  }
+
+  await requireParishLeader(userId, parishId);
+
+  const result = await prisma.group.updateMany({
+    where: {
+      id: parsed.data.groupId,
+      parishId
+    },
+    data: {
+      archivedAt: new Date()
+    }
+  } as any);
+
+  if (result.count === 0) {
+    throw new Error("Not found");
+  }
+
+  revalidatePath("/groups");
+}
+
+export async function restoreGroup(input: {
+  parishId: string;
+  actorUserId: string;
+  groupId: string;
+}) {
+  const session = await getServerSession(authOptions);
+  const { parishId, userId } = assertActorContext(session, input);
+
+  const parsed = groupArchiveSchema.safeParse({ groupId: input.groupId });
+  if (!parsed.success) {
+    throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
+  }
+
+  await requireParishLeader(userId, parishId);
+
+  const result = await prisma.group.updateMany({
+    where: {
+      id: parsed.data.groupId,
+      parishId
+    },
+    data: {
+      archivedAt: null
+    }
+  } as any);
+
+  if (result.count === 0) {
+    throw new Error("Not found");
+  }
 
   revalidatePath("/groups");
 }
@@ -178,10 +275,9 @@ export async function updateGroupMembership(formData: FormData) {
   }
 
   const actorMembership = await requireParishMembership(userId, parishId);
-  const isParishLeader =
-    actorMembership.role === "ADMIN" || actorMembership.role === "SHEPHERD";
+  const isLeader = isParishLeader(actorMembership.role);
 
-  if (!isParishLeader) {
+  if (!isLeader) {
     if (!ALLOW_GROUP_LEADS_TO_MANAGE_MEMBERSHIP) {
       throw new Error("Forbidden");
     }
@@ -243,4 +339,17 @@ export async function updateGroupMembership(formData: FormData) {
   });
 
   return { success: true };
+  
 }
+
+const groupActions = {
+  listGroups,
+  createGroup,
+  archiveGroup,
+  restoreGroup,
+  getGroupDetail,
+  updateGroupMembership
+} as const;
+
+export default groupActions;
+

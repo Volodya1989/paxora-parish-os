@@ -1,0 +1,145 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import Card from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import {
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger
+} from "@/components/ui/Dropdown";
+import type { GroupListItem } from "@/lib/queries/groups";
+import { cn } from "@/lib/ui/cn";
+
+const placeholderNames = ["Alex", "Jordan", "Casey", "Morgan", "Riley", "Quinn", "Harper"];
+
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .map((part) => part.trim()[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
+function hashString(value: string) {
+  return value.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+}
+
+function buildAvatarInitials(name: string, memberCount: number | null) {
+  const baseInitials = getInitials(name) || "GR";
+  const avatarCount = memberCount && memberCount > 0 ? Math.min(3, memberCount) : 2;
+  const seed = hashString(name);
+  const initials = [baseInitials];
+
+  for (let i = 1; i < avatarCount; i += 1) {
+    const placeholder = placeholderNames[(seed + i) % placeholderNames.length];
+    initials.push(getInitials(placeholder));
+  }
+
+  return initials;
+}
+
+function formatDate(date: Date) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  }).format(date);
+}
+
+type GroupCardProps = {
+  group: GroupListItem;
+  onEdit: () => void;
+  onArchive: () => void;
+  onRestore: () => void;
+  isBusy?: boolean;
+  forceMenuOpen?: boolean;
+};
+
+export default function GroupCard({
+  group,
+  onEdit,
+  onArchive,
+  onRestore,
+  isBusy = false,
+  forceMenuOpen
+}: GroupCardProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const isArchived = Boolean(group.archivedAt);
+  const open = forceMenuOpen ?? menuOpen;
+
+  const avatarInitials = useMemo(
+    () => buildAvatarInitials(group.name, group.memberCount),
+    [group.memberCount, group.name]
+  );
+
+  const memberCountLabel = group.memberCount ?? "—";
+  const memberSuffix =
+    typeof group.memberCount === "number" && group.memberCount === 1 ? "member" : "members";
+
+  return (
+    <Card className={cn("space-y-4", isBusy && "opacity-70")}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-lg font-semibold text-ink-900">{group.name}</h3>
+            {isArchived ? <Badge tone="warning">Archived</Badge> : null}
+          </div>
+          <p className="text-sm text-ink-500">
+            {group.description?.trim()
+              ? group.description
+              : "No description yet. Add a short note to help the team understand this group."}
+          </p>
+        </div>
+        <Dropdown
+          open={open}
+          onOpenChange={(nextOpen) => {
+            if (forceMenuOpen === undefined) {
+              setMenuOpen(nextOpen);
+            }
+          }}
+        >
+          <DropdownTrigger asChild iconOnly aria-label="Group options">
+            <Button type="button" variant="ghost" size="sm" className="text-ink-500">
+              ⋯
+            </Button>
+          </DropdownTrigger>
+          <DropdownMenu ariaLabel="Group menu">
+            <DropdownItem onClick={onEdit}>Edit</DropdownItem>
+            {isArchived ? (
+              <DropdownItem onClick={onRestore}>Restore</DropdownItem>
+            ) : (
+              <DropdownItem onClick={onArchive}>Archive</DropdownItem>
+            )}
+          </DropdownMenu>
+        </Dropdown>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="flex -space-x-2">
+            {avatarInitials.map((initials, index) => (
+              <span
+                key={`${initials}-${index}`}
+                className="flex h-8 w-8 items-center justify-center rounded-full border border-white bg-emerald-100 text-xs font-semibold text-emerald-800"
+              >
+                {initials}
+              </span>
+            ))}
+          </div>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-ink-400">Members</p>
+            <p className="text-sm font-semibold text-ink-700">
+              {memberCountLabel === "—" ? "—" : `${memberCountLabel} ${memberSuffix}`}
+            </p>
+          </div>
+        </div>
+        <p className="text-xs text-ink-400">Last updated {formatDate(group.createdAt)}</p>
+      </div>
+    </Card>
+  );
+}

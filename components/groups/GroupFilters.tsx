@@ -1,0 +1,59 @@
+"use client";
+
+import Input from "@/components/ui/Input";
+import { cn } from "@/lib/ui/cn";
+
+export type GroupFilterTab = "active" | "archived";
+
+type GroupFiltersProps = {
+  activeTab: GroupFilterTab;
+  onTabChange: (tab: GroupFilterTab) => void;
+  query: string;
+  onQueryChange: (value: string) => void;
+  counts: {
+    active: number;
+    archived: number;
+  };
+};
+
+export default function GroupFilters({
+  activeTab,
+  onTabChange,
+  query,
+  onQueryChange,
+  counts
+}: GroupFiltersProps) {
+  return (
+    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex items-center rounded-full border border-mist-200 bg-mist-50 p-1 text-sm">
+        {(["active", "archived"] as const).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => onTabChange(tab)}
+            className={cn(
+              "rounded-full px-4 py-2 text-sm font-medium transition",
+              activeTab === tab
+                ? "bg-white text-ink-900 shadow-card"
+                : "text-ink-500 hover:text-ink-700"
+            )}
+          >
+            {tab === "active" ? "Active" : "Archived"}
+            <span className="ml-2 text-xs text-ink-400">
+              {tab === "active" ? counts.active : counts.archived}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      <div className="w-full md:max-w-xs">
+        <Input
+          type="search"
+          placeholder="Search groups"
+          value={query}
+          onChange={(event) => onQueryChange(event.target.value)}
+        />
+      </div>
+    </div>
+  );
+}

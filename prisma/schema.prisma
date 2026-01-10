@@ -93,6 +93,7 @@ model Group {
   name        String
   description String?
   createdAt   DateTime @default(now())
+  archivedAt  DateTime?
 
   parish       Parish            @relation(fields: [parishId], references: [id])
   memberships GroupMembership[]
