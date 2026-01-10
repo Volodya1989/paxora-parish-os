@@ -28,6 +28,7 @@ mock.module("next/cache", {
 });
 
 async function resetDatabase() {
+  await prisma.announcement.deleteMany();
   await prisma.digest.deleteMany();
   await prisma.event.deleteMany();
   await prisma.task.deleteMany();

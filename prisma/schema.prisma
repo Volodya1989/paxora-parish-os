@@ -40,6 +40,7 @@ model Parish {
   tasks       Task[]
   events      Event[]
   digests     Digest[]
+  announcements Announcement[]
 }
 
 model User {
@@ -170,6 +171,20 @@ model Digest {
 
   @@unique([parishId, weekId])
   @@index([parishId, weekId])
+}
+
+model Announcement {
+  id          String   @id @default(cuid())
+  parishId    String
+  title       String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  publishedAt DateTime?
+  archivedAt  DateTime?
+
+  parish Parish @relation(fields: [parishId], references: [id])
+
+  @@index([parishId, publishedAt])
 }
 
 model Account {
