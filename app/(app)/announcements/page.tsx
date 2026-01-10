@@ -1,19 +1,20 @@
-import Card from "@/components/ui/Card";
-import SectionTitle from "@/components/ui/SectionTitle";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/server/auth/options";
+import { listAnnouncements } from "@/lib/queries/announcements";
+import AnnouncementsView from "@/components/announcements/AnnouncementsView";
 
-export default function AnnouncementsPage() {
-  return (
-    <div className="space-y-6">
-      <SectionTitle title="Announcements" subtitle="Parish-wide updates" />
+export default async function AnnouncementsPage() {
+  const session = await getServerSession(authOptions);
 
-      <Card>
-        <div className="space-y-2">
-          <h2 className="text-lg font-semibold text-ink-900">Coming soon</h2>
-          <p className="text-sm text-ink-500">
-            Announcements will appear here once parish leaders start sharing updates.
-          </p>
-        </div>
-      </Card>
-    </div>
-  );
+  if (!session?.user?.id || !session.user.activeParishId) {
+    throw new Error("Unauthorized");
+  }
+
+  const parishId = session.user.activeParishId;
+  const [drafts, published] = await Promise.all([
+    listAnnouncements({ parishId, status: "draft" }),
+    listAnnouncements({ parishId, status: "published" })
+  ]);
+
+  return <AnnouncementsView parishId={parishId} drafts={drafts} published={published} />;
 }
