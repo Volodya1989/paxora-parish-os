@@ -32,14 +32,14 @@ export async function getGroupMembership(groupId: string, userId: string) {
 
 export async function listGroupsByParish(parishId: string) {
   return prisma.group.findMany({
-    where: { parishId },
+    where: { parishId, archivedAt: null },
     orderBy: { name: "asc" },
     select: {
       id: true,
       name: true,
       description: true
     }
-  });
+  } as any);
 }
 
 export async function getGroupByParishId(parishId: string, groupId: string) {
