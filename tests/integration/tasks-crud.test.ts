@@ -41,6 +41,7 @@ async function resetDatabase() {
 }
 
 let actions: typeof import("@/server/actions/tasks");
+let taskState: typeof import("@/server/actions/taskState");
 
 before(async () => {
   if (!hasDatabase) {
@@ -48,6 +49,7 @@ before(async () => {
   }
   await applyMigrations();
   actions = await loadModuleFromRoot("server/actions/tasks");
+  taskState = await loadModuleFromRoot("server/actions/taskState");
   await prisma.$connect();
   await resetDatabase();
 });
@@ -82,7 +84,7 @@ test.skip("create task succeeds with valid input", async () => {
   formData.set("title", "Draft Sunday run-of-show");
   formData.set("notes", "Coordinate with the worship lead.");
 
-  const result = await actions.createTask(actions.initialTaskActionState, formData);
+  const result = await actions.createTask(taskState.initialTaskActionState, formData);
   assert.equal(result.status, "success");
 
   const stored = await prisma.task.findFirst({
@@ -114,7 +116,7 @@ test.skip("create task rejects missing title", async () => {
   formData.set("title", "");
 
   const beforeCount = await prisma.task.count({ where: { parishId: parish.id } });
-  const result = await actions.createTask(actions.initialTaskActionState, formData);
+  const result = await actions.createTask(taskState.initialTaskActionState, formData);
   const afterCount = await prisma.task.count({ where: { parishId: parish.id } });
 
   assert.equal(result.status, "error");

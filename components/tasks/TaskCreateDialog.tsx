@@ -9,11 +9,11 @@ import Select from "@/components/ui/Select";
 import Textarea from "@/components/ui/Textarea";
 import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
+import { createTask } from "@/server/actions/tasks";
 import {
-  createTask,
   initialTaskActionState,
   type TaskActionState
-} from "@/server/actions/tasks";
+} from "@/server/actions/taskState";
 
 type TaskCreateDialogProps = {
   open: boolean;

@@ -64,7 +64,7 @@ function getDisplayName(name: string | null, email: string | null) {
 export default async function TasksPage({
   searchParams
 }: {
-  searchParams?: TaskSearchParams;
+  searchParams?: Promise<TaskSearchParams | undefined>;
 }) {
   const session = await getServerSession(authOptions);
 
@@ -73,9 +73,10 @@ export default async function TasksPage({
   }
 
   const parishId = session.user.activeParishId;
-  const weekSelection = parseWeekSelection(resolveParam(searchParams?.week));
+  const resolvedSearchParams = await searchParams;
+  const weekSelection = parseWeekSelection(resolveParam(resolvedSearchParams?.week));
   const week = await getWeekForSelection(parishId, weekSelection, getNow());
-  const filters = parseTaskFilters(searchParams);
+  const filters = parseTaskFilters(resolvedSearchParams);
 
   const [taskList, groups, members] = await Promise.all([
     listTasks({

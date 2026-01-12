@@ -85,9 +85,10 @@ function buildWeekOptions(weekStart: Date) {
 export default async function ThisWeekPage({
   searchParams
 }: {
-  searchParams?: { week?: string | string[] };
+  searchParams?: Promise<{ week?: string | string[] } | undefined>;
 }) {
-  const weekSelection = parseWeekSelection(searchParams?.week);
+  const resolvedSearchParams = await searchParams;
+  const weekSelection = parseWeekSelection(resolvedSearchParams?.week);
   const now = getNow();
   const data = await getThisWeekData({ weekSelection, now });
   const weekOptions = buildWeekOptions(data.week.startsOn);

@@ -21,6 +21,7 @@ import {
   unarchiveTaskSchema,
   unmarkTaskDoneSchema
 } from "@/lib/validation/tasks";
+import type { TaskActionState } from "@/server/actions/taskState";
 
 function assertSession(session: Session | null) {
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -28,15 +29,6 @@ function assertSession(session: Session | null) {
   }
   return { userId: session.user.id, parishId: session.user.activeParishId };
 }
-
-export type TaskActionState = {
-  status: "idle" | "success" | "error";
-  message?: string;
-};
-
-export const initialTaskActionState: TaskActionState = {
-  status: "idle"
-};
 
 export async function createTask(
   _: TaskActionState,
@@ -201,14 +193,3 @@ export async function rolloverTasksForWeek(formData: FormData) {
   revalidatePath("/tasks");
   revalidatePath("/this-week");
 }
-
-export const taskActions = {
-  createTask,
-  markTaskDone,
-  unmarkTaskDone,
-  archiveTask,
-  unarchiveTask,
-  deferTask,
-  rolloverTasksForWeek,
-  initialTaskActionState
-};
