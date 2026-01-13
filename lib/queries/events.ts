@@ -1,6 +1,7 @@
 import { prisma } from "@/server/db/prisma";
 import { getMonthRange, getWeekRange } from "@/lib/date/calendar";
 import { getNow as defaultGetNow } from "@/lib/time/getNow";
+import type { EventRsvpResponse } from "@prisma/client";
 
 export type CalendarEvent = {
   id: string;
@@ -10,6 +11,17 @@ export type CalendarEvent = {
   location: string | null;
   summary: string | null;
   parishId: string;
+};
+
+export type EventDetail = {
+  id: string;
+  title: string;
+  startsAt: Date;
+  endsAt: Date;
+  location: string | null;
+  summary: string | null;
+  parishId: string;
+  rsvpResponse: EventRsvpResponse | null;
 };
 
 type ListEventsByRangeInput = {
@@ -26,6 +38,11 @@ type ListEventsForWeekInput = {
 type ListEventsForMonthInput = {
   parishId: string;
   getNow?: () => Date;
+};
+
+type GetEventByIdInput = {
+  id: string;
+  userId?: string;
 };
 
 export async function listEventsByRange({
@@ -74,4 +91,47 @@ export async function listEventsForMonth({
   const resolveNow = getNow ?? defaultGetNow;
   const { start, end } = getMonthRange({ getNow: resolveNow });
   return listEventsByRange({ parishId, start, end });
+}
+
+export async function getEventById({
+  id,
+  userId
+}: GetEventByIdInput): Promise<EventDetail | null> {
+  const event = await prisma.event.findFirst({
+    where: { id },
+    select: {
+      id: true,
+      title: true,
+      startsAt: true,
+      endsAt: true,
+      location: true,
+      summary: true,
+      parishId: true,
+      ...(userId
+        ? {
+            rsvps: {
+              where: { userId },
+              select: { response: true }
+            }
+          }
+        : {})
+    }
+  });
+
+  if (!event) {
+    return null;
+  }
+
+  const rsvpResponse = "rsvps" in event ? event.rsvps?.[0]?.response ?? null : null;
+
+  return {
+    id: event.id,
+    title: event.title,
+    startsAt: event.startsAt,
+    endsAt: event.endsAt,
+    location: event.location,
+    summary: event.summary,
+    parishId: event.parishId,
+    rsvpResponse
+  };
 }
