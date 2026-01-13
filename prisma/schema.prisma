@@ -28,6 +28,12 @@ enum DigestStatus {
   PUBLISHED
 }
 
+enum EventRsvpResponse {
+  YES
+  MAYBE
+  NO
+}
+
 model Parish {
   id        String   @id @default(cuid())
   name      String
@@ -55,6 +61,7 @@ model User {
   groupMemberships GroupMembership[]
   tasks            Task[] @relation("TaskOwner")
   digestsCreated   Digest[] @relation("DigestAuthor")
+  eventRsvps       EventRsvp[]
   accounts         Account[]
   sessions         Session[]
 }
@@ -148,12 +155,30 @@ model Event {
   startsAt  DateTime
   endsAt    DateTime
   location  String?
+  summary   String?
 
   parish Parish @relation(fields: [parishId], references: [id])
   week   Week   @relation(fields: [weekId], references: [id], onDelete: Cascade)
+  rsvps  EventRsvp[]
 
   @@index([weekId])
   @@index([parishId, startsAt])
+}
+
+model EventRsvp {
+  id        String            @id @default(cuid())
+  eventId   String
+  userId    String
+  response  EventRsvpResponse
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
 }
 
 model Digest {
