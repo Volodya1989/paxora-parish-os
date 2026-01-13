@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useId, useRef, type RefObject } from "react";
-import { useFormState } from "react-dom";
+import { useActionState, useEffect, useId, useRef, type RefObject } from "react";
+import { useFormStatus } from "react-dom";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Label from "@/components/ui/Label";
@@ -32,7 +32,7 @@ export default function TaskCreateDialog({
   memberOptions,
   currentUserId
 }: TaskCreateDialogProps) {
-  const [state, formAction] = useFormState<TaskActionState, FormData>(
+  const [state, formAction] = useActionState<TaskActionState, FormData>(
     createTask,
     initialTaskActionState
   );
@@ -99,18 +99,8 @@ export default function TaskCreateDialog({
           {state.message}
         </p>
       ) : null}
+      <TaskCreateActions onCancel={() => onOpenChange(false)} />
     </form>
-  );
-
-  const renderFooter = (formId: string) => (
-    <>
-      <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-        Cancel
-      </Button>
-      <Button type="submit" form={formId}>
-        Create task
-      </Button>
-    </>
   );
 
   return (
@@ -119,7 +109,6 @@ export default function TaskCreateDialog({
         open={open}
         onClose={() => onOpenChange(false)}
         title="New task"
-        footer={renderFooter(modalFormId)}
       >
         <p className="mb-4 text-sm text-ink-500">
           Capture what needs attention this week and assign it to the right owner.
@@ -130,7 +119,6 @@ export default function TaskCreateDialog({
         open={open}
         onClose={() => onOpenChange(false)}
         title="New task"
-        footer={renderFooter(drawerFormId)}
       >
         <p className="mb-4 text-sm text-ink-500">
           Capture what needs attention this week and assign it to the right owner.
@@ -138,5 +126,20 @@ export default function TaskCreateDialog({
         {renderForm(drawerFormId, drawerFormRef)}
       </Drawer>
     </>
+  );
+}
+
+function TaskCreateActions({ onCancel }: { onCancel: () => void }) {
+  const { pending } = useFormStatus();
+
+  return (
+    <div className="mt-6 flex justify-end gap-2">
+      <Button type="button" variant="ghost" onClick={onCancel} disabled={pending}>
+        Cancel
+      </Button>
+      <Button type="submit" isLoading={pending}>
+        Create task
+      </Button>
+    </div>
   );
 }

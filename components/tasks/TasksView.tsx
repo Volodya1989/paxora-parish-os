@@ -60,8 +60,10 @@ export default function TasksView({
 
   const closeCreateDialog = () => {
     const params = new URLSearchParams(searchParams?.toString() ?? "");
-    params.delete("create");
-    router.replace(`?${params.toString()}`, { scroll: false });
+    if (params.has("create")) {
+      params.delete("create");
+      router.replace(`?${params.toString()}`, { scroll: false });
+    }
     setIsCreateOpen(false);
   };
 

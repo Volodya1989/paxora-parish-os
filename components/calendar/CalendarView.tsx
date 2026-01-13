@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState, useEffect } from "react";
+import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import EmptyState from "@/components/ui/EmptyState";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/Tabs";
@@ -14,7 +15,7 @@ import {
   type CalendarRange
 } from "@/lib/date/calendar";
 import type { CalendarEvent } from "@/lib/queries/events";
-import Link from "next/link";
+
 
 type CalendarViewProps = {
   weekRange: CalendarRange;
@@ -93,12 +94,9 @@ export default function CalendarView({
                   title="No events this week"
                   description="Add a new event to keep the calendar up to date."
                   action={
-                    <Link
-                      href="/calendar?create=event"
-                      className="inline-flex items-center justify-center gap-2 rounded-button bg-primary-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-600 focus-ring"
-                    >
-                      Add event
-                    </Link>
+                    <Button variant="secondary" disabled>
+                      Add event (coming soon)
+                    </Button>
                   }
                 />
               ) : (
@@ -117,12 +115,9 @@ export default function CalendarView({
                   title="No events this month"
                   description="Schedule something for the parish calendar."
                   action={
-                    <Link
-                      href="/calendar?create=event"
-                      className="inline-flex items-center justify-center gap-2 rounded-button bg-primary-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-600 focus-ring"
-                    >
-                      Add event
-                    </Link>
+                    <Button variant="secondary" disabled>
+                      Add event (coming soon)
+                    </Button>
                   }
                 />
               ) : (

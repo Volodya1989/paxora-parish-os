@@ -223,9 +223,9 @@ export default async function ThisWeekPage({
                 title="No events scheduled this week"
                 description="Plan services, rehearsals, and gatherings so everyone stays in sync."
                 action={
-                  <Link href="/calendar?create=event">
-                    <Button size="sm">Add event</Button>
-                  </Link>
+                  <Button size="sm" disabled>
+                    Add event (coming soon)
+                  </Button>
                 }
               />
             ) : (

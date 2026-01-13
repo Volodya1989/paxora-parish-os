@@ -342,14 +342,3 @@ export async function updateGroupMembership(formData: FormData) {
   
 }
 
-const groupActions = {
-  listGroups,
-  createGroup,
-  archiveGroup,
-  restoreGroup,
-  getGroupDetail,
-  updateGroupMembership
-} as const;
-
-export default groupActions;
-
