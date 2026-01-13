@@ -311,7 +311,7 @@ export function DropdownItem({
   };
 
   const baseClass = cn(
-    "flex w-full items-center rounded-button px-3 py-2 text-sm text-ink-700 transition hover:bg-mist-50 focus-ring",
+    "flex w-full items-center rounded-button px-3 py-2 text-sm text-ink-700 transition hover:bg-mist-50 focus-visible:bg-mist-50 focus-visible:outline-none",
     className
   );
 

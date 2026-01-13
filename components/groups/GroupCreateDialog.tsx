@@ -33,8 +33,10 @@ export default function GroupCreateDialog({
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const nameId = useId();
-  const descriptionId = useId();
+  const modalNameId = useId();
+  const modalDescriptionId = useId();
+  const drawerNameId = useId();
+  const drawerDescriptionId = useId();
 
   const resetForm = () => {
     setName("");
@@ -95,7 +97,7 @@ export default function GroupCreateDialog({
     });
   };
 
-  const renderForm = (formId: string) => (
+  const renderForm = (formId: string, nameId: string, descriptionId: string) => (
     <form id={formId} className="space-y-4" onSubmit={handleSubmit}>
       <div className="space-y-2">
         <Label htmlFor={nameId}>Group name</Label>
@@ -103,7 +105,7 @@ export default function GroupCreateDialog({
           id={nameId}
           name="name"
           value={name}
-          onChange={(event) => setName(event.target.value)}
+          onChange={(event) => setName(event.currentTarget.value)}
           placeholder="e.g. Hospitality Team"
           maxLength={NAME_MAX_LENGTH}
           aria-invalid={Boolean(error) || undefined}
@@ -116,7 +118,7 @@ export default function GroupCreateDialog({
           id={descriptionId}
           name="description"
           value={description}
-          onChange={(event) => setDescription(event.target.value)}
+          onChange={(event) => setDescription(event.currentTarget.value)}
           placeholder="Share what this group is responsible for."
           maxLength={DESCRIPTION_MAX_LENGTH}
           rows={4}
@@ -156,7 +158,7 @@ export default function GroupCreateDialog({
         <p className="mb-4 text-sm text-ink-500">
           Gather the right people around a mission, ministry, or project.
         </p>
-        {renderForm(modalFormId)}
+        {renderForm(modalFormId, modalNameId, modalDescriptionId)}
       </Modal>
       <Drawer
         open={open}
@@ -167,7 +169,7 @@ export default function GroupCreateDialog({
         <p className="mb-4 text-sm text-ink-500">
           Gather the right people around a mission, ministry, or project.
         </p>
-        {renderForm(drawerFormId)}
+        {renderForm(drawerFormId, drawerNameId, drawerDescriptionId)}
       </Drawer>
     </>
   );

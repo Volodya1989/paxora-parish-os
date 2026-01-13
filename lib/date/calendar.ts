@@ -1,4 +1,4 @@
-import { getWeekEnd, getWeekStartMonday } from "@/domain/week";
+import { getWeekEnd, getWeekStartMonday } from "@/lib/date/week";
 import { getNow as defaultGetNow } from "@/lib/time/getNow";
 
 export type CalendarRange = {
