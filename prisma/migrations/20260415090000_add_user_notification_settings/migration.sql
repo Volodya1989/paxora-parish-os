@@ -1,0 +1,2 @@
+ALTER TABLE "User" ADD COLUMN "notificationsEnabled" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "User" ADD COLUMN "weeklyDigestEnabled" BOOLEAN NOT NULL DEFAULT true;

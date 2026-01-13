@@ -55,6 +55,8 @@ model User {
   name            String?
   passwordHash    String
   activeParishId  String?
+  notificationsEnabled Boolean @default(true)
+  weeklyDigestEnabled  Boolean @default(true)
   createdAt       DateTime @default(now())
 
   memberships      Membership[]

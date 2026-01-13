@@ -295,13 +295,14 @@ export function DropdownItem({
   const itemRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    if (!itemRef.current) {
+    const currentItem = itemRef.current;
+    if (!currentItem) {
       return;
     }
 
-    itemsRef.current.push(itemRef.current);
+    itemsRef.current.push(currentItem);
     return () => {
-      itemsRef.current = itemsRef.current.filter((item) => item !== itemRef.current);
+      itemsRef.current = itemsRef.current.filter((item) => item !== currentItem);
     };
   }, [itemsRef]);
 

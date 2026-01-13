@@ -1,8 +1,9 @@
 import { getServerSession } from "next-auth";
-import Card from "@/components/ui/Card";
 import SectionTitle from "@/components/ui/SectionTitle";
 import { authOptions } from "@/server/auth/options";
-import { SignOutButton } from "@/components/navigation/SignOutButton";
+import { getProfileSettings } from "@/lib/queries/profile";
+import ProfileCard from "@/components/profile/ProfileCard";
+import ProfileSettings from "@/components/profile/ProfileSettings";
 
 export default async function ProfilePage() {
   const session = await getServerSession(authOptions);
@@ -11,36 +12,22 @@ export default async function ProfilePage() {
     throw new Error("Unauthorized");
   }
 
+  const profile = await getProfileSettings({
+    userId: session.user.id,
+    parishId: session.user.activeParishId
+  });
+
   return (
     <div className="space-y-6">
-      <SectionTitle title="Profile" subtitle="Account details" />
+      <SectionTitle title="Profile" subtitle="Account details and preferences" />
 
-      <Card>
-        <div className="space-y-3">
-          <div>
-            <p className="text-sm text-ink-500">Name</p>
-            <p className="text-sm font-medium text-ink-900">
-              {session.user.name ?? "Unnamed member"}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-ink-500">Email</p>
-            <p className="text-sm font-medium text-ink-900">{session.user.email}</p>
-          </div>
-        </div>
-      </Card>
-
-      <Card>
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-ink-900">Sign out</p>
-            <p className="text-sm text-ink-500">End your current session.</p>
-          </div>
-          <div className="w-40">
-            <SignOutButton />
-          </div>
-        </div>
-      </Card>
+      <ProfileCard name={profile.name} email={profile.email} role={profile.parishRole} />
+      <ProfileSettings
+        initialSettings={{
+          notificationsEnabled: profile.notificationsEnabled,
+          weeklyDigestEnabled: profile.weeklyDigestEnabled
+        }}
+      />
     </div>
   );
 }
