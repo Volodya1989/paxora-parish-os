@@ -61,7 +61,7 @@ after(async () => {
   await prisma.$disconnect();
 });
 
-dbTest.skip("setRsvp upserts per event and user", async () => {
+test.skip("setRsvp upserts per event and user", async () => {
   const parish = await prisma.parish.create({
     data: { name: "St. Luke", slug: "st-luke" }
   });
