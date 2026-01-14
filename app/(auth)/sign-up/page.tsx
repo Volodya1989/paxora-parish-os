@@ -1,57 +1,76 @@
 "use client";
 
-import { useFormState } from "react-dom";
+import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Card from "@/components/ui/Card";
 import SectionTitle from "@/components/ui/SectionTitle";
 import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 import { createUser, type SignUpState } from "@/server/actions/auth";
 
 const initialState: SignUpState = {};
 
 export default function SignUpPage() {
-  const [state, formAction] = useFormState(createUser, initialState);
+  const [state, formAction] = useActionState(createUser, initialState);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (state?.success) {
+      router.push("/sign-in");
+    }
+  }, [router, state?.success]);
 
   return (
-    <Card>
-      <SectionTitle title="Create account" subtitle="Start with a simple parish setup." />
-      <form className="mt-6 space-y-4" action={formAction}>
-        <label className="block text-sm text-ink-700">
-          Name
-          <input
-            className="mt-1 w-full rounded-md border border-mist-200 bg-white px-3 py-2 text-sm"
-            type="text"
-            name="name"
-            required
-          />
-        </label>
-        <label className="block text-sm text-ink-700">
-          Email
-          <input
-            className="mt-1 w-full rounded-md border border-mist-200 bg-white px-3 py-2 text-sm"
-            type="email"
-            name="email"
-            required
-          />
-        </label>
-        <label className="block text-sm text-ink-700">
-          Password
-          <input
-            className="mt-1 w-full rounded-md border border-mist-200 bg-white px-3 py-2 text-sm"
-            type="password"
-            name="password"
-            minLength={8}
-            required
-          />
-        </label>
-        {state?.error ? <p className="text-sm text-red-600">{state.error}</p> : null}
-        {state?.success ? (
-          <p className="text-sm text-emerald-600">Account created. You can sign in now.</p>
-        ) : null}
-        <Button type="submit">Create account</Button>
-      </form>
-      <p className="mt-4 text-sm text-ink-500">
-        Already have an account? <a className="text-ink-900 underline" href="/sign-in">Sign in</a>.
-      </p>
-    </Card>
+    <main className="flex min-h-screen items-center justify-center bg-mist-50/60 px-4 py-12">
+      <Card className="w-full max-w-md">
+        <SectionTitle title="Create account" subtitle="Start with a simple parish setup." />
+        <p className="mt-3 text-sm text-ink-500">
+          Create your account to begin setting up your parish workspace.
+        </p>
+        <form className="mt-6 space-y-5" action={formAction}>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-ink-700" htmlFor="name">
+              Name
+            </label>
+            <Input id="name" type="text" name="name" autoComplete="name" required />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-ink-700" htmlFor="email">
+              Email
+            </label>
+            <Input id="email" type="email" name="email" autoComplete="email" required />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-ink-700" htmlFor="password">
+              Password
+            </label>
+            <Input
+              id="password"
+              type="password"
+              name="password"
+              autoComplete="new-password"
+              minLength={8}
+              required
+            />
+          </div>
+          {state?.error ? <p className="text-sm text-red-600">{state.error}</p> : null}
+          {state?.success ? (
+            <p className="text-sm text-emerald-600">
+              Account created. Redirecting you to sign in.
+            </p>
+          ) : null}
+          <Button className="w-full" type="submit">
+            Create account
+          </Button>
+        </form>
+        <p className="mt-4 text-sm text-ink-500">
+          Already have an account?{" "}
+          <a className="text-ink-900 underline" href="/sign-in">
+            Sign in
+          </a>
+          .
+        </p>
+      </Card>
+    </main>
   );
 }

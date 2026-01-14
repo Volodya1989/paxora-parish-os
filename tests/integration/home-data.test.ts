@@ -6,7 +6,6 @@ import { applyMigrations } from "../_helpers/migrate";
 import { loadModuleFromRoot } from "../_helpers/load-module";
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
-const dbTest = hasDatabase ? test : test.skip;
 
 const session = {
   user: {
@@ -53,7 +52,7 @@ after(async () => {
   await prisma.$disconnect();
 });
 
-dbTest.skip("getHomeSummary returns stable week completion data", async () => {
+test.skip("getHomeSummary returns stable week completion data", async () => {
   const fixedNow = new Date("2024-05-08T12:00:00.000Z");
   const parish = await prisma.parish.create({
     data: { name: "St. Luke", slug: "st-luke" }
