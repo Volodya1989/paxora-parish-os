@@ -6,6 +6,18 @@ export async function ensureParishBootstrap(userId: string) {
   });
 
   if (!existingMembership) {
+    const existingParish = await prisma.parish.findFirst({
+      orderBy: { createdAt: "asc" }
+    });
+
+    if (existingParish) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { activeParishId: existingParish.id }
+      });
+      return existingParish.id;
+    }
+
     const parish = await prisma.parish.create({
       data: {
         name: "Default Parish",

@@ -34,19 +34,25 @@ enum EventRsvpResponse {
   NO
 }
 
+enum AccessRequestStatus {
+  PENDING
+  APPROVED
+}
+
 model Parish {
   id        String   @id @default(cuid())
   name      String
   slug      String   @unique
   createdAt DateTime @default(now())
 
-  memberships Membership[]
-  groups      Group[]
-  weeks       Week[]
-  tasks       Task[]
-  events      Event[]
-  digests     Digest[]
-  announcements Announcement[]
+  memberships     Membership[]
+  accessRequests  AccessRequest[]
+  groups          Group[]
+  weeks           Week[]
+  tasks           Task[]
+  events          Event[]
+  digests         Digest[]
+  announcements   Announcement[]
 }
 
 model User {
@@ -60,6 +66,7 @@ model User {
   createdAt       DateTime @default(now())
 
   memberships      Membership[]
+  accessRequests   AccessRequest[]
   groupMemberships GroupMembership[]
   tasks            Task[] @relation("TaskOwner")
   digestsCreated   Digest[] @relation("DigestAuthor")
@@ -78,6 +85,21 @@ model Membership {
   user   User   @relation(fields: [userId], references: [id])
 
   @@unique([parishId, userId])
+}
+
+model AccessRequest {
+  id        String               @id @default(cuid())
+  parishId  String
+  userId    String
+  status    AccessRequestStatus  @default(PENDING)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  parish Parish @relation(fields: [parishId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([parishId, userId])
+  @@index([parishId, status])
 }
 
 model Week {
