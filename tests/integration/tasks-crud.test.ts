@@ -159,6 +159,7 @@ test.skip("toggle done and undo", async () => {
       parishId: parish.id,
       weekId: week.id,
       ownerId: user.id,
+      createdById: user.id,
       title: "Confirm volunteer roster"
     }
   });
@@ -194,6 +195,7 @@ test.skip("archive and undo", async () => {
       parishId: parish.id,
       weekId: week.id,
       ownerId: user.id,
+      createdById: user.id,
       title: "Archive me"
     }
   });

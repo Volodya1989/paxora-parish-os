@@ -76,6 +76,7 @@ test.skip("getHomeSummary returns stable week completion data", async () => {
       parishId: parish.id,
       weekId: week.id,
       ownerId: user.id,
+      createdById: user.id,
       title: "Prepare worship slides",
       status: "DONE"
     }
@@ -86,6 +87,7 @@ test.skip("getHomeSummary returns stable week completion data", async () => {
       parishId: parish.id,
       weekId: week.id,
       ownerId: user.id,
+      createdById: user.id,
       title: "Confirm volunteers",
       status: "OPEN"
     }
