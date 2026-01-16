@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useEffect, useId, useRef, type RefObject } from "react";
+import { useActionState, useEffect, useId, useRef, useTransition, type RefObject } from "react";
+import { useRouter } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -9,6 +10,7 @@ import Select from "@/components/ui/Select";
 import Textarea from "@/components/ui/Textarea";
 import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
+import { useToast } from "@/components/ui/Toast";
 import { createTask } from "@/server/actions/tasks";
 import {
   initialTaskActionState,
@@ -32,10 +34,14 @@ export default function TaskCreateDialog({
   memberOptions,
   currentUserId
 }: TaskCreateDialogProps) {
+  const router = useRouter();
+  const { addToast } = useToast();
   const [state, formAction] = useActionState<TaskActionState, FormData>(
     createTask,
     initialTaskActionState
   );
+  const handledSuccess = useRef(false);
+  const [, startTransition] = useTransition();
   const modalFormRef = useRef<HTMLFormElement>(null);
   const drawerFormRef = useRef<HTMLFormElement>(null);
   const modalFormId = useId();
@@ -46,12 +52,27 @@ export default function TaskCreateDialog({
   const ownerId = useId();
 
   useEffect(() => {
-    if (state.status === "success") {
-      modalFormRef.current?.reset();
-      drawerFormRef.current?.reset();
-      onOpenChange(false);
+    if (state.status !== "success") {
+      handledSuccess.current = false;
+      return;
     }
-  }, [onOpenChange, state.status]);
+
+    if (handledSuccess.current) {
+      return;
+    }
+
+    handledSuccess.current = true;
+    modalFormRef.current?.reset();
+    drawerFormRef.current?.reset();
+    addToast({
+      title: "Task created",
+      description: "Your task is ready for the team."
+    });
+    onOpenChange(false);
+    startTransition(() => {
+      router.refresh();
+    });
+  }, [addToast, onOpenChange, router, startTransition, state.status]);
 
   const renderForm = (formId: string, ref: RefObject<HTMLFormElement>) => (
     <form ref={ref} id={formId} className="space-y-4" action={formAction}>

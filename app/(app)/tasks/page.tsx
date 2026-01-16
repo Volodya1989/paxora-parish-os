@@ -5,6 +5,8 @@ import { listGroupsByParish } from "@/server/db/groups";
 import { getWeekForSelection, parseWeekSelection } from "@/domain/week";
 import { getNow } from "@/lib/time/getNow";
 import { listTasks, type TaskFilters } from "@/lib/queries/tasks";
+import { getPendingAccessRequests } from "@/lib/queries/access";
+import { approveParishAccess } from "@/app/actions/access";
 import TasksView from "@/components/tasks/TasksView";
 
 type TaskSearchParams = {
@@ -78,7 +80,7 @@ export default async function TasksPage({
   const week = await getWeekForSelection(parishId, weekSelection, getNow());
   const filters = parseTaskFilters(resolvedSearchParams);
 
-  const [taskList, groups, members] = await Promise.all([
+  const [taskList, groups, members, pendingRequests] = await Promise.all([
     listTasks({
       parishId,
       actorUserId: session.user.id,
@@ -98,7 +100,8 @@ export default async function TasksPage({
           }
         }
       }
-    })
+    }),
+    getPendingAccessRequests()
   ]);
 
   const memberOptions = members.map((membership) => {
@@ -122,6 +125,8 @@ export default async function TasksPage({
       groupOptions={groups.map((group) => ({ id: group.id, name: group.name }))}
       memberOptions={memberOptions}
       currentUserId={session.user.id}
+      pendingAccessRequests={pendingRequests}
+      approveAccessAction={approveParishAccess}
     />
   );
 }

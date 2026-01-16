@@ -44,6 +44,14 @@ export const archiveTaskSchema = markTaskDoneSchema;
 
 export const unarchiveTaskSchema = markTaskDoneSchema;
 
+export const updateTaskSchema = z.object({
+  taskId: z.string().min(1),
+  title: z.string().trim().min(1, "Title is required"),
+  notes: optionalTrimmedText
+});
+
+export const deleteTaskSchema = markTaskDoneSchema;
+
 export const deferTaskSchema = z.object({
   taskId: z.string().min(1),
   targetWeekId: z.string().min(1)

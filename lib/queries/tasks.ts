@@ -19,6 +19,11 @@ export type TaskListItem = {
   title: string;
   notes: string | null;
   status: "OPEN" | "DONE";
+  completedAt: string | null;
+  completedBy: {
+    id: string;
+    name: string;
+  } | null;
   owner: {
     id: string;
     name: string;
@@ -29,6 +34,7 @@ export type TaskListItem = {
     name: string;
   } | null;
   canManage: boolean;
+  canDelete: boolean;
 };
 
 export type TaskListSummary = {
@@ -116,6 +122,8 @@ export async function listTasks({
         title: true,
         notes: true,
         status: true,
+        completedAt: true,
+        completedById: true,
         ownerId: true,
         groupId: true,
         owner: {
@@ -129,6 +137,13 @@ export async function listTasks({
           select: {
             id: true,
             name: true
+          }
+        },
+        completedBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true
           }
         }
       }
@@ -179,19 +194,30 @@ export async function listTasks({
       (parishMembership
         ? canManageGroupMembership(parishMembership.role, groupRole)
         : false);
+    const completedByName = task.completedBy
+      ? getDisplayName(task.completedBy.name, task.completedBy.email)
+      : null;
 
     return {
       id: task.id,
       title: task.title,
       notes: task.notes ?? null,
       status: task.status,
+      completedAt: task.completedAt ? task.completedAt.toISOString() : null,
+      completedBy: completedByName && task.completedBy
+        ? {
+            id: task.completedBy.id,
+            name: completedByName
+          }
+        : null,
       owner: {
         id: task.owner.id,
         name: ownerName,
         initials: getInitials(ownerName)
       },
       group: task.group ? { id: task.group.id, name: task.group.name } : null,
-      canManage
+      canManage,
+      canDelete: task.ownerId === actorUserId
     };
   });
 

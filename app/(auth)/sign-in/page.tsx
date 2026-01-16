@@ -30,7 +30,7 @@ export default function SignInPage() {
       return;
     }
 
-    window.location.href = "/this-week";
+    window.location.href = "/access";
   };
 
   return (

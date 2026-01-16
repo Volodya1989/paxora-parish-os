@@ -9,6 +9,7 @@ import TaskFilters from "@/components/tasks/TaskFilters";
 import TasksEmptyState from "@/components/tasks/TasksEmptyState";
 import TasksList from "@/components/tasks/TasksList";
 import type { TaskFilters as TaskFiltersState, TaskListItem, TaskListSummary } from "@/lib/queries/tasks";
+import type { PendingAccessRequest } from "@/lib/queries/access";
 
 type TasksViewProps = {
   weekLabel: string;
@@ -21,6 +22,8 @@ type TasksViewProps = {
   groupOptions: Array<{ id: string; name: string }>;
   memberOptions: Array<{ id: string; name: string }>;
   currentUserId: string;
+  pendingAccessRequests: PendingAccessRequest[];
+  approveAccessAction: (formData: FormData) => Promise<void>;
 };
 
 export default function TasksView({
@@ -33,7 +36,9 @@ export default function TasksView({
   filters,
   groupOptions,
   memberOptions,
-  currentUserId
+  currentUserId,
+  pendingAccessRequests,
+  approveAccessAction
 }: TasksViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -107,6 +112,46 @@ export default function TasksView({
           <TaskFilters filters={filters} groupOptions={groupOptions} />
         </div>
       </Card>
+
+      {pendingAccessRequests.length ? (
+        <Card>
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-h3">Access approvals</h2>
+              <p className="text-xs text-ink-400">
+                Review pending parish access requests.
+              </p>
+            </div>
+            <div className="space-y-3">
+              {pendingAccessRequests.map((request) => (
+                <div
+                  key={request.id}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-mist-200 bg-mist-50 px-3 py-2"
+                >
+                  <div>
+                    <div className="text-sm font-medium text-ink-800">
+                      {request.userName ?? "Parishioner"}
+                    </div>
+                    <div className="text-xs text-ink-500">{request.userEmail}</div>
+                    <div className="text-xs text-ink-400">{request.parishName}</div>
+                  </div>
+                  <div className="text-xs text-ink-400">
+                    Requested {request.requestedAt.toLocaleDateString()}
+                  </div>
+                  <form action={approveAccessAction}>
+                    <input type="hidden" name="parishId" value={request.parishId} />
+                    <input type="hidden" name="userId" value={request.userId} />
+                    <input type="hidden" name="role" value="MEMBER" />
+                    <Button type="submit" size="sm">
+                      Approve
+                    </Button>
+                  </form>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
+      ) : null}
 
       <Card>
         <div className="flex flex-wrap items-center justify-between gap-3">

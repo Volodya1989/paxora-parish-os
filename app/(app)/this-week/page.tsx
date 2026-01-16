@@ -157,9 +157,10 @@ export default async function ThisWeekPage({
               />
             ) : (
               data.tasks.slice(0, 5).map((task) => (
-                <div
+                <Link
                   key={task.id}
-                  className="flex items-center justify-between gap-3 rounded-card border border-mist-100 bg-white px-4 py-3"
+                  href={`/tasks?taskId=${task.id}`}
+                  className="flex items-center justify-between gap-3 rounded-card border border-mist-100 bg-white px-4 py-3 transition hover:border-primary-200 hover:bg-primary-50/30"
                 >
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-ink-900">{task.title}</p>
@@ -175,7 +176,7 @@ export default async function ThisWeekPage({
                       </span>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))
             )}
           </div>
