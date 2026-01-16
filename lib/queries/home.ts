@@ -1,4 +1,5 @@
 import { getServerSession } from "next-auth";
+import { Prisma, TaskApprovalStatus, TaskVisibility } from "@prisma/client";
 import { unstable_noStore as noStore } from "next/cache";
 import { authOptions } from "@/server/auth/options";
 import { ensureParishBootstrap } from "@/server/auth/bootstrap";
@@ -80,9 +81,9 @@ export async function getHomeSummary({
   const actorUserId = session.user.id;
   const parishId = await resolveParishId(session.user.id, session.user.activeParishId);
   const week = await getOrCreateCurrentWeek(parishId, now);
-  const visibilityWhere = {
+  const visibilityWhere: Prisma.TaskWhereInput = {
     OR: [
-      { visibility: "PUBLIC", approvalStatus: "APPROVED" },
+      { visibility: TaskVisibility.PUBLIC, approvalStatus: TaskApprovalStatus.APPROVED },
       { ownerId: actorUserId },
       { createdById: actorUserId }
     ]
@@ -110,10 +111,11 @@ export async function getHomeSummary({
 
   const taskSummary = taskCounts.reduce(
     (acc, item) => {
+      const count = item._count?._all ?? 0;
       if (item.status === "DONE") {
-        acc.completedCount = item._count._all;
+        acc.completedCount = count;
       }
-      acc.totalCount += item._count._all;
+      acc.totalCount += count;
       return acc;
     },
     { completedCount: 0, totalCount: 0 }

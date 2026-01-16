@@ -1,4 +1,4 @@
-import { type Prisma } from "@prisma/client";
+import { type Prisma, TaskApprovalStatus, TaskVisibility } from "@prisma/client";
 import { canManageGroupMembership, isParishLeader } from "@/lib/permissions";
 import { getNow } from "@/lib/time/getNow";
 import { getOrCreateCurrentWeek } from "@/domain/week";
@@ -113,30 +113,31 @@ export async function listTasks({
 
   const visibilityWhere: Prisma.TaskWhereInput = {
     OR: [
-      { visibility: "PUBLIC", approvalStatus: "APPROVED" },
+      { visibility: TaskVisibility.PUBLIC, approvalStatus: TaskApprovalStatus.APPROVED },
       { ownerId: actorUserId },
       { createdById: actorUserId }
     ]
   };
 
-  const where: Prisma.TaskWhereInput = { ...baseWhere, AND: [visibilityWhere] };
+  const andFilters: Prisma.TaskWhereInput[] = [visibilityWhere];
+  const where: Prisma.TaskWhereInput = { ...baseWhere, AND: andFilters };
 
   if (normalizedFilters.status === "open") {
-    where.AND?.push({ status: "OPEN" });
+    andFilters.push({ status: "OPEN" });
   } else if (normalizedFilters.status === "done") {
-    where.AND?.push({ status: "DONE" });
+    andFilters.push({ status: "DONE" });
   }
 
   if (normalizedFilters.ownership === "mine") {
-    where.AND?.push({ ownerId: actorUserId });
+    andFilters.push({ ownerId: actorUserId });
   }
 
   if (normalizedFilters.groupId) {
-    where.AND?.push({ groupId: normalizedFilters.groupId });
+    andFilters.push({ groupId: normalizedFilters.groupId });
   }
 
   if (normalizedFilters.query) {
-    where.AND?.push({
+    andFilters.push({
       OR: [
         { title: { contains: normalizedFilters.query, mode: "insensitive" } },
         { notes: { contains: normalizedFilters.query, mode: "insensitive" } }
@@ -218,12 +219,13 @@ export async function listTasks({
   const groupRoleMap = new Map(groupMemberships.map((membership) => [membership.groupId, membership.role]));
 
   const summary = statusCounts.reduce((acc, item) => {
+    const count = item._count?._all ?? 0;
     if (item.status === "OPEN") {
-      acc.open = item._count._all;
+      acc.open = count;
     } else if (item.status === "DONE") {
-      acc.done = item._count._all;
+      acc.done = count;
     }
-    acc.total += item._count._all;
+    acc.total += count;
     return acc;
   }, { ...statusCountsDefaults });
 

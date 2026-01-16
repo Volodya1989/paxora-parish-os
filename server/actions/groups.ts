@@ -1,6 +1,7 @@
 "use server";
 
 import { getServerSession, type Session } from "next-auth";
+import { Prisma, TaskApprovalStatus, TaskVisibility } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
@@ -204,9 +205,9 @@ export async function getGroupDetail(groupId: string) {
   }
 
   const week = await getOrCreateCurrentWeek(parishId);
-  const visibilityWhere = {
+  const visibilityWhere: Prisma.TaskWhereInput = {
     OR: [
-      { visibility: "PUBLIC", approvalStatus: "APPROVED" },
+      { visibility: TaskVisibility.PUBLIC, approvalStatus: TaskApprovalStatus.APPROVED },
       { ownerId: userId },
       { createdById: userId }
     ]
