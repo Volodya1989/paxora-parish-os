@@ -69,6 +69,7 @@ model User {
   accessRequests   AccessRequest[]
   groupMemberships GroupMembership[]
   tasks            Task[] @relation("TaskOwner")
+  completedTasks   Task[] @relation("TaskCompletion")
   digestsCreated   Digest[] @relation("DigestAuthor")
   eventRsvps       EventRsvp[]
   accounts         Account[]
@@ -157,6 +158,7 @@ model Task {
   status           TaskStatus @default(OPEN)
   createdAt        DateTime   @default(now())
   completedAt      DateTime?
+  completedById    String?
   archivedAt       DateTime?
   rolledFromTaskId String?
 
@@ -164,6 +166,7 @@ model Task {
   week   Week   @relation(fields: [weekId], references: [id], onDelete: Cascade)
   group  Group? @relation(fields: [groupId], references: [id])
   owner  User   @relation("TaskOwner", fields: [ownerId], references: [id])
+  completedBy User? @relation("TaskCompletion", fields: [completedById], references: [id])
 
   @@index([weekId])
   @@index([ownerId])

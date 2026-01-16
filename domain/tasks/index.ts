@@ -11,6 +11,11 @@ type CreateTaskInput = {
   notes?: string;
 };
 
+type UpdateTaskInput = TaskActionInput & {
+  title: string;
+  notes?: string;
+};
+
 type TaskActionInput = {
   taskId: string;
   parishId: string;
@@ -103,7 +108,8 @@ export async function markTaskDone({ taskId, parishId, actorUserId }: TaskAction
     where: { id: taskId },
     data: {
       status: "DONE",
-      completedAt: new Date()
+      completedAt: new Date(),
+      completedById: actorUserId
     }
   });
 }
@@ -115,7 +121,8 @@ export async function unmarkTaskDone({ taskId, parishId, actorUserId }: TaskActi
     where: { id: taskId },
     data: {
       status: "OPEN",
-      completedAt: null
+      completedAt: null,
+      completedById: null
     }
   });
 }
@@ -150,6 +157,32 @@ export async function unarchiveTask({ taskId, parishId, actorUserId }: TaskActio
     data: {
       archivedAt: null
     }
+  });
+}
+
+export async function updateTask({
+  taskId,
+  parishId,
+  actorUserId,
+  title,
+  notes
+}: UpdateTaskInput) {
+  await assertTaskAccess({ taskId, parishId, actorUserId });
+
+  return prisma.task.update({
+    where: { id: taskId },
+    data: {
+      title,
+      notes
+    }
+  });
+}
+
+export async function deleteTask({ taskId, parishId, actorUserId }: TaskActionInput) {
+  await assertTaskOwnership({ taskId, parishId, actorUserId });
+
+  return prisma.task.delete({
+    where: { id: taskId }
   });
 }
 

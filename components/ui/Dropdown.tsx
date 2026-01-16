@@ -165,7 +165,11 @@ export function Dropdown({ children, open: openProp, onOpenChange }: DropdownPro
     [menuId, open, setOpen, triggerId]
   );
 
-  return <DropdownContext.Provider value={value}>{children}</DropdownContext.Provider>;
+  return (
+    <DropdownContext.Provider value={value}>
+      <div className="relative inline-flex">{children}</div>
+    </DropdownContext.Provider>
+  );
 }
 
 type DropdownTriggerProps = ButtonHTMLAttributes<HTMLButtonElement> & {

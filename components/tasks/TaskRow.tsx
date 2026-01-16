@@ -9,16 +9,42 @@ type TaskRowProps = {
   task: TaskListItem;
   onToggle: (taskId: string, nextStatus: "OPEN" | "DONE") => void;
   onArchive: (taskId: string) => void;
+  onEdit: (task: TaskListItem) => void;
+  onDelete: (taskId: string) => void;
   isBusy?: boolean;
 };
 
-export default function TaskRow({ task, onToggle, onArchive, isBusy = false }: TaskRowProps) {
+function formatCompletedLabel(task: TaskListItem) {
+  if (!task.completedAt || !task.completedBy) {
+    return null;
+  }
+  const date = new Date(task.completedAt).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric"
+  });
+  return `Completed ${date} by ${task.completedBy.name}`;
+}
+
+export default function TaskRow({
+  task,
+  onToggle,
+  onArchive,
+  onEdit,
+  onDelete,
+  isBusy = false
+}: TaskRowProps) {
   const isDone = task.status === "DONE";
   const nextStatus = isDone ? "OPEN" : "DONE";
   const isDisabled = !task.canManage || isBusy;
+  const completedLabel = formatCompletedLabel(task);
 
   return (
-    <div className="flex flex-col gap-4 rounded-card border border-mist-100 bg-white px-4 py-4 shadow-card sm:flex-row sm:items-start sm:justify-between">
+    <div
+      className={cn(
+        "flex flex-col gap-4 rounded-card border border-mist-100 bg-white px-4 py-4 shadow-card sm:flex-row sm:items-start sm:justify-between",
+        isDone ? "border-l-4 border-l-emerald-400" : "border-l-4 border-l-sky-400"
+      )}
+    >
       <div className="flex items-start gap-3">
         <input
           type="checkbox"
@@ -50,6 +76,9 @@ export default function TaskRow({ task, onToggle, onArchive, isBusy = false }: T
                 {task.group.name}
               </Badge>
             ) : null}
+            {completedLabel ? (
+              <span className="text-xs text-emerald-600">{completedLabel}</span>
+            ) : null}
           </div>
         </div>
       </div>
@@ -75,12 +104,31 @@ export default function TaskRow({ task, onToggle, onArchive, isBusy = false }: T
             {isDone ? "Mark open" : "Mark done"}
           </DropdownItem>
           <DropdownItem
+            onClick={() => onEdit(task)}
+            disabled={isDisabled}
+            className={cn(isDisabled && "pointer-events-none opacity-50")}
+          >
+            Edit task
+          </DropdownItem>
+          <DropdownItem
             onClick={() => onArchive(task.id)}
             disabled={isDisabled}
             className={cn(isDisabled && "pointer-events-none opacity-50 text-ink-300")}
           >
             Archive task
           </DropdownItem>
+          {task.canDelete ? (
+            <DropdownItem
+              onClick={() => onDelete(task.id)}
+              disabled={isDisabled}
+              className={cn(
+                "text-rose-600 hover:bg-rose-50 focus-visible:bg-rose-50",
+                isDisabled && "pointer-events-none opacity-50"
+              )}
+            >
+              Delete task
+            </DropdownItem>
+          ) : null}
         </DropdownMenu>
       </Dropdown>
     </div>

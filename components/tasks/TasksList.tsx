@@ -2,10 +2,12 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import TaskEditDialog from "@/components/tasks/TaskEditDialog";
 import TaskRow from "@/components/tasks/TaskRow";
 import { useToast } from "@/components/ui/Toast";
 import {
   archiveTask,
+  deleteTask,
   markTaskDone,
   unarchiveTask,
   unmarkTaskDone
@@ -20,6 +22,8 @@ export default function TasksList({ tasks }: TasksListProps) {
   const { addToast } = useToast();
   const router = useRouter();
   const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
+  const [editingTask, setEditingTask] = useState<TaskListItem | null>(null);
+  const [showCompleted, setShowCompleted] = useState(false);
   const [, startTransition] = useTransition();
 
   const { openTasks, doneTasks } = useMemo(() => {
@@ -86,6 +90,26 @@ export default function TasksList({ tasks }: TasksListProps) {
     });
   };
 
+  const handleEdit = (task: TaskListItem) => {
+    setEditingTask(task);
+  };
+
+  const handleDelete = async (taskId: string) => {
+    const confirmed = window.confirm(
+      "Delete this task? This can’t be undone."
+    );
+    if (!confirmed) {
+      return;
+    }
+    await runTaskAction(taskId, async () => {
+      await deleteTask({ taskId });
+      addToast({
+        title: "Task deleted",
+        description: "The task has been removed."
+      });
+    });
+  };
+
   return (
     <div className="space-y-6">
       {openTasks.length > 0 ? (
@@ -101,6 +125,8 @@ export default function TasksList({ tasks }: TasksListProps) {
                 task={task}
                 onToggle={handleToggle}
                 onArchive={handleArchive}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
                 isBusy={pendingTaskId === task.id}
               />
             ))}
@@ -110,23 +136,40 @@ export default function TasksList({ tasks }: TasksListProps) {
 
       {doneTasks.length > 0 ? (
         <section className="space-y-3">
-          <div className="flex items-center justify-between text-xs text-ink-400">
-            <span className="font-semibold uppercase tracking-wide text-ink-400">Done</span>
-            <span>{doneTasks.length}</span>
-          </div>
-          <div className="space-y-3">
-            {doneTasks.map((task) => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                onToggle={handleToggle}
-                onArchive={handleArchive}
-                isBusy={pendingTaskId === task.id}
-              />
-            ))}
-          </div>
+          <button
+            type="button"
+            className="text-xs font-semibold uppercase tracking-wide text-primary-700"
+            onClick={() => setShowCompleted((current) => !current)}
+          >
+            {showCompleted ? "Hide completed work" : "Show completed work"} ({doneTasks.length})
+          </button>
+          {showCompleted ? (
+            <div className="space-y-3">
+              {doneTasks.map((task) => (
+                <TaskRow
+                  key={task.id}
+                  task={task}
+                  onToggle={handleToggle}
+                  onArchive={handleArchive}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  isBusy={pendingTaskId === task.id}
+                />
+              ))}
+            </div>
+          ) : null}
         </section>
       ) : null}
+
+      <TaskEditDialog
+        open={Boolean(editingTask)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingTask(null);
+          }
+        }}
+        task={editingTask}
+      />
     </div>
   );
 }

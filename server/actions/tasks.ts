@@ -7,19 +7,23 @@ import {
   archiveTask as archiveTaskDomain,
   createTask as createTaskDomain,
   deferTask as deferTaskDomain,
+  deleteTask as deleteTaskDomain,
   markTaskDone as markTaskDoneDomain,
   rolloverOpenTasks,
   unarchiveTask as unarchiveTaskDomain,
-  unmarkTaskDone as unmarkTaskDoneDomain
+  unmarkTaskDone as unmarkTaskDoneDomain,
+  updateTask as updateTaskDomain
 } from "@/domain/tasks";
 import {
   archiveTaskSchema,
   createTaskSchema,
   deferTaskSchema,
+  deleteTaskSchema,
   markTaskDoneSchema,
   rolloverTasksSchema,
   unarchiveTaskSchema,
-  unmarkTaskDoneSchema
+  unmarkTaskDoneSchema,
+  updateTaskSchema
 } from "@/lib/validation/tasks";
 import type { TaskActionState } from "@/server/actions/taskState";
 
@@ -118,6 +122,60 @@ export async function archiveTask({ taskId }: { taskId: string }) {
   }
 
   await archiveTaskDomain({
+    taskId: parsed.data.taskId,
+    parishId,
+    actorUserId: userId
+  });
+
+  revalidatePath("/tasks");
+  revalidatePath("/this-week");
+}
+
+export async function updateTask(
+  _: TaskActionState,
+  formData: FormData
+): Promise<TaskActionState> {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  const parsed = updateTaskSchema.safeParse({
+    taskId: formData.get("taskId"),
+    title: formData.get("title"),
+    notes: formData.get("notes")
+  });
+
+  if (!parsed.success) {
+    return {
+      status: "error",
+      message: parsed.error.errors[0]?.message ?? "Invalid input"
+    };
+  }
+
+  await updateTaskDomain({
+    taskId: parsed.data.taskId,
+    parishId,
+    actorUserId: userId,
+    title: parsed.data.title,
+    notes: parsed.data.notes
+  });
+
+  revalidatePath("/tasks");
+  revalidatePath("/this-week");
+
+  return { status: "success" };
+}
+
+export async function deleteTask({ taskId }: { taskId: string }) {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  const parsed = deleteTaskSchema.safeParse({ taskId });
+
+  if (!parsed.success) {
+    throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
+  }
+
+  await deleteTaskDomain({
     taskId: parsed.data.taskId,
     parishId,
     actorUserId: userId

@@ -10,6 +10,8 @@ const baseTask: TaskListItem = {
   title: "Prepare worship guide",
   notes: "Finalize readings and hymns.",
   status: "OPEN",
+  completedAt: null,
+  completedBy: null,
   owner: {
     id: "user-1",
     name: "Alex Kim",
@@ -19,7 +21,8 @@ const baseTask: TaskListItem = {
     id: "group-1",
     name: "Liturgy"
   },
-  canManage: true
+  canManage: true,
+  canDelete: true
 };
 
 function findElementByType(
@@ -51,7 +54,9 @@ test("TaskRow renders key elements", () => {
     createElement(TaskRow, {
       task: baseTask,
       onToggle: () => undefined,
-      onArchive: () => undefined
+      onArchive: () => undefined,
+      onEdit: () => undefined,
+      onDelete: () => undefined
     })
   );
 
@@ -69,7 +74,9 @@ test("TaskRow toggle calls handler", () => {
       called = true;
       assert.equal(nextStatus, "DONE");
     },
-    onArchive: () => undefined
+    onArchive: () => undefined,
+    onEdit: () => undefined,
+    onDelete: () => undefined
   }) as ReactElement;
 
   const checkbox = findElementByType(element, "input");
