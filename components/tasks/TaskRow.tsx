@@ -37,6 +37,14 @@ export default function TaskRow({
   const nextStatus = isDone ? "OPEN" : "DONE";
   const isDisabled = !task.canManage || isBusy;
   const completedLabel = formatCompletedLabel(task);
+  const approvalLabel =
+    task.approvalStatus === "PENDING"
+      ? "Pending"
+      : task.approvalStatus === "REJECTED"
+        ? "Rejected"
+        : "Approved";
+  const approvalTone = task.approvalStatus === "APPROVED" ? "success" : "warning";
+  const visibilityLabel = task.visibility === "PUBLIC" ? "Public" : "Private";
 
   return (
     <div
@@ -64,6 +72,28 @@ export default function TaskRow({
           <div className="flex flex-wrap items-center gap-2 text-xs text-ink-500">
             <Badge tone={isDone ? "success" : "neutral"}>
               {isDone ? "Done" : "Open"}
+            </Badge>
+            {task.visibility === "PUBLIC" ? (
+              <Badge
+                tone={approvalTone}
+                className={
+                  task.approvalStatus === "REJECTED"
+                    ? "bg-rose-50 text-rose-700"
+                    : undefined
+                }
+              >
+                {approvalLabel}
+              </Badge>
+            ) : null}
+            <Badge
+              tone="neutral"
+              className={
+                task.visibility === "PUBLIC"
+                  ? "bg-sky-50 text-sky-700"
+                  : "bg-slate-100 text-slate-700"
+              }
+            >
+              {visibilityLabel}
             </Badge>
             <span className="flex items-center gap-2">
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-mist-100 text-[11px] font-semibold text-ink-700">

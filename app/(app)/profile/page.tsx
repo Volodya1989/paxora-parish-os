@@ -5,7 +5,7 @@ import Card, { CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { authOptions } from "@/server/auth/options";
 import { getProfileSettings } from "@/lib/queries/profile";
 import { getPendingAccessRequests } from "@/lib/queries/access";
-import { approveParishAccess } from "@/app/actions/access";
+import { approveParishAccess, rejectParishAccess } from "@/app/actions/access";
 import ProfileCard from "@/components/profile/ProfileCard";
 import ProfileSettings from "@/components/profile/ProfileSettings";
 
@@ -57,14 +57,34 @@ export default async function ProfilePage() {
                 <div className="text-xs text-ink-400">
                   Requested {request.requestedAt.toLocaleDateString()}
                 </div>
-                <form action={approveParishAccess}>
-                  <input type="hidden" name="parishId" value={request.parishId} />
-                  <input type="hidden" name="userId" value={request.userId} />
-                  <input type="hidden" name="role" value="MEMBER" />
-                  <Button type="submit" size="sm">
-                    Approve
-                  </Button>
-                </form>
+                <div className="flex flex-wrap items-center gap-2">
+                  <form className="flex items-center gap-2" action={approveParishAccess}>
+                    <input type="hidden" name="parishId" value={request.parishId} />
+                    <input type="hidden" name="userId" value={request.userId} />
+                    <select
+                      name="role"
+                      defaultValue=""
+                      required
+                      className="w-[160px] rounded-button border border-mist-200 bg-white px-3 py-2 text-sm text-ink-700 shadow-card transition focus-ring"
+                    >
+                      <option value="" disabled>
+                        Select role
+                      </option>
+                      <option value="MEMBER">Member</option>
+                      <option value="ADMIN">Admin</option>
+                    </select>
+                    <Button type="submit" size="sm">
+                      Approve
+                    </Button>
+                  </form>
+                  <form action={rejectParishAccess}>
+                    <input type="hidden" name="parishId" value={request.parishId} />
+                    <input type="hidden" name="userId" value={request.userId} />
+                    <Button type="submit" size="sm" variant="secondary">
+                      Reject
+                    </Button>
+                  </form>
+                </div>
               </div>
             ))}
           </CardContent>

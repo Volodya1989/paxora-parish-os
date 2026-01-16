@@ -17,11 +17,12 @@ type GroupDetailPageProps = {
 export default async function GroupDetailPage({ params }: GroupDetailPageProps) {
   const session = await getServerSession(authOptions);
 
-  if (!session?.user?.activeParishId) {
+  if (!session?.user?.id || !session.user.activeParishId) {
     throw new Error("Unauthorized");
   }
 
   const parishId = session.user.activeParishId;
+  const actorUserId = session.user.id;
   const week = await getOrCreateCurrentWeek(parishId);
   const group = await prisma.group.findFirst({
     where: {
@@ -61,7 +62,17 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
     where: {
       parishId,
       groupId: group.id,
-      weekId: week.id
+      weekId: week.id,
+      archivedAt: null,
+      AND: [
+        {
+          OR: [
+            { visibility: "PUBLIC", approvalStatus: "APPROVED" },
+            { ownerId: actorUserId },
+            { createdById: actorUserId }
+          ]
+        }
+      ]
     },
     orderBy: {
       createdAt: "asc"

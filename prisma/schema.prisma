@@ -23,6 +23,17 @@ enum TaskStatus {
   DONE
 }
 
+enum TaskVisibility {
+  PRIVATE
+  PUBLIC
+}
+
+enum TaskApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum DigestStatus {
   DRAFT
   PUBLISHED
@@ -37,6 +48,7 @@ enum EventRsvpResponse {
 enum AccessRequestStatus {
   PENDING
   APPROVED
+  REJECTED
 }
 
 model Parish {
@@ -69,6 +81,7 @@ model User {
   accessRequests   AccessRequest[]
   groupMemberships GroupMembership[]
   tasks            Task[] @relation("TaskOwner")
+  createdTasks     Task[] @relation("TaskCreator")
   completedTasks   Task[] @relation("TaskCompletion")
   digestsCreated   Digest[] @relation("DigestAuthor")
   eventRsvps       EventRsvp[]
@@ -153,9 +166,12 @@ model Task {
   weekId           String
   groupId          String?
   ownerId          String
+  createdById      String
   title            String
   notes            String?
   status           TaskStatus @default(OPEN)
+  visibility       TaskVisibility @default(PUBLIC)
+  approvalStatus   TaskApprovalStatus @default(APPROVED)
   createdAt        DateTime   @default(now())
   completedAt      DateTime?
   completedById    String?
@@ -166,10 +182,12 @@ model Task {
   week   Week   @relation(fields: [weekId], references: [id], onDelete: Cascade)
   group  Group? @relation(fields: [groupId], references: [id])
   owner  User   @relation("TaskOwner", fields: [ownerId], references: [id])
+  createdBy User @relation("TaskCreator", fields: [createdById], references: [id])
   completedBy User? @relation("TaskCompletion", fields: [completedById], references: [id])
 
   @@index([weekId])
   @@index([ownerId])
+  @@index([createdById])
   @@index([groupId])
   @@index([parishId, weekId])
 }

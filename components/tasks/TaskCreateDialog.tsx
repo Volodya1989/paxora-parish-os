@@ -1,12 +1,12 @@
 "use client";
 
-import { useActionState, useEffect, useId, useRef, useTransition, type RefObject } from "react";
+import { useActionState, useEffect, useId, useRef, useState, useTransition, type RefObject } from "react";
 import { useRouter } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Label from "@/components/ui/Label";
-import Select from "@/components/ui/Select";
+import SelectMenu from "@/components/ui/SelectMenu";
 import Textarea from "@/components/ui/Textarea";
 import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
@@ -41,6 +41,7 @@ export default function TaskCreateDialog({
     initialTaskActionState
   );
   const handledSuccess = useRef(false);
+  const [formResetKey, setFormResetKey] = useState(0);
   const [, startTransition] = useTransition();
   const modalFormRef = useRef<HTMLFormElement>(null);
   const drawerFormRef = useRef<HTMLFormElement>(null);
@@ -50,6 +51,7 @@ export default function TaskCreateDialog({
   const notesId = useId();
   const groupId = useId();
   const ownerId = useId();
+  const visibilityId = useId();
 
   useEffect(() => {
     if (state.status !== "success") {
@@ -64,9 +66,10 @@ export default function TaskCreateDialog({
     handledSuccess.current = true;
     modalFormRef.current?.reset();
     drawerFormRef.current?.reset();
+    setFormResetKey((prev) => prev + 1);
     addToast({
-      title: "Task created",
-      description: "Your task is ready for the team."
+      title: "Task saved",
+      description: state.message ?? "Your task is ready for the team."
     });
     onOpenChange(false);
     startTransition(() => {
@@ -75,7 +78,13 @@ export default function TaskCreateDialog({
   }, [addToast, onOpenChange, router, startTransition, state.status]);
 
   const renderForm = (formId: string, ref: RefObject<HTMLFormElement>) => (
-    <form ref={ref} id={formId} className="space-y-4" action={formAction}>
+    <form
+      key={`${formId}-${formResetKey}`}
+      ref={ref}
+      id={formId}
+      className="space-y-4"
+      action={formAction}
+    >
       <input type="hidden" name="weekId" value={weekId} />
       <div className="space-y-2">
         <Label htmlFor={titleId}>Title</Label>
@@ -90,28 +99,46 @@ export default function TaskCreateDialog({
           rows={4}
         />
       </div>
+      <div className="space-y-2">
+        <Label htmlFor={visibilityId}>Visibility</Label>
+        <SelectMenu
+          id={visibilityId}
+          name="visibility"
+          defaultValue="public"
+          options={[
+            { value: "public", label: "Public (shared with the parish)" },
+            { value: "private", label: "Private (just you + assignee)" }
+          ]}
+        />
+        <p className="text-xs text-ink-400">
+          Public tasks created by members require approval before they appear for everyone.
+        </p>
+      </div>
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor={groupId}>Group</Label>
-          <Select id={groupId} name="groupId" defaultValue="">
-            <option value="">No group</option>
-            {groupOptions.map((group) => (
-              <option key={group.id} value={group.id}>
-                {group.name}
-              </option>
-            ))}
-          </Select>
+          <SelectMenu
+            id={groupId}
+            name="groupId"
+            defaultValue=""
+            placeholder="No group"
+            options={[
+              { value: "", label: "No group" },
+              ...groupOptions.map((group) => ({ value: group.id, label: group.name }))
+            ]}
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor={ownerId}>Assignee</Label>
-          <Select id={ownerId} name="ownerId" defaultValue={currentUserId}>
-            {memberOptions.map((member) => (
-              <option key={member.id} value={member.id}>
-                {member.name}
-                {member.id === currentUserId ? " (You)" : ""}
-              </option>
-            ))}
-          </Select>
+          <SelectMenu
+            id={ownerId}
+            name="ownerId"
+            defaultValue={currentUserId}
+            options={memberOptions.map((member) => ({
+              value: member.id,
+              label: `${member.name}${member.id === currentUserId ? " (You)" : ""}`
+            }))}
+          />
         </div>
       </div>
 

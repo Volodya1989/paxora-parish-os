@@ -10,6 +10,8 @@ const baseTask: TaskListItem = {
   title: "Prepare worship guide",
   notes: "Finalize readings and hymns.",
   status: "OPEN",
+  visibility: "PUBLIC",
+  approvalStatus: "APPROVED",
   completedAt: null,
   completedBy: null,
   owner: {

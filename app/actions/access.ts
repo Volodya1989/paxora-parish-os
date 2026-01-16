@@ -60,7 +60,15 @@ export async function requestParishAccess(formData: FormData) {
 type ApproveAccessInput = {
   parishId: string;
   userId: string;
-  role?: ParishRole;
+  role: ParishRole;
+};
+
+const parseRole = (value: string | null): ParishRole => {
+  const normalized = (value ?? "").trim().toUpperCase();
+  if (normalized === "ADMIN" || normalized === "MEMBER") {
+    return normalized as ParishRole;
+  }
+  throw new Error("Role is required for approval");
 };
 
 const parseApproveInput = (input: FormData | ApproveAccessInput): ApproveAccessInput => {
@@ -68,7 +76,7 @@ const parseApproveInput = (input: FormData | ApproveAccessInput): ApproveAccessI
     return {
       parishId: String(input.get("parishId") ?? "").trim(),
       userId: String(input.get("userId") ?? "").trim(),
-      role: (String(input.get("role") ?? "MEMBER").trim() || "MEMBER") as ParishRole
+      role: parseRole(String(input.get("role") ?? ""))
     };
   }
 
@@ -77,7 +85,7 @@ const parseApproveInput = (input: FormData | ApproveAccessInput): ApproveAccessI
 
 export async function approveParishAccess(input: FormData | ApproveAccessInput) {
   const session = await assertSession();
-  const { parishId, userId, role = "MEMBER" } = parseApproveInput(input);
+  const { parishId, userId, role } = parseApproveInput(input);
 
   if (!parishId || !userId) {
     throw new Error("Missing approval details");
@@ -126,4 +134,58 @@ export async function approveParishAccess(input: FormData | ApproveAccessInput) 
 
   revalidatePath("/access");
   revalidatePath("/profile");
+  revalidatePath("/tasks");
+}
+
+type RejectAccessInput = {
+  parishId: string;
+  userId: string;
+};
+
+const parseRejectInput = (input: FormData | RejectAccessInput): RejectAccessInput => {
+  if (input instanceof FormData) {
+    return {
+      parishId: String(input.get("parishId") ?? "").trim(),
+      userId: String(input.get("userId") ?? "").trim()
+    };
+  }
+
+  return input;
+};
+
+export async function rejectParishAccess(input: FormData | RejectAccessInput) {
+  const session = await assertSession();
+  const { parishId, userId } = parseRejectInput(input);
+
+  if (!parishId || !userId) {
+    throw new Error("Missing rejection details");
+  }
+
+  const approverMembership = await prisma.membership.findUnique({
+    where: {
+      parishId_userId: {
+        parishId,
+        userId: session.user.id
+      }
+    },
+    select: { role: true }
+  });
+
+  if (!approverMembership || !["ADMIN", "SHEPHERD"].includes(approverMembership.role)) {
+    throw new Error("Unauthorized");
+  }
+
+  await prisma.accessRequest.updateMany({
+    where: {
+      parishId,
+      userId
+    },
+    data: {
+      status: "REJECTED"
+    }
+  });
+
+  revalidatePath("/access");
+  revalidatePath("/profile");
+  revalidatePath("/tasks");
 }

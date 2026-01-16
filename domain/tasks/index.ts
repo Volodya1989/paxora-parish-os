@@ -6,9 +6,12 @@ type CreateTaskInput = {
   parishId: string;
   weekId: string;
   ownerId: string;
+  createdById: string;
   groupId?: string;
   title: string;
   notes?: string;
+  visibility: "PRIVATE" | "PUBLIC";
+  approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
 };
 
 type UpdateTaskInput = TaskActionInput & {
@@ -36,18 +39,24 @@ export async function createTask({
   parishId,
   weekId,
   ownerId,
+  createdById,
   groupId,
   title,
-  notes
+  notes,
+  visibility,
+  approvalStatus
 }: CreateTaskInput) {
   return prisma.task.create({
     data: {
       parishId,
       weekId,
       ownerId,
+      createdById,
       groupId,
       title,
-      notes
+      notes,
+      visibility,
+      approvalStatus
     }
   });
 }
@@ -55,14 +64,14 @@ export async function createTask({
 async function assertTaskOwnership({ taskId, parishId, actorUserId }: TaskActionInput) {
   const task = await prisma.task.findUnique({
     where: { id: taskId },
-    select: { id: true, ownerId: true, parishId: true }
+    select: { id: true, ownerId: true, createdById: true, parishId: true }
   });
 
   if (!task || task.parishId !== parishId) {
     throw new Error("Task not found");
   }
 
-  if (task.ownerId !== actorUserId) {
+  if (task.ownerId !== actorUserId && task.createdById !== actorUserId) {
     throw new Error("Forbidden");
   }
 
@@ -72,15 +81,31 @@ async function assertTaskOwnership({ taskId, parishId, actorUserId }: TaskAction
 async function assertTaskAccess({ taskId, parishId, actorUserId }: TaskActionInput) {
   const task = await prisma.task.findUnique({
     where: { id: taskId },
-    select: { id: true, ownerId: true, parishId: true, groupId: true }
+    select: {
+      id: true,
+      ownerId: true,
+      createdById: true,
+      parishId: true,
+      groupId: true,
+      visibility: true,
+      approvalStatus: true
+    }
   });
 
   if (!task || task.parishId !== parishId) {
     throw new Error("Task not found");
   }
 
-  if (task.ownerId === actorUserId) {
+  if (task.ownerId === actorUserId || task.createdById === actorUserId) {
     return task;
+  }
+
+  if (task.visibility === "PRIVATE") {
+    throw new Error("Forbidden");
+  }
+
+  if (task.approvalStatus !== "APPROVED") {
+    throw new Error("Forbidden");
   }
 
   const parishMembership = await getParishMembership(parishId, actorUserId);
@@ -199,7 +224,10 @@ export async function rolloverOpenTasks({ parishId, fromWeekId, toWeekId }: Roll
       title: true,
       notes: true,
       ownerId: true,
-      groupId: true
+      createdById: true,
+      groupId: true,
+      visibility: true,
+      approvalStatus: true
     }
   });
 
@@ -226,9 +254,12 @@ export async function rolloverOpenTasks({ parishId, fromWeekId, toWeekId }: Roll
       parishId,
       weekId: toWeekId,
       ownerId: task.ownerId,
+      createdById: task.createdById,
       title: task.title,
       notes: task.notes ?? undefined,
       groupId: task.groupId ?? undefined,
+      visibility: task.visibility,
+      approvalStatus: task.approvalStatus,
       rolledFromTaskId: task.id
     }));
 

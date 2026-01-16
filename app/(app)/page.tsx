@@ -5,6 +5,8 @@ import QuickActions from "@/components/home/quick-actions";
 import RecentUpdates from "@/components/home/recent-updates";
 import CommunityPreview from "@/components/home/community-preview";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const now = getNow();
   const [summary, rooms] = await Promise.all([

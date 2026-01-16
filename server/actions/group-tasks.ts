@@ -4,6 +4,7 @@ import { getServerSession, type Session } from "next-auth";
 import { revalidatePath } from "next/cache";
 import { authOptions } from "@/server/auth/options";
 import { createTask as createTaskDomain } from "@/domain/tasks";
+import { isParishLeader } from "@/lib/permissions";
 import { createGroupTaskSchema } from "@/lib/validation/tasks";
 import { prisma } from "@/server/db/prisma";
 
@@ -41,13 +42,33 @@ export async function createGroupTask(formData: FormData) {
     throw new Error("Group not found");
   }
 
+  const membership = await prisma.membership.findUnique({
+    where: {
+      parishId_userId: {
+        parishId,
+        userId
+      }
+    },
+    select: { role: true }
+  });
+
+  if (!membership) {
+    throw new Error("Unauthorized");
+  }
+
+  const visibility = "PUBLIC";
+  const approvalStatus = isParishLeader(membership.role) ? "APPROVED" : "PENDING";
+
   await createTaskDomain({
     parishId,
     weekId: parsed.data.weekId,
     ownerId: userId,
+    createdById: userId,
     groupId: parsed.data.groupId,
     title: parsed.data.title,
-    notes: parsed.data.notes
+    notes: parsed.data.notes,
+    visibility,
+    approvalStatus
   });
 
   revalidatePath(`/groups/${parsed.data.groupId}`);

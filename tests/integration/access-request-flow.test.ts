@@ -71,6 +71,21 @@ test.skip("request access and approve flow", async () => {
       activeParishId: parish.id
     }
   });
+  const approver = await prisma.user.create({
+    data: {
+      email: "leader@example.com",
+      name: "Leader",
+      passwordHash: "hashed",
+      activeParishId: parish.id
+    }
+  });
+  await prisma.membership.create({
+    data: {
+      parishId: parish.id,
+      userId: approver.id,
+      role: "SHEPHERD"
+    }
+  });
 
   session.user.id = user.id;
   session.user.activeParishId = parish.id;
@@ -92,7 +107,14 @@ test.skip("request access and approve flow", async () => {
   assert.ok(pendingRequest);
   assert.equal(pendingRequest?.status, "PENDING");
 
-  await actions.approveParishAccess({ parishId: parish.id, userId: user.id });
+  session.user.id = approver.id;
+  session.user.activeParishId = parish.id;
+
+  await actions.approveParishAccess({
+    parishId: parish.id,
+    userId: user.id,
+    role: "MEMBER"
+  });
 
   const membership = await prisma.membership.findUnique({
     where: {
