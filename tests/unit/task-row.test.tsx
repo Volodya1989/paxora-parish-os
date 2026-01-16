@@ -9,6 +9,7 @@ const baseTask: TaskListItem = {
   id: "task-1",
   title: "Prepare worship guide",
   notes: "Finalize readings and hymns.",
+  estimatedHours: 3,
   status: "OPEN",
   visibility: "PUBLIC",
   approvalStatus: "APPROVED",

@@ -85,16 +85,18 @@ export function Sidebar({
               title={isCollapsed ? item.label : undefined}
               className={`group relative flex items-center gap-3 rounded-card px-3 py-2 text-sm font-medium transition focus-ring ${
                 isActive
-                  ? "bg-primary-50 text-primary-800"
+                  ? "bg-emerald-50 text-emerald-900"
                   : "text-ink-700 hover:bg-mist-50"
               } ${item.primary ? "border border-primary-100 text-ink-900" : ""}`}
             >
               {isActive ? (
-                <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-primary-600" />
+                <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-emerald-500/60" />
               ) : null}
               <span
-                className={`flex h-8 w-8 items-center justify-center rounded-full border border-mist-200 text-xs font-semibold ${
-                  item.primary ? "bg-primary-100 text-primary-700" : "bg-mist-100 text-ink-700"
+                className={`flex h-8 w-8 items-center justify-center rounded-full border text-xs font-semibold ${
+                  isActive
+                    ? "border-emerald-200 bg-emerald-100 text-emerald-700"
+                    : "border-mist-200 bg-mist-100 text-ink-700"
                 }`}
                 aria-hidden="true"
               >

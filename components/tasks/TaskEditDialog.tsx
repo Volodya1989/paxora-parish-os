@@ -6,6 +6,7 @@ import { useFormStatus } from "react-dom";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Label from "@/components/ui/Label";
+import SelectMenu from "@/components/ui/SelectMenu";
 import Textarea from "@/components/ui/Textarea";
 import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
@@ -21,9 +22,19 @@ type TaskEditDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   task: TaskListItem | null;
+  groupOptions: Array<{ id: string; name: string }>;
+  memberOptions: Array<{ id: string; name: string }>;
+  currentUserId: string;
 };
 
-export default function TaskEditDialog({ open, onOpenChange, task }: TaskEditDialogProps) {
+export default function TaskEditDialog({
+  open,
+  onOpenChange,
+  task,
+  groupOptions,
+  memberOptions,
+  currentUserId
+}: TaskEditDialogProps) {
   const { addToast } = useToast();
   const router = useRouter();
   const [state, formAction] = useActionState<TaskActionState, FormData>(
@@ -36,6 +47,10 @@ export default function TaskEditDialog({ open, onOpenChange, task }: TaskEditDia
   const drawerFormRef = useRef<HTMLFormElement>(null);
   const titleId = useId();
   const notesId = useId();
+  const estimatedHoursId = useId();
+  const visibilityId = useId();
+  const groupId = useId();
+  const ownerId = useId();
 
   useEffect(() => {
     if (state.status !== "success") {
@@ -87,6 +102,60 @@ export default function TaskEditDialog({ open, onOpenChange, task }: TaskEditDia
           rows={4}
           defaultValue={task?.notes ?? ""}
         />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={estimatedHoursId}>Estimated hours (optional)</Label>
+        <Input
+          id={estimatedHoursId}
+          name="estimatedHours"
+          type="number"
+          min={0}
+          step="0.25"
+          placeholder="e.g. 2"
+          defaultValue={task?.estimatedHours ?? ""}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={visibilityId}>Visibility</Label>
+        <SelectMenu
+          id={visibilityId}
+          name="visibility"
+          defaultValue={task?.visibility === "PRIVATE" ? "private" : "public"}
+          options={[
+            { value: "public", label: "Public (shared with the parish)" },
+            { value: "private", label: "Private (just you + assignee)" }
+          ]}
+        />
+        <p className="text-xs text-ink-400">
+          Public tasks created by members require approval before they appear for everyone.
+        </p>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor={groupId}>Group</Label>
+          <SelectMenu
+            id={groupId}
+            name="groupId"
+            defaultValue={task?.group?.id ?? ""}
+            placeholder="No group"
+            options={[
+              { value: "", label: "No group" },
+              ...groupOptions.map((group) => ({ value: group.id, label: group.name }))
+            ]}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={ownerId}>Assignee</Label>
+          <SelectMenu
+            id={ownerId}
+            name="ownerId"
+            defaultValue={task?.owner.id ?? currentUserId}
+            options={memberOptions.map((member) => ({
+              value: member.id,
+              label: `${member.name}${member.id === currentUserId ? " (You)" : ""}`
+            }))}
+          />
+        </div>
       </div>
 
       {state.status === "error" ? (

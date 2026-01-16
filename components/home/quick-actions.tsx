@@ -27,8 +27,9 @@ export default function QuickActions() {
             <Link
               key={action.title}
               href={action.href}
-              className="flex items-start justify-between gap-3 rounded-card border border-mist-200 bg-white px-4 py-3 text-left transition hover:border-mist-100 hover:bg-mist-50 focus-ring"
+              className="group relative flex items-start justify-between gap-3 overflow-hidden rounded-card border border-mist-200 bg-white px-4 py-3 text-left transition hover:border-emerald-100 hover:bg-emerald-50/40 focus-ring"
             >
+              <span className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-emerald-500/40 opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100" />
               <div className="space-y-1">
                 <p className="text-sm font-semibold text-ink-900">{action.title}</p>
                 <p className="text-xs text-ink-500">{action.description}</p>

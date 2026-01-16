@@ -169,6 +169,7 @@ model Task {
   createdById      String
   title            String
   notes            String?
+  estimatedHours   Float?
   status           TaskStatus @default(OPEN)
   visibility       TaskVisibility @default(PUBLIC)
   approvalStatus   TaskApprovalStatus @default(APPROVED)

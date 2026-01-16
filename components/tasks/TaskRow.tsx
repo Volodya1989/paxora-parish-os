@@ -25,6 +25,16 @@ function formatCompletedLabel(task: TaskListItem) {
   return `Completed ${date} by ${task.completedBy.name}`;
 }
 
+function formatEstimatedHours(task: TaskListItem) {
+  if (task.estimatedHours === null || task.estimatedHours === undefined) {
+    return null;
+  }
+  const hours = Number.isInteger(task.estimatedHours)
+    ? task.estimatedHours.toString()
+    : task.estimatedHours.toFixed(2).replace(/\.?0+$/, "");
+  return `Est. ${hours} hr${hours === "1" ? "" : "s"}`;
+}
+
 export default function TaskRow({
   task,
   onToggle,
@@ -45,6 +55,7 @@ export default function TaskRow({
         : "Approved";
   const approvalTone = task.approvalStatus === "APPROVED" ? "success" : "warning";
   const visibilityLabel = task.visibility === "PUBLIC" ? "Public" : "Private";
+  const estimatedHoursLabel = formatEstimatedHours(task);
 
   return (
     <div
@@ -104,6 +115,11 @@ export default function TaskRow({
             {task.group ? (
               <Badge tone="warning" className="bg-indigo-50 text-indigo-700">
                 {task.group.name}
+              </Badge>
+            ) : null}
+            {estimatedHoursLabel ? (
+              <Badge tone="neutral" className="bg-amber-50 text-amber-700">
+                {estimatedHoursLabel}
               </Badge>
             ) : null}
             {completedLabel ? (

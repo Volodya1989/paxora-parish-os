@@ -22,9 +22,25 @@ const optionalId = z.preprocess(
   z.string().min(1).optional()
 );
 
+const optionalHours = z.preprocess(
+  (value) => {
+    if (typeof value !== "string") {
+      return value;
+    }
+    const trimmed = value.trim();
+    if (trimmed.length === 0) {
+      return undefined;
+    }
+    const parsed = Number(trimmed);
+    return Number.isNaN(parsed) ? value : parsed;
+  },
+  z.number().min(0, "Estimated hours must be 0 or more").optional()
+);
+
 export const createTaskSchema = z.object({
   title: z.string().trim().min(1, "Title is required"),
   notes: optionalTrimmedText,
+  estimatedHours: optionalHours,
   weekId: z.string().min(1),
   groupId: optionalId,
   ownerId: optionalId,
@@ -51,7 +67,11 @@ export const unarchiveTaskSchema = markTaskDoneSchema;
 export const updateTaskSchema = z.object({
   taskId: z.string().min(1),
   title: z.string().trim().min(1, "Title is required"),
-  notes: optionalTrimmedText
+  notes: optionalTrimmedText,
+  estimatedHours: optionalHours,
+  groupId: optionalId,
+  ownerId: optionalId,
+  visibility: z.enum(["public", "private"])
 });
 
 export const deleteTaskSchema = markTaskDoneSchema;

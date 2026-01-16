@@ -18,6 +18,7 @@ export type TaskListItem = {
   id: string;
   title: string;
   notes: string | null;
+  estimatedHours: number | null;
   status: "OPEN" | "DONE";
   visibility: "PRIVATE" | "PUBLIC";
   approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
@@ -153,6 +154,7 @@ export async function listTasks({
         id: true,
         title: true,
         notes: true,
+        estimatedHours: true,
         status: true,
         visibility: true,
         approvalStatus: true,
@@ -248,6 +250,7 @@ export async function listTasks({
       id: task.id,
       title: task.title,
       notes: task.notes ?? null,
+      estimatedHours: task.estimatedHours ?? null,
       status: task.status,
       visibility: task.visibility,
       approvalStatus: task.approvalStatus,

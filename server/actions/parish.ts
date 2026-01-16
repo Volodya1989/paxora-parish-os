@@ -27,7 +27,7 @@ export async function createParish() {
     data: {
       parishId: parish.id,
       userId: session.user.id,
-      role: "ADMIN"
+      role: "SHEPHERD"
     }
   });
 

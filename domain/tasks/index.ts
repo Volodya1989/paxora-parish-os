@@ -1,4 +1,4 @@
-import { canManageGroupMembership } from "@/lib/permissions";
+import { canManageGroupMembership, isParishLeader } from "@/lib/permissions";
 import { getGroupMembership, getParishMembership } from "@/server/db/groups";
 import { prisma } from "@/server/db/prisma";
 
@@ -10,6 +10,7 @@ type CreateTaskInput = {
   groupId?: string;
   title: string;
   notes?: string;
+  estimatedHours?: number;
   visibility: "PRIVATE" | "PUBLIC";
   approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
 };
@@ -17,6 +18,10 @@ type CreateTaskInput = {
 type UpdateTaskInput = TaskActionInput & {
   title: string;
   notes?: string;
+  estimatedHours?: number;
+  groupId?: string;
+  ownerId?: string;
+  visibility?: "PRIVATE" | "PUBLIC";
 };
 
 type TaskActionInput = {
@@ -43,6 +48,7 @@ export async function createTask({
   groupId,
   title,
   notes,
+  estimatedHours,
   visibility,
   approvalStatus
 }: CreateTaskInput) {
@@ -55,6 +61,7 @@ export async function createTask({
       groupId,
       title,
       notes,
+      estimatedHours,
       visibility,
       approvalStatus
     }
@@ -190,15 +197,35 @@ export async function updateTask({
   parishId,
   actorUserId,
   title,
-  notes
+  notes,
+  estimatedHours,
+  groupId,
+  ownerId,
+  visibility
 }: UpdateTaskInput) {
-  await assertTaskAccess({ taskId, parishId, actorUserId });
+  const task = await assertTaskAccess({ taskId, parishId, actorUserId });
+  const nextVisibility = visibility ?? task.visibility;
+  let approvalStatus = task.approvalStatus;
+
+  if (nextVisibility !== task.visibility) {
+    if (nextVisibility === "PRIVATE") {
+      approvalStatus = "APPROVED";
+    } else {
+      const membership = await getParishMembership(parishId, actorUserId);
+      approvalStatus = membership && isParishLeader(membership.role) ? "APPROVED" : "PENDING";
+    }
+  }
 
   return prisma.task.update({
     where: { id: taskId },
     data: {
       title,
-      notes
+      notes,
+      estimatedHours,
+      groupId,
+      ownerId,
+      visibility: nextVisibility,
+      approvalStatus
     }
   });
 }
@@ -226,6 +253,7 @@ export async function rolloverOpenTasks({ parishId, fromWeekId, toWeekId }: Roll
       ownerId: true,
       createdById: true,
       groupId: true,
+      estimatedHours: true,
       visibility: true,
       approvalStatus: true
     }
@@ -257,6 +285,7 @@ export async function rolloverOpenTasks({ parishId, fromWeekId, toWeekId }: Roll
       createdById: task.createdById,
       title: task.title,
       notes: task.notes ?? undefined,
+      estimatedHours: task.estimatedHours ?? undefined,
       groupId: task.groupId ?? undefined,
       visibility: task.visibility,
       approvalStatus: task.approvalStatus,

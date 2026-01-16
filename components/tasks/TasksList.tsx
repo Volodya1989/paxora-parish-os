@@ -16,9 +16,17 @@ import type { TaskListItem } from "@/lib/queries/tasks";
 
 type TasksListProps = {
   tasks: TaskListItem[];
+  groupOptions: Array<{ id: string; name: string }>;
+  memberOptions: Array<{ id: string; name: string }>;
+  currentUserId: string;
 };
 
-export default function TasksList({ tasks }: TasksListProps) {
+export default function TasksList({
+  tasks,
+  groupOptions,
+  memberOptions,
+  currentUserId
+}: TasksListProps) {
   const { addToast } = useToast();
   const router = useRouter();
   const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
@@ -169,6 +177,9 @@ export default function TasksList({ tasks }: TasksListProps) {
           }
         }}
         task={editingTask}
+        groupOptions={groupOptions}
+        memberOptions={memberOptions}
+        currentUserId={currentUserId}
       />
     </div>
   );

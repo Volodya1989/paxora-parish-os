@@ -16,7 +16,8 @@ export default function ProgressRing({ percent }: ProgressRingProps) {
     <div className="relative flex h-14 w-14 items-center justify-center" aria-label="Week completion">
       <svg height={radius * 2} width={radius * 2} className="-rotate-90">
         <circle
-          stroke="#e7e5e4"
+          className="text-emerald-100"
+          stroke="currentColor"
           fill="transparent"
           strokeWidth={stroke}
           r={normalizedRadius}
@@ -24,7 +25,8 @@ export default function ProgressRing({ percent }: ProgressRingProps) {
           cy={radius}
         />
         <circle
-          stroke="#10b981"
+          className="text-emerald-600"
+          stroke="currentColor"
           fill="transparent"
           strokeWidth={stroke}
           strokeLinecap="round"
