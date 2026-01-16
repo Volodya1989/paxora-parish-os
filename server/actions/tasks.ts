@@ -48,6 +48,7 @@ export async function createTask(
   const parsed = createTaskSchema.safeParse({
     title: formData.get("title"),
     notes: formData.get("notes"),
+    estimatedHours: formData.get("estimatedHours"),
     weekId: formData.get("weekId"),
     groupId: formData.get("groupId"),
     ownerId: formData.get("ownerId"),
@@ -89,6 +90,7 @@ export async function createTask(
     createdById: userId,
     title: parsed.data.title,
     notes: parsed.data.notes,
+    estimatedHours: parsed.data.estimatedHours,
     groupId: parsed.data.groupId,
     visibility,
     approvalStatus
@@ -176,7 +178,11 @@ export async function updateTask(
   const parsed = updateTaskSchema.safeParse({
     taskId: formData.get("taskId"),
     title: formData.get("title"),
-    notes: formData.get("notes")
+    notes: formData.get("notes"),
+    estimatedHours: formData.get("estimatedHours"),
+    groupId: formData.get("groupId"),
+    ownerId: formData.get("ownerId"),
+    visibility: formData.get("visibility")
   });
 
   if (!parsed.success) {
@@ -191,7 +197,11 @@ export async function updateTask(
     parishId,
     actorUserId: userId,
     title: parsed.data.title,
-    notes: parsed.data.notes
+    notes: parsed.data.notes,
+    estimatedHours: parsed.data.estimatedHours,
+    groupId: parsed.data.groupId,
+    ownerId: parsed.data.ownerId,
+    visibility: parsed.data.visibility === "private" ? "PRIVATE" : "PUBLIC"
   });
 
   revalidatePath("/tasks");

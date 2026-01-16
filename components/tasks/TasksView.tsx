@@ -299,7 +299,12 @@ export default function TasksView({
           ) : !hasMatches ? (
             <TasksEmptyState variant="no-matches" onClearFilters={clearFilters} />
           ) : (
-            <TasksList tasks={tasks} />
+            <TasksList
+              tasks={tasks}
+              groupOptions={groupOptions}
+              memberOptions={memberOptions}
+              currentUserId={currentUserId}
+            />
           )}
         </div>
       </Card>

@@ -38,7 +38,7 @@ export default function HomeHero({
   const showHighlights = highlightEvents.length + highlightAnnouncements.length > 0;
 
   return (
-    <Card>
+    <Card className="border-emerald-100 bg-emerald-50/50">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-3">
           <div>
@@ -61,7 +61,7 @@ export default function HomeHero({
           </Link>
         </div>
 
-        <div className="flex items-center gap-4 rounded-card border border-mist-200 bg-mist-50 px-4 py-3">
+        <div className="flex items-center gap-4 rounded-card border border-emerald-100 bg-white/70 px-4 py-3">
           <ProgressRing percent={weekCompletion.percent} />
           <div className="space-y-1">
             <p className="text-xs uppercase tracking-wide text-ink-400">Completion</p>

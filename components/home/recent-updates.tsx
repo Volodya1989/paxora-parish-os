@@ -9,6 +9,12 @@ const typeLabels: Record<HomeRecentUpdate["type"], string> = {
   announcement: "Announcement"
 };
 
+const typeBadgeClasses: Record<HomeRecentUpdate["type"], string> = {
+  task: "bg-emerald-50 text-emerald-700",
+  event: "bg-sky-50 text-sky-700",
+  announcement: "bg-amber-50 text-amber-700"
+};
+
 function formatTimestamp(date: Date) {
   return date.toLocaleDateString("en-US", {
     month: "short",
@@ -55,7 +61,11 @@ export default function RecentUpdates({ updates }: { updates: HomeRecentUpdate[]
                         update.title
                       )}
                     </p>
-                    <p className="mt-1 text-xs text-ink-500">{typeLabels[update.type]}</p>
+                    <span
+                      className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${typeBadgeClasses[update.type]}`}
+                    >
+                      {typeLabels[update.type]}
+                    </span>
                   </div>
                 </div>
                 <span className="text-xs text-ink-400">{formatTimestamp(update.occurredAt)}</span>

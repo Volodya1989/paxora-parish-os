@@ -49,6 +49,7 @@ export default function TaskCreateDialog({
   const drawerFormId = useId();
   const titleId = useId();
   const notesId = useId();
+  const estimatedHoursId = useId();
   const groupId = useId();
   const ownerId = useId();
   const visibilityId = useId();
@@ -97,6 +98,17 @@ export default function TaskCreateDialog({
           name="notes"
           placeholder="Include links, dependencies, or context for the team."
           rows={4}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={estimatedHoursId}>Estimated hours (optional)</Label>
+        <Input
+          id={estimatedHoursId}
+          name="estimatedHours"
+          type="number"
+          min={0}
+          step="0.25"
+          placeholder="e.g. 2"
         />
       </div>
       <div className="space-y-2">

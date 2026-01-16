@@ -25,7 +25,12 @@ export default function CommunityPreview({ rooms }: { rooms: CommunityRoomPrevie
           <EmptyState
             title="Community chat coming soon"
             description="Rooms will appear here once chat is enabled for your parish."
-            className="border-mist-100"
+            className="border-dashed border-stone-200 bg-stone-50"
+            icon={
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                💬
+              </span>
+            }
             action={
               <Link className="text-sm font-medium text-ink-700 underline" href={COMMUNITY_ROUTE}>
                 Learn more
