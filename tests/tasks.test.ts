@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { prisma } from "@/server/db/prisma";
 import { createTask, markTaskDone, deferTask, rolloverOpenTasks } from "@/domain/tasks";
 import { getOrCreateCurrentWeek } from "@/domain/week";
+import { listPendingTaskApprovals, listTasks } from "@/lib/queries/tasks";
 import { applyMigrations } from "./_helpers/migrate";
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
@@ -76,14 +77,20 @@ dbTest("tasks can be created, completed, deferred, and rolled over once", async 
     parishId: parish.id,
     weekId: weekOne.id,
     ownerId: owner.id,
-    title: "Open task"
+    createdById: owner.id,
+    title: "Open task",
+    visibility: "PUBLIC",
+    approvalStatus: "APPROVED"
   });
 
   const doneTask = await createTask({
     parishId: parish.id,
     weekId: weekOne.id,
     ownerId: owner.id,
-    title: "Done task"
+    createdById: owner.id,
+    title: "Done task",
+    visibility: "PUBLIC",
+    approvalStatus: "APPROVED"
   });
 
   const completed = await markTaskDone({
@@ -117,7 +124,10 @@ dbTest("tasks can be created, completed, deferred, and rolled over once", async 
     parishId: parish.id,
     weekId: weekOne.id,
     ownerId: owner.id,
-    title: "Needs rollover"
+    createdById: owner.id,
+    title: "Needs rollover",
+    visibility: "PUBLIC",
+    approvalStatus: "APPROVED"
   });
 
   const firstRollover = await rolloverOpenTasks({
@@ -164,7 +174,10 @@ dbTest("createTask assigns task to the current week", async () => {
     parishId: parish.id,
     weekId: currentWeek.id,
     ownerId: owner.id,
-    title: "Current week task"
+    createdById: owner.id,
+    title: "Current week task",
+    visibility: "PUBLIC",
+    approvalStatus: "APPROVED"
   });
 
   const storedTask = await prisma.task.findUnique({ where: { id: task.id } });
@@ -197,13 +210,19 @@ dbTest("createTask assigns group tasks to the current week and group detail filt
     weekId: currentWeek.id,
     ownerId: owner.id,
     groupId: group.id,
-    title: "Prepare welcome packets"
+    createdById: owner.id,
+    title: "Prepare welcome packets",
+    visibility: "PUBLIC",
+    approvalStatus: "APPROVED"
   });
   await createTask({
     parishId: parish.id,
     weekId: currentWeek.id,
     ownerId: owner.id,
-    title: "General task"
+    createdById: owner.id,
+    title: "General task",
+    visibility: "PUBLIC",
+    approvalStatus: "APPROVED"
   });
 
   const storedTask = await prisma.task.findUnique({ where: { id: groupTask.id } });
@@ -213,4 +232,101 @@ dbTest("createTask assigns group tasks to the current week and group detail filt
   const groupDetailTasks = await prisma.task.findMany({ where: { groupId: group.id } });
   assert.equal(groupDetailTasks.length, 1);
   assert.equal(groupDetailTasks[0]?.id, groupTask.id);
+});
+
+dbTest("task visibility and approval are enforced in list queries", async () => {
+  const parish = await prisma.parish.create({
+    data: { name: "St. Theresa", slug: "st-theresa" }
+  });
+  const creator = await prisma.user.create({
+    data: {
+      email: "creator@example.com",
+      name: "Creator",
+      passwordHash: "hashed",
+      activeParishId: parish.id
+    }
+  });
+  const member = await prisma.user.create({
+    data: {
+      email: "member@example.com",
+      name: "Member",
+      passwordHash: "hashed",
+      activeParishId: parish.id
+    }
+  });
+  const shepherd = await prisma.user.create({
+    data: {
+      email: "shepherd@example.com",
+      name: "Shepherd",
+      passwordHash: "hashed",
+      activeParishId: parish.id
+    }
+  });
+
+  await prisma.membership.createMany({
+    data: [
+      { parishId: parish.id, userId: creator.id, role: "MEMBER" },
+      { parishId: parish.id, userId: member.id, role: "MEMBER" },
+      { parishId: parish.id, userId: shepherd.id, role: "SHEPHERD" }
+    ]
+  });
+
+  const week = await getOrCreateCurrentWeek(parish.id);
+
+  await prisma.task.createMany({
+    data: [
+      {
+        parishId: parish.id,
+        weekId: week.id,
+        ownerId: creator.id,
+        createdById: creator.id,
+        title: "Pending public",
+        visibility: "PUBLIC",
+        approvalStatus: "PENDING"
+      },
+      {
+        parishId: parish.id,
+        weekId: week.id,
+        ownerId: creator.id,
+        createdById: creator.id,
+        title: "Approved public",
+        visibility: "PUBLIC",
+        approvalStatus: "APPROVED"
+      },
+      {
+        parishId: parish.id,
+        weekId: week.id,
+        ownerId: creator.id,
+        createdById: creator.id,
+        title: "Private task",
+        visibility: "PRIVATE",
+        approvalStatus: "APPROVED"
+      }
+    ]
+  });
+
+  const creatorList = await listTasks({
+    parishId: parish.id,
+    actorUserId: creator.id,
+    weekId: week.id
+  });
+  assert.equal(creatorList.tasks.length, 3);
+
+  const memberList = await listTasks({
+    parishId: parish.id,
+    actorUserId: member.id,
+    weekId: week.id
+  });
+  assert.deepEqual(
+    memberList.tasks.map((task) => task.title),
+    ["Approved public"]
+  );
+
+  const approvals = await listPendingTaskApprovals({
+    parishId: parish.id,
+    actorUserId: shepherd.id,
+    weekId: week.id
+  });
+  assert.equal(approvals.length, 1);
+  assert.equal(approvals[0]?.title, "Pending public");
 });

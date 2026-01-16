@@ -74,6 +74,13 @@ test.skip("create task succeeds with valid input", async () => {
       activeParishId: parish.id
     }
   });
+  await prisma.membership.create({
+    data: {
+      parishId: parish.id,
+      userId: user.id,
+      role: "MEMBER"
+    }
+  });
 
   session.user.id = user.id;
   session.user.activeParishId = parish.id;
@@ -104,6 +111,13 @@ test.skip("create task rejects missing title", async () => {
       name: "Owner",
       passwordHash: "hashed",
       activeParishId: parish.id
+    }
+  });
+  await prisma.membership.create({
+    data: {
+      parishId: parish.id,
+      userId: user.id,
+      role: "MEMBER"
     }
   });
 

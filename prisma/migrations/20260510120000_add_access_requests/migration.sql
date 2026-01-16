@@ -1,4 +1,11 @@
-CREATE TYPE "AccessRequestStatus" AS ENUM ('PENDING', 'APPROVED');
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_type WHERE typname = 'AccessRequestStatus'
+  ) THEN
+    CREATE TYPE "AccessRequestStatus" AS ENUM ('PENDING', 'APPROVED');
+  END IF;
+END $$;
 
 CREATE TABLE "AccessRequest" (
   "id" TEXT NOT NULL,

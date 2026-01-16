@@ -59,13 +59,19 @@ async function main() {
         parishId: parish.id,
         weekId: week.id,
         ownerId: user.id,
-        title: "Prepare Sunday liturgy sheet"
+        createdById: user.id,
+        title: "Prepare Sunday liturgy sheet",
+        visibility: "PUBLIC",
+        approvalStatus: "APPROVED"
       },
       {
         parishId: parish.id,
         weekId: week.id,
         ownerId: user.id,
-        title: "Confirm volunteer schedule"
+        createdById: user.id,
+        title: "Confirm volunteer schedule",
+        visibility: "PUBLIC",
+        approvalStatus: "APPROVED"
       }
     ]
   });

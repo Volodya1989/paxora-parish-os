@@ -204,6 +204,13 @@ export async function getGroupDetail(groupId: string) {
   }
 
   const week = await getOrCreateCurrentWeek(parishId);
+  const visibilityWhere = {
+    OR: [
+      { visibility: "PUBLIC", approvalStatus: "APPROVED" },
+      { ownerId: userId },
+      { createdById: userId }
+    ]
+  };
 
   const [memberships, tasks] = await Promise.all([
     prisma.groupMembership.findMany({
@@ -224,7 +231,9 @@ export async function getGroupDetail(groupId: string) {
       where: {
         parishId,
         groupId: group.id,
-        weekId: week.id
+        weekId: week.id,
+        archivedAt: null,
+        AND: [visibilityWhere]
       },
       orderBy: { createdAt: "asc" },
       select: {
@@ -341,4 +350,3 @@ export async function updateGroupMembership(formData: FormData) {
   return { success: true };
   
 }
-

@@ -1,15 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
+import Select from "@/components/ui/Select";
 import TaskCreateDialog from "@/components/tasks/TaskCreateDialog";
 import TaskFilters from "@/components/tasks/TaskFilters";
 import TasksEmptyState from "@/components/tasks/TasksEmptyState";
 import TasksList from "@/components/tasks/TasksList";
 import type { TaskFilters as TaskFiltersState, TaskListItem, TaskListSummary } from "@/lib/queries/tasks";
 import type { PendingAccessRequest } from "@/lib/queries/access";
+import type { PendingTaskApproval } from "@/lib/queries/tasks";
+import { approveTask, rejectTask } from "@/server/actions/tasks";
 
 type TasksViewProps = {
   weekLabel: string;
@@ -23,7 +26,9 @@ type TasksViewProps = {
   memberOptions: Array<{ id: string; name: string }>;
   currentUserId: string;
   pendingAccessRequests: PendingAccessRequest[];
+  pendingTaskApprovals: PendingTaskApproval[];
   approveAccessAction: (formData: FormData) => Promise<void>;
+  rejectAccessAction: (formData: FormData) => Promise<void>;
 };
 
 export default function TasksView({
@@ -38,11 +43,16 @@ export default function TasksView({
   memberOptions,
   currentUserId,
   pendingAccessRequests,
-  approveAccessAction
+  pendingTaskApprovals,
+  approveAccessAction,
+  rejectAccessAction
 }: TasksViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [accessRoles, setAccessRoles] = useState<Record<string, string>>({});
+  const [isApproving, startApprovalTransition] = useTransition();
+  const [isAccessPending, startAccessTransition] = useTransition();
 
   const createParam = searchParams?.get("create");
   const hasTasks = summary.total > 0;
@@ -76,6 +86,45 @@ export default function TasksView({
     return `${summary.open} open · ${summary.done} done`;
   }, [summary.done, summary.open]);
 
+  const handleApproveTask = (taskId: string) => {
+    startApprovalTransition(async () => {
+      await approveTask({ taskId });
+      router.refresh();
+    });
+  };
+
+  const handleRejectTask = (taskId: string) => {
+    startApprovalTransition(async () => {
+      await rejectTask({ taskId });
+      router.refresh();
+    });
+  };
+
+  const handleApproveAccess = (request: PendingAccessRequest) => {
+    const role = accessRoles[request.id];
+    if (!role) {
+      return;
+    }
+    const formData = new FormData();
+    formData.set("parishId", request.parishId);
+    formData.set("userId", request.userId);
+    formData.set("role", role);
+    startAccessTransition(async () => {
+      await approveAccessAction(formData);
+      router.refresh();
+    });
+  };
+
+  const handleRejectAccess = (request: PendingAccessRequest) => {
+    const formData = new FormData();
+    formData.set("parishId", request.parishId);
+    formData.set("userId", request.userId);
+    startAccessTransition(async () => {
+      await rejectAccessAction(formData);
+      router.refresh();
+    });
+  };
+
   return (
     <div className="section-gap">
       <Card>
@@ -88,7 +137,7 @@ export default function TasksView({
               </span>
             </div>
             <p className="text-sm text-ink-500">
-              Track what must happen this week. {weekRange}
+              Keep the week grounded with the next faithful steps. {weekRange}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -106,7 +155,7 @@ export default function TasksView({
           <div>
             <h2 className="text-h3">Filters</h2>
             <p className="text-xs text-ink-400">
-              Narrow the list to the tasks you need to focus on.
+              Narrow the list to the tasks that need your attention.
             </p>
           </div>
           <TaskFilters filters={filters} groupOptions={groupOptions} />
@@ -138,14 +187,93 @@ export default function TasksView({
                   <div className="text-xs text-ink-400">
                     Requested {request.requestedAt.toLocaleDateString()}
                   </div>
-                  <form action={approveAccessAction}>
-                    <input type="hidden" name="parishId" value={request.parishId} />
-                    <input type="hidden" name="userId" value={request.userId} />
-                    <input type="hidden" name="role" value="MEMBER" />
-                    <Button type="submit" size="sm">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Select
+                      name={`role-${request.id}`}
+                      value={accessRoles[request.id] ?? ""}
+                      onChange={(event) =>
+                        setAccessRoles((prev) => ({
+                          ...prev,
+                          [request.id]: event.target.value
+                        }))
+                      }
+                      className="w-[160px]"
+                    >
+                      <option value="" disabled>
+                        Select role
+                      </option>
+                      <option value="MEMBER">Member</option>
+                      <option value="ADMIN">Admin</option>
+                    </Select>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => handleApproveAccess(request)}
+                      disabled={!accessRoles[request.id] || isAccessPending}
+                    >
                       Approve
                     </Button>
-                  </form>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => handleRejectAccess(request)}
+                      disabled={isAccessPending}
+                    >
+                      Reject
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
+      ) : null}
+
+      {pendingTaskApprovals.length ? (
+        <Card>
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-h3">Pending task approvals</h2>
+              <p className="text-xs text-ink-400">
+                Review member-submitted public tasks before they go live.
+              </p>
+            </div>
+            <div className="space-y-3">
+              {pendingTaskApprovals.map((task) => (
+                <div
+                  key={task.id}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-amber-200 bg-amber-50/60 px-3 py-3"
+                >
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium text-ink-800">{task.title}</div>
+                    {task.notes ? (
+                      <div className="text-xs text-ink-500">{task.notes}</div>
+                    ) : null}
+                    <div className="text-xs text-ink-400">
+                      Created by {task.createdBy.name} · Assigned to {task.owner.name}
+                      {task.group ? ` · ${task.group.name}` : ""}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => handleApproveTask(task.id)}
+                      disabled={isApproving}
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => handleRejectTask(task.id)}
+                      disabled={isApproving}
+                    >
+                      Reject
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

@@ -1,4 +1,5 @@
 import { getServerSession } from "next-auth";
+import { unstable_noStore as noStore } from "next/cache";
 import { authOptions } from "@/server/auth/options";
 import { ensureParishBootstrap } from "@/server/auth/bootstrap";
 import { prisma } from "@/server/db/prisma";
@@ -69,23 +70,32 @@ export async function getHomeSummary({
 }: {
   now?: Date;
 } = {}): Promise<HomeSummary> {
+  noStore();
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
     throw new Error("Unauthorized");
   }
 
+  const actorUserId = session.user.id;
   const parishId = await resolveParishId(session.user.id, session.user.activeParishId);
   const week = await getOrCreateCurrentWeek(parishId, now);
+  const visibilityWhere = {
+    OR: [
+      { visibility: "PUBLIC", approvalStatus: "APPROVED" },
+      { ownerId: actorUserId },
+      { createdById: actorUserId }
+    ]
+  };
 
   const [taskCounts, recentTasks, events, publishedAnnouncements] = await Promise.all([
     prisma.task.groupBy({
       by: ["status"],
-      where: { parishId, weekId: week.id, archivedAt: null },
+      where: { parishId, weekId: week.id, archivedAt: null, AND: [visibilityWhere] },
       _count: { _all: true }
     }),
     prisma.task.findMany({
-      where: { parishId, weekId: week.id, archivedAt: null },
+      where: { parishId, weekId: week.id, archivedAt: null, AND: [visibilityWhere] },
       orderBy: { createdAt: "desc" },
       take: 5,
       select: {

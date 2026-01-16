@@ -1,5 +1,5 @@
 import { type Prisma } from "@prisma/client";
-import { canManageGroupMembership } from "@/lib/permissions";
+import { canManageGroupMembership, isParishLeader } from "@/lib/permissions";
 import { getNow } from "@/lib/time/getNow";
 import { getOrCreateCurrentWeek } from "@/domain/week";
 import { prisma } from "@/server/db/prisma";
@@ -19,6 +19,8 @@ export type TaskListItem = {
   title: string;
   notes: string | null;
   status: "OPEN" | "DONE";
+  visibility: "PRIVATE" | "PUBLIC";
+  approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
   completedAt: string | null;
   completedBy: {
     id: string;
@@ -48,6 +50,25 @@ export type ListTasksInput = {
   actorUserId: string;
   weekId?: string;
   filters?: TaskFilters;
+};
+
+export type PendingTaskApproval = {
+  id: string;
+  title: string;
+  notes: string | null;
+  createdAt: Date;
+  owner: {
+    id: string;
+    name: string;
+  };
+  createdBy: {
+    id: string;
+    name: string;
+  };
+  group: {
+    id: string;
+    name: string;
+  } | null;
 };
 
 const statusCountsDefaults: TaskListSummary = {
@@ -90,27 +111,37 @@ export async function listTasks({
     archivedAt: null
   };
 
-  const where: Prisma.TaskWhereInput = { ...baseWhere };
+  const visibilityWhere: Prisma.TaskWhereInput = {
+    OR: [
+      { visibility: "PUBLIC", approvalStatus: "APPROVED" },
+      { ownerId: actorUserId },
+      { createdById: actorUserId }
+    ]
+  };
+
+  const where: Prisma.TaskWhereInput = { ...baseWhere, AND: [visibilityWhere] };
 
   if (normalizedFilters.status === "open") {
-    where.status = "OPEN";
+    where.AND?.push({ status: "OPEN" });
   } else if (normalizedFilters.status === "done") {
-    where.status = "DONE";
+    where.AND?.push({ status: "DONE" });
   }
 
   if (normalizedFilters.ownership === "mine") {
-    where.ownerId = actorUserId;
+    where.AND?.push({ ownerId: actorUserId });
   }
 
   if (normalizedFilters.groupId) {
-    where.groupId = normalizedFilters.groupId;
+    where.AND?.push({ groupId: normalizedFilters.groupId });
   }
 
   if (normalizedFilters.query) {
-    where.OR = [
-      { title: { contains: normalizedFilters.query, mode: "insensitive" } },
-      { notes: { contains: normalizedFilters.query, mode: "insensitive" } }
-    ];
+    where.AND?.push({
+      OR: [
+        { title: { contains: normalizedFilters.query, mode: "insensitive" } },
+        { notes: { contains: normalizedFilters.query, mode: "insensitive" } }
+      ]
+    });
   }
 
   const [tasks, statusCounts, parishMembership, groupMemberships] = await Promise.all([
@@ -122,11 +153,21 @@ export async function listTasks({
         title: true,
         notes: true,
         status: true,
+        visibility: true,
+        approvalStatus: true,
         completedAt: true,
         completedById: true,
         ownerId: true,
+        createdById: true,
         groupId: true,
         owner: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
+        createdBy: {
           select: {
             id: true,
             name: true,
@@ -150,7 +191,7 @@ export async function listTasks({
     }),
     prisma.task.groupBy({
       by: ["status"],
-      where: baseWhere,
+      where: { ...baseWhere, AND: [visibilityWhere] },
       _count: { _all: true }
     }),
     prisma.membership.findUnique({
@@ -189,11 +230,14 @@ export async function listTasks({
   const taskItems: TaskListItem[] = tasks.map((task) => {
     const ownerName = getDisplayName(task.owner.name, task.owner.email);
     const groupRole = task.groupId ? groupRoleMap.get(task.groupId) ?? null : null;
-    const canManage =
-      task.ownerId === actorUserId ||
-      (parishMembership
+    const canManageGroup =
+      task.visibility === "PUBLIC" &&
+      task.approvalStatus === "APPROVED" &&
+      parishMembership
         ? canManageGroupMembership(parishMembership.role, groupRole)
-        : false);
+        : false;
+    const canManage =
+      task.ownerId === actorUserId || task.createdById === actorUserId || canManageGroup;
     const completedByName = task.completedBy
       ? getDisplayName(task.completedBy.name, task.completedBy.email)
       : null;
@@ -203,6 +247,8 @@ export async function listTasks({
       title: task.title,
       notes: task.notes ?? null,
       status: task.status,
+      visibility: task.visibility,
+      approvalStatus: task.approvalStatus,
       completedAt: task.completedAt ? task.completedAt.toISOString() : null,
       completedBy: completedByName && task.completedBy
         ? {
@@ -217,7 +263,7 @@ export async function listTasks({
       },
       group: task.group ? { id: task.group.id, name: task.group.name } : null,
       canManage,
-      canDelete: task.ownerId === actorUserId
+      canDelete: task.ownerId === actorUserId || task.createdById === actorUserId
     };
   });
 
@@ -228,4 +274,83 @@ export async function listTasks({
     summary,
     filteredCount: taskItems.length
   };
+}
+
+export async function listPendingTaskApprovals({
+  parishId,
+  actorUserId,
+  weekId
+}: {
+  parishId: string;
+  actorUserId: string;
+  weekId?: string;
+}): Promise<PendingTaskApproval[]> {
+  const membership = await prisma.membership.findUnique({
+    where: {
+      parishId_userId: {
+        parishId,
+        userId: actorUserId
+      }
+    },
+    select: { role: true }
+  });
+
+  if (!membership || !isParishLeader(membership.role)) {
+    return [];
+  }
+
+  const effectiveWeekId = weekId ?? (await getOrCreateCurrentWeek(parishId, getNow())).id;
+
+  const approvals = await prisma.task.findMany({
+    where: {
+      parishId,
+      weekId: effectiveWeekId,
+      archivedAt: null,
+      visibility: "PUBLIC",
+      approvalStatus: "PENDING"
+    },
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      title: true,
+      notes: true,
+      createdAt: true,
+      owner: {
+        select: {
+          id: true,
+          name: true,
+          email: true
+        }
+      },
+      createdBy: {
+        select: {
+          id: true,
+          name: true,
+          email: true
+        }
+      },
+      group: {
+        select: {
+          id: true,
+          name: true
+        }
+      }
+    }
+  });
+
+  return approvals.map((task) => ({
+    id: task.id,
+    title: task.title,
+    notes: task.notes ?? null,
+    createdAt: task.createdAt,
+    owner: {
+      id: task.owner.id,
+      name: getDisplayName(task.owner.name, task.owner.email)
+    },
+    createdBy: {
+      id: task.createdBy.id,
+      name: getDisplayName(task.createdBy.name, task.createdBy.email)
+    },
+    group: task.group ? { id: task.group.id, name: task.group.name } : null
+  }));
 }

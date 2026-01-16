@@ -27,7 +27,11 @@ export const createTaskSchema = z.object({
   notes: optionalTrimmedText,
   weekId: z.string().min(1),
   groupId: optionalId,
-  ownerId: optionalId
+  ownerId: optionalId,
+  visibility: z
+    .enum(["public", "private"])
+    .optional()
+    .default("public")
 });
 
 export const createGroupTaskSchema = createTaskSchema.extend({
@@ -51,6 +55,10 @@ export const updateTaskSchema = z.object({
 });
 
 export const deleteTaskSchema = markTaskDoneSchema;
+
+export const approveTaskSchema = markTaskDoneSchema;
+
+export const rejectTaskSchema = markTaskDoneSchema;
 
 export const deferTaskSchema = z.object({
   taskId: z.string().min(1),

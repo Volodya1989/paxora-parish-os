@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Label from "@/components/ui/Label";
-import Select from "@/components/ui/Select";
+import SelectMenu from "@/components/ui/SelectMenu";
 import type { TaskFilters } from "@/lib/queries/tasks";
 
 type TaskFiltersProps = {
@@ -56,43 +56,42 @@ export default function TaskFilters({ filters, groupOptions }: TaskFiltersProps)
     >
       <div className="space-y-2">
         <Label htmlFor={statusId}>Status</Label>
-        <Select
+        <SelectMenu
           id={statusId}
           value={filters.status}
-          onChange={(event) => updateParam("status", event.target.value)}
-        >
-          <option value="all">All</option>
-          <option value="open">Open</option>
-          <option value="done">Done</option>
-        </Select>
+          onValueChange={(value) => updateParam("status", value)}
+          options={[
+            { value: "all", label: "All" },
+            { value: "open", label: "Open" },
+            { value: "done", label: "Done" }
+          ]}
+        />
       </div>
 
       <div className="space-y-2">
         <Label htmlFor={ownerId}>Ownership</Label>
-        <Select
+        <SelectMenu
           id={ownerId}
           value={filters.ownership}
-          onChange={(event) => updateParam("owner", event.target.value)}
-        >
-          <option value="all">All</option>
-          <option value="mine">Mine</option>
-        </Select>
+          onValueChange={(value) => updateParam("owner", value)}
+          options={[
+            { value: "all", label: "All" },
+            { value: "mine", label: "Mine" }
+          ]}
+        />
       </div>
 
       <div className="space-y-2">
         <Label htmlFor={groupId}>Group</Label>
-        <Select
+        <SelectMenu
           id={groupId}
           value={filters.groupId ?? "all"}
-          onChange={(event) => updateParam("group", event.target.value)}
-        >
-          <option value="all">All groups</option>
-          {groupOptions.map((group) => (
-            <option key={group.id} value={group.id}>
-              {group.name}
-            </option>
-          ))}
-        </Select>
+          onValueChange={(value) => updateParam("group", value)}
+          options={[
+            { value: "all", label: "All groups" },
+            ...groupOptions.map((group) => ({ value: group.id, label: group.name }))
+          ]}
+        />
       </div>
 
       <div className="space-y-2">

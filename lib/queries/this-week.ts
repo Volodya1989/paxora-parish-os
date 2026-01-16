@@ -1,4 +1,5 @@
 import { getServerSession } from "next-auth";
+import { unstable_noStore as noStore } from "next/cache";
 import { authOptions } from "@/server/auth/options";
 import { ensureParishBootstrap } from "@/server/auth/bootstrap";
 import { prisma } from "@/server/db/prisma";
@@ -64,12 +65,14 @@ export async function getThisWeekData({
   weekSelection?: WeekSelection;
   now?: Date;
 } = {}): Promise<ThisWeekData> {
+  noStore();
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
     throw new Error("Unauthorized");
   }
 
+  const actorUserId = session.user.id;
   const activeParishId = session.user.activeParishId;
   const parishId = activeParishId
     ? await prisma.parish
@@ -83,7 +86,20 @@ export async function getThisWeekData({
   const week = await getWeekForSelection(parishId, weekSelection, now);
 
   const tasks = await prisma.task.findMany({
-    where: { parishId, weekId: week.id, archivedAt: null },
+    where: {
+      parishId,
+      weekId: week.id,
+      archivedAt: null,
+      AND: [
+        {
+          OR: [
+            { visibility: "PUBLIC", approvalStatus: "APPROVED" },
+            { ownerId: actorUserId },
+            { createdById: actorUserId }
+          ]
+        }
+      ]
+    },
     orderBy: { createdAt: "asc" },
     select: {
       id: true,
