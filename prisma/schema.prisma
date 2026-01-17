@@ -45,6 +45,17 @@ enum EventRsvpResponse {
   NO
 }
 
+enum EventVisibility {
+  PUBLIC
+  GROUP
+  PRIVATE
+}
+
+enum EventType {
+  SERVICE
+  EVENT
+}
+
 enum AccessRequestStatus {
   PENDING
   APPROVED
@@ -144,6 +155,7 @@ model Group {
   parish       Parish            @relation(fields: [parishId], references: [id])
   memberships GroupMembership[]
   tasks        Task[]
+  events       Event[]
 
   @@unique([parishId, name])
 }
@@ -202,13 +214,18 @@ model Event {
   endsAt    DateTime
   location  String?
   summary   String?
+  visibility EventVisibility @default(PUBLIC)
+  groupId   String?
+  type      EventType @default(EVENT)
 
   parish Parish @relation(fields: [parishId], references: [id])
   week   Week   @relation(fields: [weekId], references: [id], onDelete: Cascade)
+  group  Group? @relation(fields: [groupId], references: [id])
   rsvps  EventRsvp[]
 
   @@index([weekId])
   @@index([parishId, startsAt])
+  @@index([parishId, visibility])
 }
 
 model EventRsvp {

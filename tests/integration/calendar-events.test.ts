@@ -105,6 +105,7 @@ dbTest("list events by week and month with deterministic time", async () => {
   assert.equal(weekEvents.length, 2);
   assert.equal(weekEvents[0]?.id, firstEvent.id);
   assert.equal(weekEvents[1]?.id, secondEvent.id);
+  assert.ok(weekEvents[0]?.summary);
 
   const monthEvents = await listEventsForMonth({
     parishId: parish.id,

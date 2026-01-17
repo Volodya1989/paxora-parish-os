@@ -13,14 +13,23 @@ const monthRange = {
   start: new Date("2024-05-01T00:00:00.000Z"),
   end: new Date("2024-06-01T00:00:00.000Z")
 };
+const nextWeekRange = {
+  start: new Date("2024-05-13T00:00:00.000Z"),
+  end: new Date("2024-05-20T00:00:00.000Z")
+};
 const sampleEvent = {
   id: "event-1",
   title: "Morning Mass",
   startsAt: new Date("2024-05-06T09:00:00.000Z"),
   endsAt: new Date("2024-05-06T10:00:00.000Z"),
   location: "Main chapel",
-  summary: null,
-  parishId: "parish-1"
+  summary: "Morning worship with the parish.",
+  parishId: "parish-1",
+  visibility: "PUBLIC" as const,
+  group: null,
+  type: "SERVICE" as const,
+  rsvpResponse: null,
+  canManage: true
 };
 
 test("Calendar view toggle renders week layout by default", () => {
@@ -28,10 +37,19 @@ test("Calendar view toggle renders week layout by default", () => {
     createElement(CalendarView, {
       weekRange,
       monthRange,
+      nextWeekRange,
       weekEvents: [sampleEvent],
       monthEvents: [sampleEvent],
+      nextWeekEvents: [sampleEvent],
       now,
-      initialView: "week"
+      initialView: "week",
+      canCreateEvents: true,
+      canCreatePublicEvents: true,
+      canCreatePrivateEvents: true,
+      canCreateGroupEvents: true,
+      isEditor: true,
+      groupOptions: [],
+      viewerGroupIds: []
     })
   );
 
@@ -45,10 +63,19 @@ test("Calendar view toggle can render month layout", () => {
     createElement(CalendarView, {
       weekRange,
       monthRange,
+      nextWeekRange,
       weekEvents: [sampleEvent],
       monthEvents: [sampleEvent],
+      nextWeekEvents: [sampleEvent],
       now,
-      initialView: "month"
+      initialView: "month",
+      canCreateEvents: true,
+      canCreatePublicEvents: true,
+      canCreatePrivateEvents: true,
+      canCreateGroupEvents: true,
+      isEditor: true,
+      groupOptions: [],
+      viewerGroupIds: []
     })
   );
 

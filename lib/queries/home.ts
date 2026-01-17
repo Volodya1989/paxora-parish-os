@@ -105,7 +105,7 @@ export async function getHomeSummary({
         createdAt: true
       }
     }),
-    listEventsForWeek({ parishId, getNow: () => now }),
+    listEventsForWeek({ parishId, getNow: () => now, userId: actorUserId }),
     listAnnouncements({ parishId, status: "published" })
   ]);
 
