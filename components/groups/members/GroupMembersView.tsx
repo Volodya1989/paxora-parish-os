@@ -1,21 +1,29 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import SectionTitle from "@/components/ui/SectionTitle";
+import Input from "@/components/ui/Input";
+import Badge from "@/components/ui/Badge";
+import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/Tabs";
 import { useToast } from "@/components/ui/Toast";
 import MemberRow from "@/components/groups/members/MemberRow";
 import InviteDrawer from "@/components/groups/members/InviteDrawer";
 import PendingInvites from "@/components/groups/members/PendingInvites";
 import {
   acceptInvite,
+  approveJoinRequest,
   changeMemberRole,
   declineInvite,
+  denyJoinRequest,
   inviteMember,
+  joinGroup,
+  leaveGroup,
   removeMember,
+  requestToJoin,
   type MemberActionState
 } from "@/app/actions/members";
 import type { GroupMemberRecord, PendingInviteRecord } from "@/lib/queries/members";
@@ -42,13 +50,15 @@ type GroupMembersViewProps = {
     id: string;
     name: string;
     description?: string | null;
+    visibility: "PUBLIC" | "PRIVATE";
+    joinPolicy: "INVITE_ONLY" | "OPEN" | "REQUEST_TO_JOIN";
   };
   members: GroupMemberRecord[];
   pendingInvites: PendingInviteRecord[];
   canManage: boolean;
   viewer: {
     id: string;
-    status: "ACTIVE" | "INVITED" | null;
+    status: "ACTIVE" | "INVITED" | "REQUESTED" | null;
   };
 };
 
@@ -63,6 +73,8 @@ export default function GroupMembersView({
   const router = useRouter();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [pendingMemberId, setPendingMemberId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"members" | "pending">("members");
+  const [query, setQuery] = useState("");
   const [isPending, startTransition] = useTransition();
 
   const refresh = () => {
@@ -85,12 +97,18 @@ export default function GroupMembersView({
     }
   };
 
-  const handleInvite = async ({ email, role }: { email: string; role: "LEAD" | "MEMBER" }) => {
+  const handleInvite = async ({
+    email,
+    role
+  }: {
+    email: string;
+    role: "COORDINATOR" | "PARISHIONER";
+  }) => {
     const result = await inviteMember({ groupId: group.id, email, role });
     return result;
   };
 
-  const handleRoleChange = (userId: string, role: "LEAD" | "MEMBER") => {
+  const handleRoleChange = (userId: string, role: "COORDINATOR" | "PARISHIONER") => {
     setPendingMemberId(userId);
     void runAction(
       async () => {
@@ -122,6 +140,69 @@ export default function GroupMembersView({
     void runAction(() => declineInvite({ groupId: group.id }), "Invite declined");
   };
 
+  const handleJoin = () => {
+    void runAction(() => joinGroup({ groupId: group.id }), "Joined group");
+  };
+
+  const handleRequestJoin = () => {
+    void runAction(() => requestToJoin({ groupId: group.id }), "Request sent");
+  };
+
+  const handleLeave = () => {
+    void runAction(() => leaveGroup({ groupId: group.id }), "Left group");
+  };
+
+  const handleApprove = (userId: string) => {
+    setPendingMemberId(userId);
+    void runAction(
+      async () => {
+        const result = await approveJoinRequest({ groupId: group.id, userId });
+        setPendingMemberId(null);
+        return result;
+      },
+      "Request approved"
+    );
+  };
+
+  const handleDeny = (userId: string) => {
+    setPendingMemberId(userId);
+    void runAction(
+      async () => {
+        const result = await denyJoinRequest({ groupId: group.id, userId });
+        setPendingMemberId(null);
+        return result;
+      },
+      "Request denied"
+    );
+  };
+
+  const joinLabel =
+    group.joinPolicy === "OPEN" ? "Join group" : "Request to join";
+  const canJoin =
+    viewer.status === null && (group.joinPolicy === "OPEN" || group.joinPolicy === "REQUEST_TO_JOIN");
+
+  const filteredMembers = useMemo(() => {
+    if (!query.trim()) {
+      return members;
+    }
+    const normalized = query.trim().toLowerCase();
+    return members.filter((member) => {
+      const haystack = `${member.name ?? ""} ${member.email}`.toLowerCase();
+      return haystack.includes(normalized);
+    });
+  }, [members, query]);
+
+  const filteredPending = useMemo(() => {
+    if (!query.trim()) {
+      return pendingInvites;
+    }
+    const normalized = query.trim().toLowerCase();
+    return pendingInvites.filter((invite) => {
+      const haystack = `${invite.name ?? ""} ${invite.email}`.toLowerCase();
+      return haystack.includes(normalized);
+    });
+  }, [pendingInvites, query]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -129,12 +210,48 @@ export default function GroupMembersView({
           title={`${group.name} members`}
           subtitle={group.description ?? "Coordinate ministries with clarity and care."}
         />
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge tone={group.visibility === "PUBLIC" ? "success" : "neutral"}>
+            {group.visibility === "PUBLIC" ? "Public" : "Private"}
+          </Badge>
+          <Badge tone="neutral">
+            {group.joinPolicy === "OPEN"
+              ? "Open join"
+              : group.joinPolicy === "REQUEST_TO_JOIN"
+              ? "Request to join"
+              : "Invite only"}
+          </Badge>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           {canManage ? (
             <Button type="button" onClick={() => setInviteOpen(true)}>
               Invite member
             </Button>
           ) : null}
+          {viewer.status === "ACTIVE" ? (
+            <Button type="button" variant="ghost" onClick={handleLeave}>
+              Leave group
+            </Button>
+          ) : null}
+          {viewer.status === null && canJoin ? (
+            <Button type="button" onClick={group.joinPolicy === "OPEN" ? handleJoin : handleRequestJoin}>
+              {joinLabel}
+            </Button>
+          ) : null}
+          {viewer.status === "REQUESTED" ? (
+            <Badge tone="warning">Request sent</Badge>
+          ) : null}
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            className="text-sm font-medium text-ink-700 underline"
+            href={`/groups/${group.id}/tasks`}
+          >
+            Opportunities to Help
+          </Link>
           <Link className="text-sm font-medium text-ink-700 underline" href={`/groups/${group.id}`}>
             Back to group
           </Link>
@@ -160,43 +277,58 @@ export default function GroupMembersView({
         </Card>
       ) : null}
 
-      <Card>
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-ink-900">Active members</h2>
-          <p className="text-sm text-ink-500">{members.length} total</p>
-        </div>
-        <div className="mt-4 space-y-3">
-          {members.length === 0 ? (
-            <p className="text-sm text-ink-500">{EMPTY_MEMBERS_MESSAGE}</p>
-          ) : (
-            members.map((member) => (
-              <MemberRow
-                key={member.id}
-                member={member}
-                canManage={canManage}
-                isSelf={member.userId === viewer.id}
-                onChangeRole={(role) => handleRoleChange(member.userId, role)}
-                onRemove={() => handleRemove(member.userId)}
-                isBusy={pendingMemberId === member.userId}
-              />
-            ))
-          )}
-        </div>
-      </Card>
-
-      {canManage ? (
-        <Card>
-          <div className="space-y-2">
-            <h2 className="text-lg font-semibold text-ink-900">Pending invites</h2>
+      <Card className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-ink-900">Team directory</h2>
             <p className="text-sm text-ink-500">
-              Track invitations awaiting a response.
+              Search members and review pending requests in one place.
             </p>
           </div>
-          <div className="mt-4">
-            <PendingInvites invites={pendingInvites} />
-          </div>
-        </Card>
-      ) : null}
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.currentTarget.value)}
+            placeholder="Search members"
+            aria-label="Search members"
+            className="w-full md:w-64"
+          />
+        </div>
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "members" | "pending")}>
+          <TabsList>
+            <TabsTrigger value="members">Members ({members.length})</TabsTrigger>
+            <TabsTrigger value="pending">Pending ({pendingInvites.length})</TabsTrigger>
+          </TabsList>
+          <TabsPanel value="members">
+            <div className="space-y-3">
+              {filteredMembers.length === 0 ? (
+                <p className="text-sm text-ink-500">{EMPTY_MEMBERS_MESSAGE}</p>
+              ) : (
+                filteredMembers.map((member) => (
+                  <MemberRow
+                    key={member.id}
+                    member={member}
+                    canManage={canManage}
+                    isSelf={member.userId === viewer.id}
+                    onChangeRole={(role) => handleRoleChange(member.userId, role)}
+                    onRemove={() => handleRemove(member.userId)}
+                    isBusy={pendingMemberId === member.userId}
+                  />
+                ))
+              )}
+            </div>
+          </TabsPanel>
+          <TabsPanel value="pending">
+            <PendingInvites
+              invites={filteredPending}
+              canManage={canManage}
+              onApprove={handleApprove}
+              onDeny={handleDeny}
+              onRemove={handleRemove}
+              isBusy={(userId) => pendingMemberId === userId}
+            />
+          </TabsPanel>
+        </Tabs>
+      </Card>
 
       {canManage ? (
         <InviteDrawer

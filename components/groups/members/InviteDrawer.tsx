@@ -11,21 +11,24 @@ import { useToast } from "@/components/ui/Toast";
 import type { MemberActionState } from "@/app/actions/members";
 
 const roleOptions = [
-  { value: "MEMBER", label: "Parishioner" },
-  { value: "LEAD", label: "Coordinator" }
+  { value: "PARISHIONER", label: "Parishioner" },
+  { value: "COORDINATOR", label: "Coordinator" }
 ];
 
 type InviteDrawerProps = {
   open: boolean;
   onClose: () => void;
-  onInvite: (input: { email: string; role: "LEAD" | "MEMBER" }) => Promise<MemberActionState>;
+  onInvite: (input: {
+    email: string;
+    role: "COORDINATOR" | "PARISHIONER";
+  }) => Promise<MemberActionState>;
 };
 
 export default function InviteDrawer({ open, onClose, onInvite }: InviteDrawerProps) {
   const router = useRouter();
   const { addToast } = useToast();
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"LEAD" | "MEMBER">("MEMBER");
+  const [role, setRole] = useState<"COORDINATOR" | "PARISHIONER">("PARISHIONER");
   const [isPending, startTransition] = useTransition();
 
   const handleSubmit = () => {
@@ -52,7 +55,7 @@ export default function InviteDrawer({ open, onClose, onInvite }: InviteDrawerPr
         description: "We let them know how to join the group."
       });
       setEmail("");
-      setRole("MEMBER");
+      setRole("PARISHIONER");
       onClose();
       router.refresh();
     });
@@ -94,7 +97,7 @@ export default function InviteDrawer({ open, onClose, onInvite }: InviteDrawerPr
             id="invite-role"
             name="role"
             value={role}
-            onValueChange={(value) => setRole(value as "LEAD" | "MEMBER")}
+            onValueChange={(value) => setRole(value as "COORDINATOR" | "PARISHIONER")}
             options={roleOptions}
           />
         </div>

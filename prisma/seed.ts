@@ -115,19 +115,19 @@ async function main() {
       {
         groupId: group.id,
         userId: coordinator.id,
-        role: "LEAD",
+        role: "COORDINATOR",
         status: "ACTIVE"
       },
       {
         groupId: group.id,
         userId: parishioner.id,
-        role: "MEMBER",
+        role: "PARISHIONER",
         status: "ACTIVE"
       },
       {
         groupId: group.id,
         userId: invited.id,
-        role: "MEMBER",
+        role: "PARISHIONER",
         status: "INVITED",
         invitedByUserId: coordinator.id,
         invitedEmail: invited.email

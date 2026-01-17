@@ -50,7 +50,7 @@ async function canUpdateGroupMembership({
     select: { role: true, status: true }
   });
 
-  return groupMembership?.status === "ACTIVE" && groupMembership.role === "LEAD";
+  return groupMembership?.status === "ACTIVE" && groupMembership.role === "COORDINATOR";
 }
 
 export async function addGroupMember({

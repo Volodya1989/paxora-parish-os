@@ -54,7 +54,7 @@ after(async () => {
   await prisma.$disconnect();
 });
 
-dbTest("invite, accept, role change, and remove", async () => {
+dbTest("invite, join requests, approvals, role changes, and leave", async () => {
   const parish = await prisma.parish.create({
     data: { name: "St. Lydia", slug: "st-lydia" }
   });
@@ -74,6 +74,30 @@ dbTest("invite, accept, role change, and remove", async () => {
       activeParishId: parish.id
     }
   });
+  const coordinator = await prisma.user.create({
+    data: {
+      email: "coordinator@example.com",
+      name: "Coordinator",
+      passwordHash: "hashed",
+      activeParishId: parish.id
+    }
+  });
+  const requester = await prisma.user.create({
+    data: {
+      email: "requester@example.com",
+      name: "Requester",
+      passwordHash: "hashed",
+      activeParishId: parish.id
+    }
+  });
+  const requesterTwo = await prisma.user.create({
+    data: {
+      email: "requester2@example.com",
+      name: "Requester Two",
+      passwordHash: "hashed",
+      activeParishId: parish.id
+    }
+  });
   const outsider = await prisma.user.create({
     data: {
       email: "outsider@example.com",
@@ -87,6 +111,9 @@ dbTest("invite, accept, role change, and remove", async () => {
     data: [
       { parishId: parish.id, userId: admin.id, role: "ADMIN" },
       { parishId: parish.id, userId: parishioner.id, role: "MEMBER" },
+      { parishId: parish.id, userId: coordinator.id, role: "MEMBER" },
+      { parishId: parish.id, userId: requester.id, role: "MEMBER" },
+      { parishId: parish.id, userId: requesterTwo.id, role: "MEMBER" },
       { parishId: parish.id, userId: outsider.id, role: "MEMBER" }
     ]
   });
@@ -95,7 +122,18 @@ dbTest("invite, accept, role change, and remove", async () => {
     data: {
       parishId: parish.id,
       name: "Hospitality",
-      description: "Welcome team"
+      description: "Welcome team",
+      joinPolicy: "REQUEST_TO_JOIN",
+      visibility: "PUBLIC"
+    }
+  });
+
+  await prisma.groupMembership.create({
+    data: {
+      groupId: group.id,
+      userId: coordinator.id,
+      role: "COORDINATOR",
+      status: "ACTIVE"
     }
   });
 
@@ -105,7 +143,7 @@ dbTest("invite, accept, role change, and remove", async () => {
   const inviteResult = await actions.inviteMember({
     groupId: group.id,
     email: parishioner.email,
-    role: "MEMBER"
+    role: "PARISHIONER"
   });
 
   assert.equal(inviteResult.status, "success");
@@ -144,7 +182,7 @@ dbTest("invite, accept, role change, and remove", async () => {
   const roleResult = await actions.changeMemberRole({
     groupId: group.id,
     userId: parishioner.id,
-    role: "LEAD"
+    role: "COORDINATOR"
   });
 
   assert.equal(roleResult.status, "success");
@@ -158,7 +196,7 @@ dbTest("invite, accept, role change, and remove", async () => {
     }
   });
 
-  assert.equal(updatedMembership?.role, "LEAD");
+  assert.equal(updatedMembership?.role, "COORDINATOR");
 
   const removeResult = await actions.removeMember({
     groupId: group.id,
@@ -178,13 +216,111 @@ dbTest("invite, accept, role change, and remove", async () => {
 
   assert.equal(removedMembership, null);
 
+  session.user.id = requester.id;
+  session.user.activeParishId = parish.id;
+
+  const requestResult = await actions.requestToJoin({ groupId: group.id });
+  assert.equal(requestResult.status, "success");
+
+  const pendingRequest = await prisma.groupMembership.findUnique({
+    where: {
+      groupId_userId: {
+        groupId: group.id,
+        userId: requester.id
+      }
+    }
+  });
+
+  assert.equal(pendingRequest?.status, "REQUESTED");
+
+  session.user.id = admin.id;
+  session.user.activeParishId = parish.id;
+
+  const approveResult = await actions.approveJoinRequest({
+    groupId: group.id,
+    userId: requester.id
+  });
+
+  assert.equal(approveResult.status, "success");
+
+  const approvedMembership = await prisma.groupMembership.findUnique({
+    where: {
+      groupId_userId: {
+        groupId: group.id,
+        userId: requester.id
+      }
+    }
+  });
+
+  assert.equal(approvedMembership?.status, "ACTIVE");
+
+  session.user.id = requesterTwo.id;
+  session.user.activeParishId = parish.id;
+
+  const secondRequest = await actions.requestToJoin({ groupId: group.id });
+  assert.equal(secondRequest.status, "success");
+
+  session.user.id = coordinator.id;
+  session.user.activeParishId = parish.id;
+
+  const coordinatorApproval = await actions.approveJoinRequest({
+    groupId: group.id,
+    userId: requesterTwo.id
+  });
+
+  assert.equal(coordinatorApproval.status, "success");
+
+  session.user.id = requesterTwo.id;
+  session.user.activeParishId = parish.id;
+
+  const leaveResult = await actions.leaveGroup({ groupId: group.id });
+  assert.equal(leaveResult.status, "success");
+
+  const leftMembership = await prisma.groupMembership.findUnique({
+    where: {
+      groupId_userId: {
+        groupId: group.id,
+        userId: requesterTwo.id
+      }
+    }
+  });
+
+  assert.equal(leftMembership, null);
+
+  const openGroup = await prisma.group.create({
+    data: {
+      parishId: parish.id,
+      name: "Open Doors",
+      description: "Open join group",
+      joinPolicy: "OPEN",
+      visibility: "PUBLIC"
+    }
+  });
+
+  session.user.id = requesterTwo.id;
+  session.user.activeParishId = parish.id;
+
+  const joinResult = await actions.joinGroup({ groupId: openGroup.id });
+  assert.equal(joinResult.status, "success");
+
+  const openMembership = await prisma.groupMembership.findUnique({
+    where: {
+      groupId_userId: {
+        groupId: openGroup.id,
+        userId: requesterTwo.id
+      }
+    }
+  });
+
+  assert.equal(openMembership?.status, "ACTIVE");
+
   session.user.id = outsider.id;
   session.user.activeParishId = parish.id;
 
   const unauthorizedInvite = await actions.inviteMember({
     groupId: group.id,
     email: "newbie@example.com",
-    role: "MEMBER"
+    role: "PARISHIONER"
   });
 
   assert.equal(unauthorizedInvite.status, "error");

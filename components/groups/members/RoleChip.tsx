@@ -1,12 +1,12 @@
 import Badge from "@/components/ui/Badge";
 
 type RoleChipProps = {
-  role: "LEAD" | "MEMBER" | "ADMIN" | "SHEPHERD";
+  role: "COORDINATOR" | "PARISHIONER" | "ADMIN" | "SHEPHERD";
 };
 
 const roleMap: Record<RoleChipProps["role"], { label: string; tone: "neutral" | "success" }> = {
-  LEAD: { label: "Coordinator", tone: "success" },
-  MEMBER: { label: "Parishioner", tone: "neutral" },
+  COORDINATOR: { label: "Coordinator", tone: "success" },
+  PARISHIONER: { label: "Parishioner", tone: "neutral" },
   ADMIN: { label: "Admin", tone: "neutral" },
   SHEPHERD: { label: "Clergy", tone: "neutral" }
 };

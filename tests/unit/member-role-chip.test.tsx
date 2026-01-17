@@ -5,7 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import RoleChip from "@/components/groups/members/RoleChip";
 
 test("RoleChip renders coordinator label", () => {
-  const markup = renderToStaticMarkup(createElement(RoleChip, { role: "LEAD" }));
+  const markup = renderToStaticMarkup(createElement(RoleChip, { role: "COORDINATOR" }));
 
   assert.match(markup, /Coordinator/);
 });

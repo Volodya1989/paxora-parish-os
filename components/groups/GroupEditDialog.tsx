@@ -9,7 +9,7 @@ import Textarea from "@/components/ui/Textarea";
 import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import { createGroup } from "@/server/actions/groups";
+import { updateGroup } from "@/server/actions/groups";
 
 const NAME_MAX_LENGTH = 80;
 const DESCRIPTION_MAX_LENGTH = 280;
@@ -23,27 +23,35 @@ const joinPolicyOptions = [
   { value: "REQUEST_TO_JOIN", label: "Request approval to join" }
 ];
 
-type GroupCreateDialogProps = {
+type GroupEditDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   parishId: string;
   actorUserId: string;
-  onCreated?: () => void;
+  group: {
+    id: string;
+    name: string;
+    description?: string | null;
+    visibility: "PUBLIC" | "PRIVATE";
+    joinPolicy: "INVITE_ONLY" | "OPEN" | "REQUEST_TO_JOIN";
+  };
+  onUpdated?: () => void;
 };
 
-export default function GroupCreateDialog({
+export default function GroupEditDialog({
   open,
   onOpenChange,
   parishId,
   actorUserId,
-  onCreated
-}: GroupCreateDialogProps) {
+  group,
+  onUpdated
+}: GroupEditDialogProps) {
   const { addToast } = useToast();
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [visibility, setVisibility] = useState<"PUBLIC" | "PRIVATE">("PUBLIC");
+  const [name, setName] = useState(group.name);
+  const [description, setDescription] = useState(group.description ?? "");
+  const [visibility, setVisibility] = useState<"PUBLIC" | "PRIVATE">(group.visibility);
   const [joinPolicy, setJoinPolicy] = useState<"INVITE_ONLY" | "OPEN" | "REQUEST_TO_JOIN">(
-    "INVITE_ONLY"
+    group.joinPolicy
   );
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -56,19 +64,16 @@ export default function GroupCreateDialog({
   const drawerVisibilityId = useId();
   const drawerJoinPolicyId = useId();
 
-  const resetForm = () => {
-    setName("");
-    setDescription("");
-    setVisibility("PUBLIC");
-    setJoinPolicy("INVITE_ONLY");
-    setError(null);
-  };
-
   useEffect(() => {
     if (!open) {
-      resetForm();
+      return;
     }
-  }, [open]);
+    setName(group.name);
+    setDescription(group.description ?? "");
+    setVisibility(group.visibility);
+    setJoinPolicy(group.joinPolicy);
+    setError(null);
+  }, [group, open]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -94,25 +99,25 @@ export default function GroupCreateDialog({
 
     startTransition(async () => {
       try {
-        await createGroup({
+        await updateGroup({
           parishId,
           actorUserId,
+          groupId: group.id,
           name: trimmedName,
           description: trimmedDescription || undefined,
           visibility,
           joinPolicy
         });
         addToast({
-          title: "Group created",
-          description: "Your new group is ready for members and tasks."
+          title: "Group updated",
+          description: "Your changes are live."
         });
-        resetForm();
         onOpenChange(false);
-        onCreated?.();
+        onUpdated?.();
       } catch (submitError) {
-        setError("We couldn't create that group. Please try again.");
+        setError("We couldn't update that group. Please try again.");
         addToast({
-          title: "Unable to create group",
+          title: "Unable to save",
           description: "Please check the details and try again."
         });
       }
@@ -189,7 +194,7 @@ export default function GroupCreateDialog({
         Cancel
       </Button>
       <Button type="submit" form={formId} isLoading={isPending}>
-        Create group
+        Save changes
       </Button>
     </>
   );
@@ -203,11 +208,11 @@ export default function GroupCreateDialog({
       <Modal
         open={open}
         onClose={handleClose}
-        title="New group"
+        title="Edit group"
         footer={renderFooter(modalFormId)}
       >
         <p className="mb-4 text-sm text-ink-500">
-          Gather the right people around a mission, ministry, or project.
+          Update details so members know how to connect and contribute.
         </p>
         {renderForm(
           modalFormId,
@@ -220,11 +225,11 @@ export default function GroupCreateDialog({
       <Drawer
         open={open}
         onClose={handleClose}
-        title="New group"
+        title="Edit group"
         footer={renderFooter(drawerFormId)}
       >
         <p className="mb-4 text-sm text-ink-500">
-          Gather the right people around a mission, ministry, or project.
+          Update details so members know how to connect and contribute.
         </p>
         {renderForm(
           drawerFormId,

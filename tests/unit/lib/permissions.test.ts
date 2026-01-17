@@ -9,6 +9,6 @@ test("parish role checks gate leader permissions", () => {
 });
 
 test("group leads can manage membership when allowed", () => {
-  assert.equal(canManageGroupMembership("MEMBER", "LEAD"), true);
-  assert.equal(canManageGroupMembership("MEMBER", "MEMBER"), false);
+  assert.equal(canManageGroupMembership("MEMBER", "COORDINATOR"), true);
+  assert.equal(canManageGroupMembership("MEMBER", "PARISHIONER"), false);
 });

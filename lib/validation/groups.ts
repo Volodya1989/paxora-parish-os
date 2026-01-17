@@ -7,7 +7,7 @@ export const getGroupDetailSchema = z.object({
 export const updateGroupMembershipSchema = z.object({
   groupId: z.string().min(1),
   userId: z.string().min(1),
-  role: z.enum(["LEAD", "MEMBER", "REMOVE"])
+  role: z.enum(["COORDINATOR", "PARISHIONER", "REMOVE"])
 });
 
 export const createGroupSchema = z.object({
@@ -20,7 +20,13 @@ export const createGroupSchema = z.object({
     .string()
     .trim()
     .max(280, "Description must be 280 characters or fewer.")
-    .optional()
+    .optional(),
+  visibility: z.enum(["PUBLIC", "PRIVATE"]),
+  joinPolicy: z.enum(["INVITE_ONLY", "OPEN", "REQUEST_TO_JOIN"])
+});
+
+export const updateGroupSchema = createGroupSchema.extend({
+  groupId: z.string().min(1)
 });
 
 export const groupArchiveSchema = z.object({

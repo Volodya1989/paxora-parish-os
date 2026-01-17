@@ -10,6 +10,7 @@ import {
   createGroupSchema,
   getGroupDetailSchema,
   groupArchiveSchema,
+  updateGroupSchema,
   updateGroupMembershipSchema
 } from "@/lib/validation/groups";
 import { getParishMembership } from "@/server/db/groups";
@@ -63,7 +64,7 @@ export async function listGroups() {
   const session = await getServerSession(authOptions);
   const { userId, parishId } = assertSession(session);
 
-  await requireParishMembership(userId, parishId);
+  const parishMembership = await requireParishMembership(userId, parishId);
 
   return prisma.group.findMany({
     where: { parishId },
@@ -81,6 +82,8 @@ export async function createGroup(input: {
   actorUserId: string;
   name: string;
   description?: string | null;
+  visibility: "PUBLIC" | "PRIVATE";
+  joinPolicy: "INVITE_ONLY" | "OPEN" | "REQUEST_TO_JOIN";
 }) {
   const session = await getServerSession(authOptions);
   const { parishId, userId } = assertActorContext(session, input);
@@ -89,7 +92,9 @@ export async function createGroup(input: {
 
   const parsed = createGroupSchema.safeParse({
     name: input.name,
-    description: input.description ?? undefined
+    description: input.description ?? undefined,
+    visibility: input.visibility,
+    joinPolicy: input.joinPolicy
   });
 
   if (!parsed.success) {
@@ -100,12 +105,16 @@ export async function createGroup(input: {
     data: {
       parishId,
       name: parsed.data.name,
-      description: parsed.data.description?.trim() || undefined
+      description: parsed.data.description?.trim() || undefined,
+      visibility: parsed.data.visibility,
+      joinPolicy: parsed.data.joinPolicy
     },
     select: {
       id: true,
       name: true,
       description: true,
+      visibility: true,
+      joinPolicy: true,
       createdAt: true,
       archivedAt: true
     }
@@ -114,6 +123,54 @@ export async function createGroup(input: {
   revalidatePath("/groups");
 
   return group;
+}
+
+export async function updateGroup(input: {
+  parishId: string;
+  actorUserId: string;
+  groupId: string;
+  name: string;
+  description?: string | null;
+  visibility: "PUBLIC" | "PRIVATE";
+  joinPolicy: "INVITE_ONLY" | "OPEN" | "REQUEST_TO_JOIN";
+}) {
+  const session = await getServerSession(authOptions);
+  const { parishId, userId } = assertActorContext(session, input);
+
+  await requireParishLeader(userId, parishId);
+
+  const parsed = updateGroupSchema.safeParse({
+    groupId: input.groupId,
+    name: input.name,
+    description: input.description ?? undefined,
+    visibility: input.visibility,
+    joinPolicy: input.joinPolicy
+  });
+
+  if (!parsed.success) {
+    throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
+  }
+
+  const result = await prisma.group.updateMany({
+    where: {
+      id: parsed.data.groupId,
+      parishId
+    },
+    data: {
+      name: parsed.data.name,
+      description: parsed.data.description?.trim() || undefined,
+      visibility: parsed.data.visibility,
+      joinPolicy: parsed.data.joinPolicy
+    }
+  } as any);
+
+  if (result.count === 0) {
+    throw new Error("Not found");
+  }
+
+  revalidatePath("/groups");
+  revalidatePath(`/groups/${parsed.data.groupId}`);
+  revalidatePath(`/groups/${parsed.data.groupId}/members`);
 }
 
 export async function archiveGroup(input: {
@@ -196,7 +253,9 @@ export async function getGroupDetail(groupId: string) {
     select: {
       id: true,
       name: true,
-      description: true
+      description: true,
+      visibility: true,
+      joinPolicy: true
     }
   });
 
@@ -204,7 +263,26 @@ export async function getGroupDetail(groupId: string) {
     throw new Error("Not found");
   }
 
-  const week = await getOrCreateCurrentWeek(parishId);
+  const [groupMembership, week] = await Promise.all([
+    prisma.groupMembership.findUnique({
+      where: {
+        groupId_userId: {
+          groupId: group.id,
+          userId
+        }
+      },
+      select: { status: true }
+    }),
+    getOrCreateCurrentWeek(parishId)
+  ]);
+
+  if (!isParishLeader(parishMembership.role)) {
+    const canView =
+      group.visibility === "PUBLIC" || groupMembership?.status === "ACTIVE";
+    if (!canView) {
+      throw new Error("Unauthorized");
+    }
+  }
   const visibilityWhere: Prisma.TaskWhereInput = {
     OR: [
       { visibility: TaskVisibility.PUBLIC, approvalStatus: TaskApprovalStatus.APPROVED },
@@ -301,7 +379,7 @@ export async function updateGroupMembership(formData: FormData) {
       }
     });
 
-    if (groupMembership?.status !== "ACTIVE" || groupMembership.role !== "LEAD") {
+    if (groupMembership?.status !== "ACTIVE" || groupMembership.role !== "COORDINATOR") {
       throw new Error("Forbidden");
     }
   }

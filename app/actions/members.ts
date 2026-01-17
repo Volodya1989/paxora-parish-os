@@ -8,6 +8,11 @@ import {
   acceptInviteSchema,
   changeMemberRoleSchema,
   declineInviteSchema,
+  joinGroupSchema,
+  requestToJoinSchema,
+  leaveGroupSchema,
+  approveRequestSchema,
+  denyRequestSchema,
   inviteMemberSchema,
   removeMemberSchema
 } from "@/lib/validation/members";
@@ -17,6 +22,8 @@ export type MemberActionError =
   | "NOT_AUTHORIZED"
   | "NOT_FOUND"
   | "ALREADY_MEMBER"
+  | "ALREADY_PENDING"
+  | "INVALID_POLICY"
   | "VALIDATION_ERROR";
 
 export type MemberActionState = {
@@ -45,7 +52,7 @@ async function requireSession() {
 export async function inviteMember(input: {
   groupId: string;
   email: string;
-  role?: "LEAD" | "MEMBER";
+  role?: "COORDINATOR" | "PARISHIONER";
 }): Promise<MemberActionState> {
   const session = await requireSession();
   const parsed = inviteMemberSchema.safeParse(input);
@@ -97,8 +104,11 @@ export async function inviteMember(input: {
   if (existing?.status === "ACTIVE") {
     return buildError("That parishioner is already in this group.", "ALREADY_MEMBER");
   }
+  if (existing?.status === "INVITED" || existing?.status === "REQUESTED") {
+    return buildError("That parishioner already has a pending invite or request.", "ALREADY_PENDING");
+  }
 
-  const role = parsed.data.role ?? "MEMBER";
+  const role = parsed.data.role ?? "PARISHIONER";
 
   await prisma.groupMembership.upsert({
     where: {
@@ -164,7 +174,8 @@ export async function acceptInvite(input: { groupId: string }): Promise<MemberAc
     data: {
       status: "ACTIVE",
       invitedByUserId: null,
-      invitedEmail: null
+      invitedEmail: null,
+      approvedByUserId: session.user.id
     }
   });
 
@@ -214,6 +225,303 @@ export async function declineInvite(input: { groupId: string }): Promise<MemberA
   return {
     status: "success",
     message: "Invite declined."
+  };
+}
+
+export async function joinGroup(input: { groupId: string }): Promise<MemberActionState> {
+  const session = await requireSession();
+  const parsed = joinGroupSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return buildError(parsed.error.errors[0]?.message ?? "Invalid group", "VALIDATION_ERROR");
+  }
+
+  const group = await prisma.group.findUnique({
+    where: { id: parsed.data.groupId },
+    select: { id: true, parishId: true, joinPolicy: true }
+  });
+
+  if (!group) {
+    return buildError("Group not found.", "NOT_FOUND");
+  }
+
+  const parishMembership = await prisma.membership.findUnique({
+    where: {
+      parishId_userId: {
+        parishId: group.parishId,
+        userId: session.user.id
+      }
+    },
+    select: { role: true }
+  });
+
+  if (!parishMembership) {
+    return buildError("You are not approved in this parish.", "NOT_AUTHORIZED");
+  }
+
+  if (group.joinPolicy !== "OPEN") {
+    return buildError("This group is not open for instant joins.", "INVALID_POLICY");
+  }
+
+  const existing = await prisma.groupMembership.findUnique({
+    where: {
+      groupId_userId: {
+        groupId: group.id,
+        userId: session.user.id
+      }
+    },
+    select: { status: true, role: true }
+  });
+
+  if (existing?.status === "ACTIVE") {
+    return buildError("You are already a member of this group.", "ALREADY_MEMBER");
+  }
+
+  await prisma.groupMembership.upsert({
+    where: {
+      groupId_userId: {
+        groupId: group.id,
+        userId: session.user.id
+      }
+    },
+    update: {
+      status: "ACTIVE",
+      invitedByUserId: null,
+      invitedEmail: null,
+      approvedByUserId: session.user.id
+    },
+    create: {
+      groupId: group.id,
+      userId: session.user.id,
+      role: existing?.role ?? "PARISHIONER",
+      status: "ACTIVE",
+      approvedByUserId: session.user.id
+    }
+  });
+
+  revalidatePath(`/groups/${group.id}`);
+  revalidatePath(`/groups/${group.id}/members`);
+  revalidatePath("/groups");
+
+  return {
+    status: "success",
+    message: "You joined the group."
+  };
+}
+
+export async function requestToJoin(input: { groupId: string }): Promise<MemberActionState> {
+  const session = await requireSession();
+  const parsed = requestToJoinSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return buildError(parsed.error.errors[0]?.message ?? "Invalid group", "VALIDATION_ERROR");
+  }
+
+  const group = await prisma.group.findUnique({
+    where: { id: parsed.data.groupId },
+    select: { id: true, parishId: true, joinPolicy: true }
+  });
+
+  if (!group) {
+    return buildError("Group not found.", "NOT_FOUND");
+  }
+
+  const parishMembership = await prisma.membership.findUnique({
+    where: {
+      parishId_userId: {
+        parishId: group.parishId,
+        userId: session.user.id
+      }
+    },
+    select: { role: true }
+  });
+
+  if (!parishMembership) {
+    return buildError("You are not approved in this parish.", "NOT_AUTHORIZED");
+  }
+
+  if (group.joinPolicy !== "REQUEST_TO_JOIN") {
+    return buildError("This group does not accept join requests.", "INVALID_POLICY");
+  }
+
+  const existing = await prisma.groupMembership.findUnique({
+    where: {
+      groupId_userId: {
+        groupId: group.id,
+        userId: session.user.id
+      }
+    },
+    select: { status: true, role: true }
+  });
+
+  if (existing?.status === "ACTIVE") {
+    return buildError("You are already a member of this group.", "ALREADY_MEMBER");
+  }
+  if (existing?.status === "REQUESTED" || existing?.status === "INVITED") {
+    return buildError("Your request or invite is already pending.", "ALREADY_PENDING");
+  }
+
+  await prisma.groupMembership.create({
+    data: {
+      groupId: group.id,
+      userId: session.user.id,
+      role: "PARISHIONER",
+      status: "REQUESTED"
+    }
+  });
+
+  revalidatePath(`/groups/${group.id}`);
+  revalidatePath(`/groups/${group.id}/members`);
+  revalidatePath("/groups");
+
+  return {
+    status: "success",
+    message: "Request sent."
+  };
+}
+
+export async function leaveGroup(input: { groupId: string }): Promise<MemberActionState> {
+  const session = await requireSession();
+  const parsed = leaveGroupSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return buildError(parsed.error.errors[0]?.message ?? "Invalid group", "VALIDATION_ERROR");
+  }
+
+  const membership = await prisma.groupMembership.findUnique({
+    where: {
+      groupId_userId: {
+        groupId: parsed.data.groupId,
+        userId: session.user.id
+      }
+    },
+    select: { status: true }
+  });
+
+  if (!membership || membership.status !== "ACTIVE") {
+    return buildError("You are not an active member of this group.", "NOT_FOUND");
+  }
+
+  await prisma.groupMembership.delete({
+    where: {
+      groupId_userId: {
+        groupId: parsed.data.groupId,
+        userId: session.user.id
+      }
+    }
+  });
+
+  revalidatePath(`/groups/${parsed.data.groupId}`);
+  revalidatePath(`/groups/${parsed.data.groupId}/members`);
+  revalidatePath("/groups");
+
+  return {
+    status: "success",
+    message: "You have left the group."
+  };
+}
+
+export async function approveJoinRequest(input: {
+  groupId: string;
+  userId: string;
+}): Promise<MemberActionState> {
+  const session = await requireSession();
+  const parsed = approveRequestSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return buildError(parsed.error.errors[0]?.message ?? "Invalid request", "VALIDATION_ERROR");
+  }
+
+  let context;
+  try {
+    context = await requireCoordinatorOrAdmin(session.user.id, parsed.data.groupId);
+  } catch (error) {
+    return buildError("You do not have permission to approve requests.", "NOT_AUTHORIZED");
+  }
+
+  const target = await prisma.groupMembership.findUnique({
+    where: {
+      groupId_userId: {
+        groupId: parsed.data.groupId,
+        userId: parsed.data.userId
+      }
+    },
+    select: { status: true }
+  });
+
+  if (!target || target.status !== "REQUESTED") {
+    return buildError("Join request not found.", "NOT_FOUND");
+  }
+
+  await prisma.groupMembership.update({
+    where: {
+      groupId_userId: {
+        groupId: parsed.data.groupId,
+        userId: parsed.data.userId
+      }
+    },
+    data: {
+      status: "ACTIVE",
+      approvedByUserId: session.user.id
+    }
+  });
+
+  revalidatePath(`/groups/${parsed.data.groupId}/members`);
+  revalidatePath(`/groups/${parsed.data.groupId}`);
+  revalidatePath("/groups");
+
+  return {
+    status: "success",
+    message: "Request approved."
+  };
+}
+
+export async function denyJoinRequest(input: {
+  groupId: string;
+  userId: string;
+}): Promise<MemberActionState> {
+  const session = await requireSession();
+  const parsed = denyRequestSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return buildError(parsed.error.errors[0]?.message ?? "Invalid request", "VALIDATION_ERROR");
+  }
+
+  try {
+    await requireCoordinatorOrAdmin(session.user.id, parsed.data.groupId);
+  } catch (error) {
+    return buildError("You do not have permission to deny requests.", "NOT_AUTHORIZED");
+  }
+
+  const target = await prisma.groupMembership.findUnique({
+    where: {
+      groupId_userId: {
+        groupId: parsed.data.groupId,
+        userId: parsed.data.userId
+      }
+    },
+    select: { status: true }
+  });
+
+  if (!target || target.status !== "REQUESTED") {
+    return buildError("Join request not found.", "NOT_FOUND");
+  }
+
+  await prisma.groupMembership.delete({
+    where: {
+      groupId_userId: {
+        groupId: parsed.data.groupId,
+        userId: parsed.data.userId
+      }
+    }
+  });
+
+  revalidatePath(`/groups/${parsed.data.groupId}/members`);
+  revalidatePath(`/groups/${parsed.data.groupId}`);
+
+  return {
+    status: "success",
+    message: "Request denied."
   };
 }
 
@@ -269,7 +577,7 @@ export async function removeMember(input: {
 export async function changeMemberRole(input: {
   groupId: string;
   userId: string;
-  role: "LEAD" | "MEMBER";
+  role: "COORDINATOR" | "PARISHIONER";
 }): Promise<MemberActionState> {
   const session = await requireSession();
   const parsed = changeMemberRoleSchema.safeParse(input);
@@ -285,7 +593,10 @@ export async function changeMemberRole(input: {
     return buildError("You do not have permission to change roles.", "NOT_AUTHORIZED");
   }
 
-  if (!context.parishRole || (!isAdminClergy(context.parishRole) && context.groupRole !== "LEAD")) {
+  if (
+    !context.parishRole ||
+    (!isAdminClergy(context.parishRole) && context.groupRole !== "COORDINATOR")
+  ) {
     return buildError("You do not have permission to change roles.", "NOT_AUTHORIZED");
   }
 

@@ -15,14 +15,13 @@ export default async function GroupsPage() {
   const parishId = session.user.activeParishId;
   const actorUserId = session.user.id;
 
-  const [groups, membership] = await Promise.all([
-    listGroups(parishId, true),
-    getParishMembership(parishId, actorUserId)
-  ]);
+  const membership = await getParishMembership(parishId, actorUserId);
 
   if (!membership) {
     throw new Error("Unauthorized");
   }
+
+  const groups = await listGroups(parishId, actorUserId, membership.role, true);
 
   return (
     <GroupsView

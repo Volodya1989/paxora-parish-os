@@ -28,7 +28,9 @@ export default async function GroupMembersPage({ params }: GroupMembersPageProps
       id: true,
       name: true,
       description: true,
-      parishId: true
+      parishId: true,
+      visibility: true,
+      joinPolicy: true
     }
   });
 
@@ -58,10 +60,15 @@ export default async function GroupMembersPage({ params }: GroupMembersPageProps
   ]);
 
   const isLeader = parishMembership ? isAdminClergy(parishMembership.role) : false;
-  const isCoordinator = groupMembership?.status === "ACTIVE" && groupMembership.role === "LEAD";
+  const isCoordinator =
+    groupMembership?.status === "ACTIVE" && groupMembership.role === "COORDINATOR";
   const canManage = isLeader || isCoordinator;
+  const canViewPending = canManage || groupMembership?.status === "ACTIVE";
   const canView =
-    isLeader || groupMembership?.status === "ACTIVE" || groupMembership?.status === "INVITED";
+    isLeader ||
+    groupMembership?.status === "ACTIVE" ||
+    groupMembership?.status === "INVITED" ||
+    groupMembership?.status === "REQUESTED";
 
   if (!canView) {
     throw new Error("Unauthorized");
@@ -69,7 +76,7 @@ export default async function GroupMembersPage({ params }: GroupMembersPageProps
 
   const [members, pendingInvites] = await Promise.all([
     getGroupMembers(group.id),
-    canManage ? getPendingInvites(group.id) : Promise.resolve([])
+    canViewPending ? getPendingInvites(group.id) : Promise.resolve([])
   ]);
 
   return (
