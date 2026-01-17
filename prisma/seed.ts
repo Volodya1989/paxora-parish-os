@@ -20,6 +20,30 @@ async function main() {
     }
   });
 
+  const coordinator = await prisma.user.create({
+    data: {
+      name: "Demo Coordinator",
+      email: "coordinator@paxora.local",
+      passwordHash
+    }
+  });
+
+  const parishioner = await prisma.user.create({
+    data: {
+      name: "Demo Parishioner",
+      email: "parishioner@paxora.local",
+      passwordHash
+    }
+  });
+
+  const invited = await prisma.user.create({
+    data: {
+      name: "Invited Parishioner",
+      email: "invited@paxora.local",
+      passwordHash
+    }
+  });
+
   const parish = await prisma.parish.create({
     data: {
       name: "St. Paxora Parish",
@@ -35,8 +59,33 @@ async function main() {
     }
   });
 
+  await prisma.membership.createMany({
+    data: [
+      {
+        parishId: parish.id,
+        userId: coordinator.id,
+        role: "MEMBER"
+      },
+      {
+        parishId: parish.id,
+        userId: parishioner.id,
+        role: "MEMBER"
+      },
+      {
+        parishId: parish.id,
+        userId: invited.id,
+        role: "MEMBER"
+      }
+    ]
+  });
+
   await prisma.user.update({
     where: { id: user.id },
+    data: { activeParishId: parish.id }
+  });
+
+  await prisma.user.updateMany({
+    where: { id: { in: [coordinator.id, parishioner.id, invited.id] } },
     data: { activeParishId: parish.id }
   });
 
@@ -51,6 +100,39 @@ async function main() {
       endsOn: end,
       label: getWeekLabel(start)
     }
+  });
+
+  const group = await prisma.group.create({
+    data: {
+      parishId: parish.id,
+      name: "Hospitality",
+      description: "Welcome and care ministry"
+    }
+  });
+
+  await prisma.groupMembership.createMany({
+    data: [
+      {
+        groupId: group.id,
+        userId: coordinator.id,
+        role: "LEAD",
+        status: "ACTIVE"
+      },
+      {
+        groupId: group.id,
+        userId: parishioner.id,
+        role: "MEMBER",
+        status: "ACTIVE"
+      },
+      {
+        groupId: group.id,
+        userId: invited.id,
+        role: "MEMBER",
+        status: "INVITED",
+        invitedByUserId: coordinator.id,
+        invitedEmail: invited.email
+      }
+    ]
   });
 
   await prisma.task.createMany({

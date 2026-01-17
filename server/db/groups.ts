@@ -25,7 +25,8 @@ export async function getGroupMembership(groupId: string, userId: string) {
     },
     select: {
       id: true,
-      role: true
+      role: true,
+      status: true
     }
   });
 }
@@ -70,16 +71,19 @@ export async function upsertGroupMembership(input: {
       }
     },
     update: {
-      role: input.role
+      role: input.role,
+      status: "ACTIVE"
     },
     create: {
       groupId: input.groupId,
       userId: input.userId,
-      role: input.role
+      role: input.role,
+      status: "ACTIVE"
     },
     select: {
       id: true,
-      role: true
+      role: true,
+      status: true
     }
   });
 }

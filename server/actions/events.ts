@@ -79,6 +79,51 @@ async function resolveGroup(
   });
 }
 
+function resolveRecurrence(input: {
+  recurrenceFreq: "NONE" | "DAILY" | "WEEKLY";
+  recurrenceInterval?: number;
+  recurrenceByWeekday: number[];
+  recurrenceUntil?: string;
+  startsAt: Date;
+}) {
+  const interval = input.recurrenceInterval ?? 1;
+  const recurrenceFreq = input.recurrenceFreq ?? "NONE";
+  let recurrenceByWeekday = input.recurrenceByWeekday ?? [];
+  let recurrenceUntil: Date | null = null;
+
+  if (input.recurrenceUntil) {
+    const parsedUntil = new Date(`${input.recurrenceUntil}T23:59:59`);
+    if (Number.isNaN(parsedUntil.getTime())) {
+      throw new Error("Enter a valid recurrence end date.");
+    }
+    recurrenceUntil = parsedUntil;
+  }
+
+  if (recurrenceFreq === "NONE") {
+    recurrenceByWeekday = [];
+    recurrenceUntil = null;
+  }
+
+  if (recurrenceFreq === "DAILY") {
+    recurrenceByWeekday = [];
+  }
+
+  if (recurrenceFreq === "WEEKLY" && recurrenceByWeekday.length === 0) {
+    recurrenceByWeekday = [input.startsAt.getDay()];
+  }
+
+  if (recurrenceUntil && recurrenceUntil < input.startsAt) {
+    throw new Error("Recurrence end date must be after the event start date.");
+  }
+
+  return {
+    recurrenceFreq,
+    recurrenceInterval: interval,
+    recurrenceByWeekday,
+    recurrenceUntil
+  };
+}
+
 export async function listWeekEvents(weekSelection: WeekSelection = "current") {
   const session = await getServerSession(authOptions);
   const { userId, parishId } = assertSession(session);
@@ -116,7 +161,11 @@ export async function createEvent(
     summary: formData.get("summary"),
     visibility: formData.get("visibility"),
     groupId: formData.get("groupId"),
-    type: formData.get("type")
+    type: formData.get("type"),
+    recurrenceFreq: formData.get("recurrenceFreq"),
+    recurrenceInterval: formData.get("recurrenceInterval"),
+    recurrenceByWeekday: formData.get("recurrenceByWeekday"),
+    recurrenceUntil: formData.get("recurrenceUntil")
   });
 
   if (!parsed.success) {
@@ -156,11 +205,27 @@ export async function createEvent(
     };
   }
 
+  let recurrence;
+  try {
+    recurrence = resolveRecurrence({
+      recurrenceFreq: parsed.data.recurrenceFreq,
+      recurrenceInterval: parsed.data.recurrenceInterval,
+      recurrenceByWeekday: parsed.data.recurrenceByWeekday,
+      recurrenceUntil: parsed.data.recurrenceUntil,
+      startsAt
+    });
+  } catch (error) {
+    return {
+      status: "error",
+      message: error instanceof Error ? error.message : "Invalid recurrence settings."
+    };
+  }
+
   if (parsed.data.visibility === "GROUP") {
     const groupMembership = group?.id
       ? await getGroupMembership(group.id, userId)
       : null;
-    if (!isLeader && !groupMembership) {
+    if (!isLeader && groupMembership?.status !== "ACTIVE") {
       return {
         status: "error",
         message: "You must belong to the selected group to create this event."
@@ -185,7 +250,11 @@ export async function createEvent(
     summary: parsed.data.summary ?? null,
     visibility: parsed.data.visibility,
     groupId: parsed.data.visibility === "GROUP" ? group?.id ?? null : null,
-    type: parsed.data.type
+    type: parsed.data.type,
+    recurrenceFreq: recurrence.recurrenceFreq,
+    recurrenceInterval: recurrence.recurrenceInterval,
+    recurrenceByWeekday: recurrence.recurrenceByWeekday,
+    recurrenceUntil: recurrence.recurrenceUntil
   });
 
   revalidatePath("/calendar");
@@ -214,7 +283,11 @@ export async function updateEvent(
     summary: formData.get("summary"),
     visibility: formData.get("visibility"),
     groupId: formData.get("groupId"),
-    type: formData.get("type")
+    type: formData.get("type"),
+    recurrenceFreq: formData.get("recurrenceFreq"),
+    recurrenceInterval: formData.get("recurrenceInterval"),
+    recurrenceByWeekday: formData.get("recurrenceByWeekday"),
+    recurrenceUntil: formData.get("recurrenceUntil")
   });
 
   if (!parsed.success) {
@@ -250,11 +323,11 @@ export async function updateEvent(
     return { status: "error", message: "That group is no longer available." };
   }
 
+  const existingMembership = existing.groupId
+    ? await getGroupMembership(existing.groupId, userId)
+    : null;
   const canManageExisting =
-    isLeader ||
-    (existing.groupId
-      ? Boolean(await getGroupMembership(existing.groupId, userId))
-      : false);
+    isLeader || (existingMembership?.status === "ACTIVE" && Boolean(existingMembership));
 
   if (!canManageExisting) {
     return {
@@ -274,7 +347,7 @@ export async function updateEvent(
     const groupMembership = group?.id
       ? await getGroupMembership(group.id, userId)
       : null;
-    if (!isLeader && !groupMembership) {
+    if (!isLeader && groupMembership?.status !== "ACTIVE") {
       return {
         status: "error",
         message: "You must belong to the selected group to use group visibility."
@@ -299,6 +372,22 @@ export async function updateEvent(
     };
   }
 
+  let recurrence;
+  try {
+    recurrence = resolveRecurrence({
+      recurrenceFreq: parsed.data.recurrenceFreq,
+      recurrenceInterval: parsed.data.recurrenceInterval,
+      recurrenceByWeekday: parsed.data.recurrenceByWeekday,
+      recurrenceUntil: parsed.data.recurrenceUntil,
+      startsAt
+    });
+  } catch (error) {
+    return {
+      status: "error",
+      message: error instanceof Error ? error.message : "Invalid recurrence settings."
+    };
+  }
+
   const week = await getOrCreateWeekForDate(parishId, startsAt);
 
   await prisma.event.update({
@@ -312,6 +401,10 @@ export async function updateEvent(
       visibility: parsed.data.visibility,
       groupId: parsed.data.visibility === "GROUP" ? group?.id ?? null : null,
       type: parsed.data.type,
+      recurrenceFreq: recurrence.recurrenceFreq,
+      recurrenceInterval: recurrence.recurrenceInterval,
+      recurrenceByWeekday: recurrence.recurrenceByWeekday,
+      recurrenceUntil: recurrence.recurrenceUntil,
       weekId: week.id
     }
   });
@@ -356,11 +449,11 @@ export async function deleteEvent(
     return { status: "error", message: "Event not found." };
   }
 
+  const existingMembership = existing.groupId
+    ? await getGroupMembership(existing.groupId, userId)
+    : null;
   const canManageExisting =
-    isLeader ||
-    (existing.groupId
-      ? Boolean(await getGroupMembership(existing.groupId, userId))
-      : false);
+    isLeader || (existingMembership?.status === "ACTIVE" && Boolean(existingMembership));
 
   if (!canManageExisting) {
     return {

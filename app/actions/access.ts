@@ -65,7 +65,10 @@ type ApproveAccessInput = {
 
 const parseRole = (value: string | null): ParishRole => {
   const normalized = (value ?? "").trim().toUpperCase();
-  if (normalized === "ADMIN" || normalized === "MEMBER") {
+  if (normalized.length === 0) {
+    return "MEMBER";
+  }
+  if (normalized === "ADMIN" || normalized === "MEMBER" || normalized === "SHEPHERD") {
     return normalized as ParishRole;
   }
   throw new Error("Role is required for approval");

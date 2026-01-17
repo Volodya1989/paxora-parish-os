@@ -124,7 +124,8 @@ async function assertTaskAccess({ taskId, parishId, actorUserId }: TaskActionInp
     ? await getGroupMembership(task.groupId, actorUserId)
     : null;
 
-  const allowed = canManageGroupMembership(parishMembership.role, groupMembership?.role ?? null);
+  const groupRole = groupMembership?.status === "ACTIVE" ? groupMembership.role : null;
+  const allowed = canManageGroupMembership(parishMembership.role, groupRole);
 
   if (!allowed) {
     throw new Error("Forbidden");

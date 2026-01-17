@@ -6,9 +6,7 @@ type GroupListRecord = {
   description: string | null;
   createdAt: Date;
   archivedAt: Date | null;
-  _count?: {
-    memberships: number;
-  };
+  memberships?: Array<{ id: string }>;
 };
 
 export type GroupListItem = {
@@ -33,10 +31,9 @@ export async function listGroups(parishId: string, includeArchived = true) {
       description: true,
       createdAt: true,
       archivedAt: true,
-      _count: {
-        select: {
-          memberships: true
-        }
+      memberships: {
+        where: { status: "ACTIVE" },
+        select: { id: true }
       }
     }
   } as any)) as unknown as GroupListRecord[];
@@ -47,6 +44,6 @@ export async function listGroups(parishId: string, includeArchived = true) {
     description: group.description,
     createdAt: group.createdAt,
     archivedAt: group.archivedAt,
-    memberCount: group._count?.memberships ?? null
+    memberCount: group.memberships?.length ?? null
   }));
 }

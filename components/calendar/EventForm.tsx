@@ -80,6 +80,9 @@ export default function EventForm({
   const visibilityId = useId();
   const groupId = useId();
   const typeId = useId();
+  const recurrenceId = useId();
+  const recurrenceEndsId = useId();
+  const recurrenceUntilId = useId();
 
   const initialDateValue = useMemo(() => {
     if (event?.startsAt) {
@@ -102,6 +105,38 @@ export default function EventForm({
     return "10:00";
   }, [event]);
 
+  const initialRecurrence = useMemo(() => {
+    if (!event || event.recurrenceFreq === "NONE") {
+      return {
+        pattern: "NONE" as const,
+        days: [] as number[],
+        ends: "NEVER" as const,
+        until: ""
+      };
+    }
+
+    const fallbackDay = event.startsAt.getDay();
+    const days =
+      event.recurrenceFreq === "WEEKLY"
+        ? event.recurrenceByWeekday?.length
+          ? event.recurrenceByWeekday
+          : [fallbackDay]
+        : [];
+    const pattern =
+      event.recurrenceFreq === "DAILY"
+        ? "DAILY"
+        : days.length > 1
+          ? "CUSTOM"
+          : "WEEKLY";
+
+    return {
+      pattern: pattern as "DAILY" | "WEEKLY" | "CUSTOM",
+      days,
+      ends: event.recurrenceUntil ? ("ON" as const) : ("NEVER" as const),
+      until: event.recurrenceUntil ? formatDateInput(event.recurrenceUntil) : ""
+    };
+  }, [event]);
+
   const [dateValue, setDateValue] = useState(initialDateValue);
   const [startTimeValue, setStartTimeValue] = useState(initialStartTimeValue);
   const [endTimeValue, setEndTimeValue] = useState(initialEndTimeValue);
@@ -113,6 +148,16 @@ export default function EventForm({
   const [type, setType] = useState<"SERVICE" | "EVENT">(
     event?.type ?? defaultType
   );
+  const [recurrencePattern, setRecurrencePattern] = useState<
+    "NONE" | "DAILY" | "WEEKLY" | "CUSTOM"
+  >(initialRecurrence.pattern);
+  const [recurrenceDays, setRecurrenceDays] = useState<number[]>(
+    initialRecurrence.days
+  );
+  const [recurrenceEnds, setRecurrenceEnds] = useState<"NEVER" | "ON">(
+    initialRecurrence.ends
+  );
+  const [recurrenceUntil, setRecurrenceUntil] = useState(initialRecurrence.until);
 
   useEffect(() => {
     setDateValue(initialDateValue);
@@ -121,10 +166,15 @@ export default function EventForm({
     setVisibility(event?.visibility ?? (canCreatePublicEvents ? "PUBLIC" : "GROUP"));
     setSelectedGroupId(event?.group?.id ?? "");
     setType(event?.type ?? defaultType);
+    setRecurrencePattern(initialRecurrence.pattern);
+    setRecurrenceDays(initialRecurrence.days);
+    setRecurrenceEnds(initialRecurrence.ends);
+    setRecurrenceUntil(initialRecurrence.until);
   }, [
     canCreatePublicEvents,
     defaultType,
     event,
+    initialRecurrence,
     initialDateValue,
     initialEndTimeValue,
     initialStartTimeValue
@@ -135,6 +185,24 @@ export default function EventForm({
       setSelectedGroupId(groupOptions[0].id);
     }
   }, [groupOptions, selectedGroupId, visibility]);
+
+  useEffect(() => {
+    if (recurrencePattern === "WEEKLY" || recurrencePattern === "CUSTOM") {
+      if (recurrenceDays.length === 0) {
+        const parsed = new Date(dateValue);
+        if (!Number.isNaN(parsed.getTime())) {
+          setRecurrenceDays([parsed.getDay()]);
+        }
+      }
+    }
+  }, [dateValue, recurrenceDays.length, recurrencePattern]);
+
+  useEffect(() => {
+    if (recurrencePattern === "NONE") {
+      setRecurrenceEnds("NEVER");
+      setRecurrenceUntil("");
+    }
+  }, [recurrencePattern]);
 
   useEffect(() => {
     if (state.status !== "success") {
@@ -189,6 +257,39 @@ export default function EventForm({
     canCreatePublicEvents,
     event?.visibility
   ]);
+
+  const recurrenceOptions = [
+    { value: "NONE", label: "Does not repeat" },
+    { value: "DAILY", label: "Daily" },
+    { value: "WEEKLY", label: "Weekly" },
+    { value: "CUSTOM", label: "Custom weekdays" }
+  ];
+
+  const weekdayOptions = [
+    { label: "Mon", value: 1 },
+    { label: "Tue", value: 2 },
+    { label: "Wed", value: 3 },
+    { label: "Thu", value: 4 },
+    { label: "Fri", value: 5 },
+    { label: "Sat", value: 6 },
+    { label: "Sun", value: 0 }
+  ];
+
+  const recurrenceFreqValue =
+    recurrencePattern === "DAILY"
+      ? "DAILY"
+      : recurrencePattern === "NONE"
+        ? "NONE"
+        : "WEEKLY";
+
+  const toggleWeekday = (day: number) => {
+    setRecurrenceDays((current) => {
+      if (current.includes(day)) {
+        return current.filter((value) => value !== day);
+      }
+      return [...current, day];
+    });
+  };
 
   return (
     <form ref={formRef} className="space-y-4" action={formAction}>
@@ -251,9 +352,94 @@ export default function EventForm({
         </div>
       </div>
 
+      <div className="space-y-2">
+        <Label htmlFor={recurrenceId}>Repeats</Label>
+        <SelectMenu
+          id={recurrenceId}
+          name="recurrencePattern"
+          value={recurrencePattern}
+          onValueChange={(value) =>
+            setRecurrencePattern(value as "NONE" | "DAILY" | "WEEKLY" | "CUSTOM")
+          }
+          options={recurrenceOptions}
+        />
+        <p className="text-xs text-ink-400">
+          Set a daily, weekly, or custom weekday rhythm for this event.
+        </p>
+      </div>
+
+      {recurrencePattern === "WEEKLY" || recurrencePattern === "CUSTOM" ? (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
+            Repeat on
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {weekdayOptions.map((day) => {
+              const isActive = recurrenceDays.includes(day.value);
+              return (
+                <button
+                  key={day.value}
+                  type="button"
+                  onClick={() => toggleWeekday(day.value)}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition focus-ring ${
+                    isActive
+                      ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                      : "border-mist-200 bg-white text-ink-600 hover:border-mist-300"
+                  }`}
+                >
+                  {day.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
+      {recurrencePattern !== "NONE" ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor={recurrenceEndsId}>Ends</Label>
+            <SelectMenu
+              id={recurrenceEndsId}
+              name="recurrenceEnds"
+              value={recurrenceEnds}
+              onValueChange={(value) => setRecurrenceEnds(value as "NEVER" | "ON")}
+              options={[
+                { value: "NEVER", label: "Never" },
+                { value: "ON", label: "On date" }
+              ]}
+            />
+          </div>
+          {recurrenceEnds === "ON" ? (
+            <div className="space-y-2">
+              <Label htmlFor={recurrenceUntilId}>End date</Label>
+              <Input
+                id={recurrenceUntilId}
+                type="date"
+                value={recurrenceUntil}
+                onChange={(eventValue) => setRecurrenceUntil(eventValue.currentTarget.value)}
+                required
+              />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
       <input type="hidden" name="date" value={dateValue} />
       <input type="hidden" name="startTime" value={startTimeValue} />
       <input type="hidden" name="endTime" value={endTimeValue} />
+      <input type="hidden" name="recurrenceFreq" value={recurrenceFreqValue} />
+      <input
+        type="hidden"
+        name="recurrenceByWeekday"
+        value={[...recurrenceDays].sort((a, b) => a - b).join(",")}
+      />
+      <input type="hidden" name="recurrenceInterval" value="1" />
+      <input
+        type="hidden"
+        name="recurrenceUntil"
+        value={recurrenceEnds === "ON" ? recurrenceUntil : ""}
+      />
 
       <div className="space-y-2">
         <Label htmlFor={locationId}>Location</Label>

@@ -18,6 +18,11 @@ enum GroupRole {
   MEMBER
 }
 
+enum GroupMembershipStatus {
+  INVITED
+  ACTIVE
+}
+
 enum TaskStatus {
   OPEN
   DONE
@@ -56,6 +61,12 @@ enum EventType {
   EVENT
 }
 
+enum EventRecurrenceFrequency {
+  NONE
+  DAILY
+  WEEKLY
+}
+
 enum AccessRequestStatus {
   PENDING
   APPROVED
@@ -91,6 +102,7 @@ model User {
   memberships      Membership[]
   accessRequests   AccessRequest[]
   groupMemberships GroupMembership[]
+  sentGroupInvites GroupMembership[] @relation("GroupInviteActor")
   tasks            Task[] @relation("TaskOwner")
   createdTasks     Task[] @relation("TaskCreator")
   completedTasks   Task[] @relation("TaskCompletion")
@@ -165,9 +177,15 @@ model GroupMembership {
   groupId String
   userId  String
   role    GroupRole @default(MEMBER)
+  status  GroupMembershipStatus @default(ACTIVE)
+  invitedByUserId String?
+  invitedEmail String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   group Group @relation(fields: [groupId], references: [id])
   user  User  @relation(fields: [userId], references: [id])
+  invitedBy User? @relation("GroupInviteActor", fields: [invitedByUserId], references: [id])
 
   @@unique([groupId, userId])
 }
@@ -217,6 +235,10 @@ model Event {
   visibility EventVisibility @default(PUBLIC)
   groupId   String?
   type      EventType @default(EVENT)
+  recurrenceFreq EventRecurrenceFrequency @default(NONE)
+  recurrenceInterval Int @default(1)
+  recurrenceByWeekday Int[] @default([])
+  recurrenceUntil DateTime?
 
   parish Parish @relation(fields: [parishId], references: [id])
   week   Week   @relation(fields: [weekId], references: [id], onDelete: Cascade)

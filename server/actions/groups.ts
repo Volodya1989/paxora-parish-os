@@ -215,7 +215,7 @@ export async function getGroupDetail(groupId: string) {
 
   const [memberships, tasks] = await Promise.all([
     prisma.groupMembership.findMany({
-      where: { groupId: group.id },
+      where: { groupId: group.id, status: "ACTIVE" },
       orderBy: { user: { name: "asc" } },
       select: {
         role: true,
@@ -301,7 +301,7 @@ export async function updateGroupMembership(formData: FormData) {
       }
     });
 
-    if (groupMembership?.role !== "LEAD") {
+    if (groupMembership?.status !== "ACTIVE" || groupMembership.role !== "LEAD") {
       throw new Error("Forbidden");
     }
   }
@@ -339,12 +339,14 @@ export async function updateGroupMembership(formData: FormData) {
       }
     },
     update: {
-      role: parsed.data.role
+      role: parsed.data.role,
+      status: "ACTIVE"
     },
     create: {
       groupId: group.id,
       userId: parsed.data.userId,
-      role: parsed.data.role
+      role: parsed.data.role,
+      status: "ACTIVE"
     }
   });
 

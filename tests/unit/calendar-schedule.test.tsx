@@ -8,6 +8,7 @@ import CalendarView from "@/components/calendar/CalendarView";
 const now = new Date("2024-06-10T08:00:00.000Z");
 const event = {
   id: "event-1",
+  instanceId: "event-1-1718019600000",
   title: "Divine Liturgy",
   startsAt: new Date("2024-06-10T09:00:00.000Z"),
   endsAt: new Date("2024-06-10T10:00:00.000Z"),
@@ -17,8 +18,10 @@ const event = {
   visibility: "PUBLIC" as const,
   group: null,
   type: "SERVICE" as const,
-  recurrenceType: "WEEKLY" as const,
-  recurrenceDays: [],
+  recurrenceFreq: "WEEKLY" as const,
+  recurrenceInterval: 1,
+  recurrenceByWeekday: [],
+  recurrenceUntil: null,
   rsvpResponse: null,
   rsvpYesCount: 3,
   canManage: true

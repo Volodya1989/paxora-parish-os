@@ -16,6 +16,10 @@ export async function listWeekEvents(parishId: string, weekId: string) {
       summary: true,
       visibility: true,
       type: true,
+      recurrenceFreq: true,
+      recurrenceInterval: true,
+      recurrenceByWeekday: true,
+      recurrenceUntil: true,
       group: {
         select: {
           id: true,
@@ -37,6 +41,10 @@ export async function createEvent(input: {
   visibility?: "PUBLIC" | "GROUP" | "PRIVATE";
   groupId?: string | null;
   type?: "SERVICE" | "EVENT";
+  recurrenceFreq?: "NONE" | "DAILY" | "WEEKLY";
+  recurrenceInterval?: number;
+  recurrenceByWeekday?: number[];
+  recurrenceUntil?: Date | null;
 }) {
   return prisma.event.create({
     data: {
@@ -49,7 +57,11 @@ export async function createEvent(input: {
       summary: input.summary ?? null,
       visibility: input.visibility ?? "PUBLIC",
       groupId: input.groupId ?? null,
-      type: input.type ?? "EVENT"
+      type: input.type ?? "EVENT",
+      recurrenceFreq: input.recurrenceFreq ?? "NONE",
+      recurrenceInterval: input.recurrenceInterval ?? 1,
+      recurrenceByWeekday: input.recurrenceByWeekday ?? [],
+      recurrenceUntil: input.recurrenceUntil ?? null
     },
     select: {
       id: true

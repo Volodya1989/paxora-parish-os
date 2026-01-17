@@ -3,6 +3,7 @@
 import React from "react";
 import { cn } from "@/lib/ui/cn";
 import { getDateKey } from "@/lib/date/calendar";
+import { formatRecurrenceSummary } from "@/lib/events/recurrence";
 import type { CalendarEvent } from "@/lib/queries/events";
 import EventChip from "@/components/calendar/EventChip";
 
@@ -80,14 +81,19 @@ export default function CalendarGridMonth({
               <div className="mt-2 space-y-2">
                 {events.map((event) => (
                   <EventChip
-                    key={event.id}
+                    key={event.instanceId}
                     title={event.title}
                     timeLabel={formatChipTime(event.startsAt)}
-                    isSelected={selectedEventId === event.id}
+                    isSelected={selectedEventId === event.instanceId}
                     ariaLabel={`${event.title} on ${event.startsAt.toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric"
                     })}`}
+                    recurrenceLabel={
+                      event.recurrenceFreq !== "NONE"
+                        ? formatRecurrenceSummary(event)
+                        : undefined
+                    }
                     onClick={() => onSelectEvent(event)}
                   />
                 ))}

@@ -70,7 +70,8 @@ export default async function ProfilePage() {
                       <option value="" disabled>
                         Select role
                       </option>
-                      <option value="MEMBER">Member</option>
+                      <option value="MEMBER">Parishioner</option>
+                      <option value="SHEPHERD">Clergy</option>
                       <option value="ADMIN">Admin</option>
                     </select>
                     <Button type="submit" size="sm">

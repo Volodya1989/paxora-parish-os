@@ -3,7 +3,12 @@ import { getMonthRange, getWeekRange } from "@/lib/date/calendar";
 import { getNow as defaultGetNow } from "@/lib/time/getNow";
 import { isParishLeader } from "@/lib/permissions";
 import { getParishMembership } from "@/server/db/groups";
-import type { EventRsvpResponse, EventType, EventVisibility } from "@prisma/client";
+import type {
+  EventRecurrenceFrequency,
+  EventRsvpResponse,
+  EventType,
+  EventVisibility
+} from "@prisma/client";
 
 type EventGroup = {
   id: string;
@@ -12,6 +17,7 @@ type EventGroup = {
 
 export type CalendarEvent = {
   id: string;
+  instanceId: string;
   title: string;
   startsAt: Date;
   endsAt: Date;
@@ -21,6 +27,10 @@ export type CalendarEvent = {
   visibility: EventVisibility;
   group: EventGroup | null;
   type: EventType;
+  recurrenceFreq: EventRecurrenceFrequency;
+  recurrenceInterval: number;
+  recurrenceByWeekday: number[];
+  recurrenceUntil: Date | null;
   rsvpResponse: EventRsvpResponse | null;
   canManage: boolean;
 };
@@ -36,6 +46,10 @@ export type EventDetail = {
   visibility: EventVisibility;
   group: EventGroup | null;
   type: EventType;
+  recurrenceFreq: EventRecurrenceFrequency;
+  recurrenceInterval: number;
+  recurrenceByWeekday: number[];
+  recurrenceUntil: Date | null;
   rsvpResponse: EventRsvpResponse | null;
   canManage: boolean;
 };
@@ -69,6 +83,22 @@ type EventViewerContext = {
   groupIds: string[];
 };
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function startOfDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function buildInstanceId(eventId: string, startsAt: Date) {
+  return `${eventId}-${startsAt.getTime()}`;
+}
+
 function resolveSummary(event: { summary: string | null; location: string | null; type: EventType }) {
   if (event.summary && event.summary.trim().length > 0) {
     return event.summary;
@@ -96,6 +126,7 @@ async function getViewerContext(
     prisma.groupMembership.findMany({
       where: {
         userId,
+        status: "ACTIVE",
         group: { parishId }
       },
       select: { groupId: true }
@@ -124,6 +155,94 @@ function buildVisibilityFilter(context: EventViewerContext) {
   return { OR: filters };
 }
 
+type EventRecord = {
+  id: string;
+  title: string;
+  startsAt: Date;
+  endsAt: Date;
+  location: string | null;
+  summary: string | null;
+  parishId: string;
+  visibility: EventVisibility;
+  type: EventType;
+  group: EventGroup | null;
+  recurrenceFreq: EventRecurrenceFrequency;
+  recurrenceInterval: number;
+  recurrenceByWeekday: number[];
+  recurrenceUntil: Date | null;
+  rsvps?: Array<{ response: EventRsvpResponse }>;
+};
+
+function expandRecurringEvent(
+  event: EventRecord,
+  rangeStart: Date,
+  rangeEnd: Date
+): Array<{ startsAt: Date; endsAt: Date }> {
+  if (event.recurrenceFreq === "NONE") {
+    if (event.startsAt >= rangeStart && event.startsAt < rangeEnd) {
+      return [{ startsAt: event.startsAt, endsAt: event.endsAt }];
+    }
+    return [];
+  }
+
+  const baseDay = startOfDay(event.startsAt);
+  const rangeCursorStart = startOfDay(rangeStart);
+  const rangeCursorEnd = startOfDay(rangeEnd);
+  const durationMs = event.endsAt.getTime() - event.startsAt.getTime();
+  const allowedDays =
+    event.recurrenceFreq === "WEEKLY" && event.recurrenceByWeekday.length > 0
+      ? event.recurrenceByWeekday
+      : [event.startsAt.getDay()];
+  const interval = Math.max(event.recurrenceInterval || 1, 1);
+
+  const instances: Array<{ startsAt: Date; endsAt: Date }> = [];
+
+  for (let cursor = rangeCursorStart; cursor < rangeCursorEnd; cursor = addDays(cursor, 1)) {
+    const diffDays = Math.floor((cursor.getTime() - baseDay.getTime()) / MS_PER_DAY);
+    if (diffDays < 0) {
+      continue;
+    }
+
+    if (event.recurrenceFreq === "DAILY") {
+      if (diffDays % interval !== 0) {
+        continue;
+      }
+    } else if (event.recurrenceFreq === "WEEKLY") {
+      const diffWeeks = Math.floor(diffDays / 7);
+      if (diffWeeks % interval !== 0) {
+        continue;
+      }
+      if (!allowedDays.includes(cursor.getDay())) {
+        continue;
+      }
+    }
+
+    const occurrenceStart = new Date(
+      cursor.getFullYear(),
+      cursor.getMonth(),
+      cursor.getDate(),
+      event.startsAt.getHours(),
+      event.startsAt.getMinutes(),
+      event.startsAt.getSeconds(),
+      event.startsAt.getMilliseconds()
+    );
+
+    if (occurrenceStart < rangeStart || occurrenceStart >= rangeEnd) {
+      continue;
+    }
+
+    if (event.recurrenceUntil && occurrenceStart > event.recurrenceUntil) {
+      continue;
+    }
+
+    const occurrenceEnd = new Date(occurrenceStart.getTime() + durationMs);
+
+    instances.push({ startsAt: occurrenceStart, endsAt: occurrenceEnd });
+  }
+
+  return instances;
+}
+
 export async function listEventsByRange({
   parishId,
   start,
@@ -132,13 +251,33 @@ export async function listEventsByRange({
 }: ListEventsByRangeInput): Promise<CalendarEvent[]> {
   const context = await getViewerContext(parishId, userId);
   const visibilityFilter = buildVisibilityFilter(context);
-  const events = await prisma.event.findMany({
+  const events = (await prisma.event.findMany({
     where: {
       parishId,
-      startsAt: {
-        gte: start,
-        lt: end
-      },
+      OR: [
+        {
+          recurrenceFreq: "NONE",
+          startsAt: {
+            gte: start,
+            lt: end
+          }
+        },
+        {
+          recurrenceFreq: { in: ["DAILY", "WEEKLY"] },
+          startsAt: {
+            lt: end
+          },
+          ...(start
+            ? {
+                AND: [
+                  {
+                    OR: [{ recurrenceUntil: null }, { recurrenceUntil: { gte: start } }]
+                  }
+                ]
+              }
+            : {})
+        }
+      ],
       ...(visibilityFilter ? { AND: [visibilityFilter] } : {})
     },
     orderBy: { startsAt: "asc" },
@@ -152,6 +291,10 @@ export async function listEventsByRange({
       parishId: true,
       visibility: true,
       type: true,
+      recurrenceFreq: true,
+      recurrenceInterval: true,
+      recurrenceByWeekday: true,
+      recurrenceUntil: true,
       group: {
         select: {
           id: true,
@@ -167,26 +310,35 @@ export async function listEventsByRange({
           }
         : {})
     }
-  });
+  })) as EventRecord[];
 
-  return events.map((event) => {
+  const expanded = events.flatMap((event) => {
     const rsvpResponse = "rsvps" in event ? event.rsvps?.[0]?.response ?? null : null;
-
-    return {
+    const instances = expandRecurringEvent(event, start, end);
+    return instances.map((instance) => ({
       id: event.id,
+      instanceId: buildInstanceId(event.id, instance.startsAt),
       title: event.title,
-      startsAt: event.startsAt,
-      endsAt: event.endsAt,
+      startsAt: instance.startsAt,
+      endsAt: instance.endsAt,
       location: event.location,
       summary: resolveSummary(event),
       parishId: event.parishId,
       visibility: event.visibility,
       group: event.group ? { id: event.group.id, name: event.group.name } : null,
       type: event.type,
+      recurrenceFreq: event.recurrenceFreq,
+      recurrenceInterval: event.recurrenceInterval,
+      recurrenceByWeekday: event.recurrenceByWeekday,
+      recurrenceUntil: event.recurrenceUntil,
       rsvpResponse,
-      canManage: context.isLeader || (event.group?.id ? context.groupIds.includes(event.group.id) : false)
-    };
+      canManage:
+        context.isLeader ||
+        (event.group?.id ? context.groupIds.includes(event.group.id) : false)
+    }));
   });
+
+  return expanded.sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
 }
 
 export async function listEventsForWeek({
@@ -225,6 +377,10 @@ export async function getEventById({
       parishId: true,
       visibility: true,
       type: true,
+      recurrenceFreq: true,
+      recurrenceInterval: true,
+      recurrenceByWeekday: true,
+      recurrenceUntil: true,
       group: {
         select: {
           id: true,
@@ -274,6 +430,10 @@ export async function getEventById({
     visibility: event.visibility,
     group: event.group ? { id: event.group.id, name: event.group.name } : null,
     type: event.type,
+    recurrenceFreq: event.recurrenceFreq,
+    recurrenceInterval: event.recurrenceInterval,
+    recurrenceByWeekday: event.recurrenceByWeekday,
+    recurrenceUntil: event.recurrenceUntil,
     rsvpResponse,
     canManage:
       context.isLeader || (event.group?.id ? context.groupIds.includes(event.group.id) : false)

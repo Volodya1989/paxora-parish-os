@@ -35,6 +35,60 @@ const timeText = z
   .min(1, "Time is required")
   .regex(/^\d{2}:\d{2}$/, "Time must be in HH:MM format");
 
+const optionalDateText = z.preprocess(
+  (value) => {
+    if (value === null || value === undefined) {
+      return undefined;
+    }
+    if (typeof value !== "string") {
+      return value;
+    }
+    const trimmed = value.trim();
+    return trimmed.length === 0 ? undefined : trimmed;
+  },
+  z.string().trim().min(1).optional()
+);
+
+const recurrenceByWeekday = z.preprocess(
+  (value) => {
+    if (value === null || value === undefined) {
+      return [];
+    }
+    if (Array.isArray(value)) {
+      return value;
+    }
+    if (typeof value !== "string") {
+      return [];
+    }
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return [];
+    }
+    return trimmed
+      .split(",")
+      .map((item) => Number(item.trim()))
+      .filter((item) => Number.isInteger(item));
+  },
+  z.array(z.number().int().min(0).max(6)).default([])
+);
+
+const recurrenceInterval = z.preprocess(
+  (value) => {
+    if (value === null || value === undefined) {
+      return undefined;
+    }
+    if (typeof value === "number") {
+      return value;
+    }
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      return trimmed.length ? Number(trimmed) : undefined;
+    }
+    return undefined;
+  },
+  z.number().int().min(1).optional()
+);
+
 export const createEventSchema = z.object({
   title: z.string().trim().min(1, "Title is required"),
   date: dateText,
@@ -44,7 +98,11 @@ export const createEventSchema = z.object({
   summary: optionalTrimmedText,
   visibility: z.enum(["PUBLIC", "GROUP", "PRIVATE"]),
   groupId: optionalId,
-  type: z.enum(["SERVICE", "EVENT"]).default("EVENT")
+  type: z.enum(["SERVICE", "EVENT"]).default("EVENT"),
+  recurrenceFreq: z.enum(["NONE", "DAILY", "WEEKLY"]).default("NONE"),
+  recurrenceInterval,
+  recurrenceByWeekday,
+  recurrenceUntil: optionalDateText
 });
 
 export const updateEventSchema = createEventSchema.extend({

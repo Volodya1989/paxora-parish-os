@@ -3,6 +3,7 @@ import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Card, { CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
 import RsvpButtons from "@/components/events/RsvpButtons";
+import { formatRecurrenceSummary } from "@/lib/events/recurrence";
 import type { EventDetail } from "@/lib/queries/events";
 
 function formatDate(startsAt: Date) {
@@ -75,6 +76,7 @@ export default function EventDetailCard({ event }: EventDetailCardProps) {
         <div className="space-y-1 text-sm text-ink-500">
           <p>{formatDate(event.startsAt)}</p>
           <p>{formatTimeRange(event.startsAt, event.endsAt)}</p>
+          <p className="text-xs text-ink-400">{formatRecurrenceSummary(event)}</p>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
