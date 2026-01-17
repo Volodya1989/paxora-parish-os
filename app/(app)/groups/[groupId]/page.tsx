@@ -7,6 +7,7 @@ import Badge from "@/components/ui/Badge";
 import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
 import { getOrCreateCurrentWeek } from "@/domain/week";
+import { isAdminClergy } from "@/lib/authz/membership";
 
 type GroupDetailPageProps = {
   params: Promise<{
@@ -34,6 +35,8 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
       id: true,
       name: true,
       description: true,
+      visibility: true,
+      joinPolicy: true,
       memberships: {
         where: { status: "ACTIVE" },
         orderBy: {
@@ -59,6 +62,39 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
   if (!group) {
     throw new Error("Group not found");
   }
+
+  const [parishMembership, groupMembership] = await Promise.all([
+    prisma.membership.findUnique({
+      where: {
+        parishId_userId: {
+          parishId,
+          userId: actorUserId
+        }
+      },
+      select: { role: true }
+    }),
+    prisma.groupMembership.findUnique({
+      where: {
+        groupId_userId: {
+          groupId: group.id,
+          userId: actorUserId
+        }
+      },
+      select: { status: true }
+    })
+  ]);
+
+  const isLeader = parishMembership && isAdminClergy(parishMembership.role);
+  const canView =
+    (group.visibility === "PUBLIC" && Boolean(parishMembership)) ||
+    groupMembership?.status === "ACTIVE" ||
+    isLeader;
+
+  if (!canView) {
+    throw new Error("Unauthorized");
+  }
+
+  const canViewMembers = groupMembership?.status === "ACTIVE" || isLeader;
 
   const tasks = await prisma.task.findMany({
     where: {
@@ -97,12 +133,14 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <SectionTitle title={group.name} subtitle={group.description ?? `Week ${week.label}`} />
         <div className="flex flex-wrap items-center gap-3">
-          <Link
-            className="text-sm font-medium text-ink-900 underline"
-            href={`/groups/${group.id}/members`}
-          >
-            Manage members
-          </Link>
+          {canViewMembers ? (
+            <Link
+              className="text-sm font-medium text-ink-900 underline"
+              href={`/groups/${group.id}/members`}
+            >
+              Manage members
+            </Link>
+          ) : null}
           <Link className="text-sm font-medium text-ink-900 underline" href="/groups">
             Back to groups
           </Link>
@@ -127,8 +165,8 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
                   <p className="text-sm font-medium text-ink-900">
                     {membership.user.name ?? membership.user.email}
                   </p>
-                  <Badge tone={membership.role === "LEAD" ? "success" : "neutral"}>
-                    {membership.role === "LEAD" ? "Coordinator" : "Parishioner"}
+                  <Badge tone={membership.role === "COORDINATOR" ? "success" : "neutral"}>
+                    {membership.role === "COORDINATOR" ? "Coordinator" : "Parishioner"}
                   </Badge>
                 </div>
                 <p className="text-xs text-ink-500">{membership.user.email}</p>

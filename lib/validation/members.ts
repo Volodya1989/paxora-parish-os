@@ -3,7 +3,7 @@ import { z } from "zod";
 const groupId = z.string().trim().min(1, "Group is required");
 const userId = z.string().trim().min(1, "User is required");
 const email = z.string().trim().email("Enter a valid email address");
-const role = z.enum(["LEAD", "MEMBER"]);
+const role = z.enum(["COORDINATOR", "PARISHIONER"]);
 
 export const inviteMemberSchema = z.object({
   groupId,
@@ -27,3 +27,18 @@ export const changeMemberRoleSchema = z.object({
   userId,
   role
 });
+
+export const joinGroupSchema = z.object({
+  groupId
+});
+
+export const requestToJoinSchema = joinGroupSchema;
+
+export const leaveGroupSchema = joinGroupSchema;
+
+export const approveRequestSchema = z.object({
+  groupId,
+  userId
+});
+
+export const denyRequestSchema = approveRequestSchema;

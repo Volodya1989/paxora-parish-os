@@ -1,84 +1,123 @@
-# Groups — Spec Pack (Membership management + readiness for A-013)
+# Groups — Spec Pack (Direction A readiness)
 
-## Current status
-- **Implemented today:** Groups list with create/archive/restore and basic detail page (`/groups`, `/groups/[groupId]`). Files: `app/(app)/groups/page.tsx`, `components/groups/GroupsView.tsx`, `server/actions/groups.ts`, `app/(app)/groups/[groupId]/page.tsx`.
-- **Gap:** No invite/accept/decline flow, no member management UI, and no role chips beyond read-only display.
-
----
-
-## A) UX spec
-
-### Goals & primary flows
-1. **Leaders** create and manage group memberships.
-2. **Members** can view their groups and see who’s on the team.
-3. **Invited users** can accept/decline invites.
-
-### Key screens & states
-- **Group list** (`/groups`)
-  - Existing list with “Create group.”
-  - Add “Members” quick-link to manage membership.
-- **Group detail** (`/groups/[groupId]`)
-  - Members list with role chips and “Invite member” CTA.
-  - Empty state when no members.
-- **Invite drawer/modal**
-  - Inputs: email, role, optional message.
-  - States: sending, sent, failed.
-- **Invite acceptance screen**
-  - When a user follows an invite link, show accept/decline CTA.
-
-### Navigation entry points
-- Group card menu → “Manage members.”
-- Group detail → “Invite member.”
-
-### Permission matrix (summary)
-- **Admin/Shepherd:** manage all group memberships.
-- **Coordinator (Group Lead):** manage members for their group.
-- **Member:** read-only.
+## Overview
+Groups provide ministry team organization with clear visibility, joining rules, and membership management. The Groups experience includes:
+- Group list with visibility and join policy chips.
+- Full CRUD (create, edit, archive/restore).
+- Membership management with invites, join requests, and role changes.
+- Members board with clear primary actions and a direct “Opportunities to Help” CTA.
 
 ---
 
-## B) Backend spec
+## A) Group model
 
-### Domain model (delta from current schema)
-> Minimal additions to support invites + pending membership.
-
-- **GroupMembership**
-  - Add `status` enum: `PENDING`, `ACTIVE` (default `ACTIVE`).
-  - Add `invitedById` (nullable) relation to `User`.
-- **GroupInvite** (new model)
-  - `id`, `groupId`, `email`, `role`, `token`, `status`, `createdAt`, `expiresAt`, `invitedById`.
-
-### Required server actions
-- `inviteGroupMember({ groupId, email, role })`
-- `acceptGroupInvite({ token })`
-- `declineGroupInvite({ token })`
-- `updateGroupMemberRole({ groupId, userId, role })`
-- `removeGroupMember({ groupId, userId })`
-
-### Queries required per screen
-- `getGroupMembers({ groupId, actorUserId })` → members + roles + status.
-- `getPendingInvites({ groupId, actorUserId })`.
-
-### Authorization rules
-- Admin/Shepherd: full access.
-- Group Lead: manage members within the group.
-- Member: read-only (no invite/remove).
+### Group fields
+- **name** (string, required)
+- **description** (string, optional)
+- **visibility**: `PUBLIC | PRIVATE`
+  - `PUBLIC`: visible to all parish users.
+  - `PRIVATE`: visible only to members (and Admin/Clergy).
+- **joinPolicy**: `INVITE_ONLY | OPEN | REQUEST_TO_JOIN`
+  - `INVITE_ONLY`: only invitations can create memberships.
+  - `OPEN`: self-join immediately creates an active membership.
+  - `REQUEST_TO_JOIN`: self-join creates a request requiring approval.
+- **archivedAt** (timestamp, nullable) for soft archive/restore.
 
 ---
 
-## C) Implementation plan (A-013 story breakdown)
+## B) Membership model
 
-### A-013a — Group membership data + invite model
-- **Scope:** Add `GroupInvite` model and `GroupMembership.status`.
-- **Acceptance criteria:** Invites can be stored and queried; membership status persists.
-- **Tests:** Integration tests for invite + accept flow.
+### GroupMembership fields
+- **userId**, **groupId**
+- **role**: `COORDINATOR | PARISHIONER`
+- **status**: `ACTIVE | INVITED | REQUESTED`
+- **invitedEmail** (nullable)
+- **invitedByUserId** (nullable)
+- **approvedByUserId** (nullable)
+- **createdAt**, **updatedAt**
 
-### A-013b — Membership management UI
-- **Scope:** Group detail view includes members list, role chips, and invite drawer.
-- **Acceptance criteria:** Leaders can invite/change roles/remove members with proper feedback.
-- **Tests:** Unit tests for member row and invite drawer states.
+### Status meanings
+- **INVITED**: invited by a Coordinator or Admin/Clergy.
+- **REQUESTED**: user submitted a request to join.
+- **ACTIVE**: member is part of the group.
 
-### A-013c — Invite acceptance UX
-- **Scope:** Public-facing invite acceptance page.
-- **Acceptance criteria:** Invite link allows accept/decline with clear state messaging.
-- **Tests:** Integration tests for accept/decline.
+---
+
+## C) Membership flows
+
+### Invite flow
+1. Coordinator/Admin invites by email.
+2. Membership created or updated with `status=INVITED`.
+3. Invited user accepts → `status=ACTIVE`.
+4. Invited user declines → membership removed.
+
+### Open join flow
+1. User clicks “Join”.
+2. Membership created or updated with `status=ACTIVE`.
+
+### Request to join flow
+1. User clicks “Request to join”.
+2. Membership created with `status=REQUESTED`.
+3. Coordinator/Admin approves → `status=ACTIVE`.
+4. Coordinator/Admin denies → membership removed.
+
+### Leave group flow
+1. Active member chooses “Leave group”.
+2. Membership removed.
+
+---
+
+## D) Permissions matrix
+
+| Action | Admin/Clergy | Coordinator (group) | Parishioner (member) | Non-member |
+|---|---|---|---|---|
+| View PUBLIC group | ✅ | ✅ | ✅ | ✅ |
+| View PRIVATE group | ✅ | ✅ | ✅ | ❌ |
+| Edit group details | ✅ | ❌ | ❌ | ❌ |
+| Archive/restore group | ✅ | ❌ | ❌ | ❌ |
+| Invite members | ✅ | ✅ | ❌ | ❌ |
+| Remove members | ✅ | ✅ | ❌ | ❌ |
+| Change member roles | ✅ | ✅ | ❌ | ❌ |
+| Approve/deny requests | ✅ | ✅ | ❌ | ❌ |
+| Self-join OPEN | ✅ | ✅ | ✅ | ✅ |
+| Self-request REQUEST_TO_JOIN | ✅ | ✅ | ✅ | ✅ |
+| Leave group | ✅ | ✅ | ✅ | ❌ |
+
+**Notes**
+- Admin/Clergy are parish-wide and can manage any group regardless of membership.
+- Coordinators manage membership for their group.
+- Non-members cannot access PRIVATE groups or members list.
+
+---
+
+## E) UI surfaces
+
+### Groups list
+- Cards show name, description, visibility chip, member count.
+- Join CTA for non-members:
+  - `OPEN`: “Join”
+  - `REQUEST_TO_JOIN`: “Request to join”
+  - `INVITE_ONLY`: show “Invite only” label.
+- Kebab menu:
+  - Edit group (if Admin/Clergy)
+  - Archive/Restore (if Admin/Clergy)
+  - Manage members (if member or Admin/Clergy)
+
+### Members page (Teams-inspired)
+- Header includes group visibility and join policy chips.
+- Primary actions:
+  - Invite member (Admin/Clergy or Coordinator)
+  - Leave group (members)
+  - “Opportunities to Help” CTA (routes to group tasks board)
+- Tabs:
+  - **Members** (Active)
+  - **Pending** (Invited + Requested)
+- Row actions:
+  - Remove, change role, approve/deny requests (Admin/Clergy or Coordinator)
+
+---
+
+## F) Server-side enforcement
+- Visibility filtering on list queries and group detail access.
+- Join policy enforcement on self-join actions.
+- Admin/Clergy override for all membership management actions.

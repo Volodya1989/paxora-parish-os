@@ -22,7 +22,7 @@ type UpdateGroupMembershipInput = {
   parishId: string;
   groupId: string;
   targetUserId: string;
-  role: "LEAD" | "MEMBER";
+  role: "COORDINATOR" | "PARISHIONER";
   actorUserId: string;
 };
 

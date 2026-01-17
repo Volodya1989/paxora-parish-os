@@ -5,15 +5,15 @@ import RoleChip from "@/components/groups/members/RoleChip";
 import type { GroupMemberRecord } from "@/lib/queries/members";
 
 const ROLE_TOGGLE_LABELS: Record<GroupMemberRecord["role"], string> = {
-  LEAD: "Make parishioner",
-  MEMBER: "Make coordinator"
+  COORDINATOR: "Make parishioner",
+  PARISHIONER: "Make coordinator"
 };
 
 type MemberRowProps = {
   member: GroupMemberRecord;
   canManage: boolean;
   isSelf: boolean;
-  onChangeRole: (role: "LEAD" | "MEMBER") => void;
+  onChangeRole: (role: "COORDINATOR" | "PARISHIONER") => void;
   onRemove: () => void;
   isBusy?: boolean;
 };
@@ -28,7 +28,7 @@ export default function MemberRow({
 }: MemberRowProps) {
   const displayName = member.name ?? member.email;
   const showActions = canManage && !isSelf;
-  const toggleRole = member.role === "LEAD" ? "MEMBER" : "LEAD";
+  const toggleRole = member.role === "COORDINATOR" ? "PARISHIONER" : "COORDINATOR";
 
   return (
     <div className="flex flex-col gap-2 rounded-card border border-mist-200 bg-white px-4 py-3">

@@ -92,7 +92,7 @@ export async function requireCoordinatorOrAdmin(userId: string, groupId: string)
     return context;
   }
 
-  if (context.groupMembershipStatus === "ACTIVE" && context.groupRole === "LEAD") {
+  if (context.groupMembershipStatus === "ACTIVE" && context.groupRole === "COORDINATOR") {
     return context;
   }
 

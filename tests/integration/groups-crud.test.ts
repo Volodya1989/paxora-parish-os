@@ -102,15 +102,19 @@ dbTest("create group succeeds with valid input", async () => {
     parishId: parish.id,
     actorUserId: user.id,
     name: "Greeters",
-    description: "Front door welcome team"
+    description: "Front door welcome team",
+    visibility: "PUBLIC",
+    joinPolicy: "INVITE_ONLY"
   });
 
   const stored = (await prisma.group.findFirst({
     where: { parishId: parish.id, name: "Greeters" }
-  })) as { archivedAt: Date | null } | null;
+  })) as { archivedAt: Date | null; visibility: string; joinPolicy: string } | null;
 
   assert.ok(stored);
   assert.equal(stored?.archivedAt, null);
+  assert.equal(stored?.visibility, "PUBLIC");
+  assert.equal(stored?.joinPolicy, "INVITE_ONLY");
 });
 
 dbTest("archive, restore, and undo", async () => {
@@ -164,4 +168,57 @@ dbTest("archive, restore, and undo", async () => {
     archivedAt: Date | null;
   } | null;
   assert.equal(restored?.archivedAt, null);
+});
+
+dbTest("edit group updates fields", async () => {
+  const parish = await prisma.parish.create({
+    data: { name: "St. Joseph", slug: "st-joseph" }
+  });
+  const user = await prisma.user.create({
+    data: {
+      email: "editor@example.com",
+      name: "Editor",
+      passwordHash: "hashed",
+      activeParishId: parish.id
+    }
+  });
+  await prisma.membership.create({
+    data: {
+      parishId: parish.id,
+      userId: user.id,
+      role: "ADMIN"
+    }
+  });
+  const group = await prisma.group.create({
+    data: {
+      parishId: parish.id,
+      name: "Lectors",
+      description: "Readers",
+      visibility: "PUBLIC",
+      joinPolicy: "INVITE_ONLY"
+    }
+  });
+
+  session.user.id = user.id;
+  session.user.activeParishId = parish.id;
+
+  await actions.updateGroup({
+    parishId: parish.id,
+    actorUserId: user.id,
+    groupId: group.id,
+    name: "Lectors & Readers",
+    description: "Updated description",
+    visibility: "PRIVATE",
+    joinPolicy: "REQUEST_TO_JOIN"
+  });
+
+  const updated = await prisma.group.findUnique({
+    where: { id: group.id },
+    select: { name: true, description: true, visibility: true, joinPolicy: true }
+  });
+
+  assert.equal(updated?.name, "Lectors & Readers");
+  assert.equal(updated?.description, "Updated description");
+  assert.equal(updated?.visibility, "PRIVATE");
+  assert.equal(updated?.joinPolicy, "REQUEST_TO_JOIN");
 });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
@@ -53,18 +54,30 @@ function formatDate(date: Date) {
 
 type GroupCardProps = {
   group: GroupListItem;
+  canManageGroup: boolean;
+  canManageMembers: boolean;
   onEdit: () => void;
   onArchive: () => void;
   onRestore: () => void;
+  onManageMembers: () => void;
+  onJoin: () => void;
+  onRequestJoin: () => void;
+  onLeave: () => void;
   isBusy?: boolean;
   forceMenuOpen?: boolean;
 };
 
 export default function GroupCard({
   group,
+  canManageGroup,
+  canManageMembers,
   onEdit,
   onArchive,
   onRestore,
+  onManageMembers,
+  onJoin,
+  onRequestJoin,
+  onLeave,
   isBusy = false,
   forceMenuOpen
 }: GroupCardProps) {
@@ -80,6 +93,21 @@ export default function GroupCard({
   const memberCountLabel = group.memberCount ?? "—";
   const memberSuffix =
     typeof group.memberCount === "number" && group.memberCount === 1 ? "member" : "members";
+  const isMember = group.viewerMembershipStatus === "ACTIVE";
+  const isInvited = group.viewerMembershipStatus === "INVITED";
+  const isRequested = group.viewerMembershipStatus === "REQUESTED";
+  const showJoinActions = !isMember && !isInvited && !isRequested && !isArchived;
+  const showMenu = canManageGroup || canManageMembers;
+
+  const joinAction = () => {
+    if (group.joinPolicy === "OPEN") {
+      onJoin();
+      return;
+    }
+    if (group.joinPolicy === "REQUEST_TO_JOIN") {
+      onRequestJoin();
+    }
+  };
 
   return (
     <Card className={cn("space-y-4", isBusy && "opacity-70")}>
@@ -88,6 +116,9 @@ export default function GroupCard({
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-lg font-semibold text-ink-900">{group.name}</h3>
             {isArchived ? <Badge tone="warning">Archived</Badge> : null}
+            <Badge tone={group.visibility === "PUBLIC" ? "success" : "neutral"}>
+              {group.visibility === "PUBLIC" ? "Public" : "Private"}
+            </Badge>
           </div>
           <p className="text-sm text-ink-500">
             {group.description?.trim()
@@ -95,28 +126,35 @@ export default function GroupCard({
               : "No description yet. Add a short note to help the team understand this group."}
           </p>
         </div>
-        <Dropdown
-          open={open}
-          onOpenChange={(nextOpen) => {
-            if (forceMenuOpen === undefined) {
-              setMenuOpen(nextOpen);
-            }
-          }}
-        >
-          <DropdownTrigger asChild iconOnly aria-label="Group options">
-            <Button type="button" variant="ghost" size="sm" className="text-ink-500">
-              ⋯
-            </Button>
-          </DropdownTrigger>
-          <DropdownMenu ariaLabel="Group menu">
-            <DropdownItem onClick={onEdit}>Edit</DropdownItem>
-            {isArchived ? (
-              <DropdownItem onClick={onRestore}>Restore</DropdownItem>
-            ) : (
-              <DropdownItem onClick={onArchive}>Archive</DropdownItem>
-            )}
-          </DropdownMenu>
-        </Dropdown>
+        {showMenu ? (
+          <Dropdown
+            open={open}
+            onOpenChange={(nextOpen) => {
+              if (forceMenuOpen === undefined) {
+                setMenuOpen(nextOpen);
+              }
+            }}
+          >
+            <DropdownTrigger asChild iconOnly aria-label="Group options">
+              <Button type="button" variant="ghost" size="sm" className="text-ink-500">
+                ⋯
+              </Button>
+            </DropdownTrigger>
+            <DropdownMenu ariaLabel="Group menu">
+              {canManageGroup ? <DropdownItem onClick={onEdit}>Edit</DropdownItem> : null}
+              {canManageGroup ? (
+                isArchived ? (
+                  <DropdownItem onClick={onRestore}>Restore</DropdownItem>
+                ) : (
+                  <DropdownItem onClick={onArchive}>Archive</DropdownItem>
+                )
+              ) : null}
+              {canManageMembers ? (
+                <DropdownItem onClick={onManageMembers}>Manage members</DropdownItem>
+              ) : null}
+            </DropdownMenu>
+          </Dropdown>
+        ) : null}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -139,6 +177,45 @@ export default function GroupCard({
           </div>
         </div>
         <p className="text-xs text-ink-400">Last updated {formatDate(group.createdAt)}</p>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-ink-500">
+          {isMember ? <Badge tone="neutral">Member</Badge> : null}
+          {isInvited ? <Badge tone="warning">Invited</Badge> : null}
+          {isRequested ? <Badge tone="warning">Request pending</Badge> : null}
+          {!isMember && !isInvited && !isRequested && !isArchived ? (
+            <Badge tone="neutral">
+              {group.joinPolicy === "OPEN"
+                ? "Open join"
+                : group.joinPolicy === "REQUEST_TO_JOIN"
+                ? "Request to join"
+                : "Invite only"}
+            </Badge>
+          ) : null}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {isMember && !isArchived ? (
+            <Button type="button" variant="ghost" size="sm" onClick={onLeave}>
+              Leave group
+            </Button>
+          ) : null}
+          {showJoinActions ? (
+            group.joinPolicy === "INVITE_ONLY" ? (
+              <span className="text-xs font-medium text-ink-400">Invite only</span>
+            ) : (
+              <Button type="button" size="sm" onClick={joinAction}>
+                {group.joinPolicy === "OPEN" ? "Join" : "Request to join"}
+              </Button>
+            )
+          ) : null}
+          <Link
+            className="text-xs font-medium text-ink-700 underline"
+            href={`/groups/${group.id}`}
+          >
+            View details
+          </Link>
+        </div>
       </div>
     </Card>
   );

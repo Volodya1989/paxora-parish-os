@@ -14,13 +14,25 @@ enum ParishRole {
 }
 
 enum GroupRole {
-  LEAD
-  MEMBER
+  COORDINATOR
+  PARISHIONER
 }
 
 enum GroupMembershipStatus {
   INVITED
+  REQUESTED
   ACTIVE
+}
+
+enum GroupVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum GroupJoinPolicy {
+  INVITE_ONLY
+  OPEN
+  REQUEST_TO_JOIN
 }
 
 enum TaskStatus {
@@ -103,6 +115,7 @@ model User {
   accessRequests   AccessRequest[]
   groupMemberships GroupMembership[]
   sentGroupInvites GroupMembership[] @relation("GroupInviteActor")
+  approvedGroupMemberships GroupMembership[] @relation("GroupApprovalActor")
   tasks            Task[] @relation("TaskOwner")
   createdTasks     Task[] @relation("TaskCreator")
   completedTasks   Task[] @relation("TaskCompletion")
@@ -161,6 +174,8 @@ model Group {
   parishId    String
   name        String
   description String?
+  visibility  GroupVisibility @default(PUBLIC)
+  joinPolicy  GroupJoinPolicy @default(INVITE_ONLY)
   createdAt   DateTime @default(now())
   archivedAt  DateTime?
 
@@ -176,9 +191,10 @@ model GroupMembership {
   id      String    @id @default(cuid())
   groupId String
   userId  String
-  role    GroupRole @default(MEMBER)
+  role    GroupRole @default(PARISHIONER)
   status  GroupMembershipStatus @default(ACTIVE)
   invitedByUserId String?
+  approvedByUserId String?
   invitedEmail String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -186,6 +202,7 @@ model GroupMembership {
   group Group @relation(fields: [groupId], references: [id])
   user  User  @relation(fields: [userId], references: [id])
   invitedBy User? @relation("GroupInviteActor", fields: [invitedByUserId], references: [id])
+  approvedBy User? @relation("GroupApprovalActor", fields: [approvedByUserId], references: [id])
 
   @@unique([groupId, userId])
 }

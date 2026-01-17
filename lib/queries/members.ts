@@ -12,8 +12,11 @@ export type GroupMemberRecord = {
 
 export type PendingInviteRecord = {
   id: string;
+  userId: string;
+  name: string | null;
   email: string;
   role: GroupRole;
+  status: GroupMembershipStatus;
   invitedBy: {
     id: string;
     name: string | null;
@@ -71,11 +74,13 @@ export async function getGroupMembers(groupId: string): Promise<GroupMemberRecor
 
 export async function getPendingInvites(groupId: string): Promise<PendingInviteRecord[]> {
   const invites = await prisma.groupMembership.findMany({
-    where: { groupId, status: "INVITED" },
+    where: { groupId, status: { in: ["INVITED", "REQUESTED"] } },
     orderBy: { createdAt: "asc" },
     select: {
       id: true,
+      userId: true,
       role: true,
+      status: true,
       invitedEmail: true,
       createdAt: true,
       invitedBy: {
@@ -87,7 +92,8 @@ export async function getPendingInvites(groupId: string): Promise<PendingInviteR
       },
       user: {
         select: {
-          email: true
+          email: true,
+          name: true
         }
       }
     }
@@ -95,8 +101,11 @@ export async function getPendingInvites(groupId: string): Promise<PendingInviteR
 
   return invites.map((invite) => ({
     id: invite.id,
+    userId: invite.userId,
+    name: invite.user.name,
     email: invite.invitedEmail ?? invite.user.email,
     role: invite.role,
+    status: invite.status,
     invitedBy: invite.invitedBy,
     createdAt: invite.createdAt
   }));

@@ -8,8 +8,10 @@ import EmptyState from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import GroupCard from "@/components/groups/GroupCard";
 import GroupCreateDialog from "@/components/groups/GroupCreateDialog";
+import GroupEditDialog from "@/components/groups/GroupEditDialog";
 import GroupFilters, { type GroupFilterTab } from "@/components/groups/GroupFilters";
 import { archiveGroup, restoreGroup } from "@/server/actions/groups";
+import { joinGroup, leaveGroup, requestToJoin, type MemberActionState } from "@/app/actions/members";
 import type { GroupListItem } from "@/lib/queries/groups";
 
 const EMPTY_GROUPS_MESSAGE = "Create a group to organize the people and ministries you lead.";
@@ -35,6 +37,7 @@ export default function GroupsView({
   const [activeTab, setActiveTab] = useState<GroupFilterTab>("active");
   const [query, setQuery] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [pendingGroupId, setPendingGroupId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
@@ -146,11 +149,38 @@ export default function GroupsView({
     });
   };
 
-  const handleEdit = () => {
+  const handleEdit = (groupId: string) => {
+    if (!canManageGroups) {
+      addToast({
+        title: "Not enough access",
+        description: LIMITED_ACCESS_MESSAGE
+      });
+      return;
+    }
+    setEditingGroupId(groupId);
+  };
+
+  const handleMemberResult = async (
+    groupId: string,
+    action: () => Promise<MemberActionState>,
+    successTitle: string
+  ) => {
+    setPendingGroupId(groupId);
+    const result = await action();
+    if (result.status === "error") {
+      addToast({
+        title: "Update failed",
+        description: result.message || "Please try again."
+      });
+      setPendingGroupId(null);
+      return;
+    }
     addToast({
-      title: "Edits coming soon",
-      description: "Editing group details is on the way."
+      title: successTitle,
+      description: result.message
     });
+    setPendingGroupId(null);
+    refreshList();
   };
 
   const filteredGroups = useMemo(() => {
@@ -253,9 +283,31 @@ export default function GroupsView({
                 <GroupCard
                   key={group.id}
                   group={group}
-                  onEdit={handleEdit}
+                  canManageGroup={canManageGroups}
+                  canManageMembers={
+                    canManageGroups || group.viewerMembershipStatus === "ACTIVE"
+                  }
+                  onEdit={() => handleEdit(group.id)}
                   onArchive={() => handleArchive(group.id)}
                   onRestore={() => handleRestore(group.id)}
+                  onManageMembers={() => router.push(`/groups/${group.id}/members`)}
+                  onJoin={() =>
+                    void handleMemberResult(group.id, () => joinGroup({ groupId: group.id }), "Joined")
+                  }
+                  onRequestJoin={() =>
+                    void handleMemberResult(
+                      group.id,
+                      () => requestToJoin({ groupId: group.id }),
+                      "Request sent"
+                    )
+                  }
+                  onLeave={() =>
+                    void handleMemberResult(
+                      group.id,
+                      () => leaveGroup({ groupId: group.id }),
+                      "Left group"
+                    )
+                  }
                   isBusy={pendingGroupId === group.id}
                 />
               ))}
@@ -271,6 +323,25 @@ export default function GroupsView({
         actorUserId={actorUserId}
         onCreated={refreshList}
       />
+
+      {editingGroupId ? (
+        (() => {
+          const editingGroup = groups.find((group) => group.id === editingGroupId);
+          if (!editingGroup) {
+            return null;
+          }
+          return (
+            <GroupEditDialog
+              open={Boolean(editingGroupId)}
+              onOpenChange={(open) => setEditingGroupId(open ? editingGroupId : null)}
+              parishId={parishId}
+              actorUserId={actorUserId}
+              group={editingGroup}
+              onUpdated={refreshList}
+            />
+          );
+        })()
+      ) : null}
     </div>
   );
 }

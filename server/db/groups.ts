@@ -61,7 +61,7 @@ export async function getGroupByParishId(parishId: string, groupId: string) {
 export async function upsertGroupMembership(input: {
   groupId: string;
   userId: string;
-  role: "LEAD" | "MEMBER";
+  role: "COORDINATOR" | "PARISHIONER";
 }) {
   return prisma.groupMembership.upsert({
     where: {
