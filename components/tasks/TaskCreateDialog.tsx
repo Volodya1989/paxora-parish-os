@@ -16,6 +16,7 @@ import {
   initialTaskActionState,
   type TaskActionState
 } from "@/server/actions/taskState";
+import { shouldCloseTaskDialog } from "@/components/tasks/taskDialogSuccess";
 
 type TaskCreateDialogProps = {
   open: boolean;
@@ -55,12 +56,18 @@ export default function TaskCreateDialog({
   const visibilityId = useId();
 
   useEffect(() => {
+    if (open) {
+      handledSuccess.current = false;
+    }
+  }, [open]);
+
+  useEffect(() => {
     if (state.status !== "success") {
       handledSuccess.current = false;
       return;
     }
 
-    if (handledSuccess.current) {
+    if (!shouldCloseTaskDialog(state, handledSuccess.current)) {
       return;
     }
 
@@ -76,7 +83,7 @@ export default function TaskCreateDialog({
     startTransition(() => {
       router.refresh();
     });
-  }, [addToast, onOpenChange, router, startTransition, state.status]);
+  }, [addToast, onOpenChange, router, startTransition, state]);
 
   const renderForm = (formId: string, ref: RefObject<HTMLFormElement>) => (
     <form

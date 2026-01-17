@@ -11,6 +11,20 @@ export async function ensureParishBootstrap(userId: string) {
     });
 
     if (existingParish) {
+      const membershipCount = await prisma.membership.count({
+        where: { parishId: existingParish.id }
+      });
+
+      if (membershipCount === 0) {
+        await prisma.membership.create({
+          data: {
+            parishId: existingParish.id,
+            userId,
+            role: "SHEPHERD"
+          }
+        });
+      }
+
       await prisma.user.update({
         where: { id: userId },
         data: { activeParishId: existingParish.id }

@@ -17,6 +17,7 @@ import {
   type TaskActionState
 } from "@/server/actions/taskState";
 import type { TaskListItem } from "@/lib/queries/tasks";
+import { shouldCloseTaskDialog } from "@/components/tasks/taskDialogSuccess";
 
 type TaskEditDialogProps = {
   open: boolean;
@@ -53,12 +54,18 @@ export default function TaskEditDialog({
   const ownerId = useId();
 
   useEffect(() => {
+    if (open) {
+      handledSuccess.current = false;
+    }
+  }, [open]);
+
+  useEffect(() => {
     if (state.status !== "success") {
       handledSuccess.current = false;
       return;
     }
 
-    if (handledSuccess.current) {
+    if (!shouldCloseTaskDialog(state, handledSuccess.current)) {
       return;
     }
 
@@ -73,7 +80,7 @@ export default function TaskEditDialog({
     startTransition(() => {
       router.refresh();
     });
-  }, [addToast, onOpenChange, router, startTransition, state.status]);
+  }, [addToast, onOpenChange, router, startTransition, state]);
 
   const renderForm = (ref: RefObject<HTMLFormElement>) => (
     <form

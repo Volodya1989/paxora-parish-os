@@ -12,7 +12,16 @@ export async function listWeekEvents(parishId: string, weekId: string) {
       title: true,
       startsAt: true,
       endsAt: true,
-      location: true
+      location: true,
+      summary: true,
+      visibility: true,
+      type: true,
+      group: {
+        select: {
+          id: true,
+          name: true
+        }
+      }
     }
   });
 }
@@ -24,6 +33,10 @@ export async function createEvent(input: {
   startsAt: Date;
   endsAt: Date;
   location?: string;
+  summary?: string | null;
+  visibility?: "PUBLIC" | "GROUP" | "PRIVATE";
+  groupId?: string | null;
+  type?: "SERVICE" | "EVENT";
 }) {
   return prisma.event.create({
     data: {
@@ -32,7 +45,11 @@ export async function createEvent(input: {
       title: input.title,
       startsAt: input.startsAt,
       endsAt: input.endsAt,
-      location: input.location
+      location: input.location,
+      summary: input.summary ?? null,
+      visibility: input.visibility ?? "PUBLIC",
+      groupId: input.groupId ?? null,
+      type: input.type ?? "EVENT"
     },
     select: {
       id: true
