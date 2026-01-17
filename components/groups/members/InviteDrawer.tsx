@@ -8,7 +8,7 @@ import Label from "@/components/ui/Label";
 import SelectMenu from "@/components/ui/SelectMenu";
 import { Drawer } from "@/components/ui/Drawer";
 import { useToast } from "@/components/ui/Toast";
-import type { MemberActionState } from "@/app/actions/members";
+import type { MemberActionState } from "@/lib/types/members";
 
 const roleOptions = [
   { value: "PARISHIONER", label: "Parishioner" },

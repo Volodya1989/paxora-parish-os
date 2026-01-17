@@ -147,6 +147,12 @@ export default async function GroupTasksPage({ params }: GroupTasksPageProps) {
 
   return (
     <TasksView
+      title="Opportunities to Help"
+      description={`Coordinate service opportunities for this group. ${formatDateRange(
+        week.startsOn,
+        week.endsOn
+      )}`}
+      ctaLabel="Add opportunity"
       weekLabel={week.label}
       weekRange={formatDateRange(week.startsOn, week.endsOn)}
       weekId={week.id}

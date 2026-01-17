@@ -148,6 +148,32 @@ dbTest("invite, join requests, approvals, role changes, and leave", async () => 
 
   assert.equal(inviteResult.status, "success");
 
+  const cancelInviteResult = await actions.inviteMember({
+    groupId: group.id,
+    email: outsider.email,
+    role: "PARISHIONER"
+  });
+
+  assert.equal(cancelInviteResult.status, "success");
+
+  const cancelResult = await actions.cancelInvite({
+    groupId: group.id,
+    userId: outsider.id
+  });
+
+  assert.equal(cancelResult.status, "success");
+
+  const cancelledMembership = await prisma.groupMembership.findUnique({
+    where: {
+      groupId_userId: {
+        groupId: group.id,
+        userId: outsider.id
+      }
+    }
+  });
+
+  assert.equal(cancelledMembership, null);
+
   const pendingInvite = await prisma.groupMembership.findUnique({
     where: {
       groupId_userId: {

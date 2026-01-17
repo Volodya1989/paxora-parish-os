@@ -16,6 +16,7 @@ import PendingInvites from "@/components/groups/members/PendingInvites";
 import {
   acceptInvite,
   approveJoinRequest,
+  cancelInvite,
   changeMemberRole,
   declineInvite,
   denyJoinRequest,
@@ -23,10 +24,10 @@ import {
   joinGroup,
   leaveGroup,
   removeMember,
-  requestToJoin,
-  type MemberActionState
+  requestToJoin
 } from "@/app/actions/members";
 import type { GroupMemberRecord, PendingInviteRecord } from "@/lib/queries/members";
+import type { MemberActionState } from "@/lib/types/members";
 
 const EMPTY_MEMBERS_MESSAGE = "Add parishioners to build a calm, coordinated team.";
 
@@ -132,6 +133,18 @@ export default function GroupMembersView({
     );
   };
 
+  const handleCancelInvite = (userId: string) => {
+    setPendingMemberId(userId);
+    void runAction(
+      async () => {
+        const result = await cancelInvite({ groupId: group.id, userId });
+        setPendingMemberId(null);
+        return result;
+      },
+      "Invite cancelled"
+    );
+  };
+
   const handleAccept = () => {
     void runAction(() => acceptInvite({ groupId: group.id }), "Invite accepted");
   };
@@ -177,7 +190,7 @@ export default function GroupMembersView({
   };
 
   const joinLabel =
-    group.joinPolicy === "OPEN" ? "Join group" : "Request to join";
+    group.joinPolicy === "OPEN" ? "Join instantly" : "Request approval";
   const canJoin =
     viewer.status === null && (group.joinPolicy === "OPEN" || group.joinPolicy === "REQUEST_TO_JOIN");
 
@@ -216,9 +229,9 @@ export default function GroupMembersView({
           </Badge>
           <Badge tone="neutral">
             {group.joinPolicy === "OPEN"
-              ? "Open join"
+              ? "Join instantly"
               : group.joinPolicy === "REQUEST_TO_JOIN"
-              ? "Request to join"
+              ? "Request approval"
               : "Invite only"}
           </Badge>
         </div>
@@ -256,6 +269,27 @@ export default function GroupMembersView({
             Back to group
           </Link>
         </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Link
+          className="rounded-full border border-mist-200 bg-white px-3 py-1 text-xs font-medium text-ink-600 shadow-card"
+          href="/announcements"
+        >
+          Announcements
+        </Link>
+        <Link
+          className="rounded-full border border-mist-200 bg-white px-3 py-1 text-xs font-medium text-ink-600 shadow-card"
+          href="/calendar"
+        >
+          Schedule
+        </Link>
+        <Link
+          className="rounded-full border border-mist-200 bg-white px-3 py-1 text-xs font-medium text-ink-600 shadow-card"
+          href={`/groups/${group.id}/tasks`}
+        >
+          Opportunities to Help
+        </Link>
       </div>
 
       {viewer.status === "INVITED" ? (
@@ -323,7 +357,7 @@ export default function GroupMembersView({
               canManage={canManage}
               onApprove={handleApprove}
               onDeny={handleDeny}
-              onRemove={handleRemove}
+              onRemove={handleCancelInvite}
               isBusy={(userId) => pendingMemberId === userId}
             />
           </TabsPanel>

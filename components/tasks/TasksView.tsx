@@ -15,6 +15,9 @@ import type { PendingTaskApproval } from "@/lib/queries/tasks";
 import { approveTask, rejectTask } from "@/server/actions/tasks";
 
 type TasksViewProps = {
+  title?: string;
+  description?: string;
+  ctaLabel?: string;
   weekLabel: string;
   weekRange: string;
   weekId: string;
@@ -32,6 +35,9 @@ type TasksViewProps = {
 };
 
 export default function TasksView({
+  title = "Tasks",
+  description,
+  ctaLabel = "New Task",
   weekLabel,
   weekRange,
   weekId,
@@ -125,27 +131,28 @@ export default function TasksView({
     });
   };
 
+  const headingDescription =
+    description ?? `Keep the week grounded with the next faithful steps. ${weekRange}`;
+
   return (
     <div className="section-gap">
       <Card>
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-h1">Tasks</h1>
+              <h1 className="text-h1">{title}</h1>
               <span className="rounded-full bg-mist-100 px-3 py-1 text-xs font-medium text-ink-700">
                 Week {weekLabel}
               </span>
             </div>
-            <p className="text-sm text-ink-500">
-              Keep the week grounded with the next faithful steps. {weekRange}
-            </p>
+            <p className="text-sm text-ink-500">{headingDescription}</p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <div className="rounded-card border border-mist-200 bg-mist-50 px-4 py-3">
               <p className="text-xs uppercase tracking-wide text-ink-400">Progress</p>
               <p className="text-sm font-semibold text-ink-700">{statsLabel}</p>
             </div>
-            <Button onClick={() => setIsCreateOpen(true)}>New Task</Button>
+            <Button onClick={() => setIsCreateOpen(true)}>{ctaLabel}</Button>
           </div>
         </div>
       </Card>

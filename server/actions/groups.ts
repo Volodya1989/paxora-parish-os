@@ -101,24 +101,38 @@ export async function createGroup(input: {
     throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
   }
 
-  const group = await prisma.group.create({
-    data: {
-      parishId,
-      name: parsed.data.name,
-      description: parsed.data.description?.trim() || undefined,
-      visibility: parsed.data.visibility,
-      joinPolicy: parsed.data.joinPolicy
-    },
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      visibility: true,
-      joinPolicy: true,
-      createdAt: true,
-      archivedAt: true
-    }
-  } as any);
+  const group = await prisma.$transaction(async (tx) => {
+    const createdGroup = await tx.group.create({
+      data: {
+        parishId,
+        name: parsed.data.name,
+        description: parsed.data.description?.trim() || undefined,
+        visibility: parsed.data.visibility,
+        joinPolicy: parsed.data.joinPolicy
+      },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        visibility: true,
+        joinPolicy: true,
+        createdAt: true,
+        archivedAt: true
+      }
+    } as any);
+
+    await tx.groupMembership.create({
+      data: {
+        groupId: createdGroup.id,
+        userId,
+        role: "COORDINATOR",
+        status: "ACTIVE",
+        approvedByUserId: userId
+      }
+    });
+
+    return createdGroup;
+  });
 
   revalidatePath("/groups");
 
@@ -246,7 +260,7 @@ export async function getGroupDetail(groupId: string) {
     throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
   }
 
-  await requireParishMembership(userId, parishId);
+  const parishMembership = await requireParishMembership(userId, parishId);
 
   const group = await prisma.group.findFirst({
     where: { id: parsed.data.groupId, parishId },

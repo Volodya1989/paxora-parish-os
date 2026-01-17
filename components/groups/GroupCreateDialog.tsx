@@ -10,6 +10,7 @@ import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { createGroup } from "@/server/actions/groups";
+import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 
 const NAME_MAX_LENGTH = 80;
 const DESCRIPTION_MAX_LENGTH = 280;
@@ -55,6 +56,7 @@ export default function GroupCreateDialog({
   const drawerDescriptionId = useId();
   const drawerVisibilityId = useId();
   const drawerJoinPolicyId = useId();
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const resetForm = () => {
     setName("");
@@ -104,7 +106,7 @@ export default function GroupCreateDialog({
         });
         addToast({
           title: "Group created",
-          description: "Your new group is ready for members and tasks."
+          description: "Your new group is ready for members and opportunities to help."
         });
         resetForm();
         onOpenChange(false);
@@ -198,17 +200,21 @@ export default function GroupCreateDialog({
   const drawerFormId = useId();
   const handleClose = useCallback(() => onOpenChange(false), [onOpenChange]);
 
-  return (
-    <>
+  const formDescription = (
+    <p className="mb-4 text-sm text-ink-500">
+      Gather the right people around a mission, ministry, or project.
+    </p>
+  );
+
+  if (isDesktop) {
+    return (
       <Modal
         open={open}
         onClose={handleClose}
         title="New group"
         footer={renderFooter(modalFormId)}
       >
-        <p className="mb-4 text-sm text-ink-500">
-          Gather the right people around a mission, ministry, or project.
-        </p>
+        {formDescription}
         {renderForm(
           modalFormId,
           modalNameId,
@@ -217,23 +223,24 @@ export default function GroupCreateDialog({
           modalJoinPolicyId
         )}
       </Modal>
-      <Drawer
-        open={open}
-        onClose={handleClose}
-        title="New group"
-        footer={renderFooter(drawerFormId)}
-      >
-        <p className="mb-4 text-sm text-ink-500">
-          Gather the right people around a mission, ministry, or project.
-        </p>
-        {renderForm(
-          drawerFormId,
-          drawerNameId,
-          drawerDescriptionId,
-          drawerVisibilityId,
-          drawerJoinPolicyId
-        )}
-      </Drawer>
-    </>
+    );
+  }
+
+  return (
+    <Drawer
+      open={open}
+      onClose={handleClose}
+      title="New group"
+      footer={renderFooter(drawerFormId)}
+    >
+      {formDescription}
+      {renderForm(
+        drawerFormId,
+        drawerNameId,
+        drawerDescriptionId,
+        drawerVisibilityId,
+        drawerJoinPolicyId
+      )}
+    </Drawer>
   );
 }

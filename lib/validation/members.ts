@@ -22,6 +22,8 @@ export const removeMemberSchema = z.object({
   userId
 });
 
+export const cancelInviteSchema = removeMemberSchema;
+
 export const changeMemberRoleSchema = z.object({
   groupId,
   userId,

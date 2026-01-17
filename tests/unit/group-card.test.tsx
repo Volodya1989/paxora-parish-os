@@ -3,8 +3,9 @@ import assert from "node:assert/strict";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import GroupCard from "@/components/groups/GroupCard";
+import type { GroupListItem } from "@/lib/queries/groups";
 
-const baseGroup = {
+const baseGroup: GroupListItem = {
   id: "group-1",
   name: "Hospitality Team",
   description: "Welcoming new members.",

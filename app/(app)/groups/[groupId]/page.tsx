@@ -178,12 +178,14 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
 
       <Card>
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-ink-900">This week&apos;s tasks</h2>
+          <h2 className="text-lg font-semibold text-ink-900">Opportunities to Help</h2>
           <p className="text-sm text-ink-500">Week {week.label}</p>
         </div>
         <div className="mt-4">
           {tasks.length === 0 ? (
-            <p className="text-sm text-ink-500">No tasks assigned to this group this week.</p>
+            <p className="text-sm text-ink-500">
+              No service opportunities are scheduled for this group this week.
+            </p>
           ) : (
             tasks.map((task) => (
               <ListRow
