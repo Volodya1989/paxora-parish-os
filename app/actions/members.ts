@@ -14,28 +14,11 @@ import {
   approveRequestSchema,
   denyRequestSchema,
   inviteMemberSchema,
-  removeMemberSchema
+  removeMemberSchema,
+  cancelInviteSchema
 } from "@/lib/validation/members";
 import { isAdminClergy, requireCoordinatorOrAdmin } from "@/lib/authz/membership";
-
-export type MemberActionError =
-  | "NOT_AUTHORIZED"
-  | "NOT_FOUND"
-  | "ALREADY_MEMBER"
-  | "ALREADY_PENDING"
-  | "INVALID_POLICY"
-  | "VALIDATION_ERROR";
-
-export type MemberActionState = {
-  status: "success" | "error";
-  message: string;
-  error?: MemberActionError;
-};
-
-export const initialMemberActionState: MemberActionState = {
-  status: "success",
-  message: ""
-};
+import type { MemberActionError, MemberActionState } from "@/lib/types/members";
 
 function buildError(message: string, error: MemberActionError): MemberActionState {
   return { status: "error", message, error };
@@ -518,6 +501,7 @@ export async function denyJoinRequest(input: {
 
   revalidatePath(`/groups/${parsed.data.groupId}/members`);
   revalidatePath(`/groups/${parsed.data.groupId}`);
+  revalidatePath("/groups");
 
   return {
     status: "success",
@@ -571,6 +555,55 @@ export async function removeMember(input: {
   return {
     status: "success",
     message: "Member removed."
+  };
+}
+
+export async function cancelInvite(input: {
+  groupId: string;
+  userId: string;
+}): Promise<MemberActionState> {
+  const session = await requireSession();
+  const parsed = cancelInviteSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return buildError(parsed.error.errors[0]?.message ?? "Invalid invite", "VALIDATION_ERROR");
+  }
+
+  try {
+    await requireCoordinatorOrAdmin(session.user.id, parsed.data.groupId);
+  } catch (error) {
+    return buildError("You do not have permission to cancel invites.", "NOT_AUTHORIZED");
+  }
+
+  const target = await prisma.groupMembership.findUnique({
+    where: {
+      groupId_userId: {
+        groupId: parsed.data.groupId,
+        userId: parsed.data.userId
+      }
+    },
+    select: { status: true }
+  });
+
+  if (!target || target.status !== "INVITED") {
+    return buildError("Invite not found.", "NOT_FOUND");
+  }
+
+  await prisma.groupMembership.delete({
+    where: {
+      groupId_userId: {
+        groupId: parsed.data.groupId,
+        userId: parsed.data.userId
+      }
+    }
+  });
+
+  revalidatePath(`/groups/${parsed.data.groupId}/members`);
+  revalidatePath(`/groups/${parsed.data.groupId}`);
+
+  return {
+    status: "success",
+    message: "Invite cancelled."
   };
 }
 

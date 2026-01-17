@@ -11,7 +11,8 @@ import GroupCreateDialog from "@/components/groups/GroupCreateDialog";
 import GroupEditDialog from "@/components/groups/GroupEditDialog";
 import GroupFilters, { type GroupFilterTab } from "@/components/groups/GroupFilters";
 import { archiveGroup, restoreGroup } from "@/server/actions/groups";
-import { joinGroup, leaveGroup, requestToJoin, type MemberActionState } from "@/app/actions/members";
+import { joinGroup, leaveGroup, requestToJoin } from "@/app/actions/members";
+import type { MemberActionState } from "@/lib/types/members";
 import type { GroupListItem } from "@/lib/queries/groups";
 
 const EMPTY_GROUPS_MESSAGE = "Create a group to organize the people and ministries you lead.";

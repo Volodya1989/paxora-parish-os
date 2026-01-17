@@ -119,6 +119,13 @@ export default function GroupCard({
             <Badge tone={group.visibility === "PUBLIC" ? "success" : "neutral"}>
               {group.visibility === "PUBLIC" ? "Public" : "Private"}
             </Badge>
+            <Badge tone="neutral">
+              {group.joinPolicy === "OPEN"
+                ? "Join instantly"
+                : group.joinPolicy === "REQUEST_TO_JOIN"
+                ? "Request approval"
+                : "Invite only"}
+            </Badge>
           </div>
           <p className="text-sm text-ink-500">
             {group.description?.trim()
@@ -187,9 +194,9 @@ export default function GroupCard({
           {!isMember && !isInvited && !isRequested && !isArchived ? (
             <Badge tone="neutral">
               {group.joinPolicy === "OPEN"
-                ? "Open join"
+                ? "Join instantly"
                 : group.joinPolicy === "REQUEST_TO_JOIN"
-                ? "Request to join"
+                ? "Request approval"
                 : "Invite only"}
             </Badge>
           ) : null}
@@ -208,6 +215,14 @@ export default function GroupCard({
                 {group.joinPolicy === "OPEN" ? "Join" : "Request to join"}
               </Button>
             )
+          ) : null}
+          {canManageMembers ? (
+            <Link
+              className="text-xs font-medium text-ink-700 underline"
+              href={`/groups/${group.id}/members`}
+            >
+              Members
+            </Link>
           ) : null}
           <Link
             className="text-xs font-medium text-ink-700 underline"

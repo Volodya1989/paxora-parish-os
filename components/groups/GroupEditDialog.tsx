@@ -10,6 +10,7 @@ import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { updateGroup } from "@/server/actions/groups";
+import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 
 const NAME_MAX_LENGTH = 80;
 const DESCRIPTION_MAX_LENGTH = 280;
@@ -63,6 +64,7 @@ export default function GroupEditDialog({
   const drawerDescriptionId = useId();
   const drawerVisibilityId = useId();
   const drawerJoinPolicyId = useId();
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   useEffect(() => {
     if (!open) {
@@ -203,17 +205,21 @@ export default function GroupEditDialog({
   const drawerFormId = useId();
   const handleClose = useCallback(() => onOpenChange(false), [onOpenChange]);
 
-  return (
-    <>
+  const formDescription = (
+    <p className="mb-4 text-sm text-ink-500">
+      Update details so members know how to connect and contribute.
+    </p>
+  );
+
+  if (isDesktop) {
+    return (
       <Modal
         open={open}
         onClose={handleClose}
         title="Edit group"
         footer={renderFooter(modalFormId)}
       >
-        <p className="mb-4 text-sm text-ink-500">
-          Update details so members know how to connect and contribute.
-        </p>
+        {formDescription}
         {renderForm(
           modalFormId,
           modalNameId,
@@ -222,23 +228,24 @@ export default function GroupEditDialog({
           modalJoinPolicyId
         )}
       </Modal>
-      <Drawer
-        open={open}
-        onClose={handleClose}
-        title="Edit group"
-        footer={renderFooter(drawerFormId)}
-      >
-        <p className="mb-4 text-sm text-ink-500">
-          Update details so members know how to connect and contribute.
-        </p>
-        {renderForm(
-          drawerFormId,
-          drawerNameId,
-          drawerDescriptionId,
-          drawerVisibilityId,
-          drawerJoinPolicyId
-        )}
-      </Drawer>
-    </>
+    );
+  }
+
+  return (
+    <Drawer
+      open={open}
+      onClose={handleClose}
+      title="Edit group"
+      footer={renderFooter(drawerFormId)}
+    >
+      {formDescription}
+      {renderForm(
+        drawerFormId,
+        drawerNameId,
+        drawerDescriptionId,
+        drawerVisibilityId,
+        drawerJoinPolicyId
+      )}
+    </Drawer>
   );
 }

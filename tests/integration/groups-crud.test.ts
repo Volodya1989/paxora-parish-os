@@ -98,13 +98,13 @@ dbTest("create group succeeds with valid input", async () => {
   session.user.id = user.id;
   session.user.activeParishId = parish.id;
 
-  await actions.createGroup({
+  const createdGroup = await actions.createGroup({
     parishId: parish.id,
     actorUserId: user.id,
     name: "Greeters",
     description: "Front door welcome team",
     visibility: "PUBLIC",
-    joinPolicy: "INVITE_ONLY"
+    joinPolicy: "OPEN"
   });
 
   const stored = (await prisma.group.findFirst({
@@ -114,7 +114,19 @@ dbTest("create group succeeds with valid input", async () => {
   assert.ok(stored);
   assert.equal(stored?.archivedAt, null);
   assert.equal(stored?.visibility, "PUBLIC");
-  assert.equal(stored?.joinPolicy, "INVITE_ONLY");
+  assert.equal(stored?.joinPolicy, "OPEN");
+
+  const creatorMembership = await prisma.groupMembership.findUnique({
+    where: {
+      groupId_userId: {
+        groupId: createdGroup.id,
+        userId: user.id
+      }
+    }
+  });
+
+  assert.equal(creatorMembership?.role, "COORDINATOR");
+  assert.equal(creatorMembership?.status, "ACTIVE");
 });
 
 dbTest("archive, restore, and undo", async () => {
