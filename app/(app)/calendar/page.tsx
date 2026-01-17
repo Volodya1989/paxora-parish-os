@@ -40,6 +40,7 @@ export default async function CalendarPage() {
       prisma.groupMembership.findMany({
         where: {
           userId,
+          status: "ACTIVE",
           group: { parishId }
         },
         select: {

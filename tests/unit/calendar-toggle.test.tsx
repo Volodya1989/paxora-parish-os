@@ -19,6 +19,7 @@ const nextWeekRange = {
 };
 const sampleEvent = {
   id: "event-1",
+  instanceId: "event-1-1714986000000",
   title: "Morning Mass",
   startsAt: new Date("2024-05-06T09:00:00.000Z"),
   endsAt: new Date("2024-05-06T10:00:00.000Z"),
@@ -28,6 +29,10 @@ const sampleEvent = {
   visibility: "PUBLIC" as const,
   group: null,
   type: "SERVICE" as const,
+  recurrenceFreq: "NONE" as const,
+  recurrenceInterval: 1,
+  recurrenceByWeekday: [],
+  recurrenceUntil: null,
   rsvpResponse: null,
   canManage: true
 };

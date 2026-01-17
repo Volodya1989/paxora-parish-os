@@ -202,7 +202,8 @@ export default function TasksView({
                       <option value="" disabled>
                         Select role
                       </option>
-                      <option value="MEMBER">Member</option>
+                      <option value="MEMBER">Parishioner</option>
+                      <option value="SHEPHERD">Clergy</option>
                       <option value="ADMIN">Admin</option>
                     </Select>
                     <Button

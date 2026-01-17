@@ -47,10 +47,10 @@ async function canUpdateGroupMembership({
         userId: actorUserId
       }
     },
-    select: { role: true }
+    select: { role: true, status: true }
   });
 
-  return groupMembership?.role === "LEAD";
+  return groupMembership?.status === "ACTIVE" && groupMembership.role === "LEAD";
 }
 
 export async function addGroupMember({
@@ -74,7 +74,8 @@ export async function addGroupMember({
   return prisma.groupMembership.create({
     data: {
       groupId,
-      userId: targetUserId
+      userId: targetUserId,
+      status: "ACTIVE"
     }
   });
 }

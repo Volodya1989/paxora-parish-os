@@ -8,6 +8,7 @@ type EventChipProps = {
   timeLabel?: string;
   isSelected?: boolean;
   ariaLabel: string;
+  recurrenceLabel?: string;
   onClick: () => void;
 };
 
@@ -16,6 +17,7 @@ export default function EventChip({
   timeLabel,
   isSelected,
   ariaLabel,
+  recurrenceLabel,
   onClick
 }: EventChipProps) {
   return (
@@ -31,6 +33,12 @@ export default function EventChip({
     >
       <span className="truncate text-sm font-semibold text-ink-900">{title}</span>
       {timeLabel ? <span className="text-xs text-ink-500">{timeLabel}</span> : null}
+      {recurrenceLabel ? (
+        <span className="text-[11px] text-ink-400">
+          <span aria-hidden className="mr-1">↻</span>
+          {recurrenceLabel}
+        </span>
+      ) : null}
     </button>
   );
 }

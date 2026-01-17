@@ -9,19 +9,20 @@ import { getEventById } from "@/lib/queries/events";
 import { authOptions } from "@/server/auth/options";
 
 type DeleteEventPageProps = {
-  params: {
+  params: Promise<{
     eventId: string;
-  };
+  }>;
 };
 
 export default async function DeleteEventPage({ params }: DeleteEventPageProps) {
+  const { eventId } = await params;
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id || !session.user.activeParishId) {
     throw new Error("Unauthorized");
   }
 
-  const event = await getEventById({ id: params.eventId, userId: session.user.id });
+  const event = await getEventById({ id: eventId, userId: session.user.id });
 
   if (!event || event.parishId !== session.user.activeParishId || !event.canManage) {
     return (

@@ -7,6 +7,7 @@ import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { Drawer } from "@/components/ui/Drawer";
 import RsvpButtons from "@/components/events/RsvpButtons";
+import { formatRecurrenceSummary } from "@/lib/events/recurrence";
 import type { CalendarEvent } from "@/lib/queries/events";
 
 type EventDetailPanelProps = {
@@ -41,6 +42,7 @@ function EventDetailContent({ event }: { event: CalendarEvent }) {
         <h3 className="text-lg font-semibold text-ink-900">{event.title}</h3>
         <p className="text-sm text-ink-500">{formatDate(event)}</p>
         <p className="text-sm text-ink-500">{formatTime(event)}</p>
+        <p className="text-xs text-ink-400">{formatRecurrenceSummary(event)}</p>
         <div className="flex flex-wrap items-center gap-2 pt-2">
           <Badge tone={event.type === "SERVICE" ? "success" : "neutral"}>
             {event.type === "SERVICE" ? "Service" : "Event"}

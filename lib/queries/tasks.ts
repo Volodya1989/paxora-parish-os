@@ -209,6 +209,7 @@ export async function listTasks({
     prisma.groupMembership.findMany({
       where: {
         userId: actorUserId,
+        status: "ACTIVE",
         group: { parishId }
       },
       select: {

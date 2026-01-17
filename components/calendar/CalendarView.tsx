@@ -128,7 +128,7 @@ export default function CalendarView({
     if (!selectedEvent) {
       return;
     }
-    if (!activeEvents.some((event) => event.id === selectedEvent.id)) {
+    if (!activeEvents.some((event) => event.instanceId === selectedEvent.instanceId)) {
       setSelectedEvent(null);
     }
   }, [activeEvents, selectedEvent]);
@@ -282,14 +282,14 @@ export default function CalendarView({
                     action={renderEmptyActions()}
                   />
                 ) : (
-                  <CalendarGridWeek
-                    days={weekDays}
-                    eventsByDay={weekEventsByDay}
-                    today={now}
-                    selectedEventId={selectedEvent?.id}
-                    onSelectEvent={setSelectedEvent}
-                  />
-                )}
+            <CalendarGridWeek
+              days={weekDays}
+              eventsByDay={weekEventsByDay}
+              today={now}
+              selectedEventId={selectedEvent?.instanceId}
+              onSelectEvent={setSelectedEvent}
+            />
+          )}
               </TabsPanel>
               <TabsPanel value="month">
                 {monthEvents.length === 0 ? (
@@ -299,16 +299,16 @@ export default function CalendarView({
                     action={renderEmptyActions()}
                   />
                 ) : (
-                  <CalendarGridMonth
-                    days={monthDays}
-                    monthStart={monthRange.start}
-                    monthEnd={monthRange.end}
-                    eventsByDay={monthEventsByDay}
-                    today={now}
-                    selectedEventId={selectedEvent?.id}
-                    onSelectEvent={setSelectedEvent}
-                  />
-                )}
+            <CalendarGridMonth
+              days={monthDays}
+              monthStart={monthRange.start}
+              monthEnd={monthRange.end}
+              eventsByDay={monthEventsByDay}
+              today={now}
+              selectedEventId={selectedEvent?.instanceId}
+              onSelectEvent={setSelectedEvent}
+            />
+          )}
               </TabsPanel>
             </Card>
 

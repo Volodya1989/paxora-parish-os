@@ -53,7 +53,7 @@ export async function getGroupDetail({ parishId, groupId, actorUserId }: GroupDe
 
   const [members, tasks] = await Promise.all([
     prisma.groupMembership.findMany({
-      where: { groupId },
+      where: { groupId, status: "ACTIVE" },
       orderBy: { userId: "asc" },
       select: {
         role: true,
@@ -122,7 +122,8 @@ export async function updateGroupMembership({
     throw new Error("Unauthorized");
   }
 
-  if (!canManageGroupMembership(parishMembership.role, groupMembership?.role)) {
+  const groupRole = groupMembership?.status === "ACTIVE" ? groupMembership.role : null;
+  if (!canManageGroupMembership(parishMembership.role, groupRole)) {
     throw new Error("Forbidden");
   }
 

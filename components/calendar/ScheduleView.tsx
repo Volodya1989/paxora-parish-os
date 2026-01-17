@@ -3,6 +3,7 @@
 import Badge from "@/components/ui/Badge";
 import Card from "@/components/ui/Card";
 import { getDateKey } from "@/lib/date/calendar";
+import { formatRecurrenceSummary } from "@/lib/events/recurrence";
 import type { CalendarEvent } from "@/lib/queries/events";
 
 const visibilityTone: Record<CalendarEvent["visibility"], "neutral" | "warning"> = {
@@ -50,36 +51,11 @@ function formatTimeRange(event: CalendarEvent) {
 }
 
 type ScheduleEvent = CalendarEvent & {
-  recurrenceType?: "NONE" | "DAILY" | "WEEKLY" | "SELECTED_DAYS";
-  recurrenceDays?: number[];
   rsvpYesCount?: number;
 };
 
-const recurrenceDayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
 function formatRecurrence(event: ScheduleEvent) {
-  if (!event.recurrenceType || event.recurrenceType === "NONE") {
-    return "One-time event";
-  }
-
-  if (event.recurrenceType === "DAILY") {
-    return "Repeats daily";
-  }
-
-  if (event.recurrenceType === "WEEKLY") {
-    return "Repeats weekly";
-  }
-
-  const days = [...(event.recurrenceDays ?? [])]
-    .sort((a, b) => a - b)
-    .map((day) => recurrenceDayLabels[day])
-    .filter(Boolean);
-
-  if (days.length === 0) {
-    return "Repeats on selected days";
-  }
-
-  return `Repeats on ${days.join(", ")}`;
+  return formatRecurrenceSummary(event);
 }
 
 type ScheduleViewProps = {
@@ -124,7 +100,7 @@ export default function ScheduleView({ events, now, isEditor, onSelectEvent }: S
             <div className="space-y-3">
               {dayEvents.map((event) => (
                 <button
-                  key={event.id}
+                  key={event.instanceId}
                   type="button"
                   className="w-full rounded-card border border-mist-200 bg-white px-4 py-3 text-left shadow-card transition hover:border-primary-200 hover:bg-primary-50/50"
                   onClick={() => onSelectEvent(event)}
@@ -138,7 +114,7 @@ export default function ScheduleView({ events, now, isEditor, onSelectEvent }: S
                       <Badge tone={event.type === "SERVICE" ? "success" : "neutral"}>
                         {event.type === "SERVICE" ? "Service" : "Event"}
                       </Badge>
-                      {event.recurrenceType && event.recurrenceType !== "NONE" ? (
+                      {event.recurrenceFreq !== "NONE" ? (
                         <Badge tone="neutral">Repeats</Badge>
                       ) : null}
                       {isEditor ? (

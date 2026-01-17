@@ -7,19 +7,20 @@ import { getEventById } from "@/lib/queries/events";
 import { authOptions } from "@/server/auth/options";
 
 type EventDetailPageProps = {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 };
 
 export default async function EventDetailPage({ params }: EventDetailPageProps) {
+  const { id } = await params;
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id || !session.user.activeParishId) {
     throw new Error("Unauthorized");
   }
 
-  const event = await getEventById({ id: params.id, userId: session.user.id });
+  const event = await getEventById({ id, userId: session.user.id });
 
   if (!event || event.parishId !== session.user.activeParishId) {
     return (

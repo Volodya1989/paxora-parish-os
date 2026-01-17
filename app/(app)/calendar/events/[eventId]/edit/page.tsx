@@ -12,19 +12,20 @@ import { getParishMembership, listGroupsByParish } from "@/server/db/groups";
 import { prisma } from "@/server/db/prisma";
 
 type EditEventPageProps = {
-  params: {
+  params: Promise<{
     eventId: string;
-  };
+  }>;
 };
 
 export default async function EditEventPage({ params }: EditEventPageProps) {
+  const { eventId } = await params;
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id || !session.user.activeParishId) {
     throw new Error("Unauthorized");
   }
 
-  const event = await getEventById({ id: params.eventId, userId: session.user.id });
+  const event = await getEventById({ id: eventId, userId: session.user.id });
 
   if (!event || event.parishId !== session.user.activeParishId || !event.canManage) {
     return (
@@ -50,6 +51,7 @@ export default async function EditEventPage({ params }: EditEventPageProps) {
         await prisma.groupMembership.findMany({
           where: {
             userId: session.user.id,
+            status: "ACTIVE",
             group: { parishId: event.parishId }
           },
           select: {

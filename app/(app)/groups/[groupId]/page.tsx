@@ -9,12 +9,13 @@ import { prisma } from "@/server/db/prisma";
 import { getOrCreateCurrentWeek } from "@/domain/week";
 
 type GroupDetailPageProps = {
-  params: {
+  params: Promise<{
     groupId: string;
-  };
+  }>;
 };
 
 export default async function GroupDetailPage({ params }: GroupDetailPageProps) {
+  const { groupId } = await params;
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -26,7 +27,7 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
   const week = await getOrCreateCurrentWeek(parishId);
   const group = await prisma.group.findFirst({
     where: {
-      id: params.groupId,
+      id: groupId,
       parishId
     },
     select: {
@@ -34,6 +35,7 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
       name: true,
       description: true,
       memberships: {
+        where: { status: "ACTIVE" },
         orderBy: {
           user: {
             name: "asc"
@@ -94,9 +96,17 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <SectionTitle title={group.name} subtitle={group.description ?? `Week ${week.label}`} />
-        <Link className="text-sm font-medium text-ink-900 underline" href="/groups">
-          Back to groups
-        </Link>
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            className="text-sm font-medium text-ink-900 underline"
+            href={`/groups/${group.id}/members`}
+          >
+            Manage members
+          </Link>
+          <Link className="text-sm font-medium text-ink-900 underline" href="/groups">
+            Back to groups
+          </Link>
+        </div>
       </div>
 
       <Card>
@@ -118,7 +128,7 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
                     {membership.user.name ?? membership.user.email}
                   </p>
                   <Badge tone={membership.role === "LEAD" ? "success" : "neutral"}>
-                    {membership.role === "LEAD" ? "Lead" : "Member"}
+                    {membership.role === "LEAD" ? "Coordinator" : "Parishioner"}
                   </Badge>
                 </div>
                 <p className="text-xs text-ink-500">{membership.user.email}</p>

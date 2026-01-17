@@ -117,3 +117,48 @@ dbTest("list events by week and month with deterministic time", async () => {
   assert.equal(monthEvents[1]?.id, secondEvent.id);
   assert.equal(monthEvents[2]?.id, nextWeekEvent.id);
 });
+
+dbTest("weekly recurring events appear on selected weekdays", async () => {
+  const fixedNow = new Date("2024-05-08T12:00:00.000Z");
+  const parish = await prisma.parish.create({
+    data: { name: "St. Phoebe", slug: "st-phoebe" }
+  });
+
+  const weekStart = getWeekStartMonday(fixedNow);
+  const weekEnd = getWeekEnd(weekStart);
+  const week = await prisma.week.create({
+    data: {
+      parishId: parish.id,
+      startsOn: weekStart,
+      endsOn: weekEnd,
+      label: getWeekLabel(weekStart)
+    }
+  });
+
+  const recurringEvent = await prisma.event.create({
+    data: {
+      parishId: parish.id,
+      weekId: week.id,
+      title: "Daily prayer",
+      startsAt: new Date("2024-05-06T09:00:00.000Z"),
+      endsAt: new Date("2024-05-06T09:30:00.000Z"),
+      location: "Chapel",
+      recurrenceFreq: "WEEKLY",
+      recurrenceInterval: 1,
+      recurrenceByWeekday: [1, 3, 5]
+    }
+  });
+
+  const weekEvents = await listEventsForWeek({
+    parishId: parish.id,
+    getNow: () => fixedNow
+  });
+
+  const occurrences = weekEvents.filter((event) => event.id === recurringEvent.id);
+
+  assert.equal(occurrences.length, 3);
+  assert.deepEqual(
+    occurrences.map((event) => event.startsAt.getDay()).sort(),
+    [1, 3, 5]
+  );
+});

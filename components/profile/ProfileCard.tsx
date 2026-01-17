@@ -10,8 +10,8 @@ type ProfileCardProps = {
 
 const roleLabels: Record<string, string> = {
   ADMIN: "Admin",
-  SHEPHERD: "Shepherd",
-  MEMBER: "Member"
+  SHEPHERD: "Clergy",
+  MEMBER: "Parishioner"
 };
 
 const formatRole = (role?: string | null) => {
