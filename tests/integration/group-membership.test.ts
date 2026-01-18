@@ -121,10 +121,12 @@ dbTest("invite, join requests, approvals, role changes, and leave", async () => 
   const group = await prisma.group.create({
     data: {
       parishId: parish.id,
+      createdById: admin.id,
       name: "Hospitality",
       description: "Welcome team",
       joinPolicy: "REQUEST_TO_JOIN",
-      visibility: "PUBLIC"
+      visibility: "PUBLIC",
+      status: "ACTIVE"
     }
   });
 
@@ -316,10 +318,12 @@ dbTest("invite, join requests, approvals, role changes, and leave", async () => 
   const openGroup = await prisma.group.create({
     data: {
       parishId: parish.id,
+      createdById: admin.id,
       name: "Open Doors",
       description: "Open join group",
       joinPolicy: "OPEN",
-      visibility: "PUBLIC"
+      visibility: "PUBLIC",
+      status: "ACTIVE"
     }
   });
 

@@ -1,6 +1,6 @@
 export type DigestTask = {
   title: string;
-  status: "OPEN" | "DONE";
+  status: "OPEN" | "IN_PROGRESS" | "DONE";
 };
 
 export type DigestEvent = {

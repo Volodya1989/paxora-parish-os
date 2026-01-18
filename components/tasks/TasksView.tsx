@@ -9,10 +9,13 @@ import TaskCreateDialog from "@/components/tasks/TaskCreateDialog";
 import TaskFilters from "@/components/tasks/TaskFilters";
 import TasksEmptyState from "@/components/tasks/TasksEmptyState";
 import TasksList from "@/components/tasks/TasksList";
+import { Drawer } from "@/components/ui/Drawer";
+import EmptyState from "@/components/ui/EmptyState";
 import type { TaskFilters as TaskFiltersState, TaskListItem, TaskListSummary } from "@/lib/queries/tasks";
 import type { PendingAccessRequest } from "@/lib/queries/access";
 import type { PendingTaskApproval } from "@/lib/queries/tasks";
 import { approveTask, rejectTask } from "@/server/actions/tasks";
+import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 
 type TasksViewProps = {
   title?: string;
@@ -32,6 +35,8 @@ type TasksViewProps = {
   pendingTaskApprovals: PendingTaskApproval[];
   approveAccessAction: (formData: FormData) => Promise<void>;
   rejectAccessAction: (formData: FormData) => Promise<void>;
+  viewMode?: "all" | "opportunities" | "mine";
+  canManageTasks?: boolean;
 };
 
 export default function TasksView({
@@ -51,7 +56,9 @@ export default function TasksView({
   pendingAccessRequests,
   pendingTaskApprovals,
   approveAccessAction,
-  rejectAccessAction
+  rejectAccessAction,
+  viewMode = "all",
+  canManageTasks = true
 }: TasksViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -59,16 +66,12 @@ export default function TasksView({
   const [accessRoles, setAccessRoles] = useState<Record<string, string>>({});
   const [isApproving, startApprovalTransition] = useTransition();
   const [isAccessPending, startAccessTransition] = useTransition();
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const createParam = searchParams?.get("create");
   const hasTasks = summary.total > 0;
   const hasMatches = filteredCount > 0;
-
-  useEffect(() => {
-    if (createParam === "task") {
-      setIsCreateOpen(true);
-    }
-  }, [createParam]);
 
   const clearFilters = () => {
     const params = new URLSearchParams(searchParams?.toString() ?? "");
@@ -89,8 +92,9 @@ export default function TasksView({
   };
 
   const statsLabel = useMemo(() => {
-    return `${summary.open} open · ${summary.done} done`;
-  }, [summary.done, summary.open]);
+    const inProgressLabel = summary.inProgress ? ` · ${summary.inProgress} in progress` : "";
+    return `${summary.open} open${inProgressLabel} · ${summary.done} done`;
+  }, [summary.done, summary.inProgress, summary.open]);
 
   const handleApproveTask = (taskId: string) => {
     startApprovalTransition(async () => {
@@ -132,7 +136,36 @@ export default function TasksView({
   };
 
   const headingDescription =
-    description ?? `Keep the week grounded with the next faithful steps. ${weekRange}`;
+    description ??
+    (viewMode === "opportunities"
+      ? `Browse open ways to serve and support the parish. ${weekRange}`
+      : `Keep the week grounded with the next faithful steps. ${weekRange}`);
+
+  const resolvedTitle =
+    viewMode === "opportunities" ? "Opportunities to Help" : viewMode === "mine" ? "My Tasks" : title;
+  const showCreateButton = canManageTasks || viewMode === "mine";
+
+  useEffect(() => {
+    if (createParam === "task" && showCreateButton) {
+      setIsCreateOpen(true);
+    }
+  }, [createParam, showCreateButton]);
+
+  const handleViewChange = (nextView: "opportunities" | "mine" | "all") => {
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
+    if (nextView === "all") {
+      params.delete("view");
+    } else {
+      params.set("view", nextView);
+    }
+    if (nextView === "opportunities") {
+      params.delete("owner");
+      if (params.get("status") === "done") {
+        params.delete("status");
+      }
+    }
+    router.replace(`?${params.toString()}`, { scroll: false });
+  };
 
   return (
     <div className="section-gap">
@@ -140,7 +173,7 @@ export default function TasksView({
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-h1">{title}</h1>
+              <h1 className="text-h1">{resolvedTitle}</h1>
               <span className="rounded-full bg-mist-100 px-3 py-1 text-xs font-medium text-ink-700">
                 Week {weekLabel}
               </span>
@@ -152,20 +185,68 @@ export default function TasksView({
               <p className="text-xs uppercase tracking-wide text-ink-400">Progress</p>
               <p className="text-sm font-semibold text-ink-700">{statsLabel}</p>
             </div>
-            <Button onClick={() => setIsCreateOpen(true)}>{ctaLabel}</Button>
+            {showCreateButton ? (
+              <Button onClick={() => setIsCreateOpen(true)}>{ctaLabel}</Button>
+            ) : null}
           </div>
         </div>
       </Card>
 
       <Card>
         <div className="space-y-4">
-          <div>
-            <h2 className="text-h3">Filters</h2>
-            <p className="text-xs text-ink-400">
-              Narrow the list to the tasks that need your attention.
-            </p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-h3">Filters</h2>
+              <p className="text-xs text-ink-400">
+                {viewMode === "opportunities"
+                  ? "Refine the opportunities you want to see."
+                  : "Narrow the list to the tasks that need your attention."}
+              </p>
+            </div>
+            {viewMode !== "all" ? (
+              <div className="inline-flex rounded-full border border-mist-200 bg-mist-50 p-1">
+                <button
+                  type="button"
+                  onClick={() => handleViewChange("opportunities")}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                    viewMode === "opportunities"
+                      ? "bg-white text-ink-900 shadow-sm"
+                      : "text-ink-500 hover:text-ink-700"
+                  }`}
+                >
+                  Opportunities
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleViewChange("mine")}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                    viewMode === "mine"
+                      ? "bg-white text-ink-900 shadow-sm"
+                      : "text-ink-500 hover:text-ink-700"
+                  }`}
+                >
+                  My tasks
+                </button>
+              </div>
+            ) : null}
           </div>
-          <TaskFilters filters={filters} groupOptions={groupOptions} />
+          {isDesktop ? (
+            <TaskFilters
+              filters={filters}
+              groupOptions={groupOptions}
+              showOwnership={viewMode !== "opportunities"}
+              searchPlaceholder={viewMode === "opportunities" ? "Search opportunities" : undefined}
+            />
+          ) : (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setFiltersOpen(true)}
+              className="w-full"
+            >
+              Filters
+            </Button>
+          )}
         </div>
       </Card>
 
@@ -303,7 +384,18 @@ export default function TasksView({
         <div className="mt-4">
           {/* Grouped sections reinforce status context while keeping filters and empty states visible. */}
           {!hasTasks ? (
-            <TasksEmptyState variant="no-tasks" onCreate={() => setIsCreateOpen(true)} />
+            viewMode === "opportunities" ? (
+              <EmptyState
+                title="No opportunities right now"
+                description="Check back soon for new ways to serve."
+                action={null}
+              />
+            ) : (
+              <TasksEmptyState
+                variant="no-tasks"
+                onCreate={showCreateButton ? () => setIsCreateOpen(true) : undefined}
+              />
+            )
           ) : !hasMatches ? (
             <TasksEmptyState variant="no-matches" onClearFilters={clearFilters} />
           ) : (
@@ -325,6 +417,15 @@ export default function TasksView({
         memberOptions={memberOptions}
         currentUserId={currentUserId}
       />
+
+      <Drawer open={filtersOpen} onClose={() => setFiltersOpen(false)} title="Filters">
+        <TaskFilters
+          filters={filters}
+          groupOptions={groupOptions}
+          showOwnership={viewMode !== "opportunities"}
+          searchPlaceholder={viewMode === "opportunities" ? "Search opportunities" : undefined}
+        />
+      </Drawer>
     </div>
   );
 }

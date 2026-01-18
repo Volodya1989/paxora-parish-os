@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
 import { getParishMembership } from "@/server/db/groups";
+import { isParishLeader } from "@/lib/permissions";
 import { getNow as defaultGetNow } from "@/lib/time/getNow";
 
 function assertSession(session: Session | null) {
@@ -23,6 +24,14 @@ async function requireParishMembership(userId: string, parishId: string) {
   }
 
   return membership;
+}
+
+async function requireParishLeader(userId: string, parishId: string) {
+  const membership = await requireParishMembership(userId, parishId);
+
+  if (!isParishLeader(membership.role)) {
+    throw new Error("Forbidden");
+  }
 }
 
 function buildDraftTitle(title: string | undefined, now: Date) {
@@ -47,7 +56,7 @@ export async function createAnnouncementDraft(input: {
     throw new Error("Unauthorized");
   }
 
-  await requireParishMembership(userId, parishId);
+  await requireParishLeader(userId, parishId);
 
   const now = (input.getNow ?? defaultGetNow)();
 
@@ -78,7 +87,7 @@ export async function setAnnouncementPublished(input: {
   const session = await getServerSession(authOptions);
   const { userId, parishId } = assertSession(session);
 
-  await requireParishMembership(userId, parishId);
+  await requireParishLeader(userId, parishId);
 
   const now =
     input.published && input.publishedAt
@@ -112,7 +121,7 @@ export async function archiveAnnouncement(input: { id: string; getNow?: () => Da
   const session = await getServerSession(authOptions);
   const { userId, parishId } = assertSession(session);
 
-  await requireParishMembership(userId, parishId);
+  await requireParishLeader(userId, parishId);
 
   const now = (input.getNow ?? defaultGetNow)();
 
@@ -138,7 +147,7 @@ export async function unarchiveAnnouncement(input: { id: string }) {
   const session = await getServerSession(authOptions);
   const { userId, parishId } = assertSession(session);
 
-  await requireParishMembership(userId, parishId);
+  await requireParishLeader(userId, parishId);
 
   const result = await prisma.announcement.updateMany({
     where: {

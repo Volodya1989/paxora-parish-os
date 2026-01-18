@@ -14,6 +14,7 @@ const baseTask: TaskListItem = {
   visibility: "PUBLIC",
   approvalStatus: "APPROVED",
   completedAt: null,
+  inProgressAt: null,
   completedBy: null,
   owner: {
     id: "user-1",
@@ -25,7 +26,8 @@ const baseTask: TaskListItem = {
     name: "Liturgy"
   },
   canManage: true,
-  canDelete: true
+  canDelete: true,
+  canStartWork: true
 };
 
 function findElementByType(
@@ -57,6 +59,8 @@ test("TaskRow renders key elements", () => {
     createElement(TaskRow, {
       task: baseTask,
       onToggle: () => undefined,
+      onStartWork: () => undefined,
+      onMarkOpen: () => undefined,
       onArchive: () => undefined,
       onEdit: () => undefined,
       onDelete: () => undefined
@@ -77,6 +81,8 @@ test("TaskRow toggle calls handler", () => {
       called = true;
       assert.equal(nextStatus, "DONE");
     },
+    onStartWork: () => undefined,
+    onMarkOpen: () => undefined,
     onArchive: () => undefined,
     onEdit: () => undefined,
     onDelete: () => undefined

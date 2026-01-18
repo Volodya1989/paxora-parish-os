@@ -10,12 +10,13 @@ import GroupCard from "@/components/groups/GroupCard";
 import GroupCreateDialog from "@/components/groups/GroupCreateDialog";
 import GroupEditDialog from "@/components/groups/GroupEditDialog";
 import GroupFilters, { type GroupFilterTab } from "@/components/groups/GroupFilters";
-import { archiveGroup, restoreGroup } from "@/server/actions/groups";
+import { archiveGroup, approveGroupRequest, rejectGroupRequest, restoreGroup } from "@/server/actions/groups";
 import { joinGroup, leaveGroup, requestToJoin } from "@/app/actions/members";
 import type { MemberActionState } from "@/lib/types/members";
 import type { GroupListItem } from "@/lib/queries/groups";
 
 const EMPTY_GROUPS_MESSAGE = "Create a group to organize the people and ministries you lead.";
+const REQUEST_GROUP_MESSAGE = "Request a new group to gather people around a shared mission.";
 const NO_ARCHIVED_MESSAGE = "No archived groups yet. Everything is active.";
 const LIMITED_ACCESS_MESSAGE = "Only parish leaders can manage groups.";
 
@@ -44,9 +45,14 @@ export default function GroupsView({
 
   const counts = useMemo(
     () => ({
-      active: groups.filter((group) => !group.archivedAt).length,
+      active: groups.filter((group) => !group.archivedAt && group.status === "ACTIVE").length,
       archived: groups.filter((group) => group.archivedAt).length
     }),
+    [groups]
+  );
+
+  const pendingGroups = useMemo(
+    () => groups.filter((group) => group.status === "PENDING_APPROVAL"),
     [groups]
   );
 
@@ -55,28 +61,10 @@ export default function GroupsView({
       return;
     }
 
-    if (!canManageGroups) {
-      addToast({
-        title: "Not enough access",
-        description: LIMITED_ACCESS_MESSAGE
-      });
-      const params = new URLSearchParams(searchParams?.toString() ?? "");
-      params.delete("create");
-      router.replace(`?${params.toString()}`, { scroll: false });
-      return;
-    }
-
     setIsCreateOpen(true);
   }, [addToast, canManageGroups, router, searchParams]);
 
   const openCreateDialog = () => {
-    if (!canManageGroups) {
-      addToast({
-        title: "Not enough access",
-        description: LIMITED_ACCESS_MESSAGE
-      });
-      return;
-    }
     setIsCreateOpen(true);
   };
 
@@ -188,7 +176,10 @@ export default function GroupsView({
     const normalizedQuery = query.trim().toLowerCase();
 
     return groups.filter((group) => {
-      const matchesTab = activeTab === "active" ? !group.archivedAt : Boolean(group.archivedAt);
+      const matchesTab =
+        activeTab === "active"
+          ? !group.archivedAt && group.status === "ACTIVE"
+          : Boolean(group.archivedAt);
       if (!matchesTab) return false;
 
       if (!normalizedQuery) return true;
@@ -203,8 +194,12 @@ export default function GroupsView({
       return (
         <EmptyState
           title="No groups yet"
-          description={EMPTY_GROUPS_MESSAGE}
-          action={<Button onClick={openCreateDialog}>Create group</Button>}
+          description={canManageGroups ? EMPTY_GROUPS_MESSAGE : REQUEST_GROUP_MESSAGE}
+          action={
+            <Button onClick={openCreateDialog}>
+              {canManageGroups ? "Create group" : "Request a new group"}
+            </Button>
+          }
         />
       );
     }
@@ -241,10 +236,100 @@ export default function GroupsView({
               <p className="text-xs uppercase tracking-wide text-ink-400">Archived</p>
               <p className="text-sm font-semibold text-ink-700">{counts.archived}</p>
             </div>
-            <Button onClick={openCreateDialog}>Create group</Button>
+            <Button onClick={openCreateDialog}>
+              {canManageGroups ? "Create group" : "Request a new group"}
+            </Button>
           </div>
         </div>
       </Card>
+
+      {canManageGroups && pendingGroups.length ? (
+        <Card>
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-h3">Group requests</h2>
+              <p className="text-xs text-ink-400">
+                Review parishioner group requests before they go live.
+              </p>
+            </div>
+            <div className="space-y-3">
+              {pendingGroups.map((group) => (
+                <div
+                  key={group.id}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-amber-200 bg-amber-50/60 px-3 py-3"
+                >
+                  <div className="space-y-1">
+                    <div className="text-sm font-medium text-ink-800">{group.name}</div>
+                    <div className="text-xs text-ink-500">
+                      {group.description ?? "No description provided."}
+                    </div>
+                    <div className="text-xs text-ink-400">
+                      Requested by{" "}
+                      {group.createdBy?.name ?? group.createdBy?.email ?? "Parishioner"}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() =>
+                        void runGroupAction(group.id, () =>
+                          approveGroupRequest({ parishId, actorUserId, groupId: group.id })
+                        )
+                      }
+                      disabled={pendingGroupId === group.id}
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      onClick={() =>
+                        void runGroupAction(group.id, () =>
+                          rejectGroupRequest({ parishId, actorUserId, groupId: group.id })
+                        )
+                      }
+                      disabled={pendingGroupId === group.id}
+                    >
+                      Reject
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
+      ) : null}
+
+      {!canManageGroups && pendingGroups.length ? (
+        <Card>
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-h3">Pending group requests</h2>
+              <p className="text-xs text-ink-400">
+                We will let you know once a parish leader approves your request.
+              </p>
+            </div>
+            <div className="space-y-3">
+              {pendingGroups.map((group) => (
+                <div
+                  key={group.id}
+                  className="rounded-card border border-mist-200 bg-mist-50 px-3 py-3"
+                >
+                  <div className="text-sm font-medium text-ink-800">{group.name}</div>
+                  <div className="text-xs text-ink-500">
+                    {group.description ?? "No description provided."}
+                  </div>
+                  <div className="mt-2 text-xs font-semibold uppercase text-amber-600">
+                    Pending approval
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
+      ) : null}
 
       <Card>
         <div className="space-y-4">
@@ -286,7 +371,8 @@ export default function GroupsView({
                   group={group}
                   canManageGroup={canManageGroups}
                   canManageMembers={
-                    canManageGroups || group.viewerMembershipStatus === "ACTIVE"
+                    (canManageGroups || group.viewerMembershipStatus === "ACTIVE") &&
+                    group.status === "ACTIVE"
                   }
                   onEdit={() => handleEdit(group.id)}
                   onArchive={() => handleArchive(group.id)}
@@ -322,6 +408,7 @@ export default function GroupsView({
         onOpenChange={(open) => (open ? setIsCreateOpen(true) : closeCreateDialog())}
         parishId={parishId}
         actorUserId={actorUserId}
+        isRequest={!canManageGroups}
         onCreated={refreshList}
       />
 

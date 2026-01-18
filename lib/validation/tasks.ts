@@ -60,6 +60,10 @@ export const markTaskDoneSchema = z.object({
 
 export const unmarkTaskDoneSchema = markTaskDoneSchema;
 
+export const markTaskInProgressSchema = markTaskDoneSchema;
+
+export const markTaskOpenSchema = markTaskDoneSchema;
+
 export const archiveTaskSchema = markTaskDoneSchema;
 
 export const unarchiveTaskSchema = markTaskDoneSchema;

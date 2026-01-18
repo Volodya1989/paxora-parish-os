@@ -51,9 +51,11 @@ export default function TasksEmptyState({
       title="No tasks yet"
       description="Capture what matters this week and keep your teams aligned."
       action={
-        <Button onClick={onCreate}>
-          Create your first task
-        </Button>
+        onCreate ? (
+          <Button onClick={onCreate}>
+            Create your first task
+          </Button>
+        ) : null
       }
     />
   );

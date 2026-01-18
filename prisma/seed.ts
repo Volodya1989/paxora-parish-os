@@ -105,8 +105,10 @@ async function main() {
   const group = await prisma.group.create({
     data: {
       parishId: parish.id,
+      createdById: coordinator.id,
       name: "Hospitality",
-      description: "Welcome and care ministry"
+      description: "Welcome and care ministry",
+      status: "ACTIVE"
     }
   });
 

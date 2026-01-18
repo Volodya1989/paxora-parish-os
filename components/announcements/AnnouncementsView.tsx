@@ -20,9 +20,15 @@ type AnnouncementsViewProps = {
   drafts: AnnouncementListItem[];
   published: AnnouncementListItem[];
   parishId: string;
+  canManage?: boolean;
 };
 
-export default function AnnouncementsView({ drafts, published, parishId }: AnnouncementsViewProps) {
+export default function AnnouncementsView({
+  drafts,
+  published,
+  parishId,
+  canManage = true
+}: AnnouncementsViewProps) {
   const [activeTab, setActiveTab] = useState<AnnouncementStatus>("draft");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const { addToast } = useToast();
@@ -116,10 +122,12 @@ export default function AnnouncementsView({ drafts, published, parishId }: Annou
           <div className="space-y-2">
             <h1 className="text-h1">Announcements</h1>
             <p className="text-sm text-ink-500">
-              Share updates with parishioners and keep everyone informed.
+              {canManage
+                ? "Share updates with parishioners and keep everyone informed."
+                : "Read the latest updates from your parish community."}
             </p>
           </div>
-          <Button onClick={handleCreateDraft}>+ New Announcement</Button>
+          {canManage ? <Button onClick={handleCreateDraft}>+ New Announcement</Button> : null}
         </div>
       </Card>
 
@@ -127,56 +135,83 @@ export default function AnnouncementsView({ drafts, published, parishId }: Annou
         <div className="space-y-4">
           <div>
             <h2 className="text-h3">Announcement list</h2>
-            <p className="text-xs text-ink-400">Switch between draft and published updates.</p>
+            <p className="text-xs text-ink-400">
+              {canManage
+                ? "Switch between draft and published updates."
+                : "Stay in the loop with what is happening at the parish."}
+            </p>
           </div>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
-              <TabsTrigger value="draft">Draft</TabsTrigger>
-              <TabsTrigger value="published">Published</TabsTrigger>
-            </TabsList>
-            <TabsPanel value="draft">
-              <div className="mt-4 space-y-4">
-                {drafts.length === 0 ? (
-                  <EmptyState
-                    title="No drafts"
-                    description="Create a new announcement to keep your community updated."
-                    action={<Button onClick={handleCreateDraft}>+ New Announcement</Button>}
-                  />
-                ) : (
-                  drafts.map((announcement) => (
-                    <AnnouncementRow
-                      key={announcement.id}
-                      announcement={announcement}
-                      onTogglePublish={handleTogglePublish}
-                      onArchive={handleArchive}
-                      isBusy={pendingId === announcement.id}
+          {canManage ? (
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList>
+                <TabsTrigger value="draft">Draft</TabsTrigger>
+                <TabsTrigger value="published">Published</TabsTrigger>
+              </TabsList>
+              <TabsPanel value="draft">
+                <div className="mt-4 space-y-4">
+                  {drafts.length === 0 ? (
+                    <EmptyState
+                      title="No drafts"
+                      description="Create a new announcement to keep your community updated."
+                      action={<Button onClick={handleCreateDraft}>+ New Announcement</Button>}
                     />
-                  ))
-                )}
-              </div>
-            </TabsPanel>
-            <TabsPanel value="published">
-              <div className="mt-4 space-y-4">
-                {published.length === 0 ? (
-                  <EmptyState
-                    title="No published announcements"
-                    description="Create a new announcement to keep your community updated."
-                    action={<Button onClick={handleCreateDraft}>+ New Announcement</Button>}
-                  />
-                ) : (
-                  published.map((announcement) => (
-                    <AnnouncementRow
-                      key={announcement.id}
-                      announcement={announcement}
-                      onTogglePublish={handleTogglePublish}
-                      onArchive={handleArchive}
-                      isBusy={pendingId === announcement.id}
+                  ) : (
+                    drafts.map((announcement) => (
+                      <AnnouncementRow
+                        key={announcement.id}
+                        announcement={announcement}
+                        onTogglePublish={handleTogglePublish}
+                        onArchive={handleArchive}
+                        isBusy={pendingId === announcement.id}
+                      />
+                    ))
+                  )}
+                </div>
+              </TabsPanel>
+              <TabsPanel value="published">
+                <div className="mt-4 space-y-4">
+                  {published.length === 0 ? (
+                    <EmptyState
+                      title="No published announcements"
+                      description="Create a new announcement to keep your community updated."
+                      action={<Button onClick={handleCreateDraft}>+ New Announcement</Button>}
                     />
-                  ))
-                )}
-              </div>
-            </TabsPanel>
-          </Tabs>
+                  ) : (
+                    published.map((announcement) => (
+                      <AnnouncementRow
+                        key={announcement.id}
+                        announcement={announcement}
+                        onTogglePublish={handleTogglePublish}
+                        onArchive={handleArchive}
+                        isBusy={pendingId === announcement.id}
+                      />
+                    ))
+                  )}
+                </div>
+              </TabsPanel>
+            </Tabs>
+          ) : (
+            <div className="mt-4 space-y-4">
+              {published.length === 0 ? (
+                <EmptyState
+                  title="No announcements yet"
+                  description="Check back soon for parish updates."
+                  action={null}
+                />
+              ) : (
+                published.map((announcement) => (
+                  <AnnouncementRow
+                    key={announcement.id}
+                    announcement={announcement}
+                    onTogglePublish={handleTogglePublish}
+                    onArchive={handleArchive}
+                    isBusy={pendingId === announcement.id}
+                    isReadOnly
+                  />
+                ))
+              )}
+            </div>
+          )}
         </div>
       </Card>
     </div>

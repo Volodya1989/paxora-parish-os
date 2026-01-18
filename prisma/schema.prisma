@@ -29,6 +29,12 @@ enum GroupVisibility {
   PRIVATE
 }
 
+enum GroupStatus {
+  PENDING_APPROVAL
+  ACTIVE
+  REJECTED
+}
+
 enum GroupJoinPolicy {
   INVITE_ONLY
   OPEN
@@ -37,6 +43,7 @@ enum GroupJoinPolicy {
 
 enum TaskStatus {
   OPEN
+  IN_PROGRESS
   DONE
 }
 
@@ -116,6 +123,7 @@ model User {
   groupMemberships GroupMembership[]
   sentGroupInvites GroupMembership[] @relation("GroupInviteActor")
   approvedGroupMemberships GroupMembership[] @relation("GroupApprovalActor")
+  createdGroups    Group[] @relation("GroupCreator")
   tasks            Task[] @relation("TaskOwner")
   createdTasks     Task[] @relation("TaskCreator")
   completedTasks   Task[] @relation("TaskCompletion")
@@ -172,14 +180,17 @@ model Week {
 model Group {
   id          String   @id @default(cuid())
   parishId    String
+  createdById String
   name        String
   description String?
   visibility  GroupVisibility @default(PUBLIC)
   joinPolicy  GroupJoinPolicy @default(INVITE_ONLY)
+  status      GroupStatus @default(ACTIVE)
   createdAt   DateTime @default(now())
   archivedAt  DateTime?
 
   parish       Parish            @relation(fields: [parishId], references: [id])
+  createdBy   User              @relation("GroupCreator", fields: [createdById], references: [id])
   memberships GroupMembership[]
   tasks        Task[]
   events       Event[]
@@ -221,6 +232,7 @@ model Task {
   visibility       TaskVisibility @default(PUBLIC)
   approvalStatus   TaskApprovalStatus @default(APPROVED)
   createdAt        DateTime   @default(now())
+  inProgressAt     DateTime?
   completedAt      DateTime?
   completedById    String?
   archivedAt       DateTime?

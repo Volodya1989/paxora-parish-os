@@ -221,11 +221,15 @@ export async function joinGroup(input: { groupId: string }): Promise<MemberActio
 
   const group = await prisma.group.findUnique({
     where: { id: parsed.data.groupId },
-    select: { id: true, parishId: true, joinPolicy: true }
+    select: { id: true, parishId: true, joinPolicy: true, status: true }
   });
 
   if (!group) {
     return buildError("Group not found.", "NOT_FOUND");
+  }
+
+  if (group.status !== "ACTIVE") {
+    return buildError("This group is not available to join yet.", "NOT_AUTHORIZED");
   }
 
   const parishMembership = await prisma.membership.findUnique({
@@ -302,11 +306,15 @@ export async function requestToJoin(input: { groupId: string }): Promise<MemberA
 
   const group = await prisma.group.findUnique({
     where: { id: parsed.data.groupId },
-    select: { id: true, parishId: true, joinPolicy: true }
+    select: { id: true, parishId: true, joinPolicy: true, status: true }
   });
 
   if (!group) {
     return buildError("Group not found.", "NOT_FOUND");
+  }
+
+  if (group.status !== "ACTIVE") {
+    return buildError("This group is not available to join yet.", "NOT_AUTHORIZED");
   }
 
   const parishMembership = await prisma.membership.findUnique({

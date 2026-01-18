@@ -33,7 +33,7 @@ export async function getGroupMembership(groupId: string, userId: string) {
 
 export async function listGroupsByParish(parishId: string) {
   return prisma.group.findMany({
-    where: { parishId, archivedAt: null },
+    where: { parishId, archivedAt: null, status: "ACTIVE" },
     orderBy: { name: "asc" },
     select: {
       id: true,

@@ -142,7 +142,8 @@ export async function markTaskDone({ taskId, parishId, actorUserId }: TaskAction
     data: {
       status: "DONE",
       completedAt: new Date(),
-      completedById: actorUserId
+      completedById: actorUserId,
+      inProgressAt: null
     }
   });
 }
@@ -154,6 +155,62 @@ export async function unmarkTaskDone({ taskId, parishId, actorUserId }: TaskActi
     where: { id: taskId },
     data: {
       status: "OPEN",
+      completedAt: null,
+      completedById: null,
+      inProgressAt: null
+    }
+  });
+}
+
+export async function markTaskInProgress({ taskId, parishId, actorUserId }: TaskActionInput) {
+  const task = await prisma.task.findUnique({
+    where: { id: taskId },
+    select: {
+      id: true,
+      parishId: true,
+      status: true,
+      visibility: true,
+      approvalStatus: true
+    }
+  });
+
+  if (!task || task.parishId !== parishId) {
+    throw new Error("Task not found");
+  }
+
+  if (task.status === "DONE") {
+    throw new Error("Completed tasks cannot be started.");
+  }
+
+  if (task.visibility !== "PUBLIC" || task.approvalStatus !== "APPROVED") {
+    throw new Error("This task is not available to start yet.");
+  }
+
+  const parishMembership = await getParishMembership(parishId, actorUserId);
+  if (!parishMembership) {
+    throw new Error("Forbidden");
+  }
+
+  return prisma.task.update({
+    where: { id: taskId },
+    data: {
+      status: "IN_PROGRESS",
+      ownerId: actorUserId,
+      inProgressAt: new Date(),
+      completedAt: null,
+      completedById: null
+    }
+  });
+}
+
+export async function markTaskOpen({ taskId, parishId, actorUserId }: TaskActionInput) {
+  await assertTaskAccess({ taskId, parishId, actorUserId });
+
+  return prisma.task.update({
+    where: { id: taskId },
+    data: {
+      status: "OPEN",
+      inProgressAt: null,
       completedAt: null,
       completedById: null
     }

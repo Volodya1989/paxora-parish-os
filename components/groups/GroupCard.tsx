@@ -83,6 +83,8 @@ export default function GroupCard({
 }: GroupCardProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const isArchived = Boolean(group.archivedAt);
+  const isPending = group.status === "PENDING_APPROVAL";
+  const isRejected = group.status === "REJECTED";
   const open = forceMenuOpen ?? menuOpen;
 
   const avatarInitials = useMemo(
@@ -96,7 +98,7 @@ export default function GroupCard({
   const isMember = group.viewerMembershipStatus === "ACTIVE";
   const isInvited = group.viewerMembershipStatus === "INVITED";
   const isRequested = group.viewerMembershipStatus === "REQUESTED";
-  const showJoinActions = !isMember && !isInvited && !isRequested && !isArchived;
+  const showJoinActions = !isMember && !isInvited && !isRequested && !isArchived && !isPending;
   const showMenu = canManageGroup || canManageMembers;
 
   const joinAction = () => {
@@ -116,6 +118,8 @@ export default function GroupCard({
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-lg font-semibold text-ink-900">{group.name}</h3>
             {isArchived ? <Badge tone="warning">Archived</Badge> : null}
+            {isPending ? <Badge tone="warning">Pending approval</Badge> : null}
+            {isRejected ? <Badge tone="neutral">Not approved</Badge> : null}
             <Badge tone={group.visibility === "PUBLIC" ? "success" : "neutral"}>
               {group.visibility === "PUBLIC" ? "Public" : "Private"}
             </Badge>
@@ -191,7 +195,7 @@ export default function GroupCard({
           {isMember ? <Badge tone="neutral">Member</Badge> : null}
           {isInvited ? <Badge tone="warning">Invited</Badge> : null}
           {isRequested ? <Badge tone="warning">Request pending</Badge> : null}
-          {!isMember && !isInvited && !isRequested && !isArchived ? (
+          {!isMember && !isInvited && !isRequested && !isArchived && !isPending ? (
             <Badge tone="neutral">
               {group.joinPolicy === "OPEN"
                 ? "Join instantly"
