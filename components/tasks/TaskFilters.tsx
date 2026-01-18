@@ -11,9 +11,16 @@ import type { TaskFilters } from "@/lib/queries/tasks";
 type TaskFiltersProps = {
   filters: TaskFilters;
   groupOptions: Array<{ id: string; name: string }>;
+  showOwnership?: boolean;
+  searchPlaceholder?: string;
 };
 
-export default function TaskFilters({ filters, groupOptions }: TaskFiltersProps) {
+export default function TaskFilters({
+  filters,
+  groupOptions,
+  showOwnership = true,
+  searchPlaceholder = "Search tasks or notes"
+}: TaskFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [queryValue, setQueryValue] = useState(filters.query ?? "");
@@ -63,23 +70,26 @@ export default function TaskFilters({ filters, groupOptions }: TaskFiltersProps)
           options={[
             { value: "all", label: "All" },
             { value: "open", label: "Open" },
+            { value: "in-progress", label: "In progress" },
             { value: "done", label: "Done" }
           ]}
         />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor={ownerId}>Ownership</Label>
-        <SelectMenu
-          id={ownerId}
-          value={filters.ownership}
-          onValueChange={(value) => updateParam("owner", value)}
-          options={[
-            { value: "all", label: "All" },
-            { value: "mine", label: "Mine" }
-          ]}
-        />
-      </div>
+      {showOwnership ? (
+        <div className="space-y-2">
+          <Label htmlFor={ownerId}>Ownership</Label>
+          <SelectMenu
+            id={ownerId}
+            value={filters.ownership}
+            onValueChange={(value) => updateParam("owner", value)}
+            options={[
+              { value: "all", label: "All" },
+              { value: "mine", label: "Mine" }
+            ]}
+          />
+        </div>
+      ) : null}
 
       <div className="space-y-2">
         <Label htmlFor={groupId}>Group</Label>
@@ -100,7 +110,7 @@ export default function TaskFilters({ filters, groupOptions }: TaskFiltersProps)
           id={searchId}
           value={queryValue}
           onChange={(event) => setQueryValue(event.target.value)}
-          placeholder="Search tasks or notes"
+          placeholder={searchPlaceholder}
         />
       </div>
 

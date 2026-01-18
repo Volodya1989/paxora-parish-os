@@ -9,6 +9,8 @@ import {
   archiveTask,
   deleteTask,
   markTaskDone,
+  markTaskInProgress,
+  markTaskOpen,
   unarchiveTask,
   unmarkTaskDone
 } from "@/server/actions/tasks";
@@ -34,9 +36,10 @@ export default function TasksList({
   const [showCompleted, setShowCompleted] = useState(false);
   const [, startTransition] = useTransition();
 
-  const { openTasks, doneTasks } = useMemo(() => {
+  const { openTasks, inProgressTasks, doneTasks } = useMemo(() => {
     return {
       openTasks: tasks.filter((task) => task.status === "OPEN"),
+      inProgressTasks: tasks.filter((task) => task.status === "IN_PROGRESS"),
       doneTasks: tasks.filter((task) => task.status === "DONE")
     };
   }, [tasks]);
@@ -118,6 +121,22 @@ export default function TasksList({
     });
   };
 
+  const handleStartWork = async (taskId: string) => {
+    await runTaskAction(taskId, async () => {
+      await markTaskInProgress({ taskId });
+      addToast({
+        title: "Work started",
+        description: "This opportunity is now marked as in progress."
+      });
+    });
+  };
+
+  const handleMarkOpen = async (taskId: string) => {
+    await runTaskAction(taskId, async () => {
+      await markTaskOpen({ taskId });
+    });
+  };
+
   return (
     <div className="space-y-6">
       {openTasks.length > 0 ? (
@@ -132,6 +151,32 @@ export default function TasksList({
                 key={task.id}
                 task={task}
                 onToggle={handleToggle}
+                onStartWork={handleStartWork}
+                onMarkOpen={handleMarkOpen}
+                onArchive={handleArchive}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                isBusy={pendingTaskId === task.id}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {inProgressTasks.length > 0 ? (
+        <section className="space-y-3">
+          <div className="flex items-center justify-between text-xs text-ink-400">
+            <span className="font-semibold uppercase tracking-wide text-ink-400">In progress</span>
+            <span>{inProgressTasks.length}</span>
+          </div>
+          <div className="space-y-3">
+            {inProgressTasks.map((task) => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                onToggle={handleToggle}
+                onStartWork={handleStartWork}
+                onMarkOpen={handleMarkOpen}
                 onArchive={handleArchive}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
@@ -158,6 +203,8 @@ export default function TasksList({
                   key={task.id}
                   task={task}
                   onToggle={handleToggle}
+                  onStartWork={handleStartWork}
+                  onMarkOpen={handleMarkOpen}
                   onArchive={handleArchive}
                   onEdit={handleEdit}
                   onDelete={handleDelete}

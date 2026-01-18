@@ -1,9 +1,23 @@
 import Link from "next/link";
+import { getServerSession } from "next-auth";
 import Card from "@/components/ui/Card";
 import SectionTitle from "@/components/ui/SectionTitle";
 import Button from "@/components/ui/Button";
+import { authOptions } from "@/server/auth/options";
+import { getParishMembership } from "@/server/db/groups";
+import { isParishLeader } from "@/lib/permissions";
 
-export default function AnnouncementCreatePage() {
+export default async function AnnouncementCreatePage() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id || !session.user.activeParishId) {
+    throw new Error("Unauthorized");
+  }
+
+  const membership = await getParishMembership(session.user.activeParishId, session.user.id);
+  if (!membership || !isParishLeader(membership.role)) {
+    throw new Error("Forbidden");
+  }
+
   return (
     <div className="space-y-6">
       <SectionTitle title="Create announcement" subtitle="Share parish updates" />

@@ -30,7 +30,9 @@ export default async function GroupMembersPage({ params }: GroupMembersPageProps
       description: true,
       parishId: true,
       visibility: true,
-      joinPolicy: true
+      joinPolicy: true,
+      status: true,
+      createdById: true
     }
   });
 
@@ -70,7 +72,7 @@ export default async function GroupMembersPage({ params }: GroupMembersPageProps
     groupMembership?.status === "INVITED" ||
     groupMembership?.status === "REQUESTED";
 
-  if (!canView) {
+  if (!canView || (group.status !== "ACTIVE" && !isLeader && group.createdById !== session.user.id)) {
     throw new Error("Unauthorized");
   }
 

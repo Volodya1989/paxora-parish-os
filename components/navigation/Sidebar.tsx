@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { primaryNavItems } from "@/components/navigation/navItems";
+import { getPrimaryNavItems, type NavRole } from "@/components/navigation/navItems";
 import { SignOutButton } from "@/components/navigation/SignOutButton";
 
 const STORAGE_KEY = "paxora.sidebarCollapsed";
@@ -14,6 +14,7 @@ type SidebarProps = {
   initialCollapsed?: boolean;
   onCollapseChange?: (collapsed: boolean) => void;
   onSignOut?: () => Promise<void> | void;
+  parishRole?: NavRole;
 };
 
 export function Sidebar({
@@ -21,7 +22,8 @@ export function Sidebar({
   collapsed,
   initialCollapsed = false,
   onCollapseChange,
-  onSignOut
+  onSignOut,
+  parishRole
 }: SidebarProps) {
   const [internalCollapsed, setInternalCollapsed] = useState(initialCollapsed);
   const isCollapsed = collapsed ?? internalCollapsed;
@@ -53,6 +55,8 @@ export function Sidebar({
     }
   };
 
+  const items = getPrimaryNavItems(parishRole);
+
   return (
     <aside
       className={`hidden min-h-screen flex-col border-r border-mist-200 bg-white/70 px-3 py-6 shadow-card md:flex ${
@@ -75,7 +79,7 @@ export function Sidebar({
       </div>
 
       <nav aria-label="Primary" className="mt-6 flex-1 space-y-1">
-        {primaryNavItems.map((item) => {
+        {items.map((item) => {
           const isActive = currentPath === item.href;
           return (
             <Link

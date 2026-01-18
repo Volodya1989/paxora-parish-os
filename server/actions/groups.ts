@@ -88,7 +88,8 @@ export async function createGroup(input: {
   const session = await getServerSession(authOptions);
   const { parishId, userId } = assertActorContext(session, input);
 
-  await requireParishLeader(userId, parishId);
+  const membership = await requireParishMembership(userId, parishId);
+  const isLeader = isParishLeader(membership.role);
 
   const parsed = createGroupSchema.safeParse({
     name: input.name,
@@ -102,13 +103,34 @@ export async function createGroup(input: {
   }
 
   const group = await prisma.$transaction(async (tx) => {
+    if (!isLeader) {
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const requestCount = await tx.group.count({
+        where: {
+          parishId,
+          createdById: userId,
+          createdAt: {
+            gte: monthStart
+          }
+        }
+      });
+
+      if (requestCount >= 2) {
+        throw new Error("You can request up to two groups per month.");
+      }
+    }
+
+    const status = isLeader ? "ACTIVE" : "PENDING_APPROVAL";
     const createdGroup = await tx.group.create({
       data: {
         parishId,
+        createdById: userId,
         name: parsed.data.name,
         description: parsed.data.description?.trim() || undefined,
         visibility: parsed.data.visibility,
-        joinPolicy: parsed.data.joinPolicy
+        joinPolicy: parsed.data.joinPolicy,
+        status
       },
       select: {
         id: true,
@@ -117,19 +139,22 @@ export async function createGroup(input: {
         visibility: true,
         joinPolicy: true,
         createdAt: true,
-        archivedAt: true
+        archivedAt: true,
+        status: true
       }
     } as any);
 
-    await tx.groupMembership.create({
-      data: {
-        groupId: createdGroup.id,
-        userId,
-        role: "COORDINATOR",
-        status: "ACTIVE",
-        approvedByUserId: userId
-      }
-    });
+    if (isLeader) {
+      await tx.groupMembership.create({
+        data: {
+          groupId: createdGroup.id,
+          userId,
+          role: "COORDINATOR",
+          status: "ACTIVE",
+          approvedByUserId: userId
+        }
+      });
+    }
 
     return createdGroup;
   });
@@ -137,6 +162,92 @@ export async function createGroup(input: {
   revalidatePath("/groups");
 
   return group;
+}
+
+export async function approveGroupRequest(input: {
+  parishId: string;
+  actorUserId: string;
+  groupId: string;
+}) {
+  const session = await getServerSession(authOptions);
+  const { parishId, userId } = assertActorContext(session, input);
+
+  await requireParishLeader(userId, parishId);
+
+  const group = await prisma.group.findUnique({
+    where: { id: input.groupId },
+    select: { parishId: true, status: true, createdById: true }
+  });
+
+  if (!group || group.parishId !== parishId) {
+    throw new Error("Group not found");
+  }
+
+  if (group.status !== "PENDING_APPROVAL") {
+    throw new Error("Group is not pending approval.");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.group.update({
+      where: { id: input.groupId },
+      data: { status: "ACTIVE" }
+    });
+
+    await tx.groupMembership.upsert({
+      where: {
+        groupId_userId: {
+          groupId: input.groupId,
+          userId: group.createdById
+        }
+      },
+      update: {
+        role: "COORDINATOR",
+        status: "ACTIVE",
+        approvedByUserId: userId
+      },
+      create: {
+        groupId: input.groupId,
+        userId: group.createdById,
+        role: "COORDINATOR",
+        status: "ACTIVE",
+        approvedByUserId: userId
+      }
+    });
+  });
+
+  revalidatePath("/groups");
+  revalidatePath(`/groups/${input.groupId}`);
+}
+
+export async function rejectGroupRequest(input: {
+  parishId: string;
+  actorUserId: string;
+  groupId: string;
+}) {
+  const session = await getServerSession(authOptions);
+  const { parishId, userId } = assertActorContext(session, input);
+
+  await requireParishLeader(userId, parishId);
+
+  const group = await prisma.group.findUnique({
+    where: { id: input.groupId },
+    select: { parishId: true, status: true }
+  });
+
+  if (!group || group.parishId !== parishId) {
+    throw new Error("Group not found");
+  }
+
+  if (group.status !== "PENDING_APPROVAL") {
+    throw new Error("Group is not pending approval.");
+  }
+
+  await prisma.group.update({
+    where: { id: input.groupId },
+    data: { status: "REJECTED" }
+  });
+
+  revalidatePath("/groups");
 }
 
 export async function updateGroup(input: {

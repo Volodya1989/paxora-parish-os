@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { useState } from "react";
 import MoreDrawer from "@/components/navigation/MoreDrawer";
-import { primaryNavItems } from "@/components/navigation/navItems";
+import { getPrimaryNavItems, type NavRole } from "@/components/navigation/navItems";
 
 type MobileTabsProps = {
   currentPath?: string;
@@ -12,6 +12,7 @@ type MobileTabsProps = {
   isMoreOpen?: boolean;
   onMoreOpenChange?: (open: boolean) => void;
   onSignOut?: () => Promise<void> | void;
+  parishRole?: NavRole;
 };
 
 export function MobileTabs({
@@ -19,7 +20,8 @@ export function MobileTabs({
   onNavigate,
   isMoreOpen,
   onMoreOpenChange,
-  onSignOut
+  onSignOut,
+  parishRole
 }: MobileTabsProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = isMoreOpen ?? internalOpen;
@@ -37,6 +39,8 @@ export function MobileTabs({
 
   const handleClose = () => setOpen(false);
 
+  const items = getPrimaryNavItems(parishRole);
+
   return (
     <>
       <nav
@@ -44,7 +48,7 @@ export function MobileTabs({
         className="fixed bottom-0 left-0 right-0 z-30 border-t border-mist-200 bg-white/95 shadow-card md:hidden"
       >
         <div className="flex items-center justify-around px-2 py-2">
-          {primaryNavItems.map((item) => {
+          {items.map((item) => {
             const isActive = currentPath === item.href;
             return (
               <Link

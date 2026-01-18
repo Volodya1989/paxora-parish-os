@@ -4,7 +4,7 @@ import { getNow } from "@/lib/time/getNow";
 import { getOrCreateCurrentWeek } from "@/domain/week";
 import { prisma } from "@/server/db/prisma";
 
-export type TaskStatusFilter = "all" | "open" | "done";
+export type TaskStatusFilter = "all" | "open" | "in-progress" | "done";
 export type TaskOwnershipFilter = "mine" | "all";
 
 export type TaskFilters = {
@@ -19,10 +19,11 @@ export type TaskListItem = {
   title: string;
   notes: string | null;
   estimatedHours: number | null;
-  status: "OPEN" | "DONE";
+  status: "OPEN" | "IN_PROGRESS" | "DONE";
   visibility: "PRIVATE" | "PUBLIC";
   approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
   completedAt: string | null;
+  inProgressAt: string | null;
   completedBy: {
     id: string;
     name: string;
@@ -38,11 +39,13 @@ export type TaskListItem = {
   } | null;
   canManage: boolean;
   canDelete: boolean;
+  canStartWork: boolean;
 };
 
 export type TaskListSummary = {
   total: number;
   open: number;
+  inProgress: number;
   done: number;
 };
 
@@ -51,6 +54,7 @@ export type ListTasksInput = {
   actorUserId: string;
   weekId?: string;
   filters?: TaskFilters;
+  viewMode?: "all" | "opportunities";
 };
 
 export type PendingTaskApproval = {
@@ -75,6 +79,7 @@ export type PendingTaskApproval = {
 const statusCountsDefaults: TaskListSummary = {
   total: 0,
   open: 0,
+  inProgress: 0,
   done: 0
 };
 
@@ -96,7 +101,8 @@ export async function listTasks({
   parishId,
   actorUserId,
   weekId,
-  filters
+  filters,
+  viewMode = "all"
 }: ListTasksInput) {
   const effectiveWeekId = weekId ?? (await getOrCreateCurrentWeek(parishId, getNow())).id;
   const normalizedFilters: TaskFilters = {
@@ -112,21 +118,30 @@ export async function listTasks({
     archivedAt: null
   };
 
-  const visibilityWhere: Prisma.TaskWhereInput = {
-    OR: [
-      { visibility: TaskVisibility.PUBLIC, approvalStatus: TaskApprovalStatus.APPROVED },
-      { ownerId: actorUserId },
-      { createdById: actorUserId }
-    ]
-  };
+  const visibilityWhere: Prisma.TaskWhereInput =
+    viewMode === "opportunities"
+      ? { visibility: TaskVisibility.PUBLIC, approvalStatus: TaskApprovalStatus.APPROVED }
+      : {
+          OR: [
+            { visibility: TaskVisibility.PUBLIC, approvalStatus: TaskApprovalStatus.APPROVED },
+            { ownerId: actorUserId },
+            { createdById: actorUserId }
+          ]
+        };
 
   const andFilters: Prisma.TaskWhereInput[] = [visibilityWhere];
   const where: Prisma.TaskWhereInput = { ...baseWhere, AND: andFilters };
 
   if (normalizedFilters.status === "open") {
     andFilters.push({ status: "OPEN" });
+  } else if (normalizedFilters.status === "in-progress") {
+    andFilters.push({ status: "IN_PROGRESS" });
   } else if (normalizedFilters.status === "done") {
     andFilters.push({ status: "DONE" });
+  }
+
+  if (viewMode === "opportunities") {
+    andFilters.push({ status: { in: ["OPEN", "IN_PROGRESS"] } });
   }
 
   if (normalizedFilters.ownership === "mine") {
@@ -158,6 +173,7 @@ export async function listTasks({
         status: true,
         visibility: true,
         approvalStatus: true,
+        inProgressAt: true,
         completedAt: true,
         completedById: true,
         ownerId: true,
@@ -225,6 +241,8 @@ export async function listTasks({
     const count = item._count?._all ?? 0;
     if (item.status === "OPEN") {
       acc.open = count;
+    } else if (item.status === "IN_PROGRESS") {
+      acc.inProgress = count;
     } else if (item.status === "DONE") {
       acc.done = count;
     }
@@ -243,6 +261,11 @@ export async function listTasks({
         : false;
     const canManage =
       task.ownerId === actorUserId || task.createdById === actorUserId || canManageGroup;
+    const canStartWork =
+      Boolean(parishMembership) &&
+      task.visibility === "PUBLIC" &&
+      task.approvalStatus === "APPROVED" &&
+      task.status !== "DONE";
     const completedByName = task.completedBy
       ? getDisplayName(task.completedBy.name, task.completedBy.email)
       : null;
@@ -255,6 +278,7 @@ export async function listTasks({
       status: task.status,
       visibility: task.visibility,
       approvalStatus: task.approvalStatus,
+      inProgressAt: task.inProgressAt ? task.inProgressAt.toISOString() : null,
       completedAt: task.completedAt ? task.completedAt.toISOString() : null,
       completedBy: completedByName && task.completedBy
         ? {
@@ -269,7 +293,8 @@ export async function listTasks({
       },
       group: task.group ? { id: task.group.id, name: task.group.name } : null,
       canManage,
-      canDelete: task.ownerId === actorUserId || task.createdById === actorUserId
+      canDelete: task.ownerId === actorUserId || task.createdById === actorUserId,
+      canStartWork
     };
   });
 

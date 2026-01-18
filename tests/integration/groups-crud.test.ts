@@ -151,8 +151,10 @@ dbTest("archive, restore, and undo", async () => {
   const group = await prisma.group.create({
     data: {
       parishId: parish.id,
+      createdById: user.id,
       name: "Outreach",
-      description: "Community service"
+      description: "Community service",
+      status: "ACTIVE"
     }
   });
 
@@ -204,10 +206,12 @@ dbTest("edit group updates fields", async () => {
   const group = await prisma.group.create({
     data: {
       parishId: parish.id,
+      createdById: user.id,
       name: "Lectors",
       description: "Readers",
       visibility: "PUBLIC",
-      joinPolicy: "INVITE_ONLY"
+      joinPolicy: "INVITE_ONLY",
+      status: "ACTIVE"
     }
   });
 

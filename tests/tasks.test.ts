@@ -200,7 +200,8 @@ dbTest("createTask assigns group tasks to the current week and group detail filt
     data: {
       parishId: parish.id,
       name: "Hospitality Team",
-      description: "Greeters and hosts"
+      description: "Greeters and hosts",
+      createdById: owner.id,
     }
   });
 

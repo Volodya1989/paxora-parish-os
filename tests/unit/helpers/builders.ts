@@ -40,7 +40,7 @@ export function buildTask(
     title: string;
     notes?: string | null;
     groupId?: string | null;
-    status: "OPEN" | "DONE";
+    status: "OPEN" | "IN_PROGRESS" | "DONE";
     rolledFromTaskId?: string | null;
   }> = {}
 ) {

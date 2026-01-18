@@ -9,6 +9,8 @@ import {
   deferTask as deferTaskDomain,
   deleteTask as deleteTaskDomain,
   markTaskDone as markTaskDoneDomain,
+  markTaskInProgress as markTaskInProgressDomain,
+  markTaskOpen as markTaskOpenDomain,
   rolloverOpenTasks,
   unarchiveTask as unarchiveTaskDomain,
   unmarkTaskDone as unmarkTaskDoneDomain,
@@ -22,6 +24,8 @@ import {
   deferTaskSchema,
   deleteTaskSchema,
   markTaskDoneSchema,
+  markTaskInProgressSchema,
+  markTaskOpenSchema,
   rejectTaskSchema,
   rolloverTasksSchema,
   unarchiveTaskSchema,
@@ -119,6 +123,46 @@ export async function markTaskDone({ taskId }: { taskId: string }) {
   }
 
   await markTaskDoneDomain({
+    taskId: parsed.data.taskId,
+    parishId,
+    actorUserId: userId
+  });
+
+  revalidatePath("/tasks");
+  revalidatePath("/this-week");
+}
+
+export async function markTaskInProgress({ taskId }: { taskId: string }) {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  const parsed = markTaskInProgressSchema.safeParse({ taskId });
+
+  if (!parsed.success) {
+    throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
+  }
+
+  await markTaskInProgressDomain({
+    taskId: parsed.data.taskId,
+    parishId,
+    actorUserId: userId
+  });
+
+  revalidatePath("/tasks");
+  revalidatePath("/this-week");
+}
+
+export async function markTaskOpen({ taskId }: { taskId: string }) {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  const parsed = markTaskOpenSchema.safeParse({ taskId });
+
+  if (!parsed.success) {
+    throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
+  }
+
+  await markTaskOpenDomain({
     taskId: parsed.data.taskId,
     parishId,
     actorUserId: userId

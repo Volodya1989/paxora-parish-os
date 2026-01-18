@@ -8,6 +8,7 @@ import ParishSetup from "@/components/setup/ParishSetup";
 import { authOptions } from "@/server/auth/options";
 import { createParish } from "@/server/actions/parish";
 import { getAccessGateState } from "@/lib/queries/access";
+import { getParishMembership } from "@/server/db/groups";
 
 async function getRequestPathname() {
   const headerList = await headers();
@@ -58,8 +59,12 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     return <main className="min-h-screen bg-mist-50 px-4 py-10">{children}</main>;
   }
 
+  const membership = session.user.activeParishId
+    ? await getParishMembership(session.user.activeParishId, session.user.id)
+    : null;
+
   return (
-    <AppShell>
+    <AppShell parishRole={membership?.role ?? null}>
       <AppHeader />
       <main className="flex-1 bg-mist-50 px-4 py-6 pb-24 md:px-8 md:pb-8">
         {children}

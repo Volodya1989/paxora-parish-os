@@ -37,6 +37,8 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
       description: true,
       visibility: true,
       joinPolicy: true,
+      status: true,
+      createdById: true,
       memberships: {
         where: { status: "ACTIVE" },
         orderBy: {
@@ -86,9 +88,11 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
 
   const isLeader = parishMembership && isAdminClergy(parishMembership.role);
   const canView =
-    (group.visibility === "PUBLIC" && Boolean(parishMembership)) ||
-    groupMembership?.status === "ACTIVE" ||
-    isLeader;
+    (group.status === "ACTIVE" &&
+      ((group.visibility === "PUBLIC" && Boolean(parishMembership)) ||
+        groupMembership?.status === "ACTIVE" ||
+        isLeader)) ||
+    (group.status !== "ACTIVE" && (isLeader || group.createdById === actorUserId));
 
   if (!canView) {
     throw new Error("Unauthorized");
@@ -191,9 +195,13 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
               <ListRow
                 key={task.id}
                 title={task.title}
-                meta={`${task.status === "DONE" ? "Completed" : "Open"} · ${
-                  task.owner.name ?? task.owner.email
-                }`}
+                meta={`${
+                  task.status === "DONE"
+                    ? "Completed"
+                    : task.status === "IN_PROGRESS"
+                      ? "In progress"
+                      : "Open"
+                } · ${task.owner.name ?? task.owner.email}`}
               />
             ))
           )}

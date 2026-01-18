@@ -1,13 +1,14 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
-import { listGroupsByParish } from "@/server/db/groups";
+import { getParishMembership, listGroupsByParish } from "@/server/db/groups";
 import { getWeekForSelection, parseWeekSelection } from "@/domain/week";
 import { getNow } from "@/lib/time/getNow";
 import { listPendingTaskApprovals, listTasks, type TaskFilters } from "@/lib/queries/tasks";
 import { getPendingAccessRequests } from "@/lib/queries/access";
 import { approveParishAccess, rejectParishAccess } from "@/app/actions/access";
 import TasksView from "@/components/tasks/TasksView";
+import { getTasksViewMode } from "@/lib/tasks/viewMode";
 
 type TaskSearchParams = {
   week?: string | string[];
@@ -15,6 +16,7 @@ type TaskSearchParams = {
   owner?: string | string[];
   group?: string | string[];
   q?: string | string[];
+  view?: string | string[];
   create?: string;
 };
 
@@ -23,15 +25,28 @@ function resolveParam(param?: string | string[]) {
   return Array.isArray(param) ? param[0] : param;
 }
 
-function parseTaskFilters(searchParams?: TaskSearchParams): TaskFilters {
+function parseTaskFilters(
+  searchParams?: TaskSearchParams,
+  viewMode?: "all" | "opportunities" | "mine"
+): TaskFilters {
   const status = resolveParam(searchParams?.status);
   const owner = resolveParam(searchParams?.owner);
   const group = resolveParam(searchParams?.group);
   const query = resolveParam(searchParams?.q);
+  const normalizedStatus =
+    status === "open" || status === "done" || status === "in-progress" ? status : "all";
 
   return {
-    status: status === "open" || status === "done" ? status : "all",
-    ownership: owner === "mine" ? "mine" : "all",
+    status:
+      viewMode === "opportunities" && normalizedStatus === "done" ? "all" : normalizedStatus,
+    ownership:
+      viewMode === "mine"
+        ? "mine"
+        : viewMode === "opportunities"
+          ? "all"
+          : owner === "mine"
+            ? "mine"
+            : "all",
     groupId: group && group !== "all" ? group : undefined,
     query: query?.trim() ? query.trim() : undefined
   };
@@ -77,15 +92,24 @@ export default async function TasksPage({
   const parishId = session.user.activeParishId;
   const resolvedSearchParams = await searchParams;
   const weekSelection = parseWeekSelection(resolveParam(resolvedSearchParams?.week));
+  const membership = await getParishMembership(parishId, session.user.id);
+  if (!membership) {
+    throw new Error("Unauthorized");
+  }
+  const viewMode = getTasksViewMode({
+    sessionRole: membership.role,
+    searchParams: resolvedSearchParams
+  });
   const week = await getWeekForSelection(parishId, weekSelection, getNow());
-  const filters = parseTaskFilters(resolvedSearchParams);
+  const filters = parseTaskFilters(resolvedSearchParams, viewMode);
 
   const [taskList, groups, members, pendingRequests, pendingTaskApprovals] = await Promise.all([
     listTasks({
       parishId,
       actorUserId: session.user.id,
       weekId: week.id,
-      filters
+      filters,
+      viewMode: viewMode === "opportunities" ? "opportunities" : "all"
     }),
     listGroupsByParish(parishId),
     prisma.membership.findMany({
@@ -134,6 +158,8 @@ export default async function TasksPage({
       pendingTaskApprovals={pendingTaskApprovals}
       approveAccessAction={approveParishAccess}
       rejectAccessAction={rejectParishAccess}
+      viewMode={viewMode}
+      canManageTasks={membership ? membership.role !== "MEMBER" : false}
     />
   );
 }

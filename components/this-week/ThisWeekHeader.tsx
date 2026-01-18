@@ -24,6 +24,9 @@ type ThisWeekHeaderProps = {
   completionPct: number;
   weekSelection: "previous" | "current" | "next";
   weekOptions: WeekOption[];
+  showCompletion?: boolean;
+  showQuickAdd?: boolean;
+  viewToggle?: React.ReactNode;
 };
 
 function ProgressRing({ percent }: { percent: number }) {
@@ -111,7 +114,10 @@ export default function ThisWeekHeader({
   completionLabel,
   completionPct,
   weekSelection,
-  weekOptions
+  weekOptions,
+  showCompletion = true,
+  showQuickAdd = true,
+  viewToggle
 }: ThisWeekHeaderProps) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -131,15 +137,17 @@ export default function ThisWeekHeader({
         </div>
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
-          <div className="flex items-center gap-3 rounded-card border border-mist-200 bg-mist-50 px-4 py-3">
-            <ProgressRing percent={completionPct} />
-            <div>
-              <p className="text-xs uppercase tracking-wide text-ink-400">Completion</p>
-              <span className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-ink-700 shadow-card">
-                {completionLabel}
-              </span>
+          {showCompletion ? (
+            <div className="flex items-center gap-3 rounded-card border border-mist-200 bg-mist-50 px-4 py-3">
+              <ProgressRing percent={completionPct} />
+              <div>
+                <p className="text-xs uppercase tracking-wide text-ink-400">Completion</p>
+                <span className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-ink-700 shadow-card">
+                  {completionLabel}
+                </span>
+              </div>
             </div>
-          </div>
+          ) : null}
 
           <div className="flex items-center gap-2">
             <Link
@@ -183,24 +191,32 @@ export default function ThisWeekHeader({
             </Link>
           </div>
 
-          <Button onClick={() => setIsOpen(true)} className="h-10 px-4">
-            + Add
-          </Button>
+          {viewToggle}
+
+          {showQuickAdd ? (
+            <Button onClick={() => setIsOpen(true)} className="h-10 px-4">
+              + Add
+            </Button>
+          ) : null}
         </div>
       </div>
 
-      <Modal open={isOpen} onClose={() => setIsOpen(false)} title="Quick add">
-        <p className="mb-4 text-sm text-ink-500">
-          Create something new without leaving the weekly overview.
-        </p>
-        <QuickActions onSelect={() => setIsOpen(false)} />
-      </Modal>
-      <Drawer open={isOpen} onClose={() => setIsOpen(false)} title="Quick add">
-        <p className="mb-4 text-sm text-ink-500">
-          Create something new without leaving the weekly overview.
-        </p>
-        <QuickActions onSelect={() => setIsOpen(false)} />
-      </Drawer>
+      {showQuickAdd ? (
+        <>
+          <Modal open={isOpen} onClose={() => setIsOpen(false)} title="Quick add">
+            <p className="mb-4 text-sm text-ink-500">
+              Create something new without leaving the weekly overview.
+            </p>
+            <QuickActions onSelect={() => setIsOpen(false)} />
+          </Modal>
+          <Drawer open={isOpen} onClose={() => setIsOpen(false)} title="Quick add">
+            <p className="mb-4 text-sm text-ink-500">
+              Create something new without leaving the weekly overview.
+            </p>
+            <QuickActions onSelect={() => setIsOpen(false)} />
+          </Drawer>
+        </>
+      ) : null}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { getServerSession } from "next-auth";
 import { unstable_noStore as noStore } from "next/cache";
+import type { ParishRole } from "@prisma/client";
 import { authOptions } from "@/server/auth/options";
 import { ensureParishBootstrap } from "@/server/auth/bootstrap";
 import { prisma } from "@/server/db/prisma";
@@ -9,7 +10,8 @@ import { getNow } from "@/lib/time/getNow";
 export type TaskPreview = {
   id: string;
   title: string;
-  status: "OPEN" | "DONE";
+  status: "OPEN" | "IN_PROGRESS" | "DONE";
+  dueBy: Date | null;
   owner: {
     name: string;
     initials: string;
@@ -27,8 +29,9 @@ export type EventPreview = {
 export type AnnouncementPreview = {
   id: string;
   title: string;
-  status: "Draft" | "Published";
   updatedAt: Date;
+  createdAt: Date;
+  publishedAt: Date | null;
 };
 
 export type ThisWeekData = {
@@ -41,6 +44,13 @@ export type ThisWeekData = {
   tasks: TaskPreview[];
   events: EventPreview[];
   announcements: AnnouncementPreview[];
+  parishRole: ParishRole | null;
+  memberGroups: Array<{
+    id: string;
+    name: string;
+    description: string | null;
+  }>;
+  hasPublicGroups: boolean;
   stats: {
     tasksDone: number;
     tasksTotal: number;
@@ -85,53 +95,118 @@ export async function getThisWeekData({
 
   const week = await getWeekForSelection(parishId, weekSelection, now);
 
-  const tasks = await prisma.task.findMany({
-    where: {
-      parishId,
-      weekId: week.id,
-      archivedAt: null,
-      AND: [
-        {
-          OR: [
-            { visibility: "PUBLIC", approvalStatus: "APPROVED" },
-            { ownerId: actorUserId },
-            { createdById: actorUserId }
-          ]
-        }
-      ]
-    },
-    orderBy: { createdAt: "asc" },
-    select: {
-      id: true,
-      title: true,
-      status: true,
-      owner: {
-        select: {
-          name: true,
-          email: true
+  const [
+    tasks,
+    events,
+    announcements,
+    membership,
+    memberGroups,
+    publicGroupCount
+  ] = await Promise.all([
+    prisma.task.findMany({
+      where: {
+        parishId,
+        weekId: week.id,
+        archivedAt: null,
+        AND: [
+          {
+            OR: [
+              { visibility: "PUBLIC", approvalStatus: "APPROVED" },
+              { ownerId: actorUserId },
+              { createdById: actorUserId }
+            ]
+          }
+        ]
+      },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        title: true,
+        status: true,
+        owner: {
+          select: {
+            name: true,
+            email: true
+          }
         }
       }
-    }
-  });
+    }),
+    prisma.event.findMany({
+      where: { parishId, weekId: week.id },
+      orderBy: { startsAt: "asc" },
+      select: {
+        id: true,
+        title: true,
+        startsAt: true,
+        endsAt: true,
+        location: true
+      }
+    }),
+    prisma.announcement.findMany({
+      where: {
+        parishId,
+        archivedAt: null
+      },
+      orderBy: [{ updatedAt: "desc" }],
+      take: 6,
+      select: {
+        id: true,
+        title: true,
+        updatedAt: true,
+        createdAt: true,
+        publishedAt: true
+      }
+    }),
+    prisma.membership.findUnique({
+      where: {
+        parishId_userId: {
+          parishId,
+          userId: actorUserId
+        }
+      },
+      select: { role: true }
+    }),
+    prisma.groupMembership.findMany({
+      where: {
+        userId: actorUserId,
+        status: "ACTIVE",
+        group: {
+          parishId,
+          archivedAt: null
+        }
+      },
+      orderBy: {
+        group: {
+          name: "asc"
+        }
+      },
+      select: {
+        group: {
+          select: {
+            id: true,
+            name: true,
+            description: true
+          }
+        }
+      }
+    }),
+    prisma.group.count({
+      where: {
+        parishId,
+        visibility: "PUBLIC",
+        archivedAt: null
+      }
+    })
+  ]);
 
-  const events = await prisma.event.findMany({
-    where: { parishId, weekId: week.id },
-    orderBy: { startsAt: "asc" },
-    select: {
-      id: true,
-      title: true,
-      startsAt: true,
-      endsAt: true,
-      location: true
-    }
-  });
-
+  const dueByDefault = new Date(week.endsOn.getTime() - 1);
   const taskPreviews: TaskPreview[] = tasks.map((task) => {
     const ownerName = task.owner.name ?? task.owner.email?.split("@")[0] ?? "Unassigned";
     return {
       id: task.id,
       title: task.title,
       status: task.status,
+      dueBy: dueByDefault,
       owner: {
         name: ownerName,
         initials: getInitials(ownerName)
@@ -152,7 +227,16 @@ export async function getThisWeekData({
     },
     tasks: taskPreviews,
     events,
-    announcements: [],
+    announcements: announcements.map((announcement) => ({
+      id: announcement.id,
+      title: announcement.title,
+      updatedAt: announcement.updatedAt,
+      createdAt: announcement.createdAt,
+      publishedAt: announcement.publishedAt
+    })),
+    parishRole: membership?.role ?? null,
+    memberGroups: memberGroups.map((membership) => membership.group),
+    hasPublicGroups: publicGroupCount > 0,
     stats: {
       tasksDone,
       tasksTotal,

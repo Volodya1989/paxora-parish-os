@@ -8,6 +8,8 @@ import type { TaskListItem } from "@/lib/queries/tasks";
 type TaskRowProps = {
   task: TaskListItem;
   onToggle: (taskId: string, nextStatus: "OPEN" | "DONE") => void;
+  onStartWork: (taskId: string) => void;
+  onMarkOpen: (taskId: string) => void;
   onArchive: (taskId: string) => void;
   onEdit: (task: TaskListItem) => void;
   onDelete: (taskId: string) => void;
@@ -38,15 +40,26 @@ function formatEstimatedHours(task: TaskListItem) {
 export default function TaskRow({
   task,
   onToggle,
+  onStartWork,
+  onMarkOpen,
   onArchive,
   onEdit,
   onDelete,
   isBusy = false
 }: TaskRowProps) {
   const isDone = task.status === "DONE";
+  const isInProgress = task.status === "IN_PROGRESS";
   const nextStatus = isDone ? "OPEN" : "DONE";
-  const isDisabled = !task.canManage || isBusy;
+  const canManage = task.canManage && !isBusy;
+  const canStartWork = task.canStartWork && !isBusy;
+  const canOpenMenu = (task.canManage || task.canStartWork) && !isBusy;
   const completedLabel = formatCompletedLabel(task);
+  const inProgressLabel = task.inProgressAt
+    ? `Started ${new Date(task.inProgressAt).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric"
+      })}`
+    : null;
   const approvalLabel =
     task.approvalStatus === "PENDING"
       ? "Pending"
@@ -61,7 +74,11 @@ export default function TaskRow({
     <div
       className={cn(
         "flex flex-col gap-4 rounded-card border border-mist-100 bg-white px-4 py-4 shadow-card sm:flex-row sm:items-start sm:justify-between",
-        isDone ? "border-l-4 border-l-emerald-400" : "border-l-4 border-l-sky-400"
+        isDone
+          ? "border-l-4 border-l-emerald-400"
+          : isInProgress
+            ? "border-l-4 border-l-amber-400"
+            : "border-l-4 border-l-sky-400"
       )}
     >
       <div className="flex items-start gap-3">
@@ -70,7 +87,7 @@ export default function TaskRow({
           className="mt-1 h-4 w-4 rounded border-mist-200 text-primary-700 focus-ring"
           checked={isDone}
           onChange={() => onToggle(task.id, nextStatus)}
-          disabled={isDisabled}
+          disabled={!canManage}
           aria-label={isDone ? "Mark task as open" : "Mark task as done"}
         />
         <div className="space-y-2">
@@ -81,8 +98,8 @@ export default function TaskRow({
             ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs text-ink-500">
-            <Badge tone={isDone ? "success" : "neutral"}>
-              {isDone ? "Done" : "Open"}
+            <Badge tone={isDone ? "success" : isInProgress ? "warning" : "neutral"}>
+              {isDone ? "Done" : isInProgress ? "In progress" : "Open"}
             </Badge>
             {task.visibility === "PUBLIC" ? (
               <Badge
@@ -112,6 +129,11 @@ export default function TaskRow({
               </span>
               <span>{task.owner.name}</span>
             </span>
+            {isInProgress ? (
+              <Badge tone="warning" className="bg-amber-50 text-amber-700">
+                Working now
+              </Badge>
+            ) : null}
             {task.group ? (
               <Badge tone="warning" className="bg-indigo-50 text-indigo-700">
                 {task.group.name}
@@ -125,6 +147,11 @@ export default function TaskRow({
             {completedLabel ? (
               <span className="text-xs text-emerald-600">{completedLabel}</span>
             ) : null}
+            {inProgressLabel && !isDone ? (
+              <span className="text-xs text-amber-600">
+                {inProgressLabel} by {task.owner.name}
+              </span>
+            ) : null}
           </div>
         </div>
       </div>
@@ -135,41 +162,59 @@ export default function TaskRow({
           aria-label="Task actions"
           className={cn(
             "inline-flex h-9 w-9 items-center justify-center rounded-button border border-mist-200 text-ink-500 transition hover:bg-mist-50 focus-ring",
-            isDisabled && "cursor-not-allowed opacity-50"
+            !canOpenMenu && "cursor-not-allowed opacity-50"
           )}
-          disabled={isDisabled}
+          disabled={!canOpenMenu}
         >
           ⋯
         </DropdownTrigger>
         <DropdownMenu ariaLabel="Task actions">
           <DropdownItem
             onClick={() => onToggle(task.id, nextStatus)}
-            disabled={isDisabled}
-            className={cn(isDisabled && "pointer-events-none opacity-50")}
+            disabled={!canManage}
+            className={cn(!canManage && "pointer-events-none opacity-50")}
           >
             {isDone ? "Mark open" : "Mark done"}
           </DropdownItem>
+          {!isDone && !isInProgress ? (
+            <DropdownItem
+              onClick={() => onStartWork(task.id)}
+              disabled={!canStartWork}
+              className={cn(!canStartWork && "pointer-events-none opacity-50")}
+            >
+              Start work
+            </DropdownItem>
+          ) : null}
+          {isInProgress ? (
+            <DropdownItem
+              onClick={() => onMarkOpen(task.id)}
+              disabled={!canManage}
+              className={cn(!canManage && "pointer-events-none opacity-50")}
+            >
+              Mark open
+            </DropdownItem>
+          ) : null}
           <DropdownItem
             onClick={() => onEdit(task)}
-            disabled={isDisabled}
-            className={cn(isDisabled && "pointer-events-none opacity-50")}
+            disabled={!canManage}
+            className={cn(!canManage && "pointer-events-none opacity-50")}
           >
             Edit task
           </DropdownItem>
           <DropdownItem
             onClick={() => onArchive(task.id)}
-            disabled={isDisabled}
-            className={cn(isDisabled && "pointer-events-none opacity-50 text-ink-300")}
+            disabled={!canManage}
+            className={cn(!canManage && "pointer-events-none opacity-50 text-ink-300")}
           >
             Archive task
           </DropdownItem>
           {task.canDelete ? (
             <DropdownItem
               onClick={() => onDelete(task.id)}
-              disabled={isDisabled}
+              disabled={!canManage}
               className={cn(
                 "text-rose-600 hover:bg-rose-50 focus-visible:bg-rose-50",
-                isDisabled && "pointer-events-none opacity-50"
+                !canManage && "pointer-events-none opacity-50"
               )}
             >
               Delete task

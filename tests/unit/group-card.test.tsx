@@ -7,12 +7,15 @@ import type { GroupListItem } from "@/lib/queries/groups";
 
 const baseGroup: GroupListItem = {
   id: "group-1",
+  createdById: "user-1",
   name: "Hospitality Team",
   description: "Welcoming new members.",
   createdAt: new Date("2024-01-02T10:00:00.000Z"),
   archivedAt: null,
+  status: "ACTIVE",
   visibility: "PUBLIC",
   joinPolicy: "OPEN",
+  createdBy: { name: "Alex Kim", email: "alex@example.com" },
   memberCount: 4,
   viewerMembershipStatus: null,
   viewerMembershipRole: null

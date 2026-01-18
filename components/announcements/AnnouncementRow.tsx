@@ -12,6 +12,7 @@ type AnnouncementRowProps = {
   onTogglePublish: (id: string, nextPublished: boolean, previousPublishedAt: Date | null) => void;
   onArchive: (id: string) => void;
   isBusy?: boolean;
+  isReadOnly?: boolean;
 };
 
 function formatDate(date: Date) {
@@ -26,7 +27,8 @@ export default function AnnouncementRow({
   announcement,
   onTogglePublish,
   onArchive,
-  isBusy = false
+  isBusy = false,
+  isReadOnly = false
 }: AnnouncementRowProps) {
   const isPublished = Boolean(announcement.publishedAt);
   const nextPublished = !isPublished;
@@ -39,46 +41,50 @@ export default function AnnouncementRow({
       <div className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="text-base font-semibold text-ink-900">{announcement.title}</h3>
-          <Badge tone={isPublished ? "success" : "warning"}>
-            {isPublished ? "Published" : "Draft"}
-          </Badge>
+          {isReadOnly ? null : (
+            <Badge tone={isPublished ? "success" : "warning"}>
+              {isPublished ? "Published" : "Draft"}
+            </Badge>
+          )}
         </div>
         <p className="text-xs text-ink-400">{timestamp}</p>
       </div>
 
-      <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          variant="secondary"
-          onClick={() => onTogglePublish(announcement.id, nextPublished, announcement.publishedAt)}
-          aria-label={isPublished ? "Unpublish announcement" : "Publish announcement"}
-          disabled={isBusy}
-        >
-          {isPublished ? "Unpublish" : "Publish"}
-        </Button>
-        <Dropdown>
-          <DropdownTrigger
-            iconOnly
-            aria-label="Announcement actions"
-            className={cn(
-              "inline-flex h-9 w-9 items-center justify-center rounded-button border border-mist-200 text-ink-500 transition hover:bg-mist-50 focus-ring",
-              isBusy && "cursor-not-allowed opacity-50"
-            )}
+      {isReadOnly ? null : (
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => onTogglePublish(announcement.id, nextPublished, announcement.publishedAt)}
+            aria-label={isPublished ? "Unpublish announcement" : "Publish announcement"}
             disabled={isBusy}
           >
-            ⋯
-          </DropdownTrigger>
-          <DropdownMenu ariaLabel="Announcement actions">
-            <DropdownItem
-              onClick={() => onArchive(announcement.id)}
+            {isPublished ? "Unpublish" : "Publish"}
+          </Button>
+          <Dropdown>
+            <DropdownTrigger
+              iconOnly
+              aria-label="Announcement actions"
+              className={cn(
+                "inline-flex h-9 w-9 items-center justify-center rounded-button border border-mist-200 text-ink-500 transition hover:bg-mist-50 focus-ring",
+                isBusy && "cursor-not-allowed opacity-50"
+              )}
               disabled={isBusy}
-              className={cn(isBusy && "pointer-events-none opacity-50 text-ink-300")}
             >
-              Archive
-            </DropdownItem>
-          </DropdownMenu>
-        </Dropdown>
-      </div>
+              ⋯
+            </DropdownTrigger>
+            <DropdownMenu ariaLabel="Announcement actions">
+              <DropdownItem
+                onClick={() => onArchive(announcement.id)}
+                disabled={isBusy}
+                className={cn(isBusy && "pointer-events-none opacity-50 text-ink-300")}
+              >
+                Archive
+              </DropdownItem>
+            </DropdownMenu>
+          </Dropdown>
+        </div>
+      )}
     </Card>
   );
 }

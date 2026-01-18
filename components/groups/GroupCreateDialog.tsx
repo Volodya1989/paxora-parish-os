@@ -29,6 +29,7 @@ type GroupCreateDialogProps = {
   onOpenChange: (open: boolean) => void;
   parishId: string;
   actorUserId: string;
+  isRequest?: boolean;
   onCreated?: () => void;
 };
 
@@ -37,6 +38,7 @@ export default function GroupCreateDialog({
   onOpenChange,
   parishId,
   actorUserId,
+  isRequest = false,
   onCreated
 }: GroupCreateDialogProps) {
   const { addToast } = useToast();
@@ -105,17 +107,25 @@ export default function GroupCreateDialog({
           joinPolicy
         });
         addToast({
-          title: "Group created",
-          description: "Your new group is ready for members and opportunities to help."
+          title: isRequest ? "Request submitted" : "Group created",
+          description: isRequest
+            ? "Your request is pending approval from parish leadership."
+            : "Your new group is ready for members and opportunities to help."
         });
         resetForm();
         onOpenChange(false);
         onCreated?.();
       } catch (submitError) {
-        setError("We couldn't create that group. Please try again.");
+        const message =
+          submitError instanceof Error && submitError.message
+            ? submitError.message
+            : isRequest
+              ? "We couldn't submit that request. Please try again."
+              : "We couldn't create that group. Please try again.";
+        setError(message);
         addToast({
-          title: "Unable to create group",
-          description: "Please check the details and try again."
+          title: isRequest ? "Unable to submit request" : "Unable to create group",
+          description: message
         });
       }
     });
@@ -191,7 +201,7 @@ export default function GroupCreateDialog({
         Cancel
       </Button>
       <Button type="submit" form={formId} isLoading={isPending}>
-        Create group
+        {isRequest ? "Send request" : "Create group"}
       </Button>
     </>
   );
@@ -202,7 +212,9 @@ export default function GroupCreateDialog({
 
   const formDescription = (
     <p className="mb-4 text-sm text-ink-500">
-      Gather the right people around a mission, ministry, or project.
+      {isRequest
+        ? "Tell us about the group you want to start. A parish leader will review it."
+        : "Gather the right people around a mission, ministry, or project."}
     </p>
   );
 
@@ -211,7 +223,7 @@ export default function GroupCreateDialog({
       <Modal
         open={open}
         onClose={handleClose}
-        title="New group"
+        title={isRequest ? "Request a new group" : "New group"}
         footer={renderFooter(modalFormId)}
       >
         {formDescription}
@@ -230,7 +242,7 @@ export default function GroupCreateDialog({
     <Drawer
       open={open}
       onClose={handleClose}
-      title="New group"
+      title={isRequest ? "Request a new group" : "New group"}
       footer={renderFooter(drawerFormId)}
     >
       {formDescription}
