@@ -1,5 +1,6 @@
 import Link from "next/link";
-import SectionCard from "@/components/this-week/SectionCard";
+import { UsersIcon } from "@/components/icons/ParishIcons";
+import ParishionerSectionCard from "@/components/this-week/parishioner/ParishionerSectionCard";
 
 type GroupPreview = {
   id: string;
@@ -15,8 +16,11 @@ type SectionCommunityProps = {
 export default function SectionCommunity({ groups, hasPublicGroups }: SectionCommunityProps) {
   return (
     <section id="community" className="scroll-mt-24">
-      <SectionCard
-        title="Groups & Community"
+      <ParishionerSectionCard
+        title="Community"
+        icon={<UsersIcon className="h-5 w-5" />}
+        borderClass="border-sky-200"
+        iconClass="bg-sky-100 text-sky-700"
         action={
           hasPublicGroups ? (
             <Link
@@ -30,8 +34,8 @@ export default function SectionCommunity({ groups, hasPublicGroups }: SectionCom
       >
         <div className="space-y-3">
           {groups.length === 0 ? (
-            <div className="rounded-card border border-mist-100 bg-mist-50 px-4 py-3 text-sm text-ink-500">
-              You have not joined a group yet.{" "}
+            <div className="rounded-card border border-sky-100 bg-sky-50/40 px-4 py-3 text-sm text-ink-500">
+              You have not joined a group yet. {" "}
               <Link className="font-medium text-ink-700 underline" href="/groups">
                 Browse community groups
               </Link>
@@ -50,7 +54,7 @@ export default function SectionCommunity({ groups, hasPublicGroups }: SectionCom
                   </p>
                 </div>
                 <Link
-                  className="text-sm font-medium text-primary-600 underline"
+                  className="text-sm font-medium text-sky-700 underline"
                   href={`/groups/${group.id}`}
                 >
                   Open
@@ -59,7 +63,7 @@ export default function SectionCommunity({ groups, hasPublicGroups }: SectionCom
             ))
           )}
         </div>
-      </SectionCard>
+      </ParishionerSectionCard>
     </section>
   );
 }
