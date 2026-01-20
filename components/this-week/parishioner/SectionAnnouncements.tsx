@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { MegaphoneIcon } from "@/components/icons/ParishIcons";
-import ParishionerSectionCard from "@/components/this-week/parishioner/ParishionerSectionCard";
+import AccentSectionCard from "@/components/layout/AccentSectionCard";
+import { routes } from "@/lib/navigation/routes";
 import type { AnnouncementPreview } from "@/lib/queries/this-week";
 import { formatShortDate } from "@/lib/this-week/formatters";
 
@@ -11,7 +12,7 @@ type SectionAnnouncementsProps = {
 export default function SectionAnnouncements({ announcements }: SectionAnnouncementsProps) {
   return (
     <section id="announcements" className="scroll-mt-24">
-      <ParishionerSectionCard
+      <AccentSectionCard
         title="Announcements"
         icon={<MegaphoneIcon className="h-5 w-5" />}
         borderClass="border-amber-200"
@@ -19,7 +20,7 @@ export default function SectionAnnouncements({ announcements }: SectionAnnouncem
         action={
           <Link
             className="whitespace-nowrap text-sm font-medium text-ink-700 underline"
-            href="/announcements"
+            href={routes.announcements}
           >
             View all
           </Link>
@@ -37,7 +38,7 @@ export default function SectionAnnouncements({ announcements }: SectionAnnouncem
               return (
                 <Link
                   key={announcement.id}
-                  href="/announcements"
+                  href={routes.announcements}
                   className="block rounded-card border border-mist-100 bg-white px-4 py-3 transition hover:border-amber-200 hover:bg-amber-50/30"
                 >
                   <p className="text-sm font-semibold text-ink-900">{announcement.title}</p>
@@ -52,7 +53,7 @@ export default function SectionAnnouncements({ announcements }: SectionAnnouncem
             })
           )}
         </div>
-      </ParishionerSectionCard>
+      </AccentSectionCard>
     </section>
   );
 }

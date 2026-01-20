@@ -12,6 +12,7 @@ import SectionSchedule from "@/components/this-week/parishioner/SectionSchedule"
 import SectionCommunity from "@/components/this-week/parishioner/SectionCommunity";
 import SectionOpportunities from "@/components/this-week/parishioner/SectionOpportunities";
 import type { ThisWeekData } from "@/lib/queries/this-week";
+import { routes } from "@/lib/navigation/routes";
 import {
   formatDateRange,
   formatDayDate,
@@ -89,7 +90,7 @@ export default function ThisWeekParishionerView({
           {
             id: "announcements",
             label: "Announcements",
-            href: "#announcements",
+            href: routes.announcements,
             summary: announcementsSummary,
             count: publishedAnnouncements.length,
             icon: <MegaphoneIcon className="h-4 w-4" />,
@@ -98,7 +99,7 @@ export default function ThisWeekParishionerView({
           {
             id: "services",
             label: "Services",
-            href: "#services",
+            href: routes.calendar,
             summary: servicesSummary,
             count: data.events.length,
             icon: <CalendarIcon className="h-4 w-4" />,
@@ -107,7 +108,7 @@ export default function ThisWeekParishionerView({
           {
             id: "community",
             label: "Community",
-            href: "#community",
+            href: routes.groups,
             summary: communitySummary,
             count: data.memberGroups.length,
             icon: <UsersIcon className="h-4 w-4" />,
@@ -116,7 +117,7 @@ export default function ThisWeekParishionerView({
           {
             id: "opportunities",
             label: "Opportunities to Help",
-            href: "#opportunities",
+            href: `${routes.serve}?view=opportunities`,
             summary: opportunitiesSummary,
             count: sortedTasks.length,
             icon: <HandHeartIcon className="h-4 w-4" />,

@@ -4,9 +4,10 @@ import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@/components/ui/Dropdown";
 import ThisWeekHeader, { type WeekOption } from "@/components/this-week/ThisWeekHeader";
-import SectionCard from "@/components/this-week/SectionCard";
+import SectionCard from "@/components/layout/SectionCard";
 import EmptyStateBlock from "@/components/this-week/EmptyStateBlock";
 import type { ThisWeekData } from "@/lib/queries/this-week";
+import { routes } from "@/lib/navigation/routes";
 import { formatEventTime, formatShortDate, formatUpdatedLabel } from "@/lib/this-week/formatters";
 
 type ThisWeekAdminViewProps = {
@@ -50,10 +51,10 @@ export default function ThisWeekAdminView({
 
       <div className="grid gap-6 lg:grid-cols-2">
         <SectionCard
-          title="Tasks"
-          meta={`${data.tasks.length} active`}
+          title="Serve"
+          description={`${data.tasks.length} active`}
           action={
-            <Link className="text-sm font-medium text-ink-700 underline" href="/tasks">
+            <Link className="text-sm font-medium text-ink-700 underline" href={routes.serve}>
               View all
             </Link>
           }
@@ -89,11 +90,11 @@ export default function ThisWeekAdminView({
                     </svg>
                   </IconCircle>
                 }
-                title="No tasks for this week"
+                title="No serve items for this week"
                 description="Capture what needs to happen and keep your parish teams aligned."
                 action={
-                  <Link href="/tasks?create=task">
-                    <Button size="sm">Add a task</Button>
+                  <Link href={`${routes.serve}?create=task`}>
+                    <Button size="sm">Add a serve item</Button>
                   </Link>
                 }
               />
@@ -101,7 +102,7 @@ export default function ThisWeekAdminView({
               data.tasks.slice(0, 5).map((task) => (
                 <Link
                   key={task.id}
-                  href={`/tasks?taskId=${task.id}`}
+                  href={`${routes.serve}?taskId=${task.id}`}
                   className="flex items-center justify-between gap-3 rounded-card border border-mist-100 bg-white px-4 py-3 transition hover:border-primary-200 hover:bg-primary-50/30"
                 >
                   <div className="space-y-2">
@@ -138,9 +139,9 @@ export default function ThisWeekAdminView({
 
         <SectionCard
           title="Events"
-          meta={`${data.events.length} scheduled`}
+          description={`${data.events.length} scheduled`}
           action={
-            <Link className="text-sm font-medium text-ink-700 underline" href="/calendar">
+            <Link className="text-sm font-medium text-ink-700 underline" href={routes.calendar}>
               View all
             </Link>
           }
@@ -178,7 +179,7 @@ export default function ThisWeekAdminView({
                 title="No events scheduled this week"
                 description="Plan services, rehearsals, and gatherings so everyone stays in sync."
                 action={
-                  <Link href="/calendar?create=event">
+                  <Link href={`${routes.calendar}?create=event`}>
                     <Button size="sm">Add event</Button>
                   </Link>
                 }
@@ -223,9 +224,12 @@ export default function ThisWeekAdminView({
 
         <SectionCard
           title="Announcements"
-          meta={`${data.announcements.length} announcements`}
+          description={`${data.announcements.length} announcements`}
           action={
-            <Link className="text-sm font-medium text-ink-700 underline" href="/announcements">
+            <Link
+              className="text-sm font-medium text-ink-700 underline"
+              href={routes.announcements}
+            >
               View all
             </Link>
           }
@@ -261,7 +265,7 @@ export default function ThisWeekAdminView({
                 title="Share a parish update"
                 description="Draft announcements to keep parishioners informed and in the loop."
                 action={
-                  <Link href="/announcements/new">
+                  <Link href={`${routes.announcements}/new`}>
                     <Button size="sm">Create announcement</Button>
                   </Link>
                 }

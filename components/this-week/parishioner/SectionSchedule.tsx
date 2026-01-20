@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CalendarIcon, MapPinIcon } from "@/components/icons/ParishIcons";
-import ParishionerSectionCard from "@/components/this-week/parishioner/ParishionerSectionCard";
+import AccentSectionCard from "@/components/layout/AccentSectionCard";
+import { routes } from "@/lib/navigation/routes";
 import type { EventPreview } from "@/lib/queries/this-week";
 import { formatDayDate, formatTime } from "@/lib/this-week/formatters";
 
@@ -11,7 +12,7 @@ type SectionScheduleProps = {
 export default function SectionSchedule({ events }: SectionScheduleProps) {
   return (
     <section id="services" className="scroll-mt-24">
-      <ParishionerSectionCard
+      <AccentSectionCard
         title="Services"
         icon={<CalendarIcon className="h-5 w-5" />}
         borderClass="border-emerald-200"
@@ -19,7 +20,7 @@ export default function SectionSchedule({ events }: SectionScheduleProps) {
         action={
           <Link
             className="whitespace-nowrap text-sm font-medium text-ink-700 underline"
-            href="/calendar"
+            href={routes.calendar}
           >
             View calendar
           </Link>
@@ -28,8 +29,8 @@ export default function SectionSchedule({ events }: SectionScheduleProps) {
         <div className="space-y-3">
           {events.length === 0 ? (
             <div className="rounded-card border border-emerald-100 bg-emerald-50/40 px-4 py-3 text-sm text-ink-500">
-              Nothing scheduled yet. {" "}
-              <Link className="font-medium text-ink-700 underline" href="/calendar">
+              Nothing scheduled yet.{" "}
+              <Link className="font-medium text-ink-700 underline" href={routes.calendar}>
                 View calendar
               </Link>
               .
@@ -52,7 +53,7 @@ export default function SectionSchedule({ events }: SectionScheduleProps) {
             ))
           )}
         </div>
-      </ParishionerSectionCard>
+      </AccentSectionCard>
     </section>
   );
 }

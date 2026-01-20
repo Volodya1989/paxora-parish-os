@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/ui/cn";
 
-type ParishionerSectionCardProps = {
+type AccentSectionCardProps = {
   title: string;
   icon: ReactNode;
   borderClass: string;
@@ -12,7 +12,7 @@ type ParishionerSectionCardProps = {
   meta?: ReactNode;
 };
 
-export default function ParishionerSectionCard({
+export default function AccentSectionCard({
   title,
   icon,
   borderClass,
@@ -20,7 +20,7 @@ export default function ParishionerSectionCard({
   action,
   meta,
   children
-}: ParishionerSectionCardProps) {
+}: AccentSectionCardProps) {
   return (
     <Card className={cn("flex h-full flex-col border-l-4", borderClass)}>
       <div className="flex items-start justify-between gap-4">

@@ -19,7 +19,7 @@ export default function TaskFilters({
   filters,
   groupOptions,
   showOwnership = true,
-  searchPlaceholder = "Search tasks or notes"
+  searchPlaceholder = "Search serve items or notes"
 }: TaskFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();

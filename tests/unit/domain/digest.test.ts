@@ -27,7 +27,7 @@ test("digest content is deterministic for tasks and events", () => {
   assert.equal(
     output,
     [
-      "Tasks",
+      "Serve",
       "- [ ] Alpha Task",
       "- [x] Bravo Task",
       "",
@@ -62,7 +62,7 @@ test("digest summary orders items by title and includes location/time details", 
   assert.equal(
     output,
     [
-      "Tasks",
+      "Serve",
       "- [x] Alpha Task",
       "- [ ] Zulu Task",
       "",

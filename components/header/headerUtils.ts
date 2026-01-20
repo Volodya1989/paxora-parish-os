@@ -21,7 +21,7 @@ export function buildAddHref(pathname: string, search: string, target: string) {
 }
 
 export function getPageTitle(pathname: string) {
-  if (pathname.startsWith("/tasks")) return "Tasks";
+  if (pathname.startsWith("/tasks")) return "Serve";
   if (pathname.startsWith("/groups")) return "Groups";
   if (pathname.startsWith("/calendar")) return "Calendar";
   if (pathname.startsWith("/announcements")) return "Announcements";

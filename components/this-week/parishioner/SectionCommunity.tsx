@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { UsersIcon } from "@/components/icons/ParishIcons";
-import ParishionerSectionCard from "@/components/this-week/parishioner/ParishionerSectionCard";
+import AccentSectionCard from "@/components/layout/AccentSectionCard";
+import { routes } from "@/lib/navigation/routes";
 
 type GroupPreview = {
   id: string;
@@ -16,7 +17,7 @@ type SectionCommunityProps = {
 export default function SectionCommunity({ groups, hasPublicGroups }: SectionCommunityProps) {
   return (
     <section id="community" className="scroll-mt-24">
-      <ParishionerSectionCard
+      <AccentSectionCard
         title="Community"
         icon={<UsersIcon className="h-5 w-5" />}
         borderClass="border-sky-200"
@@ -25,7 +26,7 @@ export default function SectionCommunity({ groups, hasPublicGroups }: SectionCom
           hasPublicGroups ? (
             <Link
               className="whitespace-nowrap text-sm font-medium text-ink-700 underline"
-              href="/groups"
+              href={routes.groups}
             >
               Discover groups
             </Link>
@@ -36,7 +37,7 @@ export default function SectionCommunity({ groups, hasPublicGroups }: SectionCom
           {groups.length === 0 ? (
             <div className="rounded-card border border-sky-100 bg-sky-50/40 px-4 py-3 text-sm text-ink-500">
               You have not joined a group yet. {" "}
-              <Link className="font-medium text-ink-700 underline" href="/groups">
+              <Link className="font-medium text-ink-700 underline" href={routes.groups}>
                 Browse community groups
               </Link>
               .
@@ -63,7 +64,7 @@ export default function SectionCommunity({ groups, hasPublicGroups }: SectionCom
             ))
           )}
         </div>
-      </ParishionerSectionCard>
+      </AccentSectionCard>
     </section>
   );
 }

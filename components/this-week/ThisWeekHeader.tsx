@@ -8,6 +8,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Drawer } from "@/components/ui/Drawer";
 import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@/components/ui/Dropdown";
 import { cn } from "@/lib/ui/cn";
+import { routes } from "@/lib/navigation/routes";
 
 export type WeekOption = {
   value: "previous" | "current" | "next";
@@ -68,19 +69,19 @@ function QuickActions({ onSelect }: { onSelect: () => void }) {
   const actions = useMemo(
     () => [
       {
-        title: "Add Task",
-        description: "Create a weekly to-do for your ministry.",
-        href: "/tasks?create=task"
+        title: "Add serve item",
+        description: "Create a weekly serve item for your ministry.",
+        href: `${routes.serve}?create=task`
       },
       {
         title: "Add Event",
         description: "Schedule services, rehearsals, or gatherings.",
-        href: "/calendar?create=event"
+        href: `${routes.calendar}?create=event`
       },
       {
         title: "Add Announcement",
         description: "Share updates with the parish.",
-        href: "/announcements/new"
+        href: `${routes.announcements}/new`
       }
     ],
     []

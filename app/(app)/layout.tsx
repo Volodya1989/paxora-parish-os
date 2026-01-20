@@ -66,7 +66,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   return (
     <AppShell parishRole={membership?.role ?? null}>
       <AppHeader />
-      <main className="flex-1 bg-mist-50 px-4 py-6 pb-24 md:px-8 md:pb-8">
+      <main className="flex-1 bg-mist-50 px-4 py-6 pb-[calc(6rem+env(safe-area-inset-bottom))] md:px-8 md:pb-8">
         {children}
       </main>
     </AppShell>
