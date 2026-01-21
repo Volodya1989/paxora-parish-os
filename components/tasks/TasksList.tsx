@@ -3,16 +3,20 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import TaskEditDialog from "@/components/tasks/TaskEditDialog";
+import TaskDetailDialog from "@/components/tasks/TaskDetailDialog";
 import TaskRow from "@/components/tasks/TaskRow";
 import { useToast } from "@/components/ui/Toast";
 import {
   archiveTask,
+  assignTaskToSelf,
   deleteTask,
+  leaveTaskVolunteer,
   markTaskDone,
   markTaskInProgress,
   markTaskOpen,
   unarchiveTask,
-  unmarkTaskDone
+  unassignTask,
+  volunteerForTask
 } from "@/server/actions/tasks";
 import type { TaskListItem } from "@/lib/queries/tasks";
 
@@ -33,6 +37,7 @@ export default function TasksList({
   const router = useRouter();
   const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<TaskListItem | null>(null);
+  const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
   const [showCompleted, setShowCompleted] = useState(false);
   const [, startTransition] = useTransition();
 
@@ -43,6 +48,11 @@ export default function TasksList({
       doneTasks: tasks.filter((task) => task.status === "DONE")
     };
   }, [tasks]);
+
+  const detailTask = useMemo(
+    () => tasks.find((task) => task.id === detailTaskId) ?? null,
+    [detailTaskId, tasks]
+  );
 
   const refreshList = () => {
     startTransition(() => {
@@ -65,23 +75,23 @@ export default function TasksList({
     }
   };
 
-  const handleToggle = async (taskId: string, nextStatus: "OPEN" | "DONE") => {
-    const action = nextStatus === "DONE" ? markTaskDone : unmarkTaskDone;
-
+  const handleAssignToMe = async (taskId: string) => {
     await runTaskAction(taskId, async () => {
-      await action({ taskId });
-      if (nextStatus === "DONE") {
-        addToast({
-          title: "Marked done",
-          description: "Nice work. You can undo this if needed.",
-          actionLabel: "Undo",
-          onAction: () => {
-            void runTaskAction(taskId, async () => {
-              await unmarkTaskDone({ taskId });
-            });
-          }
-        });
-      }
+      await assignTaskToSelf({ taskId });
+      addToast({
+        title: "Assigned to you",
+        description: "You are now the primary volunteer for this task."
+      });
+    });
+  };
+
+  const handleUnassign = async (taskId: string) => {
+    await runTaskAction(taskId, async () => {
+      await unassignTask({ taskId });
+      addToast({
+        title: "Unassigned",
+        description: "This task is now unassigned."
+      });
     });
   };
 
@@ -131,9 +141,39 @@ export default function TasksList({
     });
   };
 
+  const handleComplete = async (taskId: string) => {
+    await runTaskAction(taskId, async () => {
+      await markTaskDone({ taskId });
+      addToast({
+        title: "Completed",
+        description: "This task is now marked as complete."
+      });
+    });
+  };
+
   const handleMarkOpen = async (taskId: string) => {
     await runTaskAction(taskId, async () => {
       await markTaskOpen({ taskId });
+    });
+  };
+
+  const handleVolunteer = async (taskId: string) => {
+    await runTaskAction(taskId, async () => {
+      await volunteerForTask({ taskId });
+      addToast({
+        title: "You're in",
+        description: "Thanks for volunteering."
+      });
+    });
+  };
+
+  const handleLeaveVolunteer = async (taskId: string) => {
+    await runTaskAction(taskId, async () => {
+      await leaveTaskVolunteer({ taskId });
+      addToast({
+        title: "Removed",
+        description: "You have left this volunteer list."
+      });
     });
   };
 
@@ -150,12 +190,18 @@ export default function TasksList({
               <TaskRow
                 key={task.id}
                 task={task}
-                onToggle={handleToggle}
                 onStartWork={handleStartWork}
+                onMarkDone={handleComplete}
                 onMarkOpen={handleMarkOpen}
+                onAssignToMe={handleAssignToMe}
+                onUnassign={handleUnassign}
+                onVolunteer={handleVolunteer}
+                onLeaveVolunteer={handleLeaveVolunteer}
+                onViewDetails={() => setDetailTaskId(task.id)}
                 onArchive={handleArchive}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                currentUserId={currentUserId}
                 isBusy={pendingTaskId === task.id}
               />
             ))}
@@ -174,12 +220,18 @@ export default function TasksList({
               <TaskRow
                 key={task.id}
                 task={task}
-                onToggle={handleToggle}
                 onStartWork={handleStartWork}
+                onMarkDone={handleComplete}
                 onMarkOpen={handleMarkOpen}
+                onAssignToMe={handleAssignToMe}
+                onUnassign={handleUnassign}
+                onVolunteer={handleVolunteer}
+                onLeaveVolunteer={handleLeaveVolunteer}
+                onViewDetails={() => setDetailTaskId(task.id)}
                 onArchive={handleArchive}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
+                currentUserId={currentUserId}
                 isBusy={pendingTaskId === task.id}
               />
             ))}
@@ -202,12 +254,18 @@ export default function TasksList({
                 <TaskRow
                   key={task.id}
                   task={task}
-                  onToggle={handleToggle}
                   onStartWork={handleStartWork}
+                  onMarkDone={handleComplete}
                   onMarkOpen={handleMarkOpen}
+                  onAssignToMe={handleAssignToMe}
+                  onUnassign={handleUnassign}
+                  onVolunteer={handleVolunteer}
+                  onLeaveVolunteer={handleLeaveVolunteer}
+                  onViewDetails={() => setDetailTaskId(task.id)}
                   onArchive={handleArchive}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
+                  currentUserId={currentUserId}
                   isBusy={pendingTaskId === task.id}
                 />
               ))}
@@ -226,6 +284,17 @@ export default function TasksList({
         task={editingTask}
         groupOptions={groupOptions}
         memberOptions={memberOptions}
+        currentUserId={currentUserId}
+      />
+
+      <TaskDetailDialog
+        open={Boolean(detailTaskId)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDetailTaskId(null);
+          }
+        }}
+        taskSummary={detailTask}
         currentUserId={currentUserId}
       />
     </div>

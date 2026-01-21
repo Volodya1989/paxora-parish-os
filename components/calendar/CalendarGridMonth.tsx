@@ -57,7 +57,7 @@ export default function CalendarGridMonth({
             <div
               key={key}
               className={cn(
-                "min-h-[130px] rounded-card border border-mist-200 bg-white p-3",
+                "min-h-[130px] rounded-card border border-mist-100 bg-white p-3",
                 !inMonth && "bg-mist-50 text-ink-400",
                 isToday && "border-emerald-300 bg-emerald-50/40"
               )}

@@ -201,7 +201,7 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
                     : task.status === "IN_PROGRESS"
                       ? "In progress"
                       : "Open"
-                } · ${task.owner.name ?? task.owner.email}`}
+                } · ${task.owner?.name ?? task.owner?.email ?? "Unassigned"}`}
               />
             ))
           )}

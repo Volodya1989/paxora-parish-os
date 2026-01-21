@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
 import Select from "@/components/ui/Select";
@@ -74,6 +75,8 @@ export default function CalendarView({
   groupOptions,
   viewerGroupIds
 }: CalendarViewProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [view, setView] = useState<CalendarViewValue>(initialView);
   const [surface, setSurface] = useState<CalendarSurface>("calendar");
   const [scheduleRange, setScheduleRange] = useState<ScheduleRange>("week");
@@ -134,6 +137,36 @@ export default function CalendarView({
       setSelectedEvent(null);
     }
   }, [activeEvents, selectedEvent]);
+
+  useEffect(() => {
+    const createParam = searchParams?.get("create");
+    if (!createParam) {
+      return;
+    }
+
+    if (!canCreateEvents) {
+      return;
+    }
+
+    if (createParam === "event") {
+      setCreateType("EVENT");
+      setCreateOpen(true);
+    } else if (createParam === "service") {
+      setCreateType("SERVICE");
+      setCreateOpen(true);
+    }
+  }, [canCreateEvents, searchParams]);
+
+  const handleCreateOpenChange = (open: boolean) => {
+    setCreateOpen(open);
+    if (!open) {
+      const params = new URLSearchParams(searchParams?.toString() ?? "");
+      if (params.has("create")) {
+        params.delete("create");
+        router.replace(`?${params.toString()}`, { scroll: false });
+      }
+    }
+  };
 
   const addButtonLabel = canCreateEvents ? "+ Add" : "+ Add (restricted)";
   const addButtonTooltip = canCreateEvents
@@ -355,7 +388,7 @@ export default function CalendarView({
 
       <EventCreateDialog
         open={createOpen}
-        onOpenChange={setCreateOpen}
+        onOpenChange={handleCreateOpenChange}
         groupOptions={groupOptions}
         canCreatePublicEvents={canCreatePublicEvents}
         canCreatePrivateEvents={canCreatePrivateEvents}

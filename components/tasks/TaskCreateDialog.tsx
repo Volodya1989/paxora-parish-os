@@ -43,6 +43,7 @@ export default function TaskCreateDialog({
   );
   const handledSuccess = useRef(false);
   const [formResetKey, setFormResetKey] = useState(0);
+  const [volunteersNeeded, setVolunteersNeeded] = useState("1");
   const [, startTransition] = useTransition();
   const modalFormRef = useRef<HTMLFormElement>(null);
   const drawerFormRef = useRef<HTMLFormElement>(null);
@@ -51,6 +52,7 @@ export default function TaskCreateDialog({
   const titleId = useId();
   const notesId = useId();
   const estimatedHoursId = useId();
+  const volunteersId = useId();
   const groupId = useId();
   const ownerId = useId();
   const visibilityId = useId();
@@ -58,6 +60,7 @@ export default function TaskCreateDialog({
   useEffect(() => {
     if (open) {
       handledSuccess.current = false;
+      setVolunteersNeeded("1");
     }
   }, [open]);
 
@@ -119,6 +122,21 @@ export default function TaskCreateDialog({
         />
       </div>
       <div className="space-y-2">
+        <Label htmlFor={volunteersId}>Volunteers needed</Label>
+        <Input
+          id={volunteersId}
+          name="volunteersNeeded"
+          type="number"
+          min={1}
+          step={1}
+          value={volunteersNeeded}
+          onChange={(event) => setVolunteersNeeded(event.target.value)}
+        />
+        <p className="text-xs text-ink-400">
+          Set this above 1 to allow multiple volunteers to join.
+        </p>
+      </div>
+      <div className="space-y-2">
         <Label htmlFor={visibilityId}>Visibility</Label>
         <SelectMenu
           id={visibilityId}
@@ -148,11 +166,13 @@ export default function TaskCreateDialog({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor={ownerId}>Assignee</Label>
+          <Label htmlFor={ownerId}>
+            {Number(volunteersNeeded) > 1 ? "Lead (optional)" : "Assignee (optional)"}
+          </Label>
           <SelectMenu
             id={ownerId}
             name="ownerId"
-            defaultValue={currentUserId}
+            defaultValue=""
             options={memberOptions.map((member) => ({
               value: member.id,
               label: `${member.name}${member.id === currentUserId ? " (You)" : ""}`

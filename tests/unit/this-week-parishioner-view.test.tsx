@@ -64,7 +64,9 @@ test("Parishioner view renders quick blocks and ordered sections", () => {
           tasksDone: 0,
           tasksTotal: 3,
           completionPct: 0
-        }
+        },
+        pendingTaskApprovals: 0,
+        pendingAccessRequests: 0
       },
       weekSelection: "current",
       weekOptions: [

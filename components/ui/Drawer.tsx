@@ -66,7 +66,7 @@ export function Drawer({ open, onClose, title, children, footer }: DrawerProps) 
         aria-labelledby={titleId}
         tabIndex={-1}
         className={cn(
-          "relative w-full rounded-t-card border border-mist-200 bg-white px-4 pb-8 pt-5 shadow-overlay"
+          "relative flex max-h-[calc(100vh-4rem)] w-full flex-col overflow-hidden rounded-t-card border border-mist-200 bg-white px-4 pb-6 pt-5 shadow-overlay"
         )}
       >
         <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-mist-200" />
@@ -75,8 +75,12 @@ export function Drawer({ open, onClose, title, children, footer }: DrawerProps) 
             {title}
           </h2>
         </header>
-        <div className="text-sm text-ink-700">{children}</div>
-        {footer ? <footer className="mt-6 flex justify-end gap-2">{footer}</footer> : null}
+        <div className="flex-1 overflow-y-auto pr-1 text-sm text-ink-700">{children}</div>
+        {footer ? (
+          <footer className="mt-6 flex justify-end gap-2 border-t border-mist-100 pt-4">
+            {footer}
+          </footer>
+        ) : null}
       </div>
     </div>
   );

@@ -6,24 +6,30 @@ import { authOptions } from "@/server/auth/options";
 import {
   archiveTask as archiveTaskDomain,
   createTask as createTaskDomain,
+  assignTaskToSelf as assignTaskToSelfDomain,
+  addTaskComment as addTaskCommentDomain,
   deferTask as deferTaskDomain,
   deleteTask as deleteTaskDomain,
+  leaveTaskVolunteer as leaveTaskVolunteerDomain,
   markTaskDone as markTaskDoneDomain,
   markTaskInProgress as markTaskInProgressDomain,
   markTaskOpen as markTaskOpenDomain,
+  removeTaskVolunteer as removeTaskVolunteerDomain,
   rolloverOpenTasks,
+  unassignTask as unassignTaskDomain,
   unarchiveTask as unarchiveTaskDomain,
   unmarkTaskDone as unmarkTaskDoneDomain,
-  updateTask as updateTaskDomain
+  updateTask as updateTaskDomain,
+  volunteerForTask as volunteerForTaskDomain
 } from "@/domain/tasks";
 import { isParishLeader } from "@/lib/permissions";
 import {
   archiveTaskSchema,
   approveTaskSchema,
   createTaskSchema,
+  markTaskDoneSchema,
   deferTaskSchema,
   deleteTaskSchema,
-  markTaskDoneSchema,
   markTaskInProgressSchema,
   markTaskOpenSchema,
   rejectTaskSchema,
@@ -34,6 +40,7 @@ import {
 } from "@/lib/validation/tasks";
 import type { TaskActionState } from "@/server/actions/taskState";
 import { prisma } from "@/server/db/prisma";
+import { getTaskDetail as getTaskDetailQuery } from "@/lib/queries/tasks";
 
 function assertSession(session: Session | null) {
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -56,6 +63,7 @@ export async function createTask(
     weekId: formData.get("weekId"),
     groupId: formData.get("groupId"),
     ownerId: formData.get("ownerId"),
+    volunteersNeeded: formData.get("volunteersNeeded"),
     visibility: formData.get("visibility")
   });
 
@@ -83,6 +91,51 @@ export async function createTask(
     };
   }
 
+  if (parsed.data.ownerId && parsed.data.ownerId !== userId) {
+    if (isParishLeader(membership.role)) {
+      // Allowed.
+    } else if (parsed.data.groupId) {
+      const actorGroupMembership = await prisma.groupMembership.findFirst({
+        where: {
+          groupId: parsed.data.groupId,
+          userId,
+          status: "ACTIVE"
+        },
+        select: { role: true }
+      });
+
+      if (actorGroupMembership?.role !== "COORDINATOR") {
+        return {
+          status: "error",
+          message: "Only group coordinators or parish leaders can assign others."
+        };
+      }
+    } else {
+      return {
+        status: "error",
+        message: "Only parish leaders can assign others."
+      };
+    }
+  }
+
+  if (parsed.data.groupId && parsed.data.ownerId) {
+    const groupMember = await prisma.groupMembership.findFirst({
+      where: {
+        groupId: parsed.data.groupId,
+        userId: parsed.data.ownerId,
+        status: "ACTIVE"
+      },
+      select: { id: true }
+    });
+
+    if (!groupMember) {
+      return {
+        status: "error",
+        message: "Assignee must be a member of the selected group."
+      };
+    }
+  }
+
   const visibility = parsed.data.visibility === "private" ? "PRIVATE" : "PUBLIC";
   const approvalStatus =
     visibility === "PRIVATE" || isParishLeader(membership.role) ? "APPROVED" : "PENDING";
@@ -90,11 +143,14 @@ export async function createTask(
   await createTaskDomain({
     parishId,
     weekId: parsed.data.weekId,
-    ownerId: parsed.data.ownerId ?? userId,
+    ownerId:
+      parsed.data.ownerId ??
+      (parsed.data.volunteersNeeded && parsed.data.volunteersNeeded > 1 ? undefined : userId),
     createdById: userId,
     title: parsed.data.title,
     notes: parsed.data.notes,
     estimatedHours: parsed.data.estimatedHours,
+    volunteersNeeded: parsed.data.volunteersNeeded,
     groupId: parsed.data.groupId,
     visibility,
     approvalStatus
@@ -110,6 +166,150 @@ export async function createTask(
         ? "Your task is submitted for approval."
         : "Your task is ready for the team."
   };
+}
+
+export async function assignTaskToSelf({ taskId }: { taskId: string }) {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  const parsed = markTaskDoneSchema.safeParse({ taskId });
+  if (!parsed.success) {
+    throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
+  }
+
+  await assignTaskToSelfDomain({
+    taskId: parsed.data.taskId,
+    parishId,
+    actorUserId: userId
+  });
+
+  revalidatePath("/tasks");
+  revalidatePath("/this-week");
+}
+
+export async function unassignTask({ taskId }: { taskId: string }) {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  const parsed = markTaskDoneSchema.safeParse({ taskId });
+  if (!parsed.success) {
+    throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
+  }
+
+  await unassignTaskDomain({
+    taskId: parsed.data.taskId,
+    parishId,
+    actorUserId: userId
+  });
+
+  revalidatePath("/tasks");
+  revalidatePath("/this-week");
+}
+
+export async function volunteerForTask({ taskId }: { taskId: string }) {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  const parsed = markTaskDoneSchema.safeParse({ taskId });
+  if (!parsed.success) {
+    throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
+  }
+
+  await volunteerForTaskDomain({
+    taskId: parsed.data.taskId,
+    parishId,
+    actorUserId: userId
+  });
+
+  revalidatePath("/tasks");
+}
+
+export async function leaveTaskVolunteer({ taskId }: { taskId: string }) {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  const parsed = markTaskDoneSchema.safeParse({ taskId });
+  if (!parsed.success) {
+    throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
+  }
+
+  await leaveTaskVolunteerDomain({
+    taskId: parsed.data.taskId,
+    parishId,
+    actorUserId: userId
+  });
+
+  revalidatePath("/tasks");
+}
+
+export async function removeTaskVolunteer({
+  taskId,
+  volunteerUserId
+}: {
+  taskId: string;
+  volunteerUserId: string;
+}) {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  const parsed = markTaskDoneSchema.safeParse({ taskId });
+  if (!parsed.success) {
+    throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
+  }
+
+  if (!volunteerUserId) {
+    throw new Error("Volunteer is required.");
+  }
+
+  await removeTaskVolunteerDomain({
+    taskId: parsed.data.taskId,
+    parishId,
+    actorUserId: userId,
+    volunteerUserId
+  });
+
+  revalidatePath("/tasks");
+}
+
+export async function addTaskComment({
+  taskId,
+  body
+}: {
+  taskId: string;
+  body: string;
+}) {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  const parsed = markTaskDoneSchema.safeParse({ taskId });
+  if (!parsed.success) {
+    throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
+  }
+
+  if (!body.trim()) {
+    throw new Error("Comment is required.");
+  }
+
+  await addTaskCommentDomain({
+    taskId: parsed.data.taskId,
+    parishId,
+    actorUserId: userId,
+    body: body.trim()
+  });
+
+  revalidatePath("/tasks");
+}
+
+export async function getTaskDetail({ taskId }: { taskId: string }) {
+  const session = await getServerSession(authOptions);
+  const { userId } = assertSession(session);
+
+  const parsed = markTaskDoneSchema.safeParse({ taskId });
+  if (!parsed.success) {
+    throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
+  }
+
+  return getTaskDetailQuery({ taskId: parsed.data.taskId, actorUserId: userId });
 }
 
 export async function markTaskDone({ taskId }: { taskId: string }) {
@@ -226,6 +426,7 @@ export async function updateTask(
     estimatedHours: formData.get("estimatedHours"),
     groupId: formData.get("groupId"),
     ownerId: formData.get("ownerId"),
+    volunteersNeeded: formData.get("volunteersNeeded"),
     visibility: formData.get("visibility")
   });
 
@@ -245,6 +446,7 @@ export async function updateTask(
     estimatedHours: parsed.data.estimatedHours,
     groupId: parsed.data.groupId,
     ownerId: parsed.data.ownerId,
+    volunteersNeeded: parsed.data.volunteersNeeded,
     visibility: parsed.data.visibility === "private" ? "PRIVATE" : "PUBLIC"
   });
 

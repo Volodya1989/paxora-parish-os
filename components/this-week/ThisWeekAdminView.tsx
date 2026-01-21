@@ -2,6 +2,7 @@ import React, { type ReactNode } from "react";
 import Link from "next/link";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
 import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@/components/ui/Dropdown";
 import ThisWeekHeader, { type WeekOption } from "@/components/this-week/ThisWeekHeader";
 import SectionCard from "@/components/layout/SectionCard";
@@ -48,6 +49,43 @@ export default function ThisWeekAdminView({
         weekOptions={weekOptions}
         viewToggle={viewToggle}
       />
+
+      {data.pendingTaskApprovals > 0 ? (
+        <Card className="flex flex-wrap items-center justify-between gap-3 border-amber-200 bg-amber-50/70">
+          <div>
+            <p className="text-sm font-semibold text-amber-800">
+              {data.pendingTaskApprovals} approval
+              {data.pendingTaskApprovals === 1 ? "" : "s"} needed
+            </p>
+            <p className="text-xs text-amber-700">
+              Review member-submitted serve items awaiting approval.
+            </p>
+          </div>
+          <Link
+            href={`${routes.serve}?view=opportunities`}
+            className="text-sm font-semibold text-amber-800 underline"
+          >
+            Review now
+          </Link>
+        </Card>
+      ) : null}
+
+      {data.pendingAccessRequests > 0 ? (
+        <Card className="flex flex-wrap items-center justify-between gap-3 border-sky-200 bg-sky-50/70">
+          <div>
+            <p className="text-sm font-semibold text-sky-800">
+              {data.pendingAccessRequests} access request
+              {data.pendingAccessRequests === 1 ? "" : "s"} pending
+            </p>
+            <p className="text-xs text-sky-700">
+              Review parish access requests waiting for approval.
+            </p>
+          </div>
+          <Link href={routes.serve} className="text-sm font-semibold text-sky-800 underline">
+            Review now
+          </Link>
+        </Card>
+      ) : null}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <SectionCard

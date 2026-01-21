@@ -11,6 +11,8 @@ import SectionAnnouncements from "@/components/this-week/parishioner/SectionAnno
 import SectionSchedule from "@/components/this-week/parishioner/SectionSchedule";
 import SectionCommunity from "@/components/this-week/parishioner/SectionCommunity";
 import SectionOpportunities from "@/components/this-week/parishioner/SectionOpportunities";
+import Card from "@/components/ui/Card";
+import Link from "next/link";
 import type { ThisWeekData } from "@/lib/queries/this-week";
 import { routes } from "@/lib/navigation/routes";
 import {
@@ -84,6 +86,26 @@ export default function ThisWeekParishionerView({
         showQuickAdd={false}
         viewToggle={viewToggle}
       />
+
+      {data.pendingTaskApprovals > 0 ? (
+        <Card className="flex flex-wrap items-center justify-between gap-3 border-amber-200 bg-amber-50/70">
+          <div>
+            <p className="text-sm font-semibold text-amber-800">
+              {data.pendingTaskApprovals} approval
+              {data.pendingTaskApprovals === 1 ? "" : "s"} needed
+            </p>
+            <p className="text-xs text-amber-700">
+              Review member-submitted serve items awaiting approval.
+            </p>
+          </div>
+          <Link
+            href={`${routes.serve}?view=opportunities`}
+            className="text-sm font-semibold text-amber-800 underline"
+          >
+            Review now
+          </Link>
+        </Card>
+      ) : null}
 
       <QuickBlocksRow
         blocks={[

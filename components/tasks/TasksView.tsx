@@ -271,7 +271,12 @@ export default function TasksView({
                   <div className="text-xs text-ink-400">{request.parishName}</div>
                 </div>
                 <div className="text-xs text-ink-400">
-                  Requested {request.requestedAt.toLocaleDateString()}
+                  Requested{" "}
+                  {request.requestedAt.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    timeZone: "UTC"
+                  })}
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Select
@@ -333,7 +338,8 @@ export default function TasksView({
                     <div className="text-xs text-ink-500">{task.notes}</div>
                   ) : null}
                   <div className="text-xs text-ink-400">
-                    Created by {task.createdBy.name} · Assigned to {task.owner.name}
+                    Created by {task.createdBy.name} · Assigned to{" "}
+                    {task.owner?.name ?? "Unassigned"}
                     {task.group ? ` · ${task.group.name}` : ""}
                   </div>
                 </div>

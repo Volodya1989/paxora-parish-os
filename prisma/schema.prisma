@@ -127,6 +127,9 @@ model User {
   tasks            Task[] @relation("TaskOwner")
   createdTasks     Task[] @relation("TaskCreator")
   completedTasks   Task[] @relation("TaskCompletion")
+  taskVolunteers   TaskVolunteer[]
+  taskComments     TaskComment[]
+  taskActivities   TaskActivity[]
   digestsCreated   Digest[] @relation("DigestAuthor")
   eventRsvps       EventRsvp[]
   accounts         Account[]
@@ -223,11 +226,12 @@ model Task {
   parishId         String
   weekId           String
   groupId          String?
-  ownerId          String
+  ownerId          String?
   createdById      String
   title            String
   notes            String?
   estimatedHours   Float?
+  volunteersNeeded Int        @default(1)
   status           TaskStatus @default(OPEN)
   visibility       TaskVisibility @default(PUBLIC)
   approvalStatus   TaskApprovalStatus @default(APPROVED)
@@ -241,15 +245,60 @@ model Task {
   parish Parish @relation(fields: [parishId], references: [id])
   week   Week   @relation(fields: [weekId], references: [id], onDelete: Cascade)
   group  Group? @relation(fields: [groupId], references: [id])
-  owner  User   @relation("TaskOwner", fields: [ownerId], references: [id])
+  owner  User?   @relation("TaskOwner", fields: [ownerId], references: [id])
   createdBy User @relation("TaskCreator", fields: [createdById], references: [id])
   completedBy User? @relation("TaskCompletion", fields: [completedById], references: [id])
+  volunteers TaskVolunteer[]
+  comments   TaskComment[]
+  activities TaskActivity[]
 
   @@index([weekId])
   @@index([ownerId])
   @@index([createdById])
   @@index([groupId])
   @@index([parishId, weekId])
+}
+
+model TaskVolunteer {
+  id        String   @id @default(cuid())
+  taskId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, userId])
+  @@index([taskId])
+  @@index([userId])
+}
+
+model TaskComment {
+  id        String   @id @default(cuid())
+  taskId    String
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+
+  task   Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([authorId])
+}
+
+model TaskActivity {
+  id          String   @id @default(cuid())
+  taskId      String
+  actorId     String
+  description String
+  createdAt   DateTime @default(now())
+
+  task  Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  actor User @relation(fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([actorId])
 }
 
 model Event {

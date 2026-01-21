@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/ui/cn";
 
 export type QuickBlock = {
@@ -18,11 +19,17 @@ type QuickBlocksRowProps = {
 };
 
 export default function QuickBlocksRow({ blocks }: QuickBlocksRowProps) {
-  const scrollToSection = (href: string) => {
-    const element = document.querySelector(href);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "start" });
+  const router = useRouter();
+
+  const handleNavigate = (href: string) => {
+    if (href.startsWith("#")) {
+      const element = document.querySelector(href);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      return;
     }
+    router.push(href);
   };
 
   return (
@@ -32,7 +39,7 @@ export default function QuickBlocksRow({ blocks }: QuickBlocksRowProps) {
           <button
             key={block.id}
             type="button"
-            onClick={() => scrollToSection(block.href)}
+            onClick={() => handleNavigate(block.href)}
             className={cn(
               "group relative flex min-w-[170px] flex-1 flex-col gap-2 rounded-card border px-4 py-3 text-left transition hover:shadow-card focus-ring",
               block.accentClass

@@ -49,9 +49,11 @@ export default function TaskEditDialog({
   const titleId = useId();
   const notesId = useId();
   const estimatedHoursId = useId();
+  const volunteersId = useId();
   const visibilityId = useId();
   const groupId = useId();
   const ownerId = useId();
+  const volunteersNeeded = task?.volunteersNeeded ?? 1;
 
   useEffect(() => {
     if (open) {
@@ -123,6 +125,20 @@ export default function TaskEditDialog({
         />
       </div>
       <div className="space-y-2">
+        <Label htmlFor={volunteersId}>Volunteers needed</Label>
+        <Input
+          id={volunteersId}
+          name="volunteersNeeded"
+          type="number"
+          min={1}
+          step={1}
+          defaultValue={volunteersNeeded}
+        />
+        <p className="text-xs text-ink-400">
+          Set this above 1 to allow multiple volunteers to join.
+        </p>
+      </div>
+      <div className="space-y-2">
         <Label htmlFor={visibilityId}>Visibility</Label>
         <SelectMenu
           id={visibilityId}
@@ -152,11 +168,13 @@ export default function TaskEditDialog({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor={ownerId}>Assignee</Label>
+          <Label htmlFor={ownerId}>
+            {volunteersNeeded > 1 ? "Lead (optional)" : "Assignee (optional)"}
+          </Label>
           <SelectMenu
             id={ownerId}
             name="ownerId"
-            defaultValue={task?.owner.id ?? currentUserId}
+            defaultValue={task?.owner?.id ?? ""}
             options={memberOptions.map((member) => ({
               value: member.id,
               label: `${member.name}${member.id === currentUserId ? " (You)" : ""}`
