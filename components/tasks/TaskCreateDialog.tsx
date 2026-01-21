@@ -18,12 +18,25 @@ import {
 } from "@/server/actions/taskState";
 import { shouldCloseTaskDialog } from "@/components/tasks/taskDialogSuccess";
 
+function formatDateInput(date: Date) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getDefaultDueAt() {
+  const next = new Date();
+  next.setDate(next.getDate() + 14);
+  return next;
+}
+
 type TaskCreateDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   weekId: string;
   groupOptions: Array<{ id: string; name: string }>;
-  memberOptions: Array<{ id: string; name: string }>;
+  memberOptions: Array<{ id: string; name: string; label?: string }>;
   currentUserId: string;
 };
 
@@ -53,6 +66,7 @@ export default function TaskCreateDialog({
   const notesId = useId();
   const estimatedHoursId = useId();
   const volunteersId = useId();
+  const dueAtId = useId();
   const groupId = useId();
   const ownerId = useId();
   const visibilityId = useId();
@@ -120,6 +134,16 @@ export default function TaskCreateDialog({
           step="0.25"
           placeholder="e.g. 2"
         />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={dueAtId}>Due date</Label>
+        <Input
+          id={dueAtId}
+          name="dueAt"
+          type="date"
+          defaultValue={formatDateInput(getDefaultDueAt())}
+        />
+        <p className="text-xs text-ink-400">Defaults to two weeks from today.</p>
       </div>
       <div className="space-y-2">
         <Label htmlFor={volunteersId}>Volunteers needed</Label>

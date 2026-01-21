@@ -16,6 +16,7 @@ const baseTask: TaskListItem = {
   status: "OPEN",
   visibility: "PUBLIC",
   approvalStatus: "APPROVED",
+  dueAt: "2026-01-21T00:00:00.000Z",
   completedAt: null,
   inProgressAt: null,
   completedBy: null,
@@ -32,7 +33,8 @@ const baseTask: TaskListItem = {
   canDelete: true,
   canStartWork: true,
   canManageStatus: true,
-  canAssignToSelf: false
+  canAssignToSelf: false,
+  canAssignOthers: false
 };
 
 function findButtonByText(element: ReactElement, text: string): ReactElement | null {

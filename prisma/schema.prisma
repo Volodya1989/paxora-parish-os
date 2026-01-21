@@ -238,6 +238,7 @@ model Task {
   createdAt        DateTime   @default(now())
   inProgressAt     DateTime?
   completedAt      DateTime?
+  dueAt            DateTime?
   completedById    String?
   archivedAt       DateTime?
   rolledFromTaskId String?

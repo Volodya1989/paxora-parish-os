@@ -31,7 +31,7 @@ type TasksViewProps = {
   filteredCount: number;
   filters: TaskFiltersState;
   groupOptions: Array<{ id: string; name: string }>;
-  memberOptions: Array<{ id: string; name: string }>;
+  memberOptions: Array<{ id: string; name: string; label?: string }>;
   currentUserId: string;
   pendingAccessRequests: PendingAccessRequest[];
   pendingTaskApprovals: PendingTaskApproval[];

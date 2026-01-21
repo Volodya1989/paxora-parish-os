@@ -136,6 +136,8 @@ export async function getThisWeekData({
         id: true,
         title: true,
         status: true,
+        createdAt: true,
+        dueAt: true,
         owner: {
           select: {
             name: true,
@@ -223,11 +225,12 @@ export async function getThisWeekData({
   const dueByDefault = new Date(week.endsOn.getTime() - 1);
   const taskPreviews: TaskPreview[] = tasks.map((task) => {
     const ownerName = task.owner?.name ?? task.owner?.email?.split("@")[0] ?? "Unassigned";
+    const dueBy = task.dueAt ?? new Date(task.createdAt.getTime() + 14 * 24 * 60 * 60 * 1000);
     return {
       id: task.id,
       title: task.title,
       status: task.status,
-      dueBy: dueByDefault,
+      dueBy: dueBy ?? dueByDefault,
       owner: {
         name: ownerName,
         initials: getInitials(ownerName)

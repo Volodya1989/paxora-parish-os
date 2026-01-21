@@ -52,6 +52,27 @@ const optionalVolunteersNeeded = z.preprocess(
   z.number().int().min(1, "Volunteers needed must be at least 1").optional()
 );
 
+const optionalDate = z.preprocess(
+  (value) => {
+    if (value instanceof Date) {
+      return value;
+    }
+    if (typeof value !== "string") {
+      return value;
+    }
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return undefined;
+    }
+    const parsed = new Date(trimmed);
+    if (Number.isNaN(parsed.getTime())) {
+      return value;
+    }
+    return parsed;
+  },
+  z.date().optional()
+);
+
 export const createTaskSchema = z.object({
   title: z.string().trim().min(1, "Title is required"),
   notes: optionalTrimmedText,
@@ -60,6 +81,7 @@ export const createTaskSchema = z.object({
   groupId: optionalId,
   ownerId: optionalId,
   volunteersNeeded: optionalVolunteersNeeded,
+  dueAt: optionalDate,
   visibility: z
     .enum(["public", "private"])
     .optional()
@@ -92,6 +114,7 @@ export const updateTaskSchema = z.object({
   groupId: optionalId,
   ownerId: optionalId,
   volunteersNeeded: optionalVolunteersNeeded,
+  dueAt: optionalDate,
   visibility: z.enum(["public", "private"])
 });
 
@@ -100,6 +123,11 @@ export const deleteTaskSchema = markTaskDoneSchema;
 export const approveTaskSchema = markTaskDoneSchema;
 
 export const rejectTaskSchema = markTaskDoneSchema;
+
+export const assignTaskSchema = z.object({
+  taskId: z.string().min(1),
+  ownerId: z.string().min(1)
+});
 
 export const deferTaskSchema = z.object({
   taskId: z.string().min(1),

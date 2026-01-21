@@ -7,6 +7,7 @@ import {
   archiveTask as archiveTaskDomain,
   createTask as createTaskDomain,
   assignTaskToSelf as assignTaskToSelfDomain,
+  assignTaskToUser as assignTaskToUserDomain,
   addTaskComment as addTaskCommentDomain,
   deferTask as deferTaskDomain,
   deleteTask as deleteTaskDomain,
@@ -25,6 +26,7 @@ import {
 import { isParishLeader } from "@/lib/permissions";
 import {
   archiveTaskSchema,
+  assignTaskSchema,
   approveTaskSchema,
   createTaskSchema,
   markTaskDoneSchema,
@@ -64,6 +66,7 @@ export async function createTask(
     groupId: formData.get("groupId"),
     ownerId: formData.get("ownerId"),
     volunteersNeeded: formData.get("volunteersNeeded"),
+    dueAt: formData.get("dueAt"),
     visibility: formData.get("visibility")
   });
 
@@ -139,6 +142,8 @@ export async function createTask(
   const visibility = parsed.data.visibility === "private" ? "PRIVATE" : "PUBLIC";
   const approvalStatus =
     visibility === "PRIVATE" || isParishLeader(membership.role) ? "APPROVED" : "PENDING";
+  const defaultDueAt = new Date();
+  defaultDueAt.setDate(defaultDueAt.getDate() + 14);
 
   await createTaskDomain({
     parishId,
@@ -152,6 +157,7 @@ export async function createTask(
     estimatedHours: parsed.data.estimatedHours,
     volunteersNeeded: parsed.data.volunteersNeeded,
     groupId: parsed.data.groupId,
+    dueAt: parsed.data.dueAt ?? defaultDueAt,
     visibility,
     approvalStatus
   });
@@ -181,6 +187,32 @@ export async function assignTaskToSelf({ taskId }: { taskId: string }) {
     taskId: parsed.data.taskId,
     parishId,
     actorUserId: userId
+  });
+
+  revalidatePath("/tasks");
+  revalidatePath("/this-week");
+}
+
+export async function assignTaskToUser({
+  taskId,
+  ownerId
+}: {
+  taskId: string;
+  ownerId: string;
+}) {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  const parsed = assignTaskSchema.safeParse({ taskId, ownerId });
+  if (!parsed.success) {
+    throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
+  }
+
+  await assignTaskToUserDomain({
+    taskId: parsed.data.taskId,
+    parishId,
+    actorUserId: userId,
+    ownerId: parsed.data.ownerId
   });
 
   revalidatePath("/tasks");
@@ -427,6 +459,7 @@ export async function updateTask(
     groupId: formData.get("groupId"),
     ownerId: formData.get("ownerId"),
     volunteersNeeded: formData.get("volunteersNeeded"),
+    dueAt: formData.get("dueAt"),
     visibility: formData.get("visibility")
   });
 
@@ -447,6 +480,7 @@ export async function updateTask(
     groupId: parsed.data.groupId,
     ownerId: parsed.data.ownerId,
     volunteersNeeded: parsed.data.volunteersNeeded,
+    dueAt: parsed.data.dueAt,
     visibility: parsed.data.visibility === "private" ? "PRIVATE" : "PUBLIC"
   });
 

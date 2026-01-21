@@ -37,6 +37,13 @@ function formatTimestamp(value: string) {
   });
 }
 
+function formatDueDate(value?: string) {
+  if (!value) {
+    return "TBD";
+  }
+  return formatTimestamp(value);
+}
+
 export default function TaskDetailDialog({
   taskSummary,
   open,
@@ -147,6 +154,12 @@ export default function TaskDetailDialog({
           Lead:{" "}
           <span className="font-medium text-ink-700">
             {taskSummary?.owner?.name ?? "Unassigned"}
+          </span>
+        </p>
+        <p className="text-xs text-ink-500">
+          Due date:{" "}
+          <span className="font-medium text-ink-700">
+            {taskSummary ? formatDueDate(taskSummary.dueAt) : "TBD"}
           </span>
         </p>
       </div>

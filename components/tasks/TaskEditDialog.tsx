@@ -19,12 +19,19 @@ import {
 import type { TaskListItem } from "@/lib/queries/tasks";
 import { shouldCloseTaskDialog } from "@/components/tasks/taskDialogSuccess";
 
+function formatDateInput(date: Date) {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 type TaskEditDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   task: TaskListItem | null;
   groupOptions: Array<{ id: string; name: string }>;
-  memberOptions: Array<{ id: string; name: string }>;
+  memberOptions: Array<{ id: string; name: string; label?: string }>;
   currentUserId: string;
 };
 
@@ -50,6 +57,7 @@ export default function TaskEditDialog({
   const notesId = useId();
   const estimatedHoursId = useId();
   const volunteersId = useId();
+  const dueAtId = useId();
   const visibilityId = useId();
   const groupId = useId();
   const ownerId = useId();
@@ -122,6 +130,15 @@ export default function TaskEditDialog({
           step="0.25"
           placeholder="e.g. 2"
           defaultValue={task?.estimatedHours ?? ""}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={dueAtId}>Due date</Label>
+        <Input
+          id={dueAtId}
+          name="dueAt"
+          type="date"
+          defaultValue={task?.dueAt ? formatDateInput(new Date(task.dueAt)) : ""}
         />
       </div>
       <div className="space-y-2">

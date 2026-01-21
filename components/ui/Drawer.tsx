@@ -70,10 +70,18 @@ export function Drawer({ open, onClose, title, children, footer }: DrawerProps) 
         )}
       >
         <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-mist-200" />
-        <header className="mb-4">
+        <header className="mb-4 flex items-start justify-between gap-3">
           <h2 id={titleId} className="text-h3">
             {title}
           </h2>
+          <button
+            type="button"
+            aria-label="Close drawer"
+            onClick={onClose}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-mist-200 text-lg text-ink-500 transition hover:bg-mist-50 focus-ring"
+          >
+            ×
+          </button>
         </header>
         <div className="flex-1 overflow-y-auto pr-1 text-sm text-ink-700">{children}</div>
         {footer ? (

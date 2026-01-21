@@ -25,6 +25,7 @@ export type TaskListItem = {
   status: "OPEN" | "IN_PROGRESS" | "DONE";
   visibility: "PRIVATE" | "PUBLIC";
   approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
+  dueAt: string;
   completedAt: string | null;
   inProgressAt: string | null;
   completedBy: {
@@ -45,6 +46,7 @@ export type TaskListItem = {
   canStartWork: boolean;
   canManageStatus: boolean;
   canAssignToSelf: boolean;
+  canAssignOthers: boolean;
 };
 
 export type TaskListSummary = {
@@ -89,6 +91,7 @@ export type TaskDetail = {
   visibility: "PRIVATE" | "PUBLIC";
   approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
   volunteersNeeded: number;
+  dueAt: string;
   owner: {
     id: string;
     name: string;
@@ -132,6 +135,15 @@ function getInitials(name: string) {
 
 function getDisplayName(name: string | null, email: string | null) {
   return name ?? email?.split("@")[0] ?? "Unassigned";
+}
+
+function resolveDueAt(dueAt: Date | null, createdAt: Date) {
+  if (dueAt) {
+    return dueAt;
+  }
+  const fallback = new Date(createdAt);
+  fallback.setDate(fallback.getDate() + 14);
+  return fallback;
 }
 
 export async function listTasks({
@@ -211,6 +223,8 @@ export async function listTasks({
         status: true,
         visibility: true,
         approvalStatus: true,
+        createdAt: true,
+        dueAt: true,
         inProgressAt: true,
         completedAt: true,
         completedById: true,
@@ -307,9 +321,10 @@ export async function listTasks({
         : false;
     const canManage =
       task.ownerId === actorUserId || task.createdById === actorUserId || canManageGroup;
+    const hasVolunteered = task.volunteers.length > 0;
     const canManageStatus =
       task.volunteersNeeded > 1
-        ? Boolean(parishMembership) && (isLeader || canManageGroup || task.createdById === actorUserId)
+        ? task.ownerId === actorUserId || hasVolunteered
         : task.ownerId === actorUserId;
     const canStartWork =
       Boolean(parishMembership) &&
@@ -326,6 +341,8 @@ export async function listTasks({
       !task.ownerId &&
       task.volunteersNeeded <= 1 &&
       (!task.groupId || groupRoleMap.has(task.groupId));
+    const canAssignOthers =
+      Boolean(parishMembership) && (isLeader || (task.groupId ? canManageGroup : false));
     const completedByName = task.completedBy
       ? getDisplayName(task.completedBy.name, task.completedBy.email)
       : null;
@@ -343,6 +360,7 @@ export async function listTasks({
       approvalStatus: task.approvalStatus,
       inProgressAt: task.inProgressAt ? task.inProgressAt.toISOString() : null,
       completedAt: task.completedAt ? task.completedAt.toISOString() : null,
+      dueAt: resolveDueAt(task.dueAt, task.createdAt).toISOString(),
       completedBy: completedByName && task.completedBy
         ? {
             id: task.completedBy.id,
@@ -361,7 +379,8 @@ export async function listTasks({
       canDelete: task.ownerId === actorUserId || task.createdById === actorUserId,
       canStartWork,
       canManageStatus,
-      canAssignToSelf
+      canAssignToSelf,
+      canAssignOthers
     };
   });
 
@@ -475,6 +494,8 @@ export async function getTaskDetail({
       visibility: true,
       approvalStatus: true,
       volunteersNeeded: true,
+      createdAt: true,
+      dueAt: true,
       owner: {
         select: {
           id: true,
@@ -572,6 +593,7 @@ export async function getTaskDetail({
     visibility: task.visibility,
     approvalStatus: task.approvalStatus,
     volunteersNeeded: task.volunteersNeeded,
+    dueAt: resolveDueAt(task.dueAt, task.createdAt).toISOString(),
     owner: ownerName && task.owner
       ? {
           id: task.owner.id,
