@@ -1,7 +1,16 @@
 import { before, after, test } from "node:test";
 import assert from "node:assert/strict";
 import { prisma } from "@/server/db/prisma";
-import { createTask, markTaskDone, deferTask, rolloverOpenTasks } from "@/domain/tasks";
+import {
+  assignTaskToSelf,
+  assignTaskToUser,
+  createTask,
+  markTaskDone,
+  markTaskInProgress,
+  markTaskOpen,
+  deferTask,
+  rolloverOpenTasks
+} from "@/domain/tasks";
 import { getOrCreateCurrentWeek } from "@/domain/week";
 import { listPendingTaskApprovals, listTasks } from "@/lib/queries/tasks";
 import { applyMigrations } from "./_helpers/migrate";
@@ -337,4 +346,108 @@ dbTest("task visibility and approval are enforced in list queries", async () => 
   });
   assert.equal(approvals.length, 1);
   assert.equal(approvals[0]?.title, "Pending public");
+});
+
+dbTest("tasks default due dates and allow assignment and status changes", async () => {
+  const parish = await prisma.parish.create({
+    data: { name: "St. Agnes", slug: "st-agnes" }
+  });
+  const admin = await prisma.user.create({
+    data: {
+      email: "admin@example.com",
+      name: "Admin",
+      passwordHash: "hashed",
+      activeParishId: parish.id
+    }
+  });
+  const member = await prisma.user.create({
+    data: {
+      email: "member2@example.com",
+      name: "Member",
+      passwordHash: "hashed",
+      activeParishId: parish.id
+    }
+  });
+
+  await prisma.membership.createMany({
+    data: [
+      { parishId: parish.id, userId: admin.id, role: "ADMIN" },
+      { parishId: parish.id, userId: member.id, role: "MEMBER" }
+    ]
+  });
+
+  const week = await getOrCreateCurrentWeek(parish.id);
+  const task = await createTask({
+    parishId: parish.id,
+    weekId: week.id,
+    createdById: admin.id,
+    title: "Serve with due date",
+    visibility: "PUBLIC",
+    approvalStatus: "APPROVED"
+  });
+
+  const storedTask = await prisma.task.findUnique({ where: { id: task.id } });
+  assert.ok(storedTask?.dueAt);
+  assert.ok(storedTask?.createdAt);
+  if (storedTask?.dueAt && storedTask.createdAt) {
+    const diffDays =
+      (storedTask.dueAt.getTime() - storedTask.createdAt.getTime()) /
+      (1000 * 60 * 60 * 24);
+    assert.ok(diffDays > 13.5 && diffDays < 14.5);
+  }
+
+  await assignTaskToUser({
+    taskId: task.id,
+    parishId: parish.id,
+    actorUserId: admin.id,
+    ownerId: member.id
+  });
+
+  const assigned = await prisma.task.findUnique({ where: { id: task.id } });
+  assert.equal(assigned?.ownerId, member.id);
+
+  await markTaskInProgress({
+    taskId: task.id,
+    parishId: parish.id,
+    actorUserId: member.id
+  });
+
+  const inProgress = await prisma.task.findUnique({ where: { id: task.id } });
+  assert.equal(inProgress?.status, "IN_PROGRESS");
+
+  await markTaskDone({
+    taskId: task.id,
+    parishId: parish.id,
+    actorUserId: member.id
+  });
+
+  const done = await prisma.task.findUnique({ where: { id: task.id } });
+  assert.equal(done?.status, "DONE");
+
+  await markTaskOpen({
+    taskId: task.id,
+    parishId: parish.id,
+    actorUserId: member.id
+  });
+
+  const reopened = await prisma.task.findUnique({ where: { id: task.id } });
+  assert.equal(reopened?.status, "OPEN");
+
+  const openTask = await createTask({
+    parishId: parish.id,
+    weekId: week.id,
+    createdById: admin.id,
+    title: "Self-assignable task",
+    visibility: "PUBLIC",
+    approvalStatus: "APPROVED"
+  });
+
+  await assignTaskToSelf({
+    taskId: openTask.id,
+    parishId: parish.id,
+    actorUserId: admin.id
+  });
+
+  const selfAssigned = await prisma.task.findUnique({ where: { id: openTask.id } });
+  assert.equal(selfAssigned?.ownerId, admin.id);
 });

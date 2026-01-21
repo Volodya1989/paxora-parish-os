@@ -45,6 +45,15 @@ function formatEstimatedHours(task: TaskListItem) {
   return `Est. ${hours} hr${hours === "1" ? "" : "s"}`;
 }
 
+function formatDueDateLabel(value: string) {
+  const date = new Date(value);
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC"
+  });
+}
+
 export default function TaskRow({
   task,
   onStartWork,
@@ -64,7 +73,6 @@ export default function TaskRow({
   const isDone = task.status === "DONE";
   const isInProgress = task.status === "IN_PROGRESS";
   const isVolunteerTask = task.volunteersNeeded > 1;
-  const isAssignedToMe = task.owner?.id === currentUserId;
   const canManage = task.canManage && !isBusy;
   const canManageStatus = task.canManageStatus && !isBusy;
   const canOpenMenu = !isBusy;
@@ -88,7 +96,13 @@ export default function TaskRow({
   const volunteerCountLabel = `${task.volunteerCount}/${task.volunteersNeeded}`;
   const isVolunteerFull = task.volunteerCount >= task.volunteersNeeded;
   const showAssignToMe = !isVolunteerTask && !task.owner && task.canAssignToSelf;
-  const showPrimaryAction = isVolunteerTask || showAssignToMe || isAssignedToMe;
+  const statusActionLabel = isDone ? "Reopen" : isInProgress ? "Complete task" : "Start serving";
+  const statusActionHandler = isDone
+    ? () => onMarkOpen(task.id)
+    : isInProgress
+      ? () => onMarkDone(task.id)
+      : () => onStartWork(task.id);
+  const dueDateLabel = formatDueDateLabel(task.dueAt);
 
   return (
     <div
@@ -148,9 +162,21 @@ export default function TaskRow({
                 <span>{task.owner.name}</span>
               </span>
             ) : (
-              <Badge tone="neutral" className="bg-mist-50 text-ink-500">
-                Unassigned
-              </Badge>
+              <span className="inline-flex items-center gap-2">
+                <Badge tone="neutral" className="bg-mist-50 text-ink-500">
+                  Unassigned
+                </Badge>
+                {showAssignToMe ? (
+                  <button
+                    type="button"
+                    onClick={() => onAssignToMe(task.id)}
+                    disabled={isBusy}
+                    className="text-xs font-semibold text-primary-700 underline decoration-primary-300 underline-offset-2 transition hover:text-primary-800 disabled:cursor-not-allowed disabled:text-ink-400"
+                  >
+                    Assign to me
+                  </button>
+                ) : null}
+              </span>
             )}
             {task.group ? (
               <Badge tone="warning" className="bg-indigo-50 text-indigo-700">
@@ -162,6 +188,9 @@ export default function TaskRow({
                 {estimatedHoursLabel}
               </Badge>
             ) : null}
+            <Badge tone="neutral" className="bg-mist-50 text-ink-600">
+              Due {dueDateLabel}
+            </Badge>
             {completedLabel ? (
               <span className="text-xs text-emerald-600">{completedLabel}</span>
             ) : null}
@@ -174,35 +203,23 @@ export default function TaskRow({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {showPrimaryAction ? (
-            isVolunteerTask ? (
-              <Button
-                type="button"
-                variant={task.hasVolunteered ? "secondary" : "primary"}
-                onClick={() =>
-                  task.hasVolunteered ? onLeaveVolunteer(task.id) : onVolunteer(task.id)
-                }
-                disabled={isBusy || (!task.hasVolunteered && isVolunteerFull)}
-              >
-                {task.hasVolunteered
-                  ? "Leave"
-                  : isVolunteerFull
-                    ? "Full"
-                    : "Volunteer"}
-              </Button>
-            ) : showAssignToMe ? (
-              <Button type="button" onClick={() => onAssignToMe(task.id)} disabled={isBusy}>
-                Assign to me
-              </Button>
-            ) : isAssignedToMe && !isDone ? (
-              <Button
-                type="button"
-                onClick={() => (isInProgress ? onMarkDone(task.id) : onStartWork(task.id))}
-                disabled={isBusy || !canManageStatus}
-              >
-                {isInProgress ? "Complete" : "Start serving"}
-              </Button>
-            ) : null
+          {isVolunteerTask ? (
+            <Button
+              type="button"
+              variant={task.hasVolunteered ? "secondary" : "primary"}
+              onClick={() =>
+                task.hasVolunteered ? onLeaveVolunteer(task.id) : onVolunteer(task.id)
+              }
+              disabled={isBusy || (!task.hasVolunteered && isVolunteerFull)}
+            >
+              {task.hasVolunteered ? "Leave" : isVolunteerFull ? "Full" : "Volunteer"}
+            </Button>
+          ) : null}
+
+          {canManageStatus ? (
+            <Button type="button" onClick={statusActionHandler} disabled={isBusy}>
+              {statusActionLabel}
+            </Button>
           ) : null}
 
           <Dropdown>
@@ -221,12 +238,6 @@ export default function TaskRow({
               <DropdownItem onClick={() => onViewDetails(task.id)}>
                 View details
               </DropdownItem>
-              {isDone && canManageStatus ? (
-                <DropdownItem onClick={() => onMarkOpen(task.id)}>Reopen</DropdownItem>
-              ) : null}
-              {isInProgress && canManageStatus ? (
-                <DropdownItem onClick={() => onMarkOpen(task.id)}>Mark open</DropdownItem>
-              ) : null}
               {!isVolunteerTask && task.owner && (task.owner.id === currentUserId || canManage) ? (
                 <DropdownItem
                   onClick={() => onUnassign(task.id)}

@@ -69,10 +69,18 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
           "relative flex w-full max-w-lg flex-col overflow-hidden rounded-card border border-mist-200 bg-white p-6 shadow-overlay md:max-h-[calc(100vh-6rem)]"
         )}
       >
-        <header className="mb-4">
+        <header className="mb-4 flex items-start justify-between gap-3">
           <h2 id={titleId} className="text-h3">
             {title}
           </h2>
+          <button
+            type="button"
+            aria-label="Close dialog"
+            onClick={onClose}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-mist-200 text-lg text-ink-500 transition hover:bg-mist-50 focus-ring"
+          >
+            ×
+          </button>
         </header>
         <div className="flex-1 overflow-y-auto pr-1 text-sm text-ink-700">{children}</div>
         {footer ? (

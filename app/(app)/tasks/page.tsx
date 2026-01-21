@@ -138,7 +138,8 @@ export default async function TasksPage({
     return {
       id: membership.user.id,
       name,
-      initials: getInitials(name)
+      initials: getInitials(name),
+      label: membership.user.email ? `${name} · ${membership.user.email}` : name
     };
   });
 

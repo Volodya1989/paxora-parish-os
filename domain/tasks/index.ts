@@ -12,6 +12,7 @@ type CreateTaskInput = {
   notes?: string;
   estimatedHours?: number;
   volunteersNeeded?: number;
+  dueAt?: Date;
   visibility: "PRIVATE" | "PUBLIC";
   approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
 };
@@ -23,6 +24,7 @@ type UpdateTaskInput = TaskActionInput & {
   groupId?: string;
   ownerId?: string;
   volunteersNeeded?: number;
+  dueAt?: Date;
   visibility?: "PRIVATE" | "PUBLIC";
 };
 
@@ -30,6 +32,10 @@ type TaskActionInput = {
   taskId: string;
   parishId: string;
   actorUserId: string;
+};
+
+type AssignTaskInput = TaskActionInput & {
+  ownerId: string;
 };
 
 type DeferTaskInput = TaskActionInput & {
@@ -52,9 +58,11 @@ export async function createTask({
   notes,
   estimatedHours,
   volunteersNeeded,
+  dueAt,
   visibility,
   approvalStatus
 }: CreateTaskInput) {
+  const resolvedDueAt = dueAt ?? getDefaultDueAt();
   const task = await prisma.task.create({
     data: {
       parishId,
@@ -66,6 +74,7 @@ export async function createTask({
       notes,
       estimatedHours,
       volunteersNeeded: volunteersNeeded ?? 1,
+      dueAt: resolvedDueAt,
       visibility,
       approvalStatus
     }
@@ -78,6 +87,12 @@ export async function createTask({
   });
 
   return task;
+}
+
+function getDefaultDueAt(baseDate: Date = new Date()) {
+  const next = new Date(baseDate);
+  next.setDate(next.getDate() + 14);
+  return next;
 }
 
 async function assertTaskOwnership({ taskId, parishId, actorUserId }: TaskActionInput) {
@@ -108,7 +123,8 @@ async function assertTaskAccess({ taskId, parishId, actorUserId }: TaskActionInp
       groupId: true,
       visibility: true,
       approvalStatus: true,
-      volunteersNeeded: true
+      volunteersNeeded: true,
+      dueAt: true
     }
   });
 
@@ -196,7 +212,11 @@ async function assertTaskStatusAccess({ taskId, parishId, actorUserId }: TaskAct
       ownerId: true,
       createdById: true,
       groupId: true,
-      volunteersNeeded: true
+      volunteersNeeded: true,
+      volunteers: {
+        where: { userId: actorUserId },
+        select: { id: true }
+      }
     }
   });
 
@@ -209,17 +229,9 @@ async function assertTaskStatusAccess({ taskId, parishId, actorUserId }: TaskAct
     throw new Error("Forbidden");
   }
 
-  const groupMembership = task.groupId
-    ? await getGroupMembership(task.groupId, actorUserId)
-    : null;
-
-  const groupRole = groupMembership?.status === "ACTIVE" ? groupMembership.role : null;
-  const canManageGroup = canManageGroupMembership(parishMembership.role, groupRole);
-  const isLeader = isParishLeader(parishMembership.role);
-  const isCreator = task.createdById === actorUserId;
-
   if (task.volunteersNeeded > 1) {
-    if (!isCreator && !isLeader && !canManageGroup) {
+    const hasVolunteered = task.volunteers.length > 0;
+    if (task.ownerId !== actorUserId && !hasVolunteered) {
       throw new Error("Forbidden");
     }
   } else {
@@ -405,6 +417,7 @@ export async function updateTask({
   groupId,
   ownerId,
   volunteersNeeded,
+  dueAt,
   visibility
 }: UpdateTaskInput) {
   const task = await assertTaskAccess({ taskId, parishId, actorUserId });
@@ -463,6 +476,7 @@ export async function updateTask({
       groupId,
       ownerId,
       volunteersNeeded: volunteersNeeded ?? task.volunteersNeeded,
+      dueAt: dueAt ?? task.dueAt,
       visibility: nextVisibility,
       approvalStatus
     }
@@ -555,6 +569,112 @@ export async function assignTaskToSelf({ taskId, parishId, actorUserId }: TaskAc
     taskId,
     actorUserId,
     description: "Assigned the task to themselves."
+  });
+
+  return updated;
+}
+
+export async function assignTaskToUser({
+  taskId,
+  parishId,
+  actorUserId,
+  ownerId
+}: AssignTaskInput) {
+  const task = await prisma.task.findUnique({
+    where: { id: taskId },
+    select: {
+      id: true,
+      parishId: true,
+      ownerId: true,
+      createdById: true,
+      groupId: true,
+      status: true,
+      visibility: true,
+      approvalStatus: true,
+      volunteersNeeded: true
+    }
+  });
+
+  if (!task || task.parishId !== parishId) {
+    throw new Error("Task not found");
+  }
+
+  if (task.ownerId) {
+    throw new Error("Task is already assigned.");
+  }
+
+  if (task.volunteersNeeded > 1) {
+    throw new Error("Use volunteer flow for multi-volunteer tasks.");
+  }
+
+  if (task.status !== "OPEN") {
+    throw new Error("Only open tasks can be assigned.");
+  }
+
+  if (task.visibility !== "PUBLIC" || task.approvalStatus !== "APPROVED") {
+    throw new Error("This task is not available to assign yet.");
+  }
+
+  const parishMembership = await getParishMembership(parishId, actorUserId);
+  if (!parishMembership) {
+    throw new Error("Forbidden");
+  }
+
+  if (task.groupId) {
+    const groupMembership = await getGroupMembership(task.groupId, actorUserId);
+    const groupRole = groupMembership?.status === "ACTIVE" ? groupMembership.role : null;
+    const canManageGroup = canManageGroupMembership(parishMembership.role, groupRole);
+    if (!canManageGroup) {
+      throw new Error("Forbidden");
+    }
+
+    const member = await prisma.groupMembership.findFirst({
+      where: {
+        groupId: task.groupId,
+        userId: ownerId,
+        status: "ACTIVE"
+      },
+      select: { id: true }
+    });
+
+    if (!member) {
+      throw new Error("Assignee must be a member of the selected group.");
+    }
+  } else if (!isParishLeader(parishMembership.role)) {
+    throw new Error("Forbidden");
+  }
+
+  const member = await prisma.membership.findUnique({
+    where: {
+      parishId_userId: {
+        parishId,
+        userId: ownerId
+      }
+    },
+    select: { id: true }
+  });
+
+  if (!member) {
+    throw new Error("Assignee must be a parish member.");
+  }
+
+  const updated = await prisma.task.update({
+    where: { id: taskId },
+    data: {
+      ownerId
+    }
+  });
+
+  const nextOwner = await prisma.user.findUnique({
+    where: { id: ownerId },
+    select: { name: true, email: true }
+  });
+  const nextName = nextOwner?.name ?? nextOwner?.email ?? "Member";
+
+  await createTaskActivity({
+    taskId,
+    actorUserId,
+    description: `Assigned the task to ${nextName}.`
   });
 
   return updated;

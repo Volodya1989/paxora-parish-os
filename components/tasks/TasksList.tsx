@@ -23,7 +23,7 @@ import type { TaskListItem } from "@/lib/queries/tasks";
 type TasksListProps = {
   tasks: TaskListItem[];
   groupOptions: Array<{ id: string; name: string }>;
-  memberOptions: Array<{ id: string; name: string }>;
+  memberOptions: Array<{ id: string; name: string; label?: string }>;
   currentUserId: string;
 };
 

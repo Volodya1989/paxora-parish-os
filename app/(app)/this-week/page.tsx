@@ -9,6 +9,8 @@ import { formatDateRange } from "@/lib/this-week/formatters";
 import { getThisWeekViewMode } from "@/lib/this-week/viewMode";
 import { isAdminClergy } from "@/lib/authz/membership";
 
+export const dynamic = "force-dynamic";
+
 function buildWeekOptions(weekStart: Date) {
   const previousStart = new Date(weekStart);
   previousStart.setDate(previousStart.getDate() - 7);
