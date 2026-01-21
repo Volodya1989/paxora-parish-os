@@ -1,5 +1,7 @@
 import Link from "next/link";
-import SectionCard from "@/components/this-week/SectionCard";
+import { CalendarIcon, MapPinIcon } from "@/components/icons/ParishIcons";
+import AccentSectionCard from "@/components/layout/AccentSectionCard";
+import { routes } from "@/lib/navigation/routes";
 import type { EventPreview } from "@/lib/queries/this-week";
 import { formatDayDate, formatTime } from "@/lib/this-week/formatters";
 
@@ -10,12 +12,15 @@ type SectionScheduleProps = {
 export default function SectionSchedule({ events }: SectionScheduleProps) {
   return (
     <section id="services" className="scroll-mt-24">
-      <SectionCard
-        title="Services & Schedule"
+      <AccentSectionCard
+        title="Services"
+        icon={<CalendarIcon className="h-5 w-5" />}
+        borderClass="border-emerald-200"
+        iconClass="bg-emerald-100 text-emerald-700"
         action={
           <Link
             className="whitespace-nowrap text-sm font-medium text-ink-700 underline"
-            href="/calendar"
+            href={routes.calendar}
           >
             View calendar
           </Link>
@@ -23,9 +28,9 @@ export default function SectionSchedule({ events }: SectionScheduleProps) {
       >
         <div className="space-y-3">
           {events.length === 0 ? (
-            <div className="rounded-card border border-mist-100 bg-mist-50 px-4 py-3 text-sm text-ink-500">
+            <div className="rounded-card border border-emerald-100 bg-emerald-50/40 px-4 py-3 text-sm text-ink-500">
               Nothing scheduled yet.{" "}
-              <Link className="font-medium text-ink-700 underline" href="/calendar">
+              <Link className="font-medium text-ink-700 underline" href={routes.calendar}>
                 View calendar
               </Link>
               .
@@ -40,14 +45,15 @@ export default function SectionSchedule({ events }: SectionScheduleProps) {
                   {formatDayDate(event.startsAt)} · {formatTime(event.startsAt)}
                 </p>
                 <p className="mt-2 text-sm font-semibold text-ink-900">{event.title}</p>
-                <p className="mt-1 text-xs text-ink-500">
+                <p className="mt-1 flex items-center gap-1 text-xs text-ink-500">
+                  <MapPinIcon className="h-3 w-3 text-ink-400" />
                   {event.location ?? "Location to be announced"}
                 </p>
               </div>
             ))
           )}
         </div>
-      </SectionCard>
+      </AccentSectionCard>
     </section>
   );
 }

@@ -1,18 +1,25 @@
 "use client";
 
 import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
 import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@/components/ui/Dropdown";
 import { cn } from "@/lib/ui/cn";
 import type { TaskListItem } from "@/lib/queries/tasks";
 
 type TaskRowProps = {
   task: TaskListItem;
-  onToggle: (taskId: string, nextStatus: "OPEN" | "DONE") => void;
   onStartWork: (taskId: string) => void;
+  onMarkDone: (taskId: string) => void;
   onMarkOpen: (taskId: string) => void;
+  onAssignToMe: (taskId: string) => void;
+  onUnassign: (taskId: string) => void;
+  onVolunteer: (taskId: string) => void;
+  onLeaveVolunteer: (taskId: string) => void;
+  onViewDetails: (taskId: string) => void;
   onArchive: (taskId: string) => void;
   onEdit: (task: TaskListItem) => void;
   onDelete: (taskId: string) => void;
+  currentUserId: string;
   isBusy?: boolean;
 };
 
@@ -22,7 +29,8 @@ function formatCompletedLabel(task: TaskListItem) {
   }
   const date = new Date(task.completedAt).toLocaleDateString("en-US", {
     month: "short",
-    day: "numeric"
+    day: "numeric",
+    timeZone: "UTC"
   });
   return `Completed ${date} by ${task.completedBy.name}`;
 }
@@ -39,25 +47,33 @@ function formatEstimatedHours(task: TaskListItem) {
 
 export default function TaskRow({
   task,
-  onToggle,
   onStartWork,
+  onMarkDone,
   onMarkOpen,
+  onAssignToMe,
+  onUnassign,
+  onVolunteer,
+  onLeaveVolunteer,
+  onViewDetails,
   onArchive,
   onEdit,
   onDelete,
+  currentUserId,
   isBusy = false
 }: TaskRowProps) {
   const isDone = task.status === "DONE";
   const isInProgress = task.status === "IN_PROGRESS";
-  const nextStatus = isDone ? "OPEN" : "DONE";
+  const isVolunteerTask = task.volunteersNeeded > 1;
+  const isAssignedToMe = task.owner?.id === currentUserId;
   const canManage = task.canManage && !isBusy;
-  const canStartWork = task.canStartWork && !isBusy;
-  const canOpenMenu = (task.canManage || task.canStartWork) && !isBusy;
+  const canManageStatus = task.canManageStatus && !isBusy;
+  const canOpenMenu = !isBusy;
   const completedLabel = formatCompletedLabel(task);
   const inProgressLabel = task.inProgressAt
     ? `Started ${new Date(task.inProgressAt).toLocaleDateString("en-US", {
         month: "short",
-        day: "numeric"
+        day: "numeric",
+        timeZone: "UTC"
       })}`
     : null;
   const approvalLabel =
@@ -69,6 +85,10 @@ export default function TaskRow({
   const approvalTone = task.approvalStatus === "APPROVED" ? "success" : "warning";
   const visibilityLabel = task.visibility === "PUBLIC" ? "Public" : "Private";
   const estimatedHoursLabel = formatEstimatedHours(task);
+  const volunteerCountLabel = `${task.volunteerCount}/${task.volunteersNeeded}`;
+  const isVolunteerFull = task.volunteerCount >= task.volunteersNeeded;
+  const showAssignToMe = !isVolunteerTask && !task.owner && task.canAssignToSelf;
+  const showPrimaryAction = isVolunteerTask || showAssignToMe || isAssignedToMe;
 
   return (
     <div
@@ -81,15 +101,7 @@ export default function TaskRow({
             : "border-l-4 border-l-sky-400"
       )}
     >
-      <div className="flex items-start gap-3">
-        <input
-          type="checkbox"
-          className="mt-1 h-4 w-4 rounded border-mist-200 text-primary-700 focus-ring"
-          checked={isDone}
-          onChange={() => onToggle(task.id, nextStatus)}
-          disabled={!canManage}
-          aria-label={isDone ? "Mark task as open" : "Mark task as done"}
-        />
+      <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
           <div>
             <p className="text-sm font-semibold text-ink-900">{task.title}</p>
@@ -123,17 +135,23 @@ export default function TaskRow({
             >
               {visibilityLabel}
             </Badge>
-            <span className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-mist-100 text-[11px] font-semibold text-ink-700">
-                {task.owner.initials}
-              </span>
-              <span>{task.owner.name}</span>
-            </span>
-            {isInProgress ? (
-              <Badge tone="warning" className="bg-amber-50 text-amber-700">
-                Working now
+            {isVolunteerTask ? (
+              <Badge tone="success" className="bg-emerald-50 text-emerald-700">
+                {volunteerCountLabel}
               </Badge>
             ) : null}
+            {task.owner ? (
+              <span className="flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-mist-100 text-[11px] font-semibold text-ink-700">
+                  {task.owner.initials}
+                </span>
+                <span>{task.owner.name}</span>
+              </span>
+            ) : (
+              <Badge tone="neutral" className="bg-mist-50 text-ink-500">
+                Unassigned
+              </Badge>
+            )}
             {task.group ? (
               <Badge tone="warning" className="bg-indigo-50 text-indigo-700">
                 {task.group.name}
@@ -147,81 +165,107 @@ export default function TaskRow({
             {completedLabel ? (
               <span className="text-xs text-emerald-600">{completedLabel}</span>
             ) : null}
-            {inProgressLabel && !isDone ? (
+            {inProgressLabel && !isDone && task.owner ? (
               <span className="text-xs text-amber-600">
                 {inProgressLabel} by {task.owner.name}
               </span>
             ) : null}
           </div>
         </div>
-      </div>
 
-      <Dropdown>
-        <DropdownTrigger
-          iconOnly
-          aria-label="Task actions"
-          className={cn(
-            "inline-flex h-9 w-9 items-center justify-center rounded-button border border-mist-200 text-ink-500 transition hover:bg-mist-50 focus-ring",
-            !canOpenMenu && "cursor-not-allowed opacity-50"
-          )}
-          disabled={!canOpenMenu}
-        >
-          ⋯
-        </DropdownTrigger>
-        <DropdownMenu ariaLabel="Task actions">
-          <DropdownItem
-            onClick={() => onToggle(task.id, nextStatus)}
-            disabled={!canManage}
-            className={cn(!canManage && "pointer-events-none opacity-50")}
-          >
-            {isDone ? "Mark open" : "Mark done"}
-          </DropdownItem>
-          {!isDone && !isInProgress ? (
-            <DropdownItem
-              onClick={() => onStartWork(task.id)}
-              disabled={!canStartWork}
-              className={cn(!canStartWork && "pointer-events-none opacity-50")}
-            >
-              Start work
-            </DropdownItem>
+        <div className="flex flex-wrap items-center gap-2">
+          {showPrimaryAction ? (
+            isVolunteerTask ? (
+              <Button
+                type="button"
+                variant={task.hasVolunteered ? "secondary" : "primary"}
+                onClick={() =>
+                  task.hasVolunteered ? onLeaveVolunteer(task.id) : onVolunteer(task.id)
+                }
+                disabled={isBusy || (!task.hasVolunteered && isVolunteerFull)}
+              >
+                {task.hasVolunteered
+                  ? "Leave"
+                  : isVolunteerFull
+                    ? "Full"
+                    : "Volunteer"}
+              </Button>
+            ) : showAssignToMe ? (
+              <Button type="button" onClick={() => onAssignToMe(task.id)} disabled={isBusy}>
+                Assign to me
+              </Button>
+            ) : isAssignedToMe && !isDone ? (
+              <Button
+                type="button"
+                onClick={() => (isInProgress ? onMarkDone(task.id) : onStartWork(task.id))}
+                disabled={isBusy || !canManageStatus}
+              >
+                {isInProgress ? "Complete" : "Start serving"}
+              </Button>
+            ) : null
           ) : null}
-          {isInProgress ? (
-            <DropdownItem
-              onClick={() => onMarkOpen(task.id)}
-              disabled={!canManage}
-              className={cn(!canManage && "pointer-events-none opacity-50")}
-            >
-              Mark open
-            </DropdownItem>
-          ) : null}
-          <DropdownItem
-            onClick={() => onEdit(task)}
-            disabled={!canManage}
-            className={cn(!canManage && "pointer-events-none opacity-50")}
-          >
-            Edit task
-          </DropdownItem>
-          <DropdownItem
-            onClick={() => onArchive(task.id)}
-            disabled={!canManage}
-            className={cn(!canManage && "pointer-events-none opacity-50 text-ink-300")}
-          >
-            Archive task
-          </DropdownItem>
-          {task.canDelete ? (
-            <DropdownItem
-              onClick={() => onDelete(task.id)}
-              disabled={!canManage}
+
+          <Dropdown>
+            <DropdownTrigger
+              iconOnly
+              aria-label="Task actions"
               className={cn(
-                "text-rose-600 hover:bg-rose-50 focus-visible:bg-rose-50",
-                !canManage && "pointer-events-none opacity-50"
+                "inline-flex h-9 w-9 items-center justify-center rounded-button border border-mist-200 text-ink-500 transition hover:bg-mist-50 focus-ring",
+                !canOpenMenu && "cursor-not-allowed opacity-50"
               )}
+              disabled={!canOpenMenu}
             >
-              Delete task
-            </DropdownItem>
-          ) : null}
-        </DropdownMenu>
-      </Dropdown>
+              ⋯
+            </DropdownTrigger>
+            <DropdownMenu ariaLabel="Task actions">
+              <DropdownItem onClick={() => onViewDetails(task.id)}>
+                View details
+              </DropdownItem>
+              {isDone && canManageStatus ? (
+                <DropdownItem onClick={() => onMarkOpen(task.id)}>Reopen</DropdownItem>
+              ) : null}
+              {isInProgress && canManageStatus ? (
+                <DropdownItem onClick={() => onMarkOpen(task.id)}>Mark open</DropdownItem>
+              ) : null}
+              {!isVolunteerTask && task.owner && (task.owner.id === currentUserId || canManage) ? (
+                <DropdownItem
+                  onClick={() => onUnassign(task.id)}
+                  disabled={!canManage}
+                  className={cn(!canManage && "pointer-events-none opacity-50")}
+                >
+                  Unassign
+                </DropdownItem>
+              ) : null}
+              <DropdownItem
+                onClick={() => onEdit(task)}
+                disabled={!canManage}
+                className={cn(!canManage && "pointer-events-none opacity-50")}
+              >
+                Edit task
+              </DropdownItem>
+              <DropdownItem
+                onClick={() => onArchive(task.id)}
+                disabled={!canManage}
+                className={cn(!canManage && "pointer-events-none opacity-50 text-ink-300")}
+              >
+                Archive task
+              </DropdownItem>
+              {task.canDelete ? (
+                <DropdownItem
+                  onClick={() => onDelete(task.id)}
+                  disabled={!canManage}
+                  className={cn(
+                    "text-rose-600 hover:bg-rose-50 focus-visible:bg-rose-50",
+                    !canManage && "pointer-events-none opacity-50"
+                  )}
+                >
+                  Delete task
+                </DropdownItem>
+              ) : null}
+            </DropdownMenu>
+          </Dropdown>
+        </div>
+      </div>
     </div>
   );
 }

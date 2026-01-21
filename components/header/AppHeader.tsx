@@ -16,13 +16,14 @@ import {
   getPageTitle,
   normalizeWeekSelection
 } from "@/components/header/headerUtils";
+import { routes } from "@/lib/navigation/routes";
 
 type AddTarget = "task" | "event" | "group";
 
 const addTargets: Array<{ label: string; target: AddTarget; href: string }> = [
-  { label: "Add task", target: "task", href: "/tasks" },
-  { label: "Add event", target: "event", href: "/calendar" },
-  { label: "Add group", target: "group", href: "/groups" }
+  { label: "Add serve item", target: "task", href: routes.serve },
+  { label: "Add event", target: "event", href: routes.calendar },
+  { label: "Add group", target: "group", href: routes.groups }
 ];
 
 export function AppHeader() {

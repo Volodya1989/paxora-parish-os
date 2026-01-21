@@ -1,12 +1,26 @@
 import type { ReactNode } from "react";
+import {
+  CalendarIcon,
+  HandHeartIcon,
+  MegaphoneIcon,
+  UsersIcon
+} from "@/components/icons/ParishIcons";
 import ThisWeekHeader, { type WeekOption } from "@/components/this-week/ThisWeekHeader";
 import QuickBlocksRow from "@/components/this-week/parishioner/QuickBlocksRow";
 import SectionAnnouncements from "@/components/this-week/parishioner/SectionAnnouncements";
 import SectionSchedule from "@/components/this-week/parishioner/SectionSchedule";
 import SectionCommunity from "@/components/this-week/parishioner/SectionCommunity";
 import SectionOpportunities from "@/components/this-week/parishioner/SectionOpportunities";
+import Card from "@/components/ui/Card";
+import Link from "next/link";
 import type { ThisWeekData } from "@/lib/queries/this-week";
-import { formatDateRange, formatDayDate, formatShortDate, formatUpdatedLabel } from "@/lib/this-week/formatters";
+import { routes } from "@/lib/navigation/routes";
+import {
+  formatDateRange,
+  formatDayDate,
+  formatShortDate,
+  formatUpdatedLabel
+} from "@/lib/this-week/formatters";
 
 type ThisWeekParishionerViewProps = {
   data: ThisWeekData;
@@ -73,40 +87,76 @@ export default function ThisWeekParishionerView({
         viewToggle={viewToggle}
       />
 
+      {data.pendingTaskApprovals > 0 ? (
+        <Card className="flex flex-wrap items-center justify-between gap-3 border-amber-200 bg-amber-50/70">
+          <div>
+            <p className="text-sm font-semibold text-amber-800">
+              {data.pendingTaskApprovals} approval
+              {data.pendingTaskApprovals === 1 ? "" : "s"} needed
+            </p>
+            <p className="text-xs text-amber-700">
+              Review member-submitted serve items awaiting approval.
+            </p>
+          </div>
+          <Link
+            href={`${routes.serve}?view=opportunities`}
+            className="text-sm font-semibold text-amber-800 underline"
+          >
+            Review now
+          </Link>
+        </Card>
+      ) : null}
+
       <QuickBlocksRow
         blocks={[
           {
             id: "announcements",
             label: "Announcements",
-            href: "#announcements",
-            summary: announcementsSummary
+            href: routes.announcements,
+            summary: announcementsSummary,
+            count: publishedAnnouncements.length,
+            icon: <MegaphoneIcon className="h-4 w-4" />,
+            accentClass: "border-amber-200 bg-amber-50/70 text-amber-700"
           },
           {
             id: "services",
             label: "Services",
-            href: "#services",
-            summary: servicesSummary
+            href: routes.calendar,
+            summary: servicesSummary,
+            count: data.events.length,
+            icon: <CalendarIcon className="h-4 w-4" />,
+            accentClass: "border-emerald-200 bg-emerald-50/70 text-emerald-700"
           },
           {
             id: "community",
             label: "Community",
-            href: "#community",
-            summary: communitySummary
+            href: routes.groups,
+            summary: communitySummary,
+            count: data.memberGroups.length,
+            icon: <UsersIcon className="h-4 w-4" />,
+            accentClass: "border-sky-200 bg-sky-50/70 text-sky-700"
           },
           {
             id: "opportunities",
             label: "Opportunities to Help",
-            href: "/tasks?view=opportunities",
-            summary: opportunitiesSummary
+            href: `${routes.serve}?view=opportunities`,
+            summary: opportunitiesSummary,
+            count: sortedTasks.length,
+            icon: <HandHeartIcon className="h-4 w-4" />,
+            accentClass: "border-rose-200 bg-rose-50/70 text-rose-700"
           }
         ]}
       />
 
-      <div className="space-y-5">
-        <SectionAnnouncements announcements={publishedAnnouncements} />
-        <SectionSchedule events={data.events} />
-        <SectionCommunity groups={data.memberGroups} hasPublicGroups={data.hasPublicGroups} />
-        <SectionOpportunities tasks={sortedTasks} />
+      <div className="space-y-5 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0">
+        <div className="space-y-5 lg:space-y-6">
+          <SectionAnnouncements announcements={publishedAnnouncements} />
+          <SectionSchedule events={data.events} />
+        </div>
+        <div className="space-y-5 lg:space-y-6">
+          <SectionCommunity groups={data.memberGroups} hasPublicGroups={data.hasPublicGroups} />
+          <SectionOpportunities tasks={sortedTasks} />
+        </div>
       </div>
     </div>
   );

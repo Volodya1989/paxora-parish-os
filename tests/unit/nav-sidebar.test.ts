@@ -10,8 +10,8 @@ test("Sidebar renders primary nav with This Week first and active state", () => 
     createElement(Sidebar, { currentPath: "/this-week", initialCollapsed: false })
   );
 
-  assert.ok(markup.indexOf("This Week") < markup.indexOf("Tasks"));
-  assert.ok(markup.indexOf("Tasks") < markup.indexOf("Groups"));
+  assert.ok(markup.indexOf("This Week") < markup.indexOf("Serve"));
+  assert.ok(markup.indexOf("Serve") < markup.indexOf("Groups"));
   assert.ok(markup.indexOf("Groups") < markup.indexOf("Calendar"));
   assert.match(markup, /<nav[^>]*aria-label="Primary"/);
   assert.match(

@@ -59,14 +59,15 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     return <main className="min-h-screen bg-mist-50 px-4 py-10">{children}</main>;
   }
 
-  const membership = session.user.activeParishId
-    ? await getParishMembership(session.user.activeParishId, session.user.id)
+  const resolvedParishId = access.parishId ?? session.user.activeParishId ?? null;
+  const membership = resolvedParishId
+    ? await getParishMembership(resolvedParishId, session.user.id)
     : null;
 
   return (
     <AppShell parishRole={membership?.role ?? null}>
       <AppHeader />
-      <main className="flex-1 bg-mist-50 px-4 py-6 pb-24 md:px-8 md:pb-8">
+      <main className="flex-1 bg-mist-50 px-4 py-6 pb-[calc(6rem+env(safe-area-inset-bottom))] md:px-8 md:pb-8">
         {children}
       </main>
     </AppShell>

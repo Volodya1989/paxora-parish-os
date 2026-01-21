@@ -1,16 +1,20 @@
 "use client";
 
-import React, { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Button from "@/components/ui/Button";
-import Card from "@/components/ui/Card";
 import EmptyState from "@/components/ui/EmptyState";
 import Select from "@/components/ui/Select";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/Tabs";
 import CalendarGridWeek from "@/components/calendar/CalendarGridWeek";
 import CalendarGridMonth from "@/components/calendar/CalendarGridMonth";
+import CalendarDayList from "@/components/calendar/CalendarDayList";
 import EventDetailPanel from "@/components/calendar/EventDetailPanel";
 import EventCreateDialog from "@/components/calendar/EventCreateDialog";
 import ScheduleView from "@/components/calendar/ScheduleView";
+import PageHeaderCard from "@/components/layout/PageHeaderCard";
+import SectionCard from "@/components/layout/SectionCard";
+import { CalendarIcon } from "@/components/icons/ParishIcons";
 import {
   getDateKey,
   getMonthGridDays,
@@ -18,7 +22,6 @@ import {
   type CalendarRange
 } from "@/lib/date/calendar";
 import type { CalendarEvent } from "@/lib/queries/events";
-
 
 type CalendarViewProps = {
   weekRange: CalendarRange;
@@ -72,6 +75,8 @@ export default function CalendarView({
   groupOptions,
   viewerGroupIds
 }: CalendarViewProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [view, setView] = useState<CalendarViewValue>(initialView);
   const [surface, setSurface] = useState<CalendarSurface>("calendar");
   const [scheduleRange, setScheduleRange] = useState<ScheduleRange>("week");
@@ -133,10 +138,45 @@ export default function CalendarView({
     }
   }, [activeEvents, selectedEvent]);
 
+  useEffect(() => {
+    const createParam = searchParams?.get("create");
+    if (!createParam) {
+      return;
+    }
+
+    if (!canCreateEvents) {
+      return;
+    }
+
+    if (createParam === "event") {
+      setCreateType("EVENT");
+      setCreateOpen(true);
+    } else if (createParam === "service") {
+      setCreateType("SERVICE");
+      setCreateOpen(true);
+    }
+  }, [canCreateEvents, searchParams]);
+
+  const handleCreateOpenChange = (open: boolean) => {
+    setCreateOpen(open);
+    if (!open) {
+      const params = new URLSearchParams(searchParams?.toString() ?? "");
+      if (params.has("create")) {
+        params.delete("create");
+        router.replace(`?${params.toString()}`, { scroll: false });
+      }
+    }
+  };
+
   const addButtonLabel = canCreateEvents ? "+ Add" : "+ Add (restricted)";
   const addButtonTooltip = canCreateEvents
     ? undefined
     : "Only parish leaders or group coordinators can add events.";
+  const calendarSectionTitle = view === "week" ? "This week" : "This month";
+  const calendarSectionDescription =
+    view === "week"
+      ? "Review the week at a glance and tap into specific services."
+      : "See the full month and spot busy weekends early.";
 
   const renderEmptyActions = () => (
     <div className="flex flex-wrap justify-center gap-3">
@@ -167,50 +207,47 @@ export default function CalendarView({
 
   return (
     <Tabs value={view} onValueChange={(value) => setView(value)}>
-      <div className="space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-h2">Calendar</h2>
-            <p className="text-sm text-ink-500">
-              Plan services, rehearsals, and gatherings across the parish.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <Tabs value={surface} onValueChange={(value) => setSurface(value)}>
-              <TabsList aria-label="Calendar surface">
-                <TabsTrigger value="calendar">Calendar</TabsTrigger>
-                <TabsTrigger value="schedule">Schedule</TabsTrigger>
+      <div className="section-gap">
+        <PageHeaderCard
+          title="Calendar"
+          description="Plan services, rehearsals, and gatherings across the parish."
+          actions={
+            <>
+              <Tabs value={surface} onValueChange={(value) => setSurface(value)}>
+                <TabsList aria-label="Calendar surface" className="flex-wrap">
+                  <TabsTrigger value="calendar">Calendar</TabsTrigger>
+                  <TabsTrigger value="schedule">Schedule</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              <TabsList aria-label="Calendar view" className="flex-wrap">
+                <TabsTrigger value="week">Week</TabsTrigger>
+                <TabsTrigger value="month">Month</TabsTrigger>
               </TabsList>
-            </Tabs>
-            <TabsList aria-label="Calendar view">
-              <TabsTrigger value="week">Week</TabsTrigger>
-              <TabsTrigger value="month">Month</TabsTrigger>
-            </TabsList>
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={!canCreateEvents}
-              title={addButtonTooltip}
-              onClick={() => {
-                setCreateType("SERVICE");
-                setCreateOpen(true);
-              }}
-            >
-              {addButtonLabel}
-            </Button>
-          </div>
-        </div>
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={!canCreateEvents}
+                title={addButtonTooltip}
+                onClick={() => {
+                  setCreateType("SERVICE");
+                  setCreateOpen(true);
+                }}
+                className="w-full sm:w-auto"
+              >
+                {addButtonLabel}
+              </Button>
+            </>
+          }
+        />
 
         {surface === "schedule" ? (
-          <div className="space-y-4">
-            <Card className="space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h3 className="text-h3">Services & events schedule</h3>
-                  <p className="text-xs text-ink-400">
-                    See upcoming services and gatherings in a calm, day-by-day flow.
-                  </p>
-                </div>
+          <div className="space-y-6">
+            <SectionCard
+              title="Services & events schedule"
+              description="See upcoming services and gatherings in a calm, day-by-day flow."
+              icon={<CalendarIcon className="h-5 w-5" />}
+              iconClassName="bg-emerald-100 text-emerald-700"
+              action={
                 <div className="flex flex-wrap items-center gap-3">
                   <Select
                     value={scheduleRange}
@@ -243,13 +280,14 @@ export default function CalendarView({
                     </Select>
                   ) : null}
                 </div>
-              </div>
+              }
+            >
               {!isEditor && viewerGroupIds.length === 0 ? (
                 <div className="rounded-card border border-mist-100 bg-mist-50 px-4 py-3 text-xs text-ink-500">
                   Showing public events only. Join a ministry group to see their schedules.
                 </div>
               ) : null}
-            </Card>
+            </SectionCard>
 
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
               <div>
@@ -273,8 +311,13 @@ export default function CalendarView({
           </div>
         ) : (
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-            <Card className="space-y-4">
-              <TabsPanel value="week">
+            <SectionCard
+              title={calendarSectionTitle}
+              description={calendarSectionDescription}
+              icon={<CalendarIcon className="h-5 w-5" />}
+              iconClassName="bg-emerald-100 text-emerald-700"
+            >
+              <TabsPanel value="week" className="mt-0">
                 {weekEvents.length === 0 ? (
                   <EmptyState
                     title="No events this week"
@@ -282,16 +325,28 @@ export default function CalendarView({
                     action={renderEmptyActions()}
                   />
                 ) : (
-            <CalendarGridWeek
-              days={weekDays}
-              eventsByDay={weekEventsByDay}
-              today={now}
-              selectedEventId={selectedEvent?.instanceId}
-              onSelectEvent={setSelectedEvent}
-            />
-          )}
+                  <>
+                    <div className="md:hidden">
+                      <CalendarDayList
+                        days={weekDays}
+                        eventsByDay={weekEventsByDay}
+                        today={now}
+                        onSelectEvent={setSelectedEvent}
+                      />
+                    </div>
+                    <div className="hidden md:block">
+                      <CalendarGridWeek
+                        days={weekDays}
+                        eventsByDay={weekEventsByDay}
+                        today={now}
+                        selectedEventId={selectedEvent?.instanceId}
+                        onSelectEvent={setSelectedEvent}
+                      />
+                    </div>
+                  </>
+                )}
               </TabsPanel>
-              <TabsPanel value="month">
+              <TabsPanel value="month" className="mt-0">
                 {monthEvents.length === 0 ? (
                   <EmptyState
                     title="No events this month"
@@ -299,18 +354,32 @@ export default function CalendarView({
                     action={renderEmptyActions()}
                   />
                 ) : (
-            <CalendarGridMonth
-              days={monthDays}
-              monthStart={monthRange.start}
-              monthEnd={monthRange.end}
-              eventsByDay={monthEventsByDay}
-              today={now}
-              selectedEventId={selectedEvent?.instanceId}
-              onSelectEvent={setSelectedEvent}
-            />
-          )}
+                  <>
+                    <div className="md:hidden">
+                      <CalendarDayList
+                        days={monthDays}
+                        monthStart={monthRange.start}
+                        monthEnd={monthRange.end}
+                        eventsByDay={monthEventsByDay}
+                        today={now}
+                        onSelectEvent={setSelectedEvent}
+                      />
+                    </div>
+                    <div className="hidden md:block">
+                      <CalendarGridMonth
+                        days={monthDays}
+                        monthStart={monthRange.start}
+                        monthEnd={monthRange.end}
+                        eventsByDay={monthEventsByDay}
+                        today={now}
+                        selectedEventId={selectedEvent?.instanceId}
+                        onSelectEvent={setSelectedEvent}
+                      />
+                    </div>
+                  </>
+                )}
               </TabsPanel>
-            </Card>
+            </SectionCard>
 
             <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} />
           </div>
@@ -319,7 +388,7 @@ export default function CalendarView({
 
       <EventCreateDialog
         open={createOpen}
-        onOpenChange={setCreateOpen}
+        onOpenChange={handleCreateOpenChange}
         groupOptions={groupOptions}
         canCreatePublicEvents={canCreatePublicEvents}
         canCreatePrivateEvents={canCreatePrivateEvents}

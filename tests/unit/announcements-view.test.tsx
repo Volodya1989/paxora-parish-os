@@ -17,17 +17,20 @@ test("Parishioner announcements view hides create actions", () => {
   };
 
   const markup = renderToStaticMarkup(
-    createElement(AppRouterContext.Provider, {
-      value: router as any,
-      children: createElement(ToastProvider, {
-        children: createElement(AnnouncementsView, {
+    createElement(
+      AppRouterContext.Provider,
+      { value: router as any },
+      createElement(
+        ToastProvider,
+        null,
+        createElement(AnnouncementsView, {
           drafts: [],
           published: [],
           parishId: "parish-1",
           canManage: false
         })
-      })
-    })
+      )
+    )
   );
 
   assert.doesNotMatch(markup, /New Announcement/);

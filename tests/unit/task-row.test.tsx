@@ -10,6 +10,9 @@ const baseTask: TaskListItem = {
   title: "Prepare worship guide",
   notes: "Finalize readings and hymns.",
   estimatedHours: 3,
+  volunteersNeeded: 1,
+  volunteerCount: 0,
+  hasVolunteered: false,
   status: "OPEN",
   visibility: "PUBLIC",
   approvalStatus: "APPROVED",
@@ -27,14 +30,13 @@ const baseTask: TaskListItem = {
   },
   canManage: true,
   canDelete: true,
-  canStartWork: true
+  canStartWork: true,
+  canManageStatus: true,
+  canAssignToSelf: false
 };
 
-function findElementByType(
-  element: ReactElement,
-  type: string
-): ReactElement | null {
-  if (element.type === type) {
+function findButtonByText(element: ReactElement, text: string): ReactElement | null {
+  if (element.type === "button" && element.props?.children === text) {
     return element;
   }
 
@@ -45,7 +47,7 @@ function findElementByType(
     if (!child || typeof child !== "object") {
       continue;
     }
-    const found = findElementByType(child as ReactElement, type);
+    const found = findButtonByText(child as ReactElement, text);
     if (found) {
       return found;
     }
@@ -58,12 +60,18 @@ test("TaskRow renders key elements", () => {
   const markup = renderToStaticMarkup(
     createElement(TaskRow, {
       task: baseTask,
-      onToggle: () => undefined,
       onStartWork: () => undefined,
+      onMarkDone: () => undefined,
       onMarkOpen: () => undefined,
+      onAssignToMe: () => undefined,
+      onUnassign: () => undefined,
+      onVolunteer: () => undefined,
+      onLeaveVolunteer: () => undefined,
+      onViewDetails: () => undefined,
       onArchive: () => undefined,
       onEdit: () => undefined,
-      onDelete: () => undefined
+      onDelete: () => undefined,
+      currentUserId: "user-1"
     })
   );
 
@@ -72,26 +80,30 @@ test("TaskRow renders key elements", () => {
   assert.match(markup, /aria-label="Task actions"/);
 });
 
-test("TaskRow toggle calls handler", () => {
+test("TaskRow start button calls handler", () => {
   let called = false;
 
   const element = TaskRow({
     task: baseTask,
-    onToggle: (_id, nextStatus) => {
+    onStartWork: () => {
       called = true;
-      assert.equal(nextStatus, "DONE");
     },
-    onStartWork: () => undefined,
+    onMarkDone: () => undefined,
     onMarkOpen: () => undefined,
+    onAssignToMe: () => undefined,
+    onUnassign: () => undefined,
+    onVolunteer: () => undefined,
+    onLeaveVolunteer: () => undefined,
+    onViewDetails: () => undefined,
     onArchive: () => undefined,
     onEdit: () => undefined,
-    onDelete: () => undefined
+    onDelete: () => undefined,
+    currentUserId: "user-1"
   }) as ReactElement;
 
-  const checkbox = findElementByType(element, "input");
-  assert.ok(checkbox, "Expected checkbox input to be rendered");
-
-  checkbox?.props.onChange?.();
+  const startButton = findButtonByText(element, "Start serving");
+  assert.ok(startButton, "Expected start serving button to be rendered");
+  startButton?.props.onClick?.();
 
   assert.equal(called, true);
 });

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Card from "@/components/ui/Card";
+import { HandHeartIcon } from "@/components/icons/ParishIcons";
 import Button from "@/components/ui/Button";
 import Select from "@/components/ui/Select";
 import TaskCreateDialog from "@/components/tasks/TaskCreateDialog";
@@ -11,6 +11,8 @@ import TasksEmptyState from "@/components/tasks/TasksEmptyState";
 import TasksList from "@/components/tasks/TasksList";
 import { Drawer } from "@/components/ui/Drawer";
 import EmptyState from "@/components/ui/EmptyState";
+import PageHeaderCard from "@/components/layout/PageHeaderCard";
+import SectionCard from "@/components/layout/SectionCard";
 import type { TaskFilters as TaskFiltersState, TaskListItem, TaskListSummary } from "@/lib/queries/tasks";
 import type { PendingAccessRequest } from "@/lib/queries/access";
 import type { PendingTaskApproval } from "@/lib/queries/tasks";
@@ -40,9 +42,9 @@ type TasksViewProps = {
 };
 
 export default function TasksView({
-  title = "Tasks",
+  title = "Serve",
   description,
-  ctaLabel = "New Task",
+  ctaLabel = "New serve item",
   weekLabel,
   weekRange,
   weekId,
@@ -142,7 +144,11 @@ export default function TasksView({
       : `Keep the week grounded with the next faithful steps. ${weekRange}`);
 
   const resolvedTitle =
-    viewMode === "opportunities" ? "Opportunities to Help" : viewMode === "mine" ? "My Tasks" : title;
+    viewMode === "opportunities"
+      ? "Opportunities to Help"
+      : viewMode === "mine"
+        ? "My commitments"
+        : title;
   const showCreateButton = canManageTasks || viewMode === "mine";
 
   useEffect(() => {
@@ -169,245 +175,233 @@ export default function TasksView({
 
   return (
     <div className="section-gap">
-      <Card>
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-h1">{resolvedTitle}</h1>
-              <span className="rounded-full bg-mist-100 px-3 py-1 text-xs font-medium text-ink-700">
-                Week {weekLabel}
-              </span>
-            </div>
-            <p className="text-sm text-ink-500">{headingDescription}</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
+      <PageHeaderCard
+        title={resolvedTitle}
+        description={headingDescription}
+        badge={
+          <span className="rounded-full bg-mist-100 px-3 py-1 text-xs font-medium text-ink-700">
+            Week {weekLabel}
+          </span>
+        }
+        actions={
+          <>
             <div className="rounded-card border border-mist-200 bg-mist-50 px-4 py-3">
               <p className="text-xs uppercase tracking-wide text-ink-400">Progress</p>
               <p className="text-sm font-semibold text-ink-700">{statsLabel}</p>
             </div>
             {showCreateButton ? (
-              <Button onClick={() => setIsCreateOpen(true)}>{ctaLabel}</Button>
+              <Button onClick={() => setIsCreateOpen(true)} className="w-full sm:w-auto">
+                {ctaLabel}
+              </Button>
             ) : null}
-          </div>
-        </div>
-      </Card>
+          </>
+        }
+      />
 
-      <Card>
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h2 className="text-h3">Filters</h2>
-              <p className="text-xs text-ink-400">
-                {viewMode === "opportunities"
-                  ? "Refine the opportunities you want to see."
-                  : "Narrow the list to the tasks that need your attention."}
-              </p>
+      <SectionCard
+        title="Filters"
+        description={
+          viewMode === "opportunities"
+            ? "Refine the opportunities you want to see."
+            : "Narrow the list to the serve items that need your attention."
+        }
+        icon={<HandHeartIcon className="h-5 w-5" />}
+        iconClassName="bg-rose-100 text-rose-700"
+        action={
+          viewMode !== "all" ? (
+            <div className="inline-flex w-full justify-between rounded-full border border-mist-200 bg-mist-50 p-1 sm:w-auto">
+              <button
+                type="button"
+                onClick={() => handleViewChange("opportunities")}
+                className={`min-h-[44px] flex-1 rounded-full px-3 py-2 text-xs font-semibold transition ${
+                  viewMode === "opportunities"
+                    ? "bg-white text-ink-900 shadow-sm"
+                    : "text-ink-500 hover:text-ink-700"
+                }`}
+              >
+                Opportunities
+              </button>
+              <button
+                type="button"
+                onClick={() => handleViewChange("mine")}
+                className={`min-h-[44px] flex-1 rounded-full px-3 py-2 text-xs font-semibold transition ${
+                  viewMode === "mine"
+                    ? "bg-white text-ink-900 shadow-sm"
+                    : "text-ink-500 hover:text-ink-700"
+                }`}
+              >
+                My commitments
+              </button>
             </div>
-            {viewMode !== "all" ? (
-              <div className="inline-flex rounded-full border border-mist-200 bg-mist-50 p-1">
-                <button
-                  type="button"
-                  onClick={() => handleViewChange("opportunities")}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-                    viewMode === "opportunities"
-                      ? "bg-white text-ink-900 shadow-sm"
-                      : "text-ink-500 hover:text-ink-700"
-                  }`}
-                >
-                  Opportunities
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleViewChange("mine")}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-                    viewMode === "mine"
-                      ? "bg-white text-ink-900 shadow-sm"
-                      : "text-ink-500 hover:text-ink-700"
-                  }`}
-                >
-                  My tasks
-                </button>
-              </div>
-            ) : null}
-          </div>
-          {isDesktop ? (
-            <TaskFilters
-              filters={filters}
-              groupOptions={groupOptions}
-              showOwnership={viewMode !== "opportunities"}
-              searchPlaceholder={viewMode === "opportunities" ? "Search opportunities" : undefined}
-            />
-          ) : (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setFiltersOpen(true)}
-              className="w-full"
-            >
-              Filters
-            </Button>
-          )}
-        </div>
-      </Card>
+          ) : null
+        }
+      >
+        {isDesktop ? (
+          <TaskFilters
+            filters={filters}
+            groupOptions={groupOptions}
+            showOwnership={viewMode !== "opportunities"}
+            searchPlaceholder={viewMode === "opportunities" ? "Search opportunities" : undefined}
+          />
+        ) : (
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => setFiltersOpen(true)}
+            className="w-full"
+          >
+            Filters
+          </Button>
+        )}
+      </SectionCard>
 
       {pendingAccessRequests.length ? (
-        <Card>
-          <div className="space-y-4">
-            <div>
-              <h2 className="text-h3">Access approvals</h2>
-              <p className="text-xs text-ink-400">
-                Review pending parish access requests.
-              </p>
-            </div>
-            <div className="space-y-3">
-              {pendingAccessRequests.map((request) => (
-                <div
-                  key={request.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-mist-200 bg-mist-50 px-3 py-2"
-                >
-                  <div>
-                    <div className="text-sm font-medium text-ink-800">
-                      {request.userName ?? "Parishioner"}
-                    </div>
-                    <div className="text-xs text-ink-500">{request.userEmail}</div>
-                    <div className="text-xs text-ink-400">{request.parishName}</div>
+        <SectionCard title="Access approvals" description="Review pending parish access requests.">
+          <div className="space-y-3">
+            {pendingAccessRequests.map((request) => (
+              <div
+                key={request.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-mist-200 bg-mist-50 px-3 py-2"
+              >
+                <div>
+                  <div className="text-sm font-medium text-ink-800">
+                    {request.userName ?? "Parishioner"}
                   </div>
-                  <div className="text-xs text-ink-400">
-                    Requested {request.requestedAt.toLocaleDateString()}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Select
-                      name={`role-${request.id}`}
-                      value={accessRoles[request.id] ?? ""}
-                      onChange={(event) =>
-                        setAccessRoles((prev) => ({
-                          ...prev,
-                          [request.id]: event.target.value
-                        }))
-                      }
-                      className="w-[160px]"
-                    >
-                      <option value="" disabled>
-                        Select role
-                      </option>
-                      <option value="MEMBER">Parishioner</option>
-                      <option value="SHEPHERD">Clergy</option>
-                      <option value="ADMIN">Admin</option>
-                    </Select>
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => handleApproveAccess(request)}
-                      disabled={!accessRoles[request.id] || isAccessPending}
-                    >
-                      Approve
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => handleRejectAccess(request)}
-                      disabled={isAccessPending}
-                    >
-                      Reject
-                    </Button>
-                  </div>
+                  <div className="text-xs text-ink-500">{request.userEmail}</div>
+                  <div className="text-xs text-ink-400">{request.parishName}</div>
                 </div>
-              ))}
-            </div>
+                <div className="text-xs text-ink-400">
+                  Requested{" "}
+                  {request.requestedAt.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    timeZone: "UTC"
+                  })}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Select
+                    name={`role-${request.id}`}
+                    value={accessRoles[request.id] ?? ""}
+                    onChange={(event) =>
+                      setAccessRoles((prev) => ({
+                        ...prev,
+                        [request.id]: event.target.value
+                      }))
+                    }
+                    className="w-[160px]"
+                  >
+                    <option value="" disabled>
+                      Select role
+                    </option>
+                    <option value="MEMBER">Parishioner</option>
+                    <option value="SHEPHERD">Clergy</option>
+                    <option value="ADMIN">Admin</option>
+                  </Select>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => handleApproveAccess(request)}
+                    disabled={!accessRoles[request.id] || isAccessPending}
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => handleRejectAccess(request)}
+                    disabled={isAccessPending}
+                  >
+                    Reject
+                  </Button>
+                </div>
+              </div>
+            ))}
           </div>
-        </Card>
+        </SectionCard>
       ) : null}
 
       {pendingTaskApprovals.length ? (
-        <Card>
-          <div className="space-y-4">
-            <div>
-              <h2 className="text-h3">Pending task approvals</h2>
-              <p className="text-xs text-ink-400">
-                Review member-submitted public tasks before they go live.
-              </p>
-            </div>
-            <div className="space-y-3">
-              {pendingTaskApprovals.map((task) => (
-                <div
-                  key={task.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-amber-200 bg-amber-50/60 px-3 py-3"
-                >
-                  <div className="space-y-1">
-                    <div className="text-sm font-medium text-ink-800">{task.title}</div>
-                    {task.notes ? (
-                      <div className="text-xs text-ink-500">{task.notes}</div>
-                    ) : null}
-                    <div className="text-xs text-ink-400">
-                      Created by {task.createdBy.name} · Assigned to {task.owner.name}
-                      {task.group ? ` · ${task.group.name}` : ""}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => handleApproveTask(task.id)}
-                      disabled={isApproving}
-                    >
-                      Approve
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => handleRejectTask(task.id)}
-                      disabled={isApproving}
-                    >
-                      Reject
-                    </Button>
+        <SectionCard
+          title="Pending task approvals"
+          description="Review member-submitted public tasks before they go live."
+        >
+          <div className="space-y-3">
+            {pendingTaskApprovals.map((task) => (
+              <div
+                key={task.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-amber-200 bg-amber-50/60 px-3 py-3"
+              >
+                <div className="space-y-1">
+                  <div className="text-sm font-medium text-ink-800">{task.title}</div>
+                  {task.notes ? (
+                    <div className="text-xs text-ink-500">{task.notes}</div>
+                  ) : null}
+                  <div className="text-xs text-ink-400">
+                    Created by {task.createdBy.name} · Assigned to{" "}
+                    {task.owner?.name ?? "Unassigned"}
+                    {task.group ? ` · ${task.group.name}` : ""}
                   </div>
                 </div>
-              ))}
-            </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => handleApproveTask(task.id)}
+                    disabled={isApproving}
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => handleRejectTask(task.id)}
+                    disabled={isApproving}
+                  >
+                    Reject
+                  </Button>
+                </div>
+              </div>
+            ))}
           </div>
-        </Card>
+        </SectionCard>
       ) : null}
 
-      <Card>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-h3">Task list</h2>
-            <p className="text-xs text-ink-400">{filteredCount} tasks shown</p>
-          </div>
-          {hasTasks ? (
-            <p className="text-xs text-ink-400">Total this week: {summary.total}</p>
-          ) : null}
-        </div>
-
-        <div className="mt-4">
-          {/* Grouped sections reinforce status context while keeping filters and empty states visible. */}
-          {!hasTasks ? (
-            viewMode === "opportunities" ? (
-              <EmptyState
-                title="No opportunities right now"
-                description="Check back soon for new ways to serve."
-                action={null}
-              />
-            ) : (
-              <TasksEmptyState
-                variant="no-tasks"
-                onCreate={showCreateButton ? () => setIsCreateOpen(true) : undefined}
-              />
-            )
-          ) : !hasMatches ? (
-            <TasksEmptyState variant="no-matches" onClearFilters={clearFilters} />
-          ) : (
-            <TasksList
-              tasks={tasks}
-              groupOptions={groupOptions}
-              memberOptions={memberOptions}
-              currentUserId={currentUserId}
+      <SectionCard
+        title="Serve list"
+        description={`${filteredCount} items shown`}
+        action={
+          hasTasks ? <p className="text-xs text-ink-400">Total this week: {summary.total}</p> : null
+        }
+        icon={<HandHeartIcon className="h-5 w-5" />}
+        iconClassName="bg-rose-100 text-rose-700"
+      >
+        {/* Grouped sections reinforce status context while keeping filters and empty states visible. */}
+        {!hasTasks ? (
+          viewMode === "opportunities" ? (
+            <EmptyState
+              title="No opportunities right now"
+              description="Check back soon for new ways to serve."
+              action={null}
             />
-          )}
-        </div>
-      </Card>
+          ) : (
+            <TasksEmptyState
+              variant="no-tasks"
+              onCreate={showCreateButton ? () => setIsCreateOpen(true) : undefined}
+            />
+          )
+        ) : !hasMatches ? (
+          <TasksEmptyState variant="no-matches" onClearFilters={clearFilters} />
+        ) : (
+          <TasksList
+            tasks={tasks}
+            groupOptions={groupOptions}
+            memberOptions={memberOptions}
+            currentUserId={currentUserId}
+          />
+        )}
+      </SectionCard>
 
       <TaskCreateDialog
         open={isCreateOpen}

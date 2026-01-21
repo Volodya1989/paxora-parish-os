@@ -1,5 +1,7 @@
 import Link from "next/link";
-import SectionCard from "@/components/this-week/SectionCard";
+import { MegaphoneIcon } from "@/components/icons/ParishIcons";
+import AccentSectionCard from "@/components/layout/AccentSectionCard";
+import { routes } from "@/lib/navigation/routes";
 import type { AnnouncementPreview } from "@/lib/queries/this-week";
 import { formatShortDate } from "@/lib/this-week/formatters";
 
@@ -10,20 +12,23 @@ type SectionAnnouncementsProps = {
 export default function SectionAnnouncements({ announcements }: SectionAnnouncementsProps) {
   return (
     <section id="announcements" className="scroll-mt-24">
-      <SectionCard
+      <AccentSectionCard
         title="Announcements"
+        icon={<MegaphoneIcon className="h-5 w-5" />}
+        borderClass="border-amber-200"
+        iconClass="bg-amber-100 text-amber-700"
         action={
           <Link
             className="whitespace-nowrap text-sm font-medium text-ink-700 underline"
-            href="/announcements"
+            href={routes.announcements}
           >
-            View all announcements
+            View all
           </Link>
         }
       >
         <div className="space-y-3">
           {announcements.length === 0 ? (
-            <div className="rounded-card border border-mist-100 bg-mist-50 px-4 py-3 text-sm text-ink-500">
+            <div className="rounded-card border border-amber-100 bg-amber-50/40 px-4 py-3 text-sm text-ink-500">
               Nothing new right now. Check back soon for parish updates.
             </div>
           ) : (
@@ -33,8 +38,8 @@ export default function SectionAnnouncements({ announcements }: SectionAnnouncem
               return (
                 <Link
                   key={announcement.id}
-                  href="/announcements"
-                  className="block rounded-card border border-mist-100 bg-white px-4 py-3 transition hover:border-primary-200 hover:bg-primary-50/30"
+                  href={routes.announcements}
+                  className="block rounded-card border border-mist-100 bg-white px-4 py-3 transition hover:border-amber-200 hover:bg-amber-50/30"
                 >
                   <p className="text-sm font-semibold text-ink-900">{announcement.title}</p>
                   <p className="mt-1 text-xs text-ink-500">
@@ -48,7 +53,7 @@ export default function SectionAnnouncements({ announcements }: SectionAnnouncem
             })
           )}
         </div>
-      </SectionCard>
+      </AccentSectionCard>
     </section>
   );
 }

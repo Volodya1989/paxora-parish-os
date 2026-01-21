@@ -34,7 +34,7 @@ export function buildDigestSummary({
   const tasksSection = taskLines.length ? taskLines : ["- None"];
   const eventsSection = eventLines.length ? eventLines : ["- None"];
 
-  return ["Tasks", ...tasksSection, "", "Events", ...eventsSection].join("\n");
+  return ["Serve", ...tasksSection, "", "Events", ...eventsSection].join("\n");
 }
 
 export function buildDigestContent({
@@ -56,7 +56,7 @@ export function buildDigestContent({
       return `- ${event.title} (${start}-${end})${location}`;
     });
 
-  return ["Tasks", ...taskLines, "", "Events", ...eventLines].join("\n");
+  return ["Serve", ...taskLines, "", "Events", ...eventLines].join("\n");
 }
 
 export function assertDigestTransition(current: DigestStatus, next: DigestStatus) {

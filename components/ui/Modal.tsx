@@ -66,7 +66,7 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
         aria-labelledby={titleId}
         tabIndex={-1}
         className={cn(
-          "relative w-full max-w-lg rounded-card border border-mist-200 bg-white p-6 shadow-overlay"
+          "relative flex w-full max-w-lg flex-col overflow-hidden rounded-card border border-mist-200 bg-white p-6 shadow-overlay md:max-h-[calc(100vh-6rem)]"
         )}
       >
         <header className="mb-4">
@@ -74,8 +74,12 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
             {title}
           </h2>
         </header>
-        <div className="text-sm text-ink-700">{children}</div>
-        {footer ? <footer className="mt-6 flex justify-end gap-2">{footer}</footer> : null}
+        <div className="flex-1 overflow-y-auto pr-1 text-sm text-ink-700">{children}</div>
+        {footer ? (
+          <footer className="mt-6 flex justify-end gap-2 border-t border-mist-100 pt-4">
+            {footer}
+          </footer>
+        ) : null}
       </div>
     </div>
   );

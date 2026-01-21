@@ -52,7 +52,7 @@ export default function CalendarGridWeek({
             <div
               key={key}
               className={cn(
-                "min-h-[140px] rounded-card border border-mist-200 bg-white p-3",
+                "min-h-[140px] rounded-card border border-mist-100 bg-white p-3",
                 isToday && "border-emerald-300 bg-emerald-50/40"
               )}
             >

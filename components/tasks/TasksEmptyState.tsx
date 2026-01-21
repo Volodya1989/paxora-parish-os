@@ -35,7 +35,7 @@ export default function TasksEmptyState({
       <EmptyState
         icon={<TaskIcon />}
         title="No matches"
-        description="Try adjusting your filters or search to find the task you’re looking for."
+        description="Try adjusting your filters or search to find the serve item you’re looking for."
         action={
           <Button variant="secondary" onClick={onClearFilters}>
             Clear filters
@@ -48,12 +48,12 @@ export default function TasksEmptyState({
   return (
     <EmptyState
       icon={<TaskIcon />}
-      title="No tasks yet"
+      title="No serve items yet"
       description="Capture what matters this week and keep your teams aligned."
       action={
         onCreate ? (
           <Button onClick={onCreate}>
-            Create your first task
+            Create your first serve item
           </Button>
         ) : null
       }

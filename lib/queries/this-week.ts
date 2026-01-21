@@ -56,6 +56,8 @@ export type ThisWeekData = {
     tasksTotal: number;
     completionPct: number;
   };
+  pendingTaskApprovals: number;
+  pendingAccessRequests: number;
 };
 
 function getInitials(name: string) {
@@ -95,13 +97,24 @@ export async function getThisWeekData({
 
   const week = await getWeekForSelection(parishId, weekSelection, now);
 
+  const membership = await prisma.membership.findUnique({
+    where: {
+      parishId_userId: {
+        parishId,
+        userId: actorUserId
+      }
+    },
+    select: { role: true }
+  });
+
   const [
     tasks,
     events,
     announcements,
-    membership,
     memberGroups,
-    publicGroupCount
+    publicGroupCount,
+    pendingApprovals,
+    pendingAccessRequests
   ] = await Promise.all([
     prisma.task.findMany({
       where: {
@@ -157,15 +170,6 @@ export async function getThisWeekData({
         publishedAt: true
       }
     }),
-    prisma.membership.findUnique({
-      where: {
-        parishId_userId: {
-          parishId,
-          userId: actorUserId
-        }
-      },
-      select: { role: true }
-    }),
     prisma.groupMembership.findMany({
       where: {
         userId: actorUserId,
@@ -196,12 +200,29 @@ export async function getThisWeekData({
         visibility: "PUBLIC",
         archivedAt: null
       }
-    })
+    }),
+    prisma.task.count({
+      where: {
+        parishId,
+        weekId: week.id,
+        archivedAt: null,
+        visibility: "PUBLIC",
+        approvalStatus: "PENDING"
+      }
+    }),
+    membership?.role && ["ADMIN", "SHEPHERD"].includes(membership.role)
+      ? prisma.accessRequest.count({
+          where: {
+            parishId,
+            status: "PENDING"
+          }
+        })
+      : Promise.resolve(0)
   ]);
 
   const dueByDefault = new Date(week.endsOn.getTime() - 1);
   const taskPreviews: TaskPreview[] = tasks.map((task) => {
-    const ownerName = task.owner.name ?? task.owner.email?.split("@")[0] ?? "Unassigned";
+    const ownerName = task.owner?.name ?? task.owner?.email?.split("@")[0] ?? "Unassigned";
     return {
       id: task.id,
       title: task.title,
@@ -241,6 +262,11 @@ export async function getThisWeekData({
       tasksDone,
       tasksTotal,
       completionPct
-    }
+    },
+    pendingTaskApprovals:
+      membership?.role && ["ADMIN", "SHEPHERD"].includes(membership.role)
+        ? pendingApprovals
+        : 0,
+    pendingAccessRequests
   };
 }

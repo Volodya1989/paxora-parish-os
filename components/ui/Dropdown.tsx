@@ -7,11 +7,13 @@ import React, {
   useContext,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState
 } from "react";
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactElement, ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/ui/cn";
 import { composeRefs } from "@/lib/ui/refs";
 
@@ -246,13 +248,91 @@ type DropdownMenuProps = HTMLAttributes<HTMLDivElement> & {
  * Dropdown menu container.
  */
 export function DropdownMenu({ className, ariaLabel, ...props }: DropdownMenuProps) {
-  const { open, menuId, triggerId, menuRef, itemsRef, setOpen } = useDropdownContext();
+  const { open, menuId, triggerId, menuRef, itemsRef, setOpen, triggerRef } =
+    useDropdownContext();
+  const [position, setPosition] = useState({ top: 0, left: 0 });
+
+  const updatePosition = useCallback(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const trigger = triggerRef.current;
+    const menu = menuRef.current;
+    if (!trigger || !menu) {
+      return;
+    }
+
+    const rect = trigger.getBoundingClientRect();
+    const menuRect = menu.getBoundingClientRect();
+    const gutter = 8;
+    let top = rect.bottom + gutter;
+    if (top + menuRect.height > window.innerHeight - gutter) {
+      top = rect.top - menuRect.height - gutter;
+    }
+    let left = rect.right - menuRect.width;
+    if (left < gutter) {
+      left = gutter;
+    }
+    if (left + menuRect.width > window.innerWidth - gutter) {
+      left = Math.max(gutter, window.innerWidth - menuRect.width - gutter);
+    }
+
+    setPosition({ top, left });
+  }, [menuRef, triggerRef]);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      return;
+    }
+    updatePosition();
+  }, [open, updatePosition]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const handleScroll = () => updatePosition();
+    const handleResize = () => updatePosition();
+    window.addEventListener("scroll", handleScroll, true);
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("scroll", handleScroll, true);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [open, updatePosition]);
 
   if (!open) {
     return null;
   }
 
-  return (
+  if (typeof document === "undefined") {
+    return (
+      <div
+        ref={menuRef}
+        id={menuId}
+        role="menu"
+        aria-labelledby={triggerId}
+        aria-label={ariaLabel}
+        onKeyDown={(event) => {
+          const currentIndex = -1;
+          handleDropdownMenuKeyDown(event, {
+            itemCount: itemsRef.current.length,
+            currentIndex,
+            onIndexChange: (index) => itemsRef.current[index]?.focus(),
+            onOpenChange: setOpen
+          });
+          props.onKeyDown?.(event);
+        }}
+        className={cn(
+          "z-[70] w-48 rounded-card border border-mist-200 bg-white p-2 shadow-overlay",
+          className
+        )}
+        {...props}
+      />
+    );
+  }
+
+  return createPortal(
     <div
       ref={menuRef}
       id={menuId}
@@ -272,11 +352,13 @@ export function DropdownMenu({ className, ariaLabel, ...props }: DropdownMenuPro
         props.onKeyDown?.(event);
       }}
       className={cn(
-        "absolute right-0 mt-2 w-48 rounded-card border border-mist-200 bg-white p-2 shadow-overlay",
+        "z-[70] w-48 rounded-card border border-mist-200 bg-white p-2 shadow-overlay",
         className
       )}
+      style={{ position: "fixed", top: position.top, left: position.left }}
       {...props}
-    />
+    />,
+    document.body
   );
 }
 

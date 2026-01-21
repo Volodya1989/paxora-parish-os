@@ -64,7 +64,9 @@ test("Parishioner view renders quick blocks and ordered sections", () => {
           tasksDone: 0,
           tasksTotal: 3,
           completionPct: 0
-        }
+        },
+        pendingTaskApprovals: 0,
+        pendingAccessRequests: 0
       },
       weekSelection: "current",
       weekOptions: [
@@ -80,7 +82,7 @@ test("Parishioner view renders quick blocks and ordered sections", () => {
   assert.match(markup, /Services/);
   assert.match(markup, /Community/);
   assert.match(markup, /Opportunities to Help/);
-  assert.match(markup, /view=opportunities/);
+  assert.match(markup, /href="\/tasks\?view=opportunities"/);
 
   const announcementsIndex = markup.indexOf("Announcements");
   const servicesIndex = markup.indexOf("Services");

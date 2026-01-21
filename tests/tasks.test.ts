@@ -50,6 +50,13 @@ dbTest("tasks can be created, completed, deferred, and rolled over once", async 
       activeParishId: parish.id
     }
   });
+  await prisma.membership.create({
+    data: {
+      parishId: parish.id,
+      userId: owner.id,
+      role: "ADMIN"
+    }
+  });
 
   const weekOneStart = new Date("2024-01-01T00:00:00.000Z");
   const weekOneEnd = new Date("2024-01-08T00:00:00.000Z");
