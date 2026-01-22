@@ -2,13 +2,13 @@
 
 import React from "react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Button from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { Drawer } from "@/components/ui/Drawer";
 import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@/components/ui/Dropdown";
 import { cn } from "@/lib/ui/cn";
-import { routes } from "@/lib/navigation/routes";
+import QuickActions from "@/components/this-week/QuickActions";
 
 export type WeekOption = {
   value: "previous" | "current" | "next";
@@ -61,48 +61,6 @@ function ProgressRing({ percent }: { percent: number }) {
         />
       </svg>
       <span className="absolute text-xs font-semibold text-ink-700">{percent}%</span>
-    </div>
-  );
-}
-
-function QuickActions({ onSelect }: { onSelect: () => void }) {
-  const actions = useMemo(
-    () => [
-      {
-        title: "Add serve item",
-        description: "Create a weekly serve item for your ministry.",
-        href: `${routes.serve}?create=task`
-      },
-      {
-        title: "Add Event",
-        description: "Schedule services, rehearsals, or gatherings.",
-        href: `${routes.calendar}?create=event`
-      },
-      {
-        title: "Add Announcement",
-        description: "Share updates with the parish.",
-        href: `${routes.announcements}/new`
-      }
-    ],
-    []
-  );
-
-  return (
-    <div className="space-y-3">
-      {actions.map((action) => (
-        <Link
-          key={action.title}
-          href={action.href}
-          onClick={onSelect}
-          className="flex items-start justify-between gap-3 rounded-card border border-mist-200 bg-white px-4 py-3 text-left transition hover:border-mist-100 hover:bg-mist-50 focus-ring"
-        >
-          <div>
-            <p className="text-sm font-semibold text-ink-900">{action.title}</p>
-            <p className="text-xs text-ink-500">{action.description}</p>
-          </div>
-          <span className="text-lg text-ink-300">→</span>
-        </Link>
-      ))}
     </div>
   );
 }

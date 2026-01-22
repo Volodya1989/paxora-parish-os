@@ -18,6 +18,7 @@ import type { PendingAccessRequest } from "@/lib/queries/access";
 import type { PendingTaskApproval } from "@/lib/queries/tasks";
 import { approveTask, rejectTask } from "@/server/actions/tasks";
 import { useMediaQuery } from "@/lib/ui/useMediaQuery";
+import TaskQuickAdd from "@/components/tasks/TaskQuickAdd";
 
 type TasksViewProps = {
   title?: string;
@@ -377,6 +378,9 @@ export default function TasksView({
         icon={<HandHeartIcon className="h-5 w-5" />}
         iconClassName="bg-rose-100 text-rose-700"
       >
+        {viewMode !== "opportunities" ? (
+          <TaskQuickAdd weekId={weekId} />
+        ) : null}
         {/* Grouped sections reinforce status context while keeping filters and empty states visible. */}
         {!hasTasks ? (
           viewMode === "opportunities" ? (

@@ -34,11 +34,17 @@ const baseTask: TaskListItem = {
   canStartWork: true,
   canManageStatus: true,
   canAssignToSelf: false,
-  canAssignOthers: false
+  canAssignOthers: false,
+  createdByRole: "MEMBER"
 };
 
 function findButtonByText(element: ReactElement, text: string): ReactElement | null {
-  if (element.type === "button" && element.props?.children === text) {
+  if (
+    (element.type === "button" ||
+      typeof element.type === "function" ||
+      typeof element.type === "object") &&
+    element.props?.children === text
+  ) {
     return element;
   }
 

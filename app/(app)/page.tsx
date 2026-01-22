@@ -7,6 +7,7 @@ import CommunityPreview from "@/components/home/community-preview";
 import HomeQuickNav from "@/components/home/home-quick-nav";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function HomePage() {
   const now = getNow();
