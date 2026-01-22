@@ -30,7 +30,7 @@ export default function SignInPage() {
       return;
     }
 
-    window.location.href = "/access";
+    window.location.href = "/post-login";
   };
 
   return (

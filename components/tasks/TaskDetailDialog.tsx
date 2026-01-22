@@ -52,6 +52,7 @@ export default function TaskDetailDialog({
 }: TaskDetailDialogProps) {
   const router = useRouter();
   const { addToast } = useToast();
+  const handleClose = useCallback(() => onOpenChange(false), [onOpenChange]);
   const [detail, setDetail] = useState<TaskDetail | null>(null);
   const [comment, setComment] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -362,10 +363,10 @@ export default function TaskDetailDialog({
 
   return (
     <>
-      <Modal open={open} onClose={() => onOpenChange(false)} title="Task details">
+      <Modal open={open} onClose={handleClose} title="Task details">
         {content}
       </Modal>
-      <Drawer open={open} onClose={() => onOpenChange(false)} title="Task details">
+      <Drawer open={open} onClose={handleClose} title="Task details">
         {content}
       </Drawer>
     </>

@@ -47,6 +47,7 @@ export type TaskListItem = {
   canManageStatus: boolean;
   canAssignToSelf: boolean;
   canAssignOthers: boolean;
+  createdByRole: "ADMIN" | "SHEPHERD" | "MEMBER" | null;
 };
 
 export type TaskListSummary = {
@@ -77,6 +78,7 @@ export type PendingTaskApproval = {
     id: string;
     name: string;
   };
+  createdByRole: "ADMIN" | "SHEPHERD" | "MEMBER" | null;
   group: {
     id: string;
     name: string;
@@ -249,7 +251,11 @@ export async function listTasks({
           select: {
             id: true,
             name: true,
-            email: true
+            email: true,
+            memberships: {
+              where: { parishId },
+              select: { role: true }
+            }
           }
         },
         group: {
@@ -346,6 +352,7 @@ export async function listTasks({
     const completedByName = task.completedBy
       ? getDisplayName(task.completedBy.name, task.completedBy.email)
       : null;
+    const createdByRole = task.createdBy.memberships[0]?.role ?? null;
 
     return {
       id: task.id,
@@ -380,7 +387,8 @@ export async function listTasks({
       canStartWork,
       canManageStatus,
       canAssignToSelf,
-      canAssignOthers
+      canAssignOthers,
+      createdByRole
     };
   });
 
@@ -443,7 +451,11 @@ export async function listPendingTaskApprovals({
         select: {
           id: true,
           name: true,
-          email: true
+          email: true,
+          memberships: {
+            where: { parishId },
+            select: { role: true }
+          }
         }
       },
       group: {
@@ -470,6 +482,7 @@ export async function listPendingTaskApprovals({
       id: task.createdBy.id,
       name: getDisplayName(task.createdBy.name, task.createdBy.email)
     },
+    createdByRole: task.createdBy.memberships[0]?.role ?? null,
     group: task.group ? { id: task.group.id, name: task.group.name } : null
   }));
 }

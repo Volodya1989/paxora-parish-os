@@ -96,6 +96,13 @@ export default function TaskRow({
   const volunteerCountLabel = `${task.volunteerCount}/${task.volunteersNeeded}`;
   const isVolunteerFull = task.volunteerCount >= task.volunteersNeeded;
   const showAssignToMe = !isVolunteerTask && !task.owner && task.canAssignToSelf;
+  const showUnassignSelf =
+    !isVolunteerTask && task.owner?.id === currentUserId && task.canManage;
+  const showApprovalBadge =
+    task.visibility === "PUBLIC" &&
+    (task.approvalStatus !== "APPROVED" ||
+      task.createdByRole === "MEMBER" ||
+      task.createdByRole === null);
   const statusActionLabel = isDone ? "Reopen" : isInProgress ? "Complete task" : "Start serving";
   const statusActionHandler = isDone
     ? () => onMarkOpen(task.id)
@@ -127,7 +134,7 @@ export default function TaskRow({
             <Badge tone={isDone ? "success" : isInProgress ? "warning" : "neutral"}>
               {isDone ? "Done" : isInProgress ? "In progress" : "Open"}
             </Badge>
-            {task.visibility === "PUBLIC" ? (
+            {showApprovalBadge ? (
               <Badge
                 tone={approvalTone}
                 className={
@@ -160,6 +167,17 @@ export default function TaskRow({
                   {task.owner.initials}
                 </span>
                 <span>{task.owner.name}</span>
+                {showUnassignSelf ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => onUnassign(task.id)}
+                    disabled={isBusy}
+                  >
+                    Unassign
+                  </Button>
+                ) : null}
               </span>
             ) : (
               <span className="inline-flex items-center gap-2">
@@ -167,14 +185,15 @@ export default function TaskRow({
                   Unassigned
                 </Badge>
                 {showAssignToMe ? (
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
+                    size="sm"
                     onClick={() => onAssignToMe(task.id)}
                     disabled={isBusy}
-                    className="text-xs font-semibold text-primary-700 underline decoration-primary-300 underline-offset-2 transition hover:text-primary-800 disabled:cursor-not-allowed disabled:text-ink-400"
                   >
                     Assign to me
-                  </button>
+                  </Button>
                 ) : null}
               </span>
             )}

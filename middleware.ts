@@ -12,6 +12,6 @@ export default withAuth({
 export const config = {
   matcher: [
     "/this-week",
-    "/((?!api/auth|sign-in|sign-up|_next|favicon.ico).*)"
+    "/((?!api/auth|sign-in|sign-up|post-login|_next|favicon.ico).*)"
   ]
 };

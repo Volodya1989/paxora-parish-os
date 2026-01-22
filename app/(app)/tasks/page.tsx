@@ -10,6 +10,9 @@ import { approveParishAccess, rejectParishAccess } from "@/app/actions/access";
 import TasksView from "@/components/tasks/TasksView";
 import { getTasksViewMode } from "@/lib/tasks/viewMode";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 type TaskSearchParams = {
   week?: string | string[];
   status?: string | string[];

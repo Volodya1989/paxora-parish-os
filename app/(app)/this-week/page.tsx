@@ -10,6 +10,7 @@ import { getThisWeekViewMode } from "@/lib/this-week/viewMode";
 import { isAdminClergy } from "@/lib/authz/membership";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 function buildWeekOptions(weekStart: Date) {
   const previousStart = new Date(weekStart);
