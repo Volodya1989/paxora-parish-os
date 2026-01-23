@@ -33,15 +33,15 @@ export default function QuickBlocksRow({ blocks }: QuickBlocksRowProps) {
   };
 
   return (
-    <div className="-mx-4 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 lg:overflow-visible">
-      <div className="flex min-w-[560px] gap-2 sm:min-w-0 sm:gap-3 lg:justify-center">
+    <div className="px-1 pb-1 sm:px-0">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
         {blocks.map((block) => (
           <button
             key={block.id}
             type="button"
             onClick={() => handleNavigate(block.href)}
             className={cn(
-              "group relative flex min-w-[140px] flex-1 flex-col gap-1.5 rounded-card border px-3 py-2 text-left transition hover:shadow-card focus-ring",
+              "group relative flex min-w-0 flex-col gap-1.5 rounded-card border px-3 py-2 text-left transition hover:shadow-card focus-ring",
               block.accentClass
             )}
           >

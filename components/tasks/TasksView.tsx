@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { HandHeartIcon } from "@/components/icons/ParishIcons";
 import Button from "@/components/ui/Button";
-import Select from "@/components/ui/Select";
+import SelectMenu from "@/components/ui/SelectMenu";
 import TaskCreateDialog from "@/components/tasks/TaskCreateDialog";
 import TaskFilters from "@/components/tasks/TaskFilters";
 import TasksEmptyState from "@/components/tasks/TasksEmptyState";
@@ -332,24 +332,23 @@ export default function TasksView({
                         })}
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <Select
+                        <SelectMenu
                           name={`role-${request.id}`}
                           value={accessRoles[request.id] ?? ""}
-                          onChange={(event) =>
+                          onValueChange={(value) =>
                             setAccessRoles((prev) => ({
                               ...prev,
-                              [request.id]: event.target.value
+                              [request.id]: value
                             }))
                           }
+                          placeholder="Select role"
+                          options={[
+                            { value: "MEMBER", label: "Parishioner" },
+                            { value: "SHEPHERD", label: "Clergy" },
+                            { value: "ADMIN", label: "Admin" }
+                          ]}
                           className="w-[160px]"
-                        >
-                          <option value="" disabled>
-                            Select role
-                          </option>
-                          <option value="MEMBER">Parishioner</option>
-                          <option value="SHEPHERD">Clergy</option>
-                          <option value="ADMIN">Admin</option>
-                        </Select>
+                        />
                         <Button
                           type="button"
                           size="sm"

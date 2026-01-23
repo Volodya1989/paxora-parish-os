@@ -139,23 +139,27 @@ export async function createTask(
     }
   }
 
-  const visibility = parsed.data.visibility === "private" ? "PRIVATE" : "PUBLIC";
+  const visibility = parsed.data.visibility === "public" ? "PUBLIC" : "PRIVATE";
   const approvalStatus =
     visibility === "PRIVATE" || isParishLeader(membership.role) ? "APPROVED" : "PENDING";
+  const volunteersNeeded = visibility === "PRIVATE" ? 1 : parsed.data.volunteersNeeded;
+  const ownerId =
+    visibility === "PRIVATE"
+      ? parsed.data.ownerId ?? userId
+      : parsed.data.ownerId ??
+        (parsed.data.volunteersNeeded && parsed.data.volunteersNeeded > 1 ? undefined : userId);
   const defaultDueAt = new Date();
   defaultDueAt.setDate(defaultDueAt.getDate() + 14);
 
   await createTaskDomain({
     parishId,
     weekId: parsed.data.weekId,
-    ownerId:
-      parsed.data.ownerId ??
-      (parsed.data.volunteersNeeded && parsed.data.volunteersNeeded > 1 ? undefined : userId),
+    ownerId,
     createdById: userId,
     title: parsed.data.title,
     notes: parsed.data.notes,
     estimatedHours: parsed.data.estimatedHours,
-    volunteersNeeded: parsed.data.volunteersNeeded,
+    volunteersNeeded,
     groupId: parsed.data.groupId,
     dueAt: parsed.data.dueAt ?? defaultDueAt,
     visibility,
