@@ -85,7 +85,7 @@ export const createTaskSchema = z.object({
   visibility: z
     .enum(["public", "private"])
     .optional()
-    .default("public")
+    .default("private")
 });
 
 export const createGroupTaskSchema = createTaskSchema.extend({

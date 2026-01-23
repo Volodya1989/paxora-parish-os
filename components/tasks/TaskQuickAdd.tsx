@@ -29,6 +29,7 @@ export default function TaskQuickAdd({ weekId }: TaskQuickAddProps) {
       formRef.current?.reset();
       setTitle("");
       setLocalError(null);
+      lastSubmittedTitle.current = "";
       addToast({
         title: "Task added",
         description: state.message ?? "Your task is ready."
@@ -38,17 +39,21 @@ export default function TaskQuickAdd({ weekId }: TaskQuickAddProps) {
   }, [addToast, router, state]);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     const trimmedTitle = title.trim();
     lastSubmittedTitle.current = trimmedTitle;
     if (!trimmedTitle) {
-      event.preventDefault();
       setLocalError("Add a task title to continue.");
+      return;
     }
+    setLocalError(null);
+    formAction(new FormData(event.currentTarget));
   };
 
+  const trimmedTitle = title.trim();
   const errorMessage =
     localError ??
-    (state.status === "error" && lastSubmittedTitle.current === title.trim()
+    (state.status === "error" && lastSubmittedTitle.current === trimmedTitle
       ? state.message?.includes("Expected string")
         ? "Add a task title to continue."
         : state.message
@@ -57,7 +62,6 @@ export default function TaskQuickAdd({ weekId }: TaskQuickAddProps) {
   return (
     <form
       ref={formRef}
-      action={formAction}
       onSubmit={handleSubmit}
       className="mb-4 flex flex-col gap-3 rounded-card border border-dashed border-mist-200 bg-white/60 p-3 sm:flex-row sm:items-center"
     >
@@ -71,6 +75,12 @@ export default function TaskQuickAdd({ weekId }: TaskQuickAddProps) {
         required
         className="flex-1"
         value={title}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" && !trimmedTitle) {
+            event.preventDefault();
+            setLocalError("Add a task title to continue.");
+          }
+        }}
         onChange={(event) => {
           const nextValue = event.target.value;
           setTitle(nextValue);

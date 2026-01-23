@@ -72,7 +72,7 @@ export default function ThisWeekParishionerView({
       : "New opportunities";
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 overflow-x-hidden">
       <ThisWeekHeader
         title="This Week"
         weekLabel={data.week.label}

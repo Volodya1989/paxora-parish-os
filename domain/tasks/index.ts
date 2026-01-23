@@ -251,6 +251,17 @@ async function assertTaskStatusAccess({ taskId, parishId, actorUserId }: TaskAct
     throw new Error("Forbidden");
   }
 
+  if (isParishLeader(parishMembership.role)) {
+    return task;
+  }
+
+  if (task.visibility === "PRIVATE") {
+    if (task.ownerId !== actorUserId && task.createdById !== actorUserId) {
+      throw new Error("Only the creator, assignee, or parish leaders can update this private task.");
+    }
+    return task;
+  }
+
   if (task.volunteersNeeded > 1) {
     const hasVolunteered = task.volunteers.length > 0;
     if (task.ownerId !== actorUserId && !hasVolunteered) {
@@ -334,7 +345,7 @@ export async function markTaskInProgress({ taskId, parishId, actorUserId }: Task
     throw new Error("Completed tasks cannot be started.");
   }
 
-  if (task.visibility !== "PUBLIC" || task.approvalStatus !== "APPROVED") {
+  if (task.visibility === "PUBLIC" && task.approvalStatus !== "APPROVED") {
     throw new Error("This task is not available to start yet.");
   }
 

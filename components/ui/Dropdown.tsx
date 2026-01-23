@@ -250,7 +250,7 @@ type DropdownMenuProps = HTMLAttributes<HTMLDivElement> & {
 export function DropdownMenu({ className, ariaLabel, ...props }: DropdownMenuProps) {
   const { open, menuId, triggerId, menuRef, itemsRef, setOpen, triggerRef } =
     useDropdownContext();
-  const [position, setPosition] = useState({ top: 0, left: 0 });
+  const [position, setPosition] = useState({ top: 0, left: 0, width: 0 });
 
   const updatePosition = useCallback(() => {
     if (typeof window === "undefined") {
@@ -265,19 +265,20 @@ export function DropdownMenu({ className, ariaLabel, ...props }: DropdownMenuPro
     const rect = trigger.getBoundingClientRect();
     const menuRect = menu.getBoundingClientRect();
     const gutter = 8;
+    const width = Math.max(menuRect.width, rect.width);
     let top = rect.bottom + gutter;
     if (top + menuRect.height > window.innerHeight - gutter) {
       top = rect.top - menuRect.height - gutter;
     }
-    let left = rect.right - menuRect.width;
+    let left = rect.left;
     if (left < gutter) {
       left = gutter;
     }
-    if (left + menuRect.width > window.innerWidth - gutter) {
-      left = Math.max(gutter, window.innerWidth - menuRect.width - gutter);
+    if (left + width > window.innerWidth - gutter) {
+      left = Math.max(gutter, window.innerWidth - width - gutter);
     }
 
-    setPosition({ top, left });
+    setPosition({ top, left, width });
   }, [menuRef, triggerRef]);
 
   useLayoutEffect(() => {
@@ -324,7 +325,7 @@ export function DropdownMenu({ className, ariaLabel, ...props }: DropdownMenuPro
           props.onKeyDown?.(event);
         }}
         className={cn(
-          "z-[70] w-48 rounded-card border border-mist-200 bg-white p-2 shadow-overlay",
+          "z-[100] w-48 rounded-card border border-mist-200 bg-white p-2 shadow-overlay",
           className
         )}
         {...props}
@@ -352,10 +353,15 @@ export function DropdownMenu({ className, ariaLabel, ...props }: DropdownMenuPro
         props.onKeyDown?.(event);
       }}
       className={cn(
-        "z-[70] w-48 rounded-card border border-mist-200 bg-white p-2 shadow-overlay",
+        "z-[100] w-48 rounded-card border border-mist-200 bg-white p-2 shadow-overlay",
         className
       )}
-      style={{ position: "fixed", top: position.top, left: position.left }}
+      style={{
+        position: "fixed",
+        top: position.top,
+        left: position.left,
+        minWidth: position.width || undefined
+      }}
       {...props}
     />,
     document.body

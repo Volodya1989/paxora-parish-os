@@ -57,6 +57,7 @@ export default function TaskCreateDialog({
   const handledSuccess = useRef(false);
   const [formResetKey, setFormResetKey] = useState(0);
   const [volunteersNeeded, setVolunteersNeeded] = useState("1");
+  const [visibility, setVisibility] = useState<"public" | "private">("private");
   const [, startTransition] = useTransition();
   const modalFormRef = useRef<HTMLFormElement>(null);
   const drawerFormRef = useRef<HTMLFormElement>(null);
@@ -75,6 +76,7 @@ export default function TaskCreateDialog({
     if (open) {
       handledSuccess.current = false;
       setVolunteersNeeded("1");
+      setVisibility("private");
     }
   }, [open]);
 
@@ -146,64 +148,84 @@ export default function TaskCreateDialog({
         <p className="text-xs text-ink-400">Defaults to two weeks from today.</p>
       </div>
       <div className="space-y-2">
-        <Label htmlFor={volunteersId}>Volunteers needed</Label>
-        <Input
-          id={volunteersId}
-          name="volunteersNeeded"
-          type="number"
-          min={1}
-          step={1}
-          value={volunteersNeeded}
-          onChange={(event) => setVolunteersNeeded(event.target.value)}
-        />
-        <p className="text-xs text-ink-400">
-          Set this above 1 to allow multiple volunteers to join.
-        </p>
-      </div>
-      <div className="space-y-2">
         <Label htmlFor={visibilityId}>Visibility</Label>
         <SelectMenu
           id={visibilityId}
           name="visibility"
-          defaultValue="public"
+          value={visibility}
+          onValueChange={(nextValue) => {
+            const nextVisibility = nextValue === "public" ? "public" : "private";
+            setVisibility(nextVisibility);
+            if (nextVisibility === "private") {
+              setVolunteersNeeded("1");
+            }
+          }}
           options={[
-            { value: "public", label: "Public (shared with the parish)" },
-            { value: "private", label: "Private (just you + assignee)" }
+            { value: "private", label: "Private (just you + assignee)" },
+            { value: "public", label: "Public (shared with the parish)" }
           ]}
         />
-        <p className="text-xs text-ink-400">
-          Public tasks created by members require approval before they appear for everyone.
-        </p>
+        {visibility === "public" ? (
+          <p className="text-xs text-ink-400">
+            Public tasks created by members require approval before they appear for everyone.
+          </p>
+        ) : (
+          <p className="text-xs text-ink-400">Private tasks stay assigned to you by default.</p>
+        )}
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor={groupId}>Group</Label>
-          <SelectMenu
-            id={groupId}
-            name="groupId"
-            defaultValue=""
-            placeholder="No group"
-            options={[
-              { value: "", label: "No group" },
-              ...groupOptions.map((group) => ({ value: group.id, label: group.name }))
-            ]}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={ownerId}>
-            {Number(volunteersNeeded) > 1 ? "Lead (optional)" : "Assignee (optional)"}
-          </Label>
-          <SelectMenu
-            id={ownerId}
-            name="ownerId"
-            defaultValue=""
-            options={memberOptions.map((member) => ({
-              value: member.id,
-              label: `${member.name}${member.id === currentUserId ? " (You)" : ""}`
-            }))}
-          />
-        </div>
-      </div>
+      {visibility === "private" ? (
+        <>
+          <input type="hidden" name="volunteersNeeded" value="1" />
+          <input type="hidden" name="ownerId" value={currentUserId} />
+        </>
+      ) : (
+        <>
+          <div className="space-y-2">
+            <Label htmlFor={volunteersId}>Volunteers needed</Label>
+            <Input
+              id={volunteersId}
+              name="volunteersNeeded"
+              type="number"
+              min={1}
+              step={1}
+              value={volunteersNeeded}
+              onChange={(event) => setVolunteersNeeded(event.target.value)}
+            />
+            <p className="text-xs text-ink-400">
+              Set this above 1 to allow multiple volunteers to join.
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor={groupId}>Group</Label>
+              <SelectMenu
+                id={groupId}
+                name="groupId"
+                defaultValue=""
+                placeholder="No group"
+                options={[
+                  { value: "", label: "No group" },
+                  ...groupOptions.map((group) => ({ value: group.id, label: group.name }))
+                ]}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={ownerId}>
+                {Number(volunteersNeeded) > 1 ? "Lead (optional)" : "Assignee (optional)"}
+              </Label>
+              <SelectMenu
+                id={ownerId}
+                name="ownerId"
+                defaultValue=""
+                options={memberOptions.map((member) => ({
+                  value: member.id,
+                  label: `${member.name}${member.id === currentUserId ? " (You)" : ""}`
+                }))}
+              />
+            </div>
+          </div>
+        </>
+      )}
 
       {state.status === "error" ? (
         <p role="alert" className="text-sm text-rose-600">
