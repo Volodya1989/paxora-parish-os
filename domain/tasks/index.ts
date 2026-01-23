@@ -112,6 +112,28 @@ async function assertTaskOwnership({ taskId, parishId, actorUserId }: TaskAction
   return task;
 }
 
+async function assertTaskDeleteAccess({ taskId, parishId, actorUserId }: TaskActionInput) {
+  const task = await prisma.task.findUnique({
+    where: { id: taskId },
+    select: { id: true, createdById: true, parishId: true }
+  });
+
+  if (!task || task.parishId !== parishId) {
+    throw new Error("Task not found");
+  }
+
+  if (task.createdById === actorUserId) {
+    return task;
+  }
+
+  const membership = await getParishMembership(parishId, actorUserId);
+  if (!membership || !isParishLeader(membership.role)) {
+    throw new Error("Forbidden");
+  }
+
+  return task;
+}
+
 async function assertTaskAccess({ taskId, parishId, actorUserId }: TaskActionInput) {
   const task = await prisma.task.findUnique({
     where: { id: taskId },
@@ -508,7 +530,7 @@ export async function updateTask({
 }
 
 export async function deleteTask({ taskId, parishId, actorUserId }: TaskActionInput) {
-  await assertTaskOwnership({ taskId, parishId, actorUserId });
+  await assertTaskDeleteAccess({ taskId, parishId, actorUserId });
 
   return prisma.task.delete({
     where: { id: taskId }

@@ -72,9 +72,13 @@ export default function TaskQuickAdd({ weekId }: TaskQuickAddProps) {
         className="flex-1"
         value={title}
         onChange={(event) => {
-          setTitle(event.target.value);
+          const nextValue = event.target.value;
+          setTitle(nextValue);
           if (localError) {
             setLocalError(null);
+          }
+          if (state.status === "error") {
+            lastSubmittedTitle.current = "";
           }
         }}
       />

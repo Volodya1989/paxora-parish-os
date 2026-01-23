@@ -42,6 +42,9 @@ const preferNamedExports = <T>(mod: Record<string, unknown>): T => {
   if (!("default" in mod)) return mod as T;
 
   const exportKeys = getExportKeys(mod);
+  if (exportKeys.length > 1) {
+    return mod as T;
+  }
 
   // Only default export
   if (exportKeys.length === 1 && exportKeys[0] === "default") {

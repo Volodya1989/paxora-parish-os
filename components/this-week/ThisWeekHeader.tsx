@@ -27,6 +27,7 @@ type ThisWeekHeaderProps = {
   weekOptions: WeekOption[];
   showCompletion?: boolean;
   showQuickAdd?: boolean;
+  variant?: "default" | "compact";
   viewToggle?: React.ReactNode;
 };
 
@@ -76,26 +77,38 @@ export default function ThisWeekHeader({
   weekOptions,
   showCompletion = true,
   showQuickAdd = true,
+  variant = "default",
   viewToggle
 }: ThisWeekHeaderProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const isCompact = variant === "compact";
 
   return (
-    <div className="rounded-card border border-mist-200 bg-white p-5 shadow-card md:p-6">
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-h1">{title}</h1>
-            <span className="rounded-full bg-mist-100 px-3 py-1 text-xs font-medium text-ink-700">
+    <div
+      className={cn(
+        "rounded-card border border-mist-200 bg-white shadow-card",
+        isCompact ? "p-3 sm:p-5" : "p-5 md:p-6"
+      )}
+    >
+      <div
+        className={cn(
+          "flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between",
+          isCompact && "gap-3"
+        )}
+      >
+        <div className={cn("space-y-2", isCompact && "space-y-1")}>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className={cn(isCompact ? "text-h2 sm:text-h1" : "text-h1")}>{title}</h1>
+            <span className="rounded-full bg-mist-100 px-2.5 py-0.5 text-xs font-semibold text-ink-700">
               {weekLabel}
             </span>
           </div>
-          <p className="text-sm text-ink-500">
+          <p className={cn(isCompact ? "text-xs sm:text-sm" : "text-sm", "text-ink-500")}>
             {dateRange} · {updatedLabel}
           </p>
         </div>
 
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-end">
+        <div className={cn("flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end")}>
           {showCompletion ? (
             <div className="flex items-center gap-3 rounded-card border border-mist-200 bg-mist-50 px-4 py-3">
               <ProgressRing percent={completionPct} />
@@ -112,13 +125,19 @@ export default function ThisWeekHeader({
             <Link
               href={`?week=previous`}
               aria-label="Previous week"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-button border border-mist-200 text-ink-700 transition hover:bg-mist-50 focus-ring"
+              className={cn(
+                "inline-flex items-center justify-center rounded-button border border-mist-200 text-ink-700 transition hover:bg-mist-50 focus-ring",
+                isCompact ? "h-8 w-8 sm:h-9 sm:w-9" : "h-9 w-9"
+              )}
             >
               ‹
             </Link>
             <Dropdown>
               <DropdownTrigger
-                className="inline-flex items-center gap-2 rounded-button border border-mist-200 px-3 py-2 text-sm font-medium text-ink-700 hover:bg-mist-50 focus-ring"
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-button border border-mist-200 text-sm font-medium text-ink-700 hover:bg-mist-50 focus-ring",
+                  isCompact ? "px-2.5 py-1.5 text-xs sm:px-3 sm:py-2 sm:text-sm" : "px-3 py-2"
+                )}
                 aria-label="Select week"
               >
                 {weekOptions.find((option) => option.value === weekSelection)?.label ?? weekLabel}
@@ -144,7 +163,10 @@ export default function ThisWeekHeader({
             <Link
               href={`?week=next`}
               aria-label="Next week"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-button border border-mist-200 text-ink-700 transition hover:bg-mist-50 focus-ring"
+              className={cn(
+                "inline-flex items-center justify-center rounded-button border border-mist-200 text-ink-700 transition hover:bg-mist-50 focus-ring",
+                isCompact ? "h-8 w-8 sm:h-9 sm:w-9" : "h-9 w-9"
+              )}
             >
               ›
             </Link>
@@ -153,7 +175,10 @@ export default function ThisWeekHeader({
           {viewToggle}
 
           {showQuickAdd ? (
-            <Button onClick={() => setIsOpen(true)} className="h-10 px-4">
+            <Button
+              onClick={() => setIsOpen(true)}
+              className={cn(isCompact ? "h-9 px-3 sm:h-10 sm:px-4" : "h-10 px-4")}
+            >
               + Add
             </Button>
           ) : null}

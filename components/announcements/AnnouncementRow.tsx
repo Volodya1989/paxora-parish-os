@@ -11,6 +11,8 @@ type AnnouncementRowProps = {
   announcement: AnnouncementListItem;
   onTogglePublish: (id: string, nextPublished: boolean, previousPublishedAt: Date | null) => void;
   onArchive: (id: string) => void;
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
   isBusy?: boolean;
   isReadOnly?: boolean;
 };
@@ -23,10 +25,18 @@ function formatDate(date: Date) {
   }).format(date);
 }
 
+function buildExcerpt(text: string | null) {
+  if (!text) return "No message yet.";
+  if (text.length <= 120) return text;
+  return `${text.slice(0, 120).trim()}…`;
+}
+
 export default function AnnouncementRow({
   announcement,
   onTogglePublish,
   onArchive,
+  onEdit,
+  onDelete,
   isBusy = false,
   isReadOnly = false
 }: AnnouncementRowProps) {
@@ -37,7 +47,12 @@ export default function AnnouncementRow({
     : `Updated ${formatDate(announcement.updatedAt ?? announcement.createdAt)}`;
 
   return (
-    <Card className={cn("flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between", isBusy && "opacity-70")}>
+    <Card
+      className={cn(
+        "flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between",
+        isBusy && "opacity-70"
+      )}
+    >
       <div className="space-y-2">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="text-base font-semibold text-ink-900">{announcement.title}</h3>
@@ -47,7 +62,10 @@ export default function AnnouncementRow({
             </Badge>
           )}
         </div>
-        <p className="text-xs text-ink-400">{timestamp}</p>
+        <p className="text-sm text-ink-500">{buildExcerpt(announcement.body)}</p>
+        <p className="text-xs text-ink-400">
+          {announcement.createdBy?.name ?? "Parish staff"} · {timestamp}
+        </p>
       </div>
 
       {isReadOnly ? null : (
@@ -61,6 +79,11 @@ export default function AnnouncementRow({
           >
             {isPublished ? "Unpublish" : "Publish"}
           </Button>
+          {onEdit ? (
+            <Button size="sm" variant="ghost" onClick={() => onEdit(announcement.id)}>
+              Edit
+            </Button>
+          ) : null}
           <Dropdown>
             <DropdownTrigger
               iconOnly
@@ -81,6 +104,18 @@ export default function AnnouncementRow({
               >
                 Archive
               </DropdownItem>
+              {onDelete ? (
+                <DropdownItem
+                  onClick={() => onDelete(announcement.id)}
+                  disabled={isBusy}
+                  className={cn(
+                    "text-rose-600 hover:bg-rose-50 focus-visible:bg-rose-50",
+                    isBusy && "pointer-events-none opacity-50 text-ink-300"
+                  )}
+                >
+                  Delete
+                </DropdownItem>
+              ) : null}
             </DropdownMenu>
           </Dropdown>
         </div>

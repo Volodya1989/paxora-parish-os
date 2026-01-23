@@ -13,13 +13,15 @@ type TaskFiltersProps = {
   groupOptions: Array<{ id: string; name: string }>;
   showOwnership?: boolean;
   searchPlaceholder?: string;
+  layout?: "inline" | "stacked";
 };
 
 export default function TaskFilters({
   filters,
   groupOptions,
   showOwnership = true,
-  searchPlaceholder = "Search serve items or notes"
+  searchPlaceholder = "Search serve items or notes",
+  layout = "inline"
 }: TaskFiltersProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -59,7 +61,11 @@ export default function TaskFilters({
   return (
     <form
       onSubmit={handleSearchSubmit}
-      className="grid gap-4 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto]"
+      className={
+        layout === "stacked"
+          ? "flex flex-col gap-4"
+          : "grid gap-4 md:grid-cols-[repeat(4,minmax(0,1fr))_auto]"
+      }
     >
       <div className="space-y-2">
         <Label htmlFor={statusId}>Status</Label>

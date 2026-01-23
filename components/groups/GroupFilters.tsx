@@ -14,6 +14,7 @@ type GroupFiltersProps = {
     active: number;
     archived: number;
   };
+  layout?: "inline" | "stacked";
 };
 
 export default function GroupFilters({
@@ -21,10 +22,18 @@ export default function GroupFilters({
   onTabChange,
   query,
   onQueryChange,
-  counts
+  counts,
+  layout = "inline"
 }: GroupFiltersProps) {
   return (
-    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div
+      className={cn(
+        "flex gap-4",
+        layout === "stacked"
+          ? "flex-col"
+          : "flex-col md:flex-row md:items-center md:justify-between"
+      )}
+    >
       <div className="flex items-center rounded-full border border-mist-200 bg-mist-50 p-1 text-sm">
         {(["active", "archived"] as const).map((tab) => (
           <button
@@ -46,7 +55,7 @@ export default function GroupFilters({
         ))}
       </div>
 
-      <div className="w-full md:max-w-xs">
+      <div className={cn("w-full", layout === "inline" && "md:max-w-xs")}>
         <Input
           type="search"
           placeholder="Search groups"

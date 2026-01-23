@@ -6,10 +6,28 @@ export type AnnouncementStatus = "draft" | "published";
 export type AnnouncementListItem = {
   id: string;
   title: string;
+  body: string | null;
   createdAt: Date;
   updatedAt: Date;
   publishedAt: Date | null;
   archivedAt: Date | null;
+  createdBy: {
+    id: string;
+    name: string;
+  } | null;
+};
+
+export type AnnouncementDetail = {
+  id: string;
+  title: string;
+  body: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  publishedAt: Date | null;
+  createdBy: {
+    id: string;
+    name: string;
+  } | null;
 };
 
 type ListAnnouncementsInput = {
@@ -17,6 +35,52 @@ type ListAnnouncementsInput = {
   status: AnnouncementStatus;
   getNow?: () => Date;
 };
+
+export async function getAnnouncement({
+  parishId,
+  announcementId
+}: {
+  parishId: string;
+  announcementId: string;
+}): Promise<AnnouncementDetail | null> {
+  const announcement = await prisma.announcement.findFirst({
+    where: {
+      id: announcementId,
+      parishId,
+      archivedAt: null
+    },
+    select: {
+      id: true,
+      title: true,
+      body: true,
+      createdAt: true,
+      updatedAt: true,
+      publishedAt: true,
+      createdBy: {
+        select: {
+          id: true,
+          name: true,
+          email: true
+        }
+      }
+    }
+  });
+
+  if (!announcement) {
+    return null;
+  }
+
+  return {
+    ...announcement,
+    body: announcement.body ?? null,
+    createdBy: announcement.createdBy
+      ? {
+          id: announcement.createdBy.id,
+          name: announcement.createdBy.name ?? announcement.createdBy.email ?? "Parish staff"
+        }
+      : null
+  };
+}
 
 export async function listAnnouncements({ parishId, status, getNow }: ListAnnouncementsInput) {
   const resolveNow = getNow ?? defaultGetNow;
@@ -28,7 +92,7 @@ export async function listAnnouncements({ parishId, status, getNow }: ListAnnoun
     ...(status === "draft" ? { publishedAt: null } : { publishedAt: { not: null } })
   };
 
-  return (await prisma.announcement.findMany({
+  const announcements = await prisma.announcement.findMany({
     where,
     orderBy:
       status === "draft"
@@ -37,10 +101,29 @@ export async function listAnnouncements({ parishId, status, getNow }: ListAnnoun
     select: {
       id: true,
       title: true,
+      body: true,
       createdAt: true,
       updatedAt: true,
       publishedAt: true,
-      archivedAt: true
+      archivedAt: true,
+      createdBy: {
+        select: {
+          id: true,
+          name: true,
+          email: true
+        }
+      }
     }
+  });
+
+  return announcements.map((announcement) => ({
+    ...announcement,
+    body: announcement.body ?? null,
+    createdBy: announcement.createdBy
+      ? {
+          id: announcement.createdBy.id,
+          name: announcement.createdBy.name ?? announcement.createdBy.email ?? "Parish staff"
+        }
+      : null
   })) as AnnouncementListItem[];
 }

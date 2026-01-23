@@ -72,7 +72,7 @@ export default function ThisWeekParishionerView({
       : "New opportunities";
 
   return (
-    <div className="section-gap">
+    <div className="space-y-4">
       <ThisWeekHeader
         title="This Week"
         weekLabel={data.week.label}
@@ -84,6 +84,7 @@ export default function ThisWeekParishionerView({
         weekOptions={weekOptions}
         showCompletion={false}
         showQuickAdd={false}
+        variant="compact"
         viewToggle={viewToggle}
       />
 

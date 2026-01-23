@@ -3,7 +3,6 @@
 import { useMemo, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Button from "@/components/ui/Button";
-import EmptyState from "@/components/ui/EmptyState";
 import Select from "@/components/ui/Select";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/Tabs";
 import CalendarGridWeek from "@/components/calendar/CalendarGridWeek";
@@ -12,8 +11,10 @@ import CalendarDayList from "@/components/calendar/CalendarDayList";
 import EventDetailPanel from "@/components/calendar/EventDetailPanel";
 import EventCreateDialog from "@/components/calendar/EventCreateDialog";
 import ScheduleView from "@/components/calendar/ScheduleView";
-import PageHeaderCard from "@/components/layout/PageHeaderCard";
-import SectionCard from "@/components/layout/SectionCard";
+import PageShell from "@/components/app/page-shell";
+import FiltersDrawer from "@/components/app/filters-drawer";
+import Card from "@/components/ui/Card";
+import ListEmptyState from "@/components/app/list-empty-state";
 import { CalendarIcon } from "@/components/icons/ParishIcons";
 import {
   getDateKey,
@@ -205,12 +206,46 @@ export default function CalendarView({
     </div>
   );
 
+  const scheduleFilters = (
+    <div className="space-y-3">
+      <Select
+        value={scheduleRange}
+        onChange={(event) => setScheduleRange(event.target.value as ScheduleRange)}
+      >
+        <option value="week">This week</option>
+        <option value="next">Next week</option>
+        <option value="month">This month</option>
+      </Select>
+      {isEditor ? (
+        <Select
+          value={visibilityFilter}
+          onChange={(event) => setVisibilityFilter(event.target.value as VisibilityFilter)}
+        >
+          <option value="all">All visibility</option>
+          <option value="PUBLIC">Public</option>
+          <option value="GROUP">Group</option>
+          <option value="PRIVATE">Private</option>
+        </Select>
+      ) : null}
+      {viewerGroupIds.length > 0 ? (
+        <Select value={groupFilter} onChange={(event) => setGroupFilter(event.target.value as GroupFilter)}>
+          <option value="all">All groups</option>
+          <option value="mine">My groups</option>
+        </Select>
+      ) : null}
+    </div>
+  );
+
   return (
     <Tabs value={view} onValueChange={(value) => setView(value)}>
       <div className="section-gap">
-        <PageHeaderCard
+        <PageShell
           title="Calendar"
           description="Plan services, rehearsals, and gatherings across the parish."
+          summaryChips={[
+            { label: surface === "schedule" ? "Schedule" : "Calendar", tone: "emerald" },
+            { label: view === "week" ? "Week view" : "Month view", tone: "mist" }
+          ]}
           actions={
             <>
               <Tabs value={surface} onValueChange={(value) => setSurface(value)}>
@@ -223,6 +258,11 @@ export default function CalendarView({
                 <TabsTrigger value="week">Week</TabsTrigger>
                 <TabsTrigger value="month">Month</TabsTrigger>
               </TabsList>
+              {surface === "schedule" ? (
+                <div className="md:hidden">
+                  <FiltersDrawer title="Schedule filters">{scheduleFilters}</FiltersDrawer>
+                </div>
+              ) : null}
               <Button
                 type="button"
                 variant="secondary"
@@ -232,158 +272,137 @@ export default function CalendarView({
                   setCreateType("SERVICE");
                   setCreateOpen(true);
                 }}
-                className="w-full sm:w-auto"
+                className="h-9 px-3 text-sm"
               >
                 {addButtonLabel}
               </Button>
             </>
           }
-        />
-
-        {surface === "schedule" ? (
-          <div className="space-y-6">
-            <SectionCard
-              title="Services & events schedule"
-              description="See upcoming services and gatherings in a calm, day-by-day flow."
-              icon={<CalendarIcon className="h-5 w-5" />}
-              iconClassName="bg-emerald-100 text-emerald-700"
-              action={
-                <div className="flex flex-wrap items-center gap-3">
-                  <Select
-                    value={scheduleRange}
-                    onChange={(event) => setScheduleRange(event.target.value as ScheduleRange)}
-                  >
-                    <option value="week">This week</option>
-                    <option value="next">Next week</option>
-                    <option value="month">This month</option>
-                  </Select>
-                  {isEditor ? (
-                    <Select
-                      value={visibilityFilter}
-                      onChange={(event) =>
-                        setVisibilityFilter(event.target.value as VisibilityFilter)
-                      }
-                    >
-                      <option value="all">All visibility</option>
-                      <option value="PUBLIC">Public</option>
-                      <option value="GROUP">Group</option>
-                      <option value="PRIVATE">Private</option>
-                    </Select>
+        >
+          {surface === "schedule" ? (
+            <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)_320px]">
+              <aside className="hidden lg:block">
+                <Card className="space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-ink-500">
+                    <CalendarIcon className="h-4 w-4" />
+                    Filters
+                  </div>
+                  {scheduleFilters}
+                </Card>
+              </aside>
+              <div className="space-y-4">
+                <Card>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-semibold text-ink-900">
+                        Services & events schedule
+                      </p>
+                      <p className="text-xs text-ink-400">
+                        See upcoming services in a calm, day-by-day flow.
+                      </p>
+                    </div>
+                  </div>
+                  {!isEditor && viewerGroupIds.length === 0 ? (
+                    <div className="mt-3 rounded-card border border-mist-100 bg-mist-50 px-4 py-3 text-xs text-ink-500">
+                      Showing public events only. Join a ministry group to see their schedules.
+                    </div>
                   ) : null}
-                  {viewerGroupIds.length > 0 ? (
-                    <Select
-                      value={groupFilter}
-                      onChange={(event) => setGroupFilter(event.target.value as GroupFilter)}
-                    >
-                      <option value="all">All groups</option>
-                      <option value="mine">My groups</option>
-                    </Select>
-                  ) : null}
-                </div>
-              }
-            >
-              {!isEditor && viewerGroupIds.length === 0 ? (
-                <div className="rounded-card border border-mist-100 bg-mist-50 px-4 py-3 text-xs text-ink-500">
-                  Showing public events only. Join a ministry group to see their schedules.
-                </div>
-              ) : null}
-            </SectionCard>
-
-            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-              <div>
-                {scheduleEvents.length === 0 ? (
-                  <EmptyState
-                    title="No upcoming services yet"
-                    description="When you schedule services or events, they will appear here for the parish."
-                    action={renderEmptyActions()}
-                  />
-                ) : (
-                  <ScheduleView
-                    events={scheduleEvents}
-                    now={now}
-                    isEditor={isEditor}
-                    onSelectEvent={setSelectedEvent}
-                  />
-                )}
+                  <div className="mt-4">
+                    {scheduleEvents.length === 0 ? (
+                      <ListEmptyState
+                        title="No upcoming services yet"
+                        description="When you schedule services or events, they will appear here for the parish."
+                        action={renderEmptyActions()}
+                      />
+                    ) : (
+                      <ScheduleView
+                        events={scheduleEvents}
+                        now={now}
+                        isEditor={isEditor}
+                        onSelectEvent={setSelectedEvent}
+                      />
+                    )}
+                  </div>
+                </Card>
               </div>
               <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} />
             </div>
-          </div>
-        ) : (
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-            <SectionCard
-              title={calendarSectionTitle}
-              description={calendarSectionDescription}
-              icon={<CalendarIcon className="h-5 w-5" />}
-              iconClassName="bg-emerald-100 text-emerald-700"
-            >
-              <TabsPanel value="week" className="mt-0">
-                {weekEvents.length === 0 ? (
-                  <EmptyState
-                    title="No events this week"
-                    description="Add a new event to keep the calendar up to date."
-                    action={renderEmptyActions()}
-                  />
-                ) : (
-                  <>
-                    <div className="md:hidden">
-                      <CalendarDayList
-                        days={weekDays}
-                        eventsByDay={weekEventsByDay}
-                        today={now}
-                        onSelectEvent={setSelectedEvent}
-                      />
-                    </div>
-                    <div className="hidden md:block">
-                      <CalendarGridWeek
-                        days={weekDays}
-                        eventsByDay={weekEventsByDay}
-                        today={now}
-                        selectedEventId={selectedEvent?.instanceId}
-                        onSelectEvent={setSelectedEvent}
-                      />
-                    </div>
-                  </>
-                )}
-              </TabsPanel>
-              <TabsPanel value="month" className="mt-0">
-                {monthEvents.length === 0 ? (
-                  <EmptyState
-                    title="No events this month"
-                    description="Schedule something for the parish calendar."
-                    action={renderEmptyActions()}
-                  />
-                ) : (
-                  <>
-                    <div className="md:hidden">
-                      <CalendarDayList
-                        days={monthDays}
-                        monthStart={monthRange.start}
-                        monthEnd={monthRange.end}
-                        eventsByDay={monthEventsByDay}
-                        today={now}
-                        onSelectEvent={setSelectedEvent}
-                      />
-                    </div>
-                    <div className="hidden md:block">
-                      <CalendarGridMonth
-                        days={monthDays}
-                        monthStart={monthRange.start}
-                        monthEnd={monthRange.end}
-                        eventsByDay={monthEventsByDay}
-                        today={now}
-                        selectedEventId={selectedEvent?.instanceId}
-                        onSelectEvent={setSelectedEvent}
-                      />
-                    </div>
-                  </>
-                )}
-              </TabsPanel>
-            </SectionCard>
+          ) : (
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+              <Card>
+                <div className="flex items-center gap-2 text-xs font-semibold text-ink-500">
+                  <CalendarIcon className="h-4 w-4" />
+                  {calendarSectionTitle}
+                </div>
+                <p className="mt-2 text-xs text-ink-400">{calendarSectionDescription}</p>
+                <TabsPanel value="week" className="mt-4">
+                  {weekEvents.length === 0 ? (
+                    <ListEmptyState
+                      title="No events this week"
+                      description="Add a new event to keep the calendar up to date."
+                      action={renderEmptyActions()}
+                    />
+                  ) : (
+                    <>
+                      <div className="md:hidden">
+                        <CalendarDayList
+                          days={weekDays}
+                          eventsByDay={weekEventsByDay}
+                          today={now}
+                          onSelectEvent={setSelectedEvent}
+                        />
+                      </div>
+                      <div className="hidden md:block">
+                        <CalendarGridWeek
+                          days={weekDays}
+                          eventsByDay={weekEventsByDay}
+                          today={now}
+                          selectedEventId={selectedEvent?.instanceId}
+                          onSelectEvent={setSelectedEvent}
+                        />
+                      </div>
+                    </>
+                  )}
+                </TabsPanel>
+                <TabsPanel value="month" className="mt-4">
+                  {monthEvents.length === 0 ? (
+                    <ListEmptyState
+                      title="No events this month"
+                      description="Schedule something for the parish calendar."
+                      action={renderEmptyActions()}
+                    />
+                  ) : (
+                    <>
+                      <div className="md:hidden">
+                        <CalendarDayList
+                          days={monthDays}
+                          monthStart={monthRange.start}
+                          monthEnd={monthRange.end}
+                          eventsByDay={monthEventsByDay}
+                          today={now}
+                          onSelectEvent={setSelectedEvent}
+                        />
+                      </div>
+                      <div className="hidden md:block">
+                        <CalendarGridMonth
+                          days={monthDays}
+                          monthStart={monthRange.start}
+                          monthEnd={monthRange.end}
+                          eventsByDay={monthEventsByDay}
+                          today={now}
+                          selectedEventId={selectedEvent?.instanceId}
+                          onSelectEvent={setSelectedEvent}
+                        />
+                      </div>
+                    </>
+                  )}
+                </TabsPanel>
+              </Card>
 
-            <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} />
-          </div>
-        )}
+              <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+            </div>
+          )}
+        </PageShell>
       </div>
 
       <EventCreateDialog

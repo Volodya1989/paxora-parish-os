@@ -383,7 +383,7 @@ export async function listTasks({
         : null,
       group: task.group ? { id: task.group.id, name: task.group.name } : null,
       canManage,
-      canDelete: task.ownerId === actorUserId || task.createdById === actorUserId,
+      canDelete: isLeader || task.createdById === actorUserId,
       canStartWork,
       canManageStatus,
       canAssignToSelf,

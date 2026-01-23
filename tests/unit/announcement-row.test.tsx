@@ -8,10 +8,15 @@ import type { AnnouncementListItem } from "@/lib/queries/announcements";
 const baseAnnouncement: AnnouncementListItem = {
   id: "announcement-1",
   title: "Community picnic this Sunday",
+  body: "Bring a blanket and something to share after the 10am service.",
   createdAt: new Date("2024-03-10T10:00:00.000Z"),
   updatedAt: new Date("2024-03-11T12:00:00.000Z"),
   publishedAt: null,
-  archivedAt: null
+  archivedAt: null,
+  createdBy: {
+    id: "user-1",
+    name: "St. Anne Office"
+  }
 };
 
 function findElementByAriaLabel(
@@ -48,6 +53,8 @@ test("AnnouncementRow renders title, status chip, and actions", () => {
   );
 
   assert.match(markup, /Community picnic this Sunday/);
+  assert.match(markup, /Bring a blanket and something to share/);
+  assert.match(markup, /St\. Anne Office/);
   assert.match(markup, />Draft</);
   assert.match(markup, /aria-label="Publish announcement"/);
   assert.match(markup, /aria-label="Announcement actions"/);
