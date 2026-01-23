@@ -283,10 +283,10 @@ export default function TaskRow({
               {task.canDelete ? (
                 <DropdownItem
                   onClick={() => onDelete(task.id)}
-                  disabled={!canManage}
+                  disabled={!task.canDelete}
                   className={cn(
                     "text-rose-600 hover:bg-rose-50 focus-visible:bg-rose-50",
-                    !canManage && "pointer-events-none opacity-50"
+                    !task.canDelete && "pointer-events-none opacity-50"
                   )}
                 >
                   Delete task

@@ -24,11 +24,6 @@ export default async function AnnouncementsPage() {
   ]);
 
   return (
-    <AnnouncementsView
-      parishId={parishId}
-      drafts={drafts}
-      published={published}
-      canManage={canManage}
-    />
+    <AnnouncementsView drafts={drafts} published={published} canManage={canManage} />
   );
 }

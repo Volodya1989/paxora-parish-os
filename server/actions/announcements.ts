@@ -7,6 +7,12 @@ import { prisma } from "@/server/db/prisma";
 import { getParishMembership } from "@/server/db/groups";
 import { isParishLeader } from "@/lib/permissions";
 import { getNow as defaultGetNow } from "@/lib/time/getNow";
+import {
+  createAnnouncementSchema,
+  deleteAnnouncementSchema,
+  updateAnnouncementSchema,
+  updateAnnouncementStatusSchema
+} from "@/lib/validation/announcements";
 
 function assertSession(session: Session | null) {
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -64,6 +70,7 @@ export async function createAnnouncementDraft(input: {
     data: {
       parishId,
       title: buildDraftTitle(input.title, now),
+      createdById: userId,
       createdAt: now,
       updatedAt: now
     },
@@ -87,19 +94,29 @@ export async function setAnnouncementPublished(input: {
   const session = await getServerSession(authOptions);
   const { userId, parishId } = assertSession(session);
 
+  const parsed = updateAnnouncementStatusSchema.safeParse({
+    id: input.id,
+    published: input.published,
+    publishedAt: input.publishedAt
+  });
+
+  if (!parsed.success) {
+    throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
+  }
+
   await requireParishLeader(userId, parishId);
 
   const now =
-    input.published && input.publishedAt
-      ? new Date(input.publishedAt)
+    parsed.data.published && parsed.data.publishedAt
+      ? new Date(parsed.data.publishedAt)
       : (input.getNow ?? defaultGetNow)();
 
   const result = await prisma.announcement.updateMany({
     where: {
-      id: input.id,
+      id: parsed.data.id,
       parishId
     },
-    data: input.published
+    data: parsed.data.published
       ? {
           publishedAt: now,
           updatedAt: now
@@ -156,6 +173,122 @@ export async function unarchiveAnnouncement(input: { id: string }) {
     },
     data: {
       archivedAt: null
+    }
+  });
+
+  if (result.count === 0) {
+    throw new Error("Not found");
+  }
+
+  revalidatePath("/announcements");
+}
+
+export async function createAnnouncement(input: {
+  parishId: string;
+  title: string;
+  body: string;
+  published: boolean;
+  getNow?: () => Date;
+}) {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  const parsed = createAnnouncementSchema.safeParse({
+    parishId: input.parishId,
+    title: input.title,
+    body: input.body,
+    published: input.published
+  });
+
+  if (!parsed.success) {
+    throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
+  }
+
+  if (parishId !== parsed.data.parishId) {
+    throw new Error("Unauthorized");
+  }
+
+  await requireParishLeader(userId, parishId);
+
+  const now = (input.getNow ?? defaultGetNow)();
+
+  const announcement = await prisma.announcement.create({
+    data: {
+      parishId,
+      title: parsed.data.title,
+      body: parsed.data.body,
+      createdById: userId,
+      publishedAt: parsed.data.published ? now : null,
+      createdAt: now,
+      updatedAt: now
+    }
+  });
+
+  revalidatePath("/announcements");
+
+  return announcement;
+}
+
+export async function updateAnnouncement(input: {
+  id: string;
+  title: string;
+  body: string;
+  published: boolean;
+  getNow?: () => Date;
+}) {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  const parsed = updateAnnouncementSchema.safeParse({
+    id: input.id,
+    title: input.title,
+    body: input.body,
+    published: input.published
+  });
+
+  if (!parsed.success) {
+    throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
+  }
+
+  await requireParishLeader(userId, parishId);
+
+  const now = (input.getNow ?? defaultGetNow)();
+
+  const result = await prisma.announcement.updateMany({
+    where: {
+      id: parsed.data.id,
+      parishId
+    },
+    data: {
+      title: parsed.data.title,
+      body: parsed.data.body,
+      publishedAt: parsed.data.published ? now : null,
+      updatedAt: now
+    }
+  });
+
+  if (result.count === 0) {
+    throw new Error("Not found");
+  }
+
+  revalidatePath("/announcements");
+}
+
+export async function deleteAnnouncement(input: { id: string }) {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  const parsed = deleteAnnouncementSchema.safeParse({ id: input.id });
+  if (!parsed.success) {
+    throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
+  }
+
+  await requireParishLeader(userId, parishId);
+
+  const result = await prisma.announcement.deleteMany({
+    where: {
+      id: parsed.data.id,
+      parishId
     }
   });
 

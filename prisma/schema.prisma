@@ -131,6 +131,7 @@ model User {
   taskComments     TaskComment[]
   taskActivities   TaskActivity[]
   digestsCreated   Digest[] @relation("DigestAuthor")
+  createdAnnouncements Announcement[] @relation("AnnouncementAuthor")
   eventRsvps       EventRsvp[]
   accounts         Account[]
   sessions         Session[]
@@ -366,12 +367,15 @@ model Announcement {
   id          String   @id @default(cuid())
   parishId    String
   title       String
+  body        String?
+  createdById String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   publishedAt DateTime?
   archivedAt  DateTime?
 
   parish Parish @relation(fields: [parishId], references: [id])
+  createdBy User? @relation("AnnouncementAuthor", fields: [createdById], references: [id])
 
   @@index([parishId, publishedAt])
 }

@@ -9,16 +9,16 @@ import TaskCreateDialog from "@/components/tasks/TaskCreateDialog";
 import TaskFilters from "@/components/tasks/TaskFilters";
 import TasksEmptyState from "@/components/tasks/TasksEmptyState";
 import TasksList from "@/components/tasks/TasksList";
-import { Drawer } from "@/components/ui/Drawer";
-import EmptyState from "@/components/ui/EmptyState";
-import PageHeaderCard from "@/components/layout/PageHeaderCard";
-import SectionCard from "@/components/layout/SectionCard";
+import PageShell from "@/components/app/page-shell";
+import FiltersDrawer from "@/components/app/filters-drawer";
+import Card from "@/components/ui/Card";
+import ListEmptyState from "@/components/app/list-empty-state";
 import type { TaskFilters as TaskFiltersState, TaskListItem, TaskListSummary } from "@/lib/queries/tasks";
 import type { PendingAccessRequest } from "@/lib/queries/access";
 import type { PendingTaskApproval } from "@/lib/queries/tasks";
 import { approveTask, rejectTask } from "@/server/actions/tasks";
-import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 import TaskQuickAdd from "@/components/tasks/TaskQuickAdd";
+import { cn } from "@/lib/ui/cn";
 
 type TasksViewProps = {
   title?: string;
@@ -69,8 +69,6 @@ export default function TasksView({
   const [accessRoles, setAccessRoles] = useState<Record<string, string>>({});
   const [isApproving, startApprovalTransition] = useTransition();
   const [isAccessPending, startAccessTransition] = useTransition();
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const createParam = searchParams?.get("create");
   const hasTasks = summary.total > 0;
@@ -152,6 +150,43 @@ export default function TasksView({
         : title;
   const showCreateButton = canManageTasks || viewMode === "mine";
 
+  const renderViewToggle = (className?: string) => {
+    if (viewMode === "all") {
+      return null;
+    }
+    return (
+      <div
+        className={cn(
+          "inline-flex w-full justify-between rounded-full border border-mist-200 bg-mist-50 p-1 sm:w-auto",
+          className
+        )}
+      >
+        <button
+          type="button"
+          onClick={() => handleViewChange("opportunities")}
+          className={`min-h-[36px] flex-1 rounded-full px-3 py-2 text-xs font-semibold transition ${
+            viewMode === "opportunities"
+              ? "bg-white text-ink-900 shadow-sm"
+              : "text-ink-500 hover:text-ink-700"
+          }`}
+        >
+          Opportunities
+        </button>
+        <button
+          type="button"
+          onClick={() => handleViewChange("mine")}
+          className={`min-h-[36px] flex-1 rounded-full px-3 py-2 text-xs font-semibold transition ${
+            viewMode === "mine"
+              ? "bg-white text-ink-900 shadow-sm"
+              : "text-ink-500 hover:text-ink-700"
+          }`}
+        >
+          My commitments
+        </button>
+      </div>
+    );
+  };
+
   useEffect(() => {
     if (createParam === "task" && showCreateButton) {
       setIsCreateOpen(true);
@@ -176,236 +211,218 @@ export default function TasksView({
 
   return (
     <div className="section-gap">
-      <PageHeaderCard
+      <PageShell
         title={resolvedTitle}
         description={headingDescription}
-        badge={
-          <span className="rounded-full bg-mist-100 px-3 py-1 text-xs font-medium text-ink-700">
-            Week {weekLabel}
-          </span>
-        }
+        summaryChips={[
+          { label: `Week ${weekLabel}`, tone: "mist" },
+          { label: statsLabel, tone: "rose" }
+        ]}
         actions={
           <>
-            <div className="rounded-card border border-mist-200 bg-mist-50 px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-ink-400">Progress</p>
-              <p className="text-sm font-semibold text-ink-700">{statsLabel}</p>
-            </div>
+            {renderViewToggle("hidden md:inline-flex")}
             {showCreateButton ? (
-              <Button onClick={() => setIsCreateOpen(true)} className="w-full sm:w-auto">
+              <Button onClick={() => setIsCreateOpen(true)} className="h-9 px-3 text-sm">
                 {ctaLabel}
               </Button>
             ) : null}
+            <div className="md:hidden">
+              <FiltersDrawer title="Filters">
+                <div className="space-y-4">
+                  {renderViewToggle()}
+                  <TaskFilters
+                    filters={filters}
+                    groupOptions={groupOptions}
+                    showOwnership={viewMode !== "opportunities"}
+                    layout="stacked"
+                    searchPlaceholder={
+                      viewMode === "opportunities" ? "Search opportunities" : undefined
+                    }
+                  />
+                </div>
+              </FiltersDrawer>
+            </div>
           </>
         }
-      />
-
-      <SectionCard
-        title="Filters"
-        description={
-          viewMode === "opportunities"
-            ? "Refine the opportunities you want to see."
-            : "Narrow the list to the serve items that need your attention."
-        }
-        icon={<HandHeartIcon className="h-5 w-5" />}
-        iconClassName="bg-rose-100 text-rose-700"
-        action={
-          viewMode !== "all" ? (
-            <div className="inline-flex w-full justify-between rounded-full border border-mist-200 bg-mist-50 p-1 sm:w-auto">
-              <button
-                type="button"
-                onClick={() => handleViewChange("opportunities")}
-                className={`min-h-[44px] flex-1 rounded-full px-3 py-2 text-xs font-semibold transition ${
-                  viewMode === "opportunities"
-                    ? "bg-white text-ink-900 shadow-sm"
-                    : "text-ink-500 hover:text-ink-700"
-                }`}
-              >
-                Opportunities
-              </button>
-              <button
-                type="button"
-                onClick={() => handleViewChange("mine")}
-                className={`min-h-[44px] flex-1 rounded-full px-3 py-2 text-xs font-semibold transition ${
-                  viewMode === "mine"
-                    ? "bg-white text-ink-900 shadow-sm"
-                    : "text-ink-500 hover:text-ink-700"
-                }`}
-              >
-                My commitments
-              </button>
-            </div>
-          ) : null
-        }
       >
-        {isDesktop ? (
-          <TaskFilters
-            filters={filters}
-            groupOptions={groupOptions}
-            showOwnership={viewMode !== "opportunities"}
-            searchPlaceholder={viewMode === "opportunities" ? "Search opportunities" : undefined}
-          />
-        ) : (
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => setFiltersOpen(true)}
-            className="w-full"
-          >
-            Filters
-          </Button>
-        )}
-      </SectionCard>
+        <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+          <aside className="hidden space-y-4 lg:block">
+            {renderViewToggle()}
+            <Card className="space-y-3">
+              <div className="flex items-center gap-2 text-xs font-semibold text-ink-500">
+                <HandHeartIcon className="h-4 w-4" />
+                Filters
+              </div>
+              <TaskFilters
+                filters={filters}
+                groupOptions={groupOptions}
+                showOwnership={viewMode !== "opportunities"}
+                layout="stacked"
+                searchPlaceholder={viewMode === "opportunities" ? "Search opportunities" : undefined}
+              />
+            </Card>
+          </aside>
 
-      {pendingAccessRequests.length ? (
-        <SectionCard title="Access approvals" description="Review pending parish access requests.">
-          <div className="space-y-3">
-            {pendingAccessRequests.map((request) => (
-              <div
-                key={request.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-mist-200 bg-mist-50 px-3 py-2"
-              >
+          <div className="space-y-5">
+            <Card>
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <div className="text-sm font-medium text-ink-800">
-                    {request.userName ?? "Parishioner"}
-                  </div>
-                  <div className="text-xs text-ink-500">{request.userEmail}</div>
-                  <div className="text-xs text-ink-400">{request.parishName}</div>
+                  <p className="text-sm font-semibold text-ink-900">Serve list</p>
+                  <p className="text-xs text-ink-400">{filteredCount} items shown</p>
                 </div>
-                <div className="text-xs text-ink-400">
-                  Requested{" "}
-                  {request.requestedAt.toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    timeZone: "UTC"
-                  })}
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Select
-                    name={`role-${request.id}`}
-                    value={accessRoles[request.id] ?? ""}
-                    onChange={(event) =>
-                      setAccessRoles((prev) => ({
-                        ...prev,
-                        [request.id]: event.target.value
-                      }))
-                    }
-                    className="w-[160px]"
-                  >
-                    <option value="" disabled>
-                      Select role
-                    </option>
-                    <option value="MEMBER">Parishioner</option>
-                    <option value="SHEPHERD">Clergy</option>
-                    <option value="ADMIN">Admin</option>
-                  </Select>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => handleApproveAccess(request)}
-                    disabled={!accessRoles[request.id] || isAccessPending}
-                  >
-                    Approve
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => handleRejectAccess(request)}
-                    disabled={isAccessPending}
-                  >
-                    Reject
-                  </Button>
-                </div>
+                {hasTasks ? (
+                  <p className="text-xs text-ink-400">Total this week: {summary.total}</p>
+                ) : null}
               </div>
-            ))}
-          </div>
-        </SectionCard>
-      ) : null}
 
-      {pendingTaskApprovals.length ? (
-        <SectionCard
-          title="Pending task approvals"
-          description="Review member-submitted public tasks before they go live."
-        >
-          <div className="space-y-3">
-            {pendingTaskApprovals.map((task) => (
-              <div
-                key={task.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-amber-200 bg-amber-50/60 px-3 py-3"
-              >
-                <div className="space-y-1">
-                  <div className="text-sm font-medium text-ink-800">{task.title}</div>
-                  {task.notes ? (
-                    <div className="text-xs text-ink-500">{task.notes}</div>
-                  ) : null}
-                  <div className="text-xs text-ink-400">
-                    Created by {task.createdBy.name} · Assigned to{" "}
-                    {task.owner?.name ?? "Unassigned"}
-                    {task.group ? ` · ${task.group.name}` : ""}
-                  </div>
+              {viewMode !== "opportunities" ? (
+                <div className="mt-4">
+                  <TaskQuickAdd weekId={weekId} />
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => handleApproveTask(task.id)}
-                    disabled={isApproving}
-                  >
-                    Approve
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    onClick={() => handleRejectTask(task.id)}
-                    disabled={isApproving}
-                  >
-                    Reject
-                  </Button>
-                </div>
+              ) : null}
+
+              <div className="mt-4">
+                {!hasTasks ? (
+                  viewMode === "opportunities" ? (
+                    <ListEmptyState
+                      title="No opportunities right now"
+                      description="Check back soon for new ways to serve."
+                    />
+                  ) : (
+                    <TasksEmptyState
+                      variant="no-tasks"
+                      onCreate={showCreateButton ? () => setIsCreateOpen(true) : undefined}
+                    />
+                  )
+                ) : !hasMatches ? (
+                  <TasksEmptyState variant="no-matches" onClearFilters={clearFilters} />
+                ) : (
+                  <TasksList
+                    tasks={tasks}
+                    groupOptions={groupOptions}
+                    memberOptions={memberOptions}
+                    currentUserId={currentUserId}
+                  />
+                )}
               </div>
-            ))}
-          </div>
-        </SectionCard>
-      ) : null}
+            </Card>
 
-      <SectionCard
-        title="Serve list"
-        description={`${filteredCount} items shown`}
-        action={
-          hasTasks ? <p className="text-xs text-ink-400">Total this week: {summary.total}</p> : null
-        }
-        icon={<HandHeartIcon className="h-5 w-5" />}
-        iconClassName="bg-rose-100 text-rose-700"
-      >
-        {viewMode !== "opportunities" ? (
-          <TaskQuickAdd weekId={weekId} />
-        ) : null}
-        {/* Grouped sections reinforce status context while keeping filters and empty states visible. */}
-        {!hasTasks ? (
-          viewMode === "opportunities" ? (
-            <EmptyState
-              title="No opportunities right now"
-              description="Check back soon for new ways to serve."
-              action={null}
-            />
-          ) : (
-            <TasksEmptyState
-              variant="no-tasks"
-              onCreate={showCreateButton ? () => setIsCreateOpen(true) : undefined}
-            />
-          )
-        ) : !hasMatches ? (
-          <TasksEmptyState variant="no-matches" onClearFilters={clearFilters} />
-        ) : (
-          <TasksList
-            tasks={tasks}
-            groupOptions={groupOptions}
-            memberOptions={memberOptions}
-            currentUserId={currentUserId}
-          />
-        )}
-      </SectionCard>
+            {pendingAccessRequests.length ? (
+              <Card>
+                <div className="mb-3 text-sm font-semibold text-ink-900">Access approvals</div>
+                <div className="space-y-3">
+                  {pendingAccessRequests.map((request) => (
+                    <div
+                      key={request.id}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-mist-200 bg-mist-50 px-3 py-2"
+                    >
+                      <div>
+                        <div className="text-sm font-medium text-ink-800">
+                          {request.userName ?? "Parishioner"}
+                        </div>
+                        <div className="text-xs text-ink-500">{request.userEmail}</div>
+                        <div className="text-xs text-ink-400">{request.parishName}</div>
+                      </div>
+                      <div className="text-xs text-ink-400">
+                        Requested{" "}
+                        {request.requestedAt.toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          timeZone: "UTC"
+                        })}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Select
+                          name={`role-${request.id}`}
+                          value={accessRoles[request.id] ?? ""}
+                          onChange={(event) =>
+                            setAccessRoles((prev) => ({
+                              ...prev,
+                              [request.id]: event.target.value
+                            }))
+                          }
+                          className="w-[160px]"
+                        >
+                          <option value="" disabled>
+                            Select role
+                          </option>
+                          <option value="MEMBER">Parishioner</option>
+                          <option value="SHEPHERD">Clergy</option>
+                          <option value="ADMIN">Admin</option>
+                        </Select>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => handleApproveAccess(request)}
+                          disabled={!accessRoles[request.id] || isAccessPending}
+                        >
+                          Approve
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleRejectAccess(request)}
+                          disabled={isAccessPending}
+                        >
+                          Reject
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            ) : null}
+
+            {pendingTaskApprovals.length ? (
+              <Card>
+                <div className="mb-3 text-sm font-semibold text-ink-900">
+                  Pending task approvals
+                </div>
+                <div className="space-y-3">
+                  {pendingTaskApprovals.map((task) => (
+                    <div
+                      key={task.id}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-amber-200 bg-amber-50/60 px-3 py-3"
+                    >
+                      <div className="space-y-1">
+                        <div className="text-sm font-medium text-ink-800">{task.title}</div>
+                        {task.notes ? (
+                          <div className="text-xs text-ink-500">{task.notes}</div>
+                        ) : null}
+                        <div className="text-xs text-ink-400">
+                          Created by {task.createdBy.name} · Assigned to{" "}
+                          {task.owner?.name ?? "Unassigned"}
+                          {task.group ? ` · ${task.group.name}` : ""}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() => handleApproveTask(task.id)}
+                          disabled={isApproving}
+                        >
+                          Approve
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleRejectTask(task.id)}
+                          disabled={isApproving}
+                        >
+                          Reject
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            ) : null}
+          </div>
+        </div>
+      </PageShell>
 
       <TaskCreateDialog
         open={isCreateOpen}
@@ -415,15 +432,6 @@ export default function TasksView({
         memberOptions={memberOptions}
         currentUserId={currentUserId}
       />
-
-      <Drawer open={filtersOpen} onClose={() => setFiltersOpen(false)} title="Filters">
-        <TaskFilters
-          filters={filters}
-          groupOptions={groupOptions}
-          showOwnership={viewMode !== "opportunities"}
-          searchPlaceholder={viewMode === "opportunities" ? "Search opportunities" : undefined}
-        />
-      </Drawer>
     </div>
   );
 }

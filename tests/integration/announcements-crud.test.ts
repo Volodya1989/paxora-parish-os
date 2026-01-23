@@ -86,6 +86,8 @@ dbTest("draft and published lists update with publish and archive actions", asyn
     data: {
       parishId: parish.id,
       title: "Draft message",
+      body: "Draft details",
+      createdById: user.id,
       createdAt: now,
       updatedAt: now
     }
@@ -94,6 +96,8 @@ dbTest("draft and published lists update with publish and archive actions", asyn
     data: {
       parishId: parish.id,
       title: "Published update",
+      body: "Published details",
+      createdById: user.id,
       createdAt: now,
       updatedAt: now,
       publishedAt: new Date("2024-03-20T09:00:00.000Z")
@@ -103,6 +107,8 @@ dbTest("draft and published lists update with publish and archive actions", asyn
     data: {
       parishId: parish.id,
       title: "Archived update",
+      body: "Archived details",
+      createdById: user.id,
       createdAt: now,
       updatedAt: now,
       publishedAt: new Date("2024-03-15T09:00:00.000Z"),
@@ -149,4 +155,85 @@ dbTest("draft and published lists update with publish and archive actions", asyn
     status: "published"
   });
   assert.equal(afterUndoArchive.length, 2);
+});
+
+dbTest("create, update, and delete announcement enforce permissions", async () => {
+  const parish = await prisma.parish.create({
+    data: { name: "St. Bridget", slug: "st-bridget" }
+  });
+  const admin = await prisma.user.create({
+    data: {
+      email: "admin@example.com",
+      name: "Admin",
+      passwordHash: "hashed",
+      activeParishId: parish.id
+    }
+  });
+  const member = await prisma.user.create({
+    data: {
+      email: "member@example.com",
+      name: "Member",
+      passwordHash: "hashed",
+      activeParishId: parish.id
+    }
+  });
+
+  await prisma.membership.create({
+    data: {
+      parishId: parish.id,
+      userId: admin.id,
+      role: "ADMIN"
+    }
+  });
+  await prisma.membership.create({
+    data: {
+      parishId: parish.id,
+      userId: member.id,
+      role: "MEMBER"
+    }
+  });
+
+  session.user.id = admin.id;
+  session.user.activeParishId = parish.id;
+
+  const created = await actions.createAnnouncement({
+    parishId: parish.id,
+    title: "New update",
+    body: "Hello parishioners",
+    published: true,
+    getNow: () => new Date("2024-04-02T10:00:00.000Z")
+  });
+
+  const stored = await prisma.announcement.findUnique({ where: { id: created.id } });
+  assert.equal(stored?.title, "New update");
+  assert.equal(stored?.body, "Hello parishioners");
+
+  await actions.updateAnnouncement({
+    id: created.id,
+    title: "Updated update",
+    body: "Updated body",
+    published: false,
+    getNow: () => new Date("2024-04-03T10:00:00.000Z")
+  });
+
+  const updated = await prisma.announcement.findUnique({ where: { id: created.id } });
+  assert.equal(updated?.title, "Updated update");
+  assert.equal(updated?.publishedAt, null);
+
+  session.user.id = member.id;
+  session.user.activeParishId = parish.id;
+  await assert.rejects(() =>
+    actions.createAnnouncement({
+      parishId: parish.id,
+      title: "Member update",
+      body: "Not allowed",
+      published: true
+    })
+  );
+
+  session.user.id = admin.id;
+  session.user.activeParishId = parish.id;
+  await actions.deleteAnnouncement({ id: created.id });
+  const deleted = await prisma.announcement.findUnique({ where: { id: created.id } });
+  assert.equal(deleted, null);
 });

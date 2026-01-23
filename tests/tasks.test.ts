@@ -1,10 +1,11 @@
-import { before, after, test } from "node:test";
+import { before, after, beforeEach, test } from "node:test";
 import assert from "node:assert/strict";
 import { prisma } from "@/server/db/prisma";
 import {
   assignTaskToSelf,
   assignTaskToUser,
   createTask,
+  deleteTask,
   markTaskDone,
   markTaskInProgress,
   markTaskOpen,
@@ -36,6 +37,13 @@ before(async () => {
   }
   await applyMigrations();
   await prisma.$connect();
+  await resetDatabase();
+});
+
+beforeEach(async () => {
+  if (!hasDatabase) {
+    return;
+  }
   await resetDatabase();
 });
 
@@ -198,6 +206,94 @@ dbTest("createTask assigns task to the current week", async () => {
 
   const storedTask = await prisma.task.findUnique({ where: { id: task.id } });
   assert.equal(storedTask?.weekId, currentWeek.id);
+});
+
+dbTest("members can self-assign public tasks, and only leaders or creators can delete", async () => {
+  const parish = await prisma.parish.create({
+    data: { name: "St. Clare", slug: "st-clare" }
+  });
+  const creator = await prisma.user.create({
+    data: {
+      email: "creator@example.com",
+      name: "Creator",
+      passwordHash: "hashed",
+      activeParishId: parish.id
+    }
+  });
+  const member = await prisma.user.create({
+    data: {
+      email: "member@example.com",
+      name: "Member",
+      passwordHash: "hashed",
+      activeParishId: parish.id
+    }
+  });
+  const admin = await prisma.user.create({
+    data: {
+      email: "admin@example.com",
+      name: "Admin",
+      passwordHash: "hashed",
+      activeParishId: parish.id
+    }
+  });
+
+  await prisma.membership.create({
+    data: {
+      parishId: parish.id,
+      userId: creator.id,
+      role: "MEMBER"
+    }
+  });
+  await prisma.membership.create({
+    data: {
+      parishId: parish.id,
+      userId: member.id,
+      role: "MEMBER"
+    }
+  });
+  await prisma.membership.create({
+    data: {
+      parishId: parish.id,
+      userId: admin.id,
+      role: "ADMIN"
+    }
+  });
+
+  const week = await getOrCreateCurrentWeek(parish.id, new Date("2024-06-10T00:00:00.000Z"));
+  const task = await createTask({
+    parishId: parish.id,
+    weekId: week.id,
+    createdById: creator.id,
+    title: "Welcome new members",
+    visibility: "PUBLIC",
+    approvalStatus: "APPROVED"
+  });
+
+  await assignTaskToSelf({
+    taskId: task.id,
+    parishId: parish.id,
+    actorUserId: member.id
+  });
+
+  const assigned = await prisma.task.findUnique({ where: { id: task.id } });
+  assert.equal(assigned?.ownerId, member.id);
+
+  await assert.rejects(() =>
+    deleteTask({
+      taskId: task.id,
+      parishId: parish.id,
+      actorUserId: member.id
+    })
+  );
+
+  await deleteTask({
+    taskId: task.id,
+    parishId: parish.id,
+    actorUserId: admin.id
+  });
+
+  const deleted = await prisma.task.findUnique({ where: { id: task.id } });
+  assert.equal(deleted, null);
 });
 
 dbTest("createTask assigns group tasks to the current week and group detail filters them", async () => {

@@ -3,19 +3,20 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Button from "@/components/ui/Button";
-import EmptyState from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 import GroupCard from "@/components/groups/GroupCard";
 import GroupCreateDialog from "@/components/groups/GroupCreateDialog";
 import GroupEditDialog from "@/components/groups/GroupEditDialog";
 import GroupFilters, { type GroupFilterTab } from "@/components/groups/GroupFilters";
 import { UsersIcon } from "@/components/icons/ParishIcons";
-import PageHeaderCard from "@/components/layout/PageHeaderCard";
-import SectionCard from "@/components/layout/SectionCard";
 import { archiveGroup, approveGroupRequest, rejectGroupRequest, restoreGroup } from "@/server/actions/groups";
 import { joinGroup, leaveGroup, requestToJoin } from "@/app/actions/members";
 import type { MemberActionState } from "@/lib/types/members";
 import type { GroupListItem } from "@/lib/queries/groups";
+import PageShell from "@/components/app/page-shell";
+import FiltersDrawer from "@/components/app/filters-drawer";
+import Card from "@/components/ui/Card";
+import ListEmptyState from "@/components/app/list-empty-state";
 
 const EMPTY_GROUPS_MESSAGE = "Create a group to organize the people and ministries you lead.";
 const REQUEST_GROUP_MESSAGE = "Request a new group to gather people around a shared mission.";
@@ -194,7 +195,7 @@ export default function GroupsView({
   const renderEmptyState = () => {
     if (activeTab === "active" && counts.active === 0) {
       return (
-        <EmptyState
+        <ListEmptyState
           title="No groups yet"
           description={canManageGroups ? EMPTY_GROUPS_MESSAGE : REQUEST_GROUP_MESSAGE}
           action={
@@ -207,11 +208,11 @@ export default function GroupsView({
     }
 
     if (activeTab === "archived" && counts.archived === 0) {
-      return <EmptyState title="No archived groups" description={NO_ARCHIVED_MESSAGE} />;
+      return <ListEmptyState title="No archived groups" description={NO_ARCHIVED_MESSAGE} />;
     }
 
     return (
-      <EmptyState
+      <ListEmptyState
         title="No matches"
         description="We couldn't find a group that matches this search."
       />
@@ -220,170 +221,186 @@ export default function GroupsView({
 
   return (
     <div className="section-gap">
-      <PageHeaderCard
+      <PageShell
         title="Groups"
         description="Keep parish teams organized, aligned, and ready for the week ahead."
-        badge={
-          <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800">
-            {counts.active} active
-          </span>
-        }
+        summaryChips={[
+          { label: `${counts.active} active`, tone: "emerald" },
+          { label: `${counts.archived} archived`, tone: "mist" }
+        ]}
         actions={
           <>
-            <div className="rounded-card border border-mist-200 bg-mist-50 px-4 py-3">
-              <p className="text-xs uppercase tracking-wide text-ink-400">Archived</p>
-              <p className="text-sm font-semibold text-ink-700">{counts.archived}</p>
-            </div>
-            <Button onClick={openCreateDialog} className="w-full sm:w-auto">
+            <Button onClick={openCreateDialog} className="h-9 px-3 text-sm">
               {canManageGroups ? "Create group" : "Request a new group"}
             </Button>
+            <div className="md:hidden">
+              <FiltersDrawer title="Filters">
+                <GroupFilters
+                  activeTab={activeTab}
+                  onTabChange={setActiveTab}
+                  query={query}
+                  onQueryChange={setQuery}
+                  counts={counts}
+                  layout="stacked"
+                />
+              </FiltersDrawer>
+            </div>
           </>
         }
-      />
-
-      {canManageGroups && pendingGroups.length ? (
-        <SectionCard
-          title="Group requests"
-          description="Review parishioner group requests before they go live."
-          icon={<UsersIcon className="h-5 w-5" />}
-          iconClassName="bg-amber-100 text-amber-700"
-        >
-          <div className="space-y-3">
-            {pendingGroups.map((group) => (
-              <div
-                key={group.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-amber-200 bg-amber-50/60 px-3 py-3"
-              >
-                <div className="space-y-1">
-                  <div className="text-sm font-medium text-ink-800">{group.name}</div>
-                  <div className="text-xs text-ink-500">
-                    {group.description ?? "No description provided."}
-                  </div>
-                  <div className="text-xs text-ink-400">
-                    Requested by {group.createdBy?.name ?? group.createdBy?.email ?? "Parishioner"}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() =>
-                      void runGroupAction(group.id, () =>
-                        approveGroupRequest({ parishId, actorUserId, groupId: group.id })
-                      )
-                    }
-                    disabled={pendingGroupId === group.id}
-                  >
-                    Approve
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="secondary"
-                    onClick={() =>
-                      void runGroupAction(group.id, () =>
-                        rejectGroupRequest({ parishId, actorUserId, groupId: group.id })
-                      )
-                    }
-                    disabled={pendingGroupId === group.id}
-                  >
-                    Reject
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-      ) : null}
-
-      {!canManageGroups && pendingGroups.length ? (
-        <SectionCard
-          title="Pending group requests"
-          description="We will let you know once a parish leader approves your request."
-          icon={<UsersIcon className="h-5 w-5" />}
-          iconClassName="bg-amber-100 text-amber-700"
-        >
-          <div className="space-y-3">
-            {pendingGroups.map((group) => (
-              <div
-                key={group.id}
-                className="rounded-card border border-mist-200 bg-mist-50 px-3 py-3"
-              >
-                <div className="text-sm font-medium text-ink-800">{group.name}</div>
-                <div className="text-xs text-ink-500">
-                  {group.description ?? "No description provided."}
-                </div>
-                <div className="mt-2 text-xs font-semibold uppercase text-amber-600">
-                  Pending approval
-                </div>
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-      ) : null}
-
-      <SectionCard
-        title="Filters"
-        description="Switch between active and archived groups, or search by name."
-        icon={<UsersIcon className="h-5 w-5" />}
-        iconClassName="bg-sky-100 text-sky-700"
       >
-        <GroupFilters
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          query={query}
-          onQueryChange={setQuery}
-          counts={counts}
-        />
-      </SectionCard>
-
-      <SectionCard
-        title="Group list"
-        description={`${filteredGroups.length} groups shown`}
-        action={<p className="text-xs text-ink-400">Total: {groups.length}</p>}
-        icon={<UsersIcon className="h-5 w-5" />}
-        iconClassName="bg-sky-100 text-sky-700"
-      >
-        {filteredGroups.length === 0 ? (
-          renderEmptyState()
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {filteredGroups.map((group) => (
-              <GroupCard
-                key={group.id}
-                group={group}
-                canManageGroup={canManageGroups}
-                canManageMembers={
-                  (canManageGroups || group.viewerMembershipStatus === "ACTIVE") &&
-                  group.status === "ACTIVE"
-                }
-                onEdit={() => handleEdit(group.id)}
-                onArchive={() => handleArchive(group.id)}
-                onRestore={() => handleRestore(group.id)}
-                onManageMembers={() => router.push(`/groups/${group.id}/members`)}
-                onJoin={() =>
-                  void handleMemberResult(group.id, () => joinGroup({ groupId: group.id }), "Joined")
-                }
-                onRequestJoin={() =>
-                  void handleMemberResult(
-                    group.id,
-                    () => requestToJoin({ groupId: group.id }),
-                    "Request sent"
-                  )
-                }
-                onLeave={() =>
-                  void handleMemberResult(
-                    group.id,
-                    () => leaveGroup({ groupId: group.id }),
-                    "Left group"
-                  )
-                }
-                isBusy={pendingGroupId === group.id}
+        <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+          <aside className="hidden space-y-4 lg:block">
+            <Card className="space-y-3">
+              <div className="flex items-center gap-2 text-xs font-semibold text-ink-500">
+                <UsersIcon className="h-4 w-4" />
+                Filters
+              </div>
+              <GroupFilters
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                query={query}
+                onQueryChange={setQuery}
+                counts={counts}
+                layout="stacked"
               />
-            ))}
+            </Card>
+          </aside>
+
+          <div className="space-y-5">
+            <Card>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-semibold text-ink-900">Group list</p>
+                  <p className="text-xs text-ink-400">{filteredGroups.length} groups shown</p>
+                </div>
+                <p className="text-xs text-ink-400">Total: {groups.length}</p>
+              </div>
+
+              <div className="mt-4">
+                {filteredGroups.length === 0 ? (
+                  renderEmptyState()
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {filteredGroups.map((group) => (
+                      <GroupCard
+                        key={group.id}
+                        group={group}
+                        canManageGroup={canManageGroups}
+                        canManageMembers={
+                          (canManageGroups || group.viewerMembershipStatus === "ACTIVE") &&
+                          group.status === "ACTIVE"
+                        }
+                        onEdit={() => handleEdit(group.id)}
+                        onArchive={() => handleArchive(group.id)}
+                        onRestore={() => handleRestore(group.id)}
+                        onManageMembers={() => router.push(`/groups/${group.id}/members`)}
+                        onJoin={() =>
+                          void handleMemberResult(
+                            group.id,
+                            () => joinGroup({ groupId: group.id }),
+                            "Joined"
+                          )
+                        }
+                        onRequestJoin={() =>
+                          void handleMemberResult(
+                            group.id,
+                            () => requestToJoin({ groupId: group.id }),
+                            "Request sent"
+                          )
+                        }
+                        onLeave={() =>
+                          void handleMemberResult(
+                            group.id,
+                            () => leaveGroup({ groupId: group.id }),
+                            "Left group"
+                          )
+                        }
+                        isBusy={pendingGroupId === group.id}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </Card>
+
+            {canManageGroups && pendingGroups.length ? (
+              <Card>
+                <div className="mb-3 text-sm font-semibold text-ink-900">Group requests</div>
+                <div className="space-y-3">
+                  {pendingGroups.map((group) => (
+                    <div
+                      key={group.id}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-amber-200 bg-amber-50/60 px-3 py-3"
+                    >
+                      <div className="space-y-1">
+                        <div className="text-sm font-medium text-ink-800">{group.name}</div>
+                        <div className="text-xs text-ink-500">
+                          {group.description ?? "No description provided."}
+                        </div>
+                        <div className="text-xs text-ink-400">
+                          Requested by{" "}
+                          {group.createdBy?.name ?? group.createdBy?.email ?? "Parishioner"}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={() =>
+                            void runGroupAction(group.id, () =>
+                              approveGroupRequest({ parishId, actorUserId, groupId: group.id })
+                            )
+                          }
+                          disabled={pendingGroupId === group.id}
+                        >
+                          Approve
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="secondary"
+                          onClick={() =>
+                            void runGroupAction(group.id, () =>
+                              rejectGroupRequest({ parishId, actorUserId, groupId: group.id })
+                            )
+                          }
+                          disabled={pendingGroupId === group.id}
+                        >
+                          Reject
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            ) : null}
+
+            {!canManageGroups && pendingGroups.length ? (
+              <Card>
+                <div className="mb-3 text-sm font-semibold text-ink-900">
+                  Pending group requests
+                </div>
+                <div className="space-y-3">
+                  {pendingGroups.map((group) => (
+                    <div
+                      key={group.id}
+                      className="rounded-card border border-mist-200 bg-mist-50 px-3 py-3"
+                    >
+                      <div className="text-sm font-medium text-ink-800">{group.name}</div>
+                      <div className="text-xs text-ink-500">
+                        {group.description ?? "No description provided."}
+                      </div>
+                      <div className="mt-2 text-xs font-semibold uppercase text-amber-600">
+                        Pending approval
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            ) : null}
           </div>
-        )}
-      </SectionCard>
+        </div>
+      </PageShell>
 
       <GroupCreateDialog
         open={isCreateOpen}

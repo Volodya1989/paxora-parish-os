@@ -26,13 +26,12 @@ test("Parishioner announcements view hides create actions", () => {
         createElement(AnnouncementsView, {
           drafts: [],
           published: [],
-          parishId: "parish-1",
           canManage: false
         })
       )
     )
   );
 
-  assert.doesNotMatch(markup, /New Announcement/);
+  assert.doesNotMatch(markup, /New announcement/);
   assert.match(markup, /No announcements yet/);
 });
