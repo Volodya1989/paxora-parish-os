@@ -30,6 +30,17 @@ export default function AccessGateContent({ status, parishName }: AccessGateCont
     );
   }
 
+  if (status === "unverified") {
+    return (
+      <div className="space-y-2">
+        <h2 className="text-h2">Verify your email</h2>
+        <p className="text-sm text-ink-500">
+          Confirm your email address before requesting access {parishLabel}.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2">
       <h2 className="text-h2">Request access</h2>

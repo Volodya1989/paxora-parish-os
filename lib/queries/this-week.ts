@@ -70,38 +70,24 @@ function getInitials(name: string) {
   return `${first}${last}`.toUpperCase();
 }
 
-export async function getThisWeekData({
+export async function getThisWeekDataForUser({
+  parishId,
+  userId,
   weekSelection = "current",
   now = getNow()
 }: {
+  parishId: string;
+  userId: string;
   weekSelection?: WeekSelection;
   now?: Date;
-} = {}): Promise<ThisWeekData> {
-  noStore();
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user?.id) {
-    throw new Error("Unauthorized");
-  }
-
-  const actorUserId = session.user.id;
-  const activeParishId = session.user.activeParishId;
-  const parishId = activeParishId
-    ? await prisma.parish
-        .findUnique({
-          where: { id: activeParishId },
-          select: { id: true }
-        })
-        .then((parish) => parish?.id ?? ensureParishBootstrap(session.user.id))
-    : await ensureParishBootstrap(session.user.id);
-
+}): Promise<ThisWeekData> {
   const week = await getWeekForSelection(parishId, weekSelection, now);
 
   const membership = await prisma.membership.findUnique({
     where: {
       parishId_userId: {
         parishId,
-        userId: actorUserId
+        userId
       }
     },
     select: { role: true }
@@ -125,8 +111,8 @@ export async function getThisWeekData({
           {
             OR: [
               { visibility: "PUBLIC", approvalStatus: "APPROVED" },
-              { ownerId: actorUserId },
-              { createdById: actorUserId }
+              { ownerId: userId },
+              { createdById: userId }
             ]
           }
         ]
@@ -174,7 +160,7 @@ export async function getThisWeekData({
     }),
     prisma.groupMembership.findMany({
       where: {
-        userId: actorUserId,
+        userId,
         status: "ACTIVE",
         group: {
           parishId,
@@ -272,4 +258,37 @@ export async function getThisWeekData({
         : 0,
     pendingAccessRequests
   };
+}
+
+export async function getThisWeekData({
+  weekSelection = "current",
+  now = getNow()
+}: {
+  weekSelection?: WeekSelection;
+  now?: Date;
+} = {}): Promise<ThisWeekData> {
+  noStore();
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  const actorUserId = session.user.id;
+  const activeParishId = session.user.activeParishId;
+  const parishId = activeParishId
+    ? await prisma.parish
+        .findUnique({
+          where: { id: activeParishId },
+          select: { id: true }
+        })
+        .then((parish) => parish?.id ?? ensureParishBootstrap(session.user.id))
+    : await ensureParishBootstrap(session.user.id);
+
+  return getThisWeekDataForUser({
+    parishId,
+    userId: actorUserId,
+    weekSelection,
+    now
+  });
 }

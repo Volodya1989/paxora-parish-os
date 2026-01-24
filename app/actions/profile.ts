@@ -20,23 +20,42 @@ export async function updateProfileSettings({
     throw new Error("Unauthorized");
   }
 
+  const parishId = session.user.activeParishId;
+  if (!parishId) {
+    throw new Error("Missing active parish");
+  }
+
   if (typeof notificationsEnabled !== "boolean" || typeof weeklyDigestEnabled !== "boolean") {
     throw new Error("Invalid settings");
   }
 
-  const updated = await prisma.user.update({
-    where: { id: session.user.id },
-    data: {
-      notificationsEnabled,
+  const updated = await prisma.membership.upsert({
+    where: {
+      parishId_userId: {
+        parishId,
+        userId: session.user.id
+      }
+    },
+    update: {
+      notifyEmailEnabled: notificationsEnabled,
+      weeklyDigestEnabled
+    },
+    create: {
+      parishId,
+      userId: session.user.id,
+      notifyEmailEnabled: notificationsEnabled,
       weeklyDigestEnabled
     },
     select: {
-      notificationsEnabled: true,
+      notifyEmailEnabled: true,
       weeklyDigestEnabled: true
     }
   });
 
   revalidatePath("/profile");
 
-  return updated;
+  return {
+    notificationsEnabled: updated.notifyEmailEnabled,
+    weeklyDigestEnabled: updated.weeklyDigestEnabled
+  };
 }

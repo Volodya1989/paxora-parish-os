@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
@@ -12,6 +13,11 @@ export default function SignInPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const searchParams = useSearchParams();
+  const resetSuccess = searchParams.get("reset") === "success";
+  const resetRequested = searchParams.get("reset") === "requested";
+  const verifySent = searchParams.get("verify") === "sent";
+  const verifySuccess = searchParams.get("verify") === "success";
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -66,7 +72,30 @@ export default function SignInPage() {
               onChange={(event) => setPassword(event.target.value)}
               required
             />
+            <div className="text-right">
+              <a className="text-xs text-ink-600 underline" href="/forgot-password">
+                Forgot password?
+              </a>
+            </div>
           </div>
+          {resetSuccess ? (
+            <p className="text-sm text-emerald-600">Password updated. Please sign in.</p>
+          ) : null}
+          {resetRequested ? (
+            <p className="text-sm text-emerald-600">
+              If an account exists for that email, we sent a reset link.
+            </p>
+          ) : null}
+          {verifySent ? (
+            <p className="text-sm text-emerald-600">
+              Check your email for a verification link to finish setup.
+            </p>
+          ) : null}
+          {verifySuccess ? (
+            <p className="text-sm text-emerald-600">
+              Email verified. You can now request parish access.
+            </p>
+          ) : null}
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
           <Button className="w-full" type="submit" isLoading={loading}>
             Sign in

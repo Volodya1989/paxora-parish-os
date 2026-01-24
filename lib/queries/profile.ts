@@ -20,9 +20,7 @@ export async function getProfileSettings({ userId, parishId }: GetProfileSetting
       where: { id: userId },
       select: {
         name: true,
-        email: true,
-        notificationsEnabled: true,
-        weeklyDigestEnabled: true
+        email: true
       }
     }),
     parishId
@@ -34,7 +32,9 @@ export async function getProfileSettings({ userId, parishId }: GetProfileSetting
             }
           },
           select: {
-            role: true
+            role: true,
+            notifyEmailEnabled: true,
+            weeklyDigestEnabled: true
           }
         })
       : Promise.resolve(null)
@@ -48,8 +48,8 @@ export async function getProfileSettings({ userId, parishId }: GetProfileSetting
     name: user.name,
     email: user.email,
     parishRole: membership?.role ?? null,
-    notificationsEnabled: user.notificationsEnabled,
-    weeklyDigestEnabled: user.weeklyDigestEnabled
+    notificationsEnabled: membership?.notifyEmailEnabled ?? true,
+    weeklyDigestEnabled: membership?.weeklyDigestEnabled ?? true
   };
 
   return profile;
