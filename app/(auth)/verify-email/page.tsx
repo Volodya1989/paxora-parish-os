@@ -4,11 +4,12 @@ import SectionTitle from "@/components/ui/SectionTitle";
 import { verifyEmailToken } from "@/lib/auth/emailVerification";
 
 type VerifyEmailPageProps = {
-  searchParams?: { token?: string };
+  searchParams: Promise<{ token?: string }>;
 };
 
 export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageProps) {
-  const token = searchParams?.token?.trim();
+  const sp = await searchParams;             
+  const token = sp?.token?.trim();            
 
   if (!token) {
     return (

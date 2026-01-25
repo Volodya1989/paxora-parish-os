@@ -3,11 +3,12 @@ import SectionTitle from "@/components/ui/SectionTitle";
 import ResetPasswordForm from "@/components/auth/ResetPasswordForm";
 
 type ResetPasswordPageProps = {
-  searchParams?: { token?: string };
+  searchParams: Promise<{ token?: string }>;
 };
 
-export default function ResetPasswordPage({ searchParams }: ResetPasswordPageProps) {
-  const token = searchParams?.token?.trim();
+export default async function ResetPasswordPage({ searchParams }: ResetPasswordPageProps) {
+  const sp = await searchParams;
+  const token = sp?.token?.trim();
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-mist-50/60 px-4 py-12">
@@ -16,6 +17,7 @@ export default function ResetPasswordPage({ searchParams }: ResetPasswordPagePro
         <p className="mt-3 text-sm text-ink-500">
           Enter a new password below. You’ll be redirected to sign in once it’s updated.
         </p>
+
         {token ? (
           <ResetPasswordForm token={token} />
         ) : (
