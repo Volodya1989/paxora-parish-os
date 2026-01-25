@@ -2,9 +2,17 @@
 
 import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { authOptions } from "@/server/auth/options";
 import { ParishRole } from "@prisma/client";
 import { prisma } from "@/server/db/prisma";
+import { issueEmailVerification } from "@/lib/auth/emailVerification";
+import {
+  selectJoinRequestAdminRecipients,
+  sendJoinRequestAdminNotificationEmail,
+  sendJoinRequestDecisionEmail,
+  sendJoinRequestSubmittedEmail
+} from "@/lib/email/joinRequests";
 
 function assertSession() {
   return getServerSession(authOptions).then((session) => {
@@ -23,6 +31,16 @@ export async function requestParishAccess(formData: FormData) {
     throw new Error("Missing parish");
   }
 
+  const requester = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { emailVerifiedAt: true }
+  });
+
+  if (!requester?.emailVerifiedAt) {
+    await issueEmailVerification(session.user.id);
+    redirect("/access?verify=sent");
+  }
+
   const membership = await prisma.membership.findUnique({
     where: {
       parishId_userId: {
@@ -36,7 +54,7 @@ export async function requestParishAccess(formData: FormData) {
     return;
   }
 
-  await prisma.accessRequest.upsert({
+  const request = await prisma.accessRequest.upsert({
     where: {
       parishId_userId: {
         parishId,
@@ -50,8 +68,76 @@ export async function requestParishAccess(formData: FormData) {
       parishId,
       userId: session.user.id,
       status: "PENDING"
+    },
+    include: {
+      parish: {
+        select: { name: true }
+      },
+      user: {
+        select: { email: true, name: true }
+      }
     }
   });
+
+  try {
+    await sendJoinRequestSubmittedEmail({
+      parishId,
+      parishName: request.parish.name,
+      requesterId: session.user.id,
+      requesterEmail: request.user.email,
+      requesterName: request.user.name
+    });
+  } catch (error) {
+    console.error("Failed to send join request confirmation email", error);
+  }
+
+  const adminMemberships = await prisma.membership.findMany({
+    where: {
+      parishId,
+      role: {
+        in: ["ADMIN", "SHEPHERD"]
+      }
+    },
+    select: {
+      userId: true,
+      role: true,
+      notifyEmailEnabled: true,
+      user: {
+        select: {
+          email: true,
+          name: true
+        }
+      }
+    }
+  });
+
+  const admins = selectJoinRequestAdminRecipients(
+    adminMemberships.map((membership) => ({
+      userId: membership.userId,
+      role: membership.role,
+      notifyEmailEnabled: membership.notifyEmailEnabled,
+      email: membership.user.email,
+      name: membership.user.name
+    }))
+  );
+
+  await Promise.all(
+    admins.map(async (admin) => {
+      try {
+        await sendJoinRequestAdminNotificationEmail({
+          parishId,
+          parishName: request.parish.name,
+          requesterId: request.userId,
+          requesterEmail: request.user.email,
+          requesterName: request.user.name,
+          admin,
+          joinRequestId: request.id
+        });
+      } catch (error) {
+        console.error("Failed to send join request admin notification", error);
+      }
+    })
+  );
 
   revalidatePath("/access");
   revalidatePath("/profile");
@@ -135,6 +221,38 @@ export async function approveParishAccess(input: FormData | ApproveAccessInput) 
     });
   });
 
+  const request = await prisma.accessRequest.findUnique({
+    where: {
+      parishId_userId: {
+        parishId,
+        userId
+      }
+    },
+    include: {
+      parish: {
+        select: { name: true }
+      },
+      user: {
+        select: { email: true, name: true }
+      }
+    }
+  });
+
+  if (request) {
+    try {
+      await sendJoinRequestDecisionEmail({
+        parishId,
+        parishName: request.parish.name,
+        requesterId: request.userId,
+        requesterEmail: request.user.email,
+        requesterName: request.user.name,
+        decision: "APPROVED"
+      });
+    } catch (error) {
+      console.error("Failed to send join request approval email", error);
+    }
+  }
+
   revalidatePath("/access");
   revalidatePath("/profile");
   revalidatePath("/tasks");
@@ -187,6 +305,38 @@ export async function rejectParishAccess(input: FormData | RejectAccessInput) {
       status: "REJECTED"
     }
   });
+
+  const request = await prisma.accessRequest.findUnique({
+    where: {
+      parishId_userId: {
+        parishId,
+        userId
+      }
+    },
+    include: {
+      parish: {
+        select: { name: true }
+      },
+      user: {
+        select: { email: true, name: true }
+      }
+    }
+  });
+
+  if (request) {
+    try {
+      await sendJoinRequestDecisionEmail({
+        parishId,
+        parishName: request.parish.name,
+        requesterId: request.userId,
+        requesterEmail: request.user.email,
+        requesterName: request.user.name,
+        decision: "REJECTED"
+      });
+    } catch (error) {
+      console.error("Failed to send join request rejection email", error);
+    }
+  }
 
   revalidatePath("/access");
   revalidatePath("/profile");

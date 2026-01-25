@@ -39,15 +39,14 @@ export default function TaskQuickAdd({ weekId }: TaskQuickAddProps) {
   }, [addToast, router, state]);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
     const trimmedTitle = title.trim();
     lastSubmittedTitle.current = trimmedTitle;
     if (!trimmedTitle) {
+      event.preventDefault();
       setLocalError("Add a task title to continue.");
       return;
     }
     setLocalError(null);
-    formAction(new FormData(event.currentTarget));
   };
 
   const trimmedTitle = title.trim();
@@ -63,6 +62,7 @@ export default function TaskQuickAdd({ weekId }: TaskQuickAddProps) {
     <form
       ref={formRef}
       onSubmit={handleSubmit}
+      action={formAction}
       className="mb-4 flex flex-col gap-3 rounded-card border border-dashed border-mist-200 bg-white/60 p-3 sm:flex-row sm:items-center"
     >
       <input type="hidden" name="weekId" value={weekId} />

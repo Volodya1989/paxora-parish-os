@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
 
-export type AccessGateStatus = "none" | "pending" | "approved";
+export type AccessGateStatus = "none" | "pending" | "approved" | "unverified";
 
 export type AccessGateState = {
   status: AccessGateStatus;
@@ -56,6 +56,11 @@ export async function getAccessGateState(): Promise<AccessGateState> {
 
   const parishId = await resolveAccessParishId(session.user.id, session.user.activeParishId);
 
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { emailVerifiedAt: true }
+  });
+
   if (!parishId) {
     return {
       status: "none",
@@ -92,6 +97,14 @@ export async function getAccessGateState(): Promise<AccessGateState> {
   if (membership) {
     return {
       status: "approved",
+      parishId,
+      parishName: parish?.name ?? null
+    };
+  }
+
+  if (!user?.emailVerifiedAt) {
+    return {
+      status: "unverified",
       parishId,
       parishName: parish?.name ?? null
     };

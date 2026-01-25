@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { prisma } from "@/server/db/prisma";
 import { normalizeEmail } from "@/lib/validation/auth";
+import { issueEmailVerification } from "@/lib/auth/emailVerification";
 
 const signUpSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -43,13 +44,19 @@ export async function createUser(
 
   const passwordHash = await bcrypt.hash(password, 10);
 
-  await prisma.user.create({
+  const createdUser = await prisma.user.create({
     data: {
       name,
       email: normalizedEmail,
       passwordHash
     }
   });
+
+  try {
+    await issueEmailVerification(createdUser.id);
+  } catch (error) {
+    console.error("Failed to send verification email", error);
+  }
 
   return { success: true };
 }

@@ -1,0 +1,4 @@
+-- Placeholder migration to preserve history.
+-- This migration was referenced in local databases but the original SQL file
+-- was missing from version control. Keeping this no-op file prevents Prisma
+-- from erroring on missing migration history.

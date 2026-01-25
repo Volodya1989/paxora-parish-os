@@ -16,7 +16,7 @@ export default function SignUpPage() {
 
   useEffect(() => {
     if (state?.success) {
-      router.push("/sign-in");
+      router.push("/sign-in?verify=sent");
     }
   }, [router, state?.success]);
 
