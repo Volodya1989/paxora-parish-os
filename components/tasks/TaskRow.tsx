@@ -79,10 +79,10 @@ export default function TaskRow({
   const completedLabel = formatCompletedLabel(task);
   const inProgressLabel = task.inProgressAt
     ? `Started ${new Date(task.inProgressAt).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        timeZone: "UTC"
-      })}`
+      month: "short",
+      day: "numeric",
+      timeZone: "UTC"
+    })}`
     : null;
   const approvalLabel =
     task.approvalStatus === "PENDING"
@@ -92,12 +92,13 @@ export default function TaskRow({
         : "Approved";
   const approvalTone = task.approvalStatus === "APPROVED" ? "success" : "warning";
   const visibilityLabel = task.visibility === "PUBLIC" ? "Public" : "Private";
+  const isPrivate = task.visibility === "PRIVATE";
   const estimatedHoursLabel = formatEstimatedHours(task);
   const volunteerCountLabel = `${task.volunteerCount}/${task.volunteersNeeded}`;
   const isVolunteerFull = task.volunteerCount >= task.volunteersNeeded;
-  const showAssignToMe = !isVolunteerTask && !task.owner && task.canAssignToSelf;
+  const showAssignToMe = !isPrivate && !isVolunteerTask && !task.owner && task.canAssignToSelf;
   const showUnassignSelf =
-    !isVolunteerTask && task.owner?.id === currentUserId && task.canManage;
+    !isPrivate && !isVolunteerTask && task.owner?.id === currentUserId && task.canManage;
   const showApprovalBadge =
     task.visibility === "PUBLIC" &&
     (task.approvalStatus !== "APPROVED" ||
@@ -161,42 +162,45 @@ export default function TaskRow({
                 {volunteerCountLabel}
               </Badge>
             ) : null}
-            {task.owner ? (
-              <span className="flex items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-mist-100 text-[11px] font-semibold text-ink-700">
-                  {task.owner.initials}
+            {!isPrivate ? (
+              task.owner ? (
+                <span className="flex items-center gap-2">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-mist-100 text-[11px] font-semibold text-ink-700">
+                    {task.owner.initials}
+                  </span>
+                  <span>{task.owner.name}</span>
+                  {showUnassignSelf ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => onUnassign(task.id)}
+                      disabled={isBusy}
+                    >
+                      Unassign
+                    </Button>
+                  ) : null}
                 </span>
-                <span>{task.owner.name}</span>
-                {showUnassignSelf ? (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => onUnassign(task.id)}
-                    disabled={isBusy}
-                  >
-                    Unassign
-                  </Button>
-                ) : null}
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-2">
-                <Badge tone="neutral" className="bg-mist-50 text-ink-500">
-                  Unassigned
-                </Badge>
-                {showAssignToMe ? (
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => onAssignToMe(task.id)}
-                    disabled={isBusy}
-                  >
-                    Assign to me
-                  </Button>
-                ) : null}
-              </span>
-            )}
+              ) : (
+                <span className="inline-flex items-center gap-2">
+                  <Badge tone="neutral" className="bg-mist-50 text-ink-500">
+                    Unassigned
+                  </Badge>
+                  {showAssignToMe ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => onAssignToMe(task.id)}
+                      disabled={isBusy}
+                    >
+                      Assign to me
+                    </Button>
+                  ) : null}
+                </span>
+              )
+            ) : null}
+
             {task.group ? (
               <Badge tone="warning" className="bg-indigo-50 text-indigo-700">
                 {task.group.name}
