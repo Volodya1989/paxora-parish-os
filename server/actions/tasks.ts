@@ -51,6 +51,14 @@ function assertSession(session: Session | null) {
   return { userId: session.user.id, parishId: session.user.activeParishId };
 }
 
+function fd(formData: FormData, key: string) {
+  const v = formData.get(key);
+  if (v === null) return undefined; // null -> undefined (critical for zod optional)
+  if (typeof v === "string" && v.trim() === "") return undefined; // "" -> undefined
+  return v;
+}
+
+
 export async function createTask(
   _: TaskActionState,
   formData: FormData
@@ -59,16 +67,17 @@ export async function createTask(
   const { userId, parishId } = assertSession(session);
 
   const parsed = createTaskSchema.safeParse({
-    title: formData.get("title"),
-    notes: formData.get("notes"),
-    estimatedHours: formData.get("estimatedHours"),
-    weekId: formData.get("weekId"),
-    groupId: formData.get("groupId"),
-    ownerId: formData.get("ownerId"),
-    volunteersNeeded: formData.get("volunteersNeeded"),
-    dueAt: formData.get("dueAt"),
-    visibility: formData.get("visibility")
+    title: fd(formData, "title"),
+    notes: fd(formData, "notes"),
+    estimatedHours: fd(formData, "estimatedHours"),
+    weekId: fd(formData, "weekId"),
+    groupId: fd(formData, "groupId"),
+    ownerId: fd(formData, "ownerId"),
+    volunteersNeeded: fd(formData, "volunteersNeeded"),
+    dueAt: fd(formData, "dueAt"),
+    visibility: fd(formData, "visibility")
   });
+
 
   if (!parsed.success) {
     return {
@@ -147,7 +156,7 @@ export async function createTask(
     visibility === "PRIVATE"
       ? parsed.data.ownerId ?? userId
       : parsed.data.ownerId ??
-        (parsed.data.volunteersNeeded && parsed.data.volunteersNeeded > 1 ? undefined : userId);
+      (parsed.data.volunteersNeeded && parsed.data.volunteersNeeded > 1 ? undefined : userId);
   const defaultDueAt = new Date();
   defaultDueAt.setDate(defaultDueAt.getDate() + 14);
 

@@ -4,6 +4,8 @@ import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "re
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/ui/cn";
 
+
+
 export type SelectMenuOption = {
   value: string;
   label: string;
@@ -40,6 +42,7 @@ export default function SelectMenu({
   const listboxId = `${buttonId}-listbox`;
   const [internalValue, setInternalValue] = useState(defaultValue ?? "");
   const [open, setOpen] = useState(false);
+  const [pendingOpen, setPendingOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({
@@ -49,6 +52,7 @@ export default function SelectMenu({
     side: "bottom",
     maxHeight: 0
   });
+
 
   const selectedValue = value ?? internalValue;
   const selectedOption = useMemo(
@@ -87,11 +91,17 @@ export default function SelectMenu({
   };
 
   useLayoutEffect(() => {
-    if (!open) {
-      return;
-    }
+    if (!(open || pendingOpen)) return;
+
     updatePosition();
-  }, [open]);
+
+    // If this is the "first mount" phase, promote to open after measuring
+    if (pendingOpen) {
+      setPendingOpen(false);
+      setOpen(true);
+    }
+  }, [open, pendingOpen]);
+
 
   useEffect(() => {
     if (!open) {
@@ -149,7 +159,15 @@ export default function SelectMenu({
         aria-expanded={open}
         aria-controls={listboxId}
         disabled={disabled}
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => {
+          if (disabled) return;
+          if (open) {
+            setOpen(false);
+            return;
+          }
+          setPendingOpen(true);
+        }}
+
         className={cn(
           "flex w-full items-center justify-between gap-2 rounded-button border border-mist-200 bg-white px-3 py-2 text-sm text-ink-700 shadow-card transition focus-ring",
           disabled && "cursor-not-allowed bg-mist-50 text-ink-400"
@@ -162,51 +180,53 @@ export default function SelectMenu({
           ▾
         </span>
       </button>
-      {open
+      {(open || pendingOpen)
         ? createPortal(
-            <div
-              ref={menuRef}
-              id={listboxId}
-              role="listbox"
-              aria-labelledby={buttonId}
-              data-side={position.side}
-              className={cn(
-                "z-[100] max-h-64 overflow-auto rounded-card border border-mist-200 bg-white p-1 shadow-overlay",
-                menuClassName
-              )}
-              style={{
-                position: "fixed",
-                top: position.top,
-                left: position.left,
-                width: position.width,
-                maxHeight: position.maxHeight || undefined
-              }}
-            >
-              {options.map((option) => {
-                const isSelected = option.value === selectedValue;
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    role="option"
-                    aria-selected={isSelected}
-                    disabled={option.disabled}
-                    onClick={() => handleSelect(option.value)}
-                    className={cn(
-                      "flex w-full items-center justify-between rounded-button px-3 py-2 text-left text-sm text-ink-700 transition hover:bg-mist-50 focus-visible:bg-mist-50",
-                      option.disabled && "cursor-not-allowed text-ink-300",
-                      isSelected && "bg-primary-50 text-primary-700"
-                    )}
-                  >
-                    <span>{option.label}</span>
-                    {isSelected ? <span aria-hidden="true">✓</span> : null}
-                  </button>
-                );
-              })}
-            </div>,
-            document.body
-          )
+          <div
+            ref={menuRef}
+            id={listboxId}
+            role="listbox"
+            aria-labelledby={buttonId}
+            data-side={position.side}
+            className={cn(
+              "z-[100] max-h-64 overflow-auto rounded-card border border-mist-200 bg-white p-1 shadow-overlay",
+              menuClassName
+            )}
+            style={{
+              position: "fixed",
+              top: position.top,
+              left: position.left,
+              width: position.width,
+              maxHeight: position.maxHeight || undefined,
+              visibility: pendingOpen ? "hidden" : "visible"
+            }}
+          >
+            {options.map((option) => {
+              const isSelected = option.value === selectedValue;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  disabled={option.disabled}
+                  onClick={() => handleSelect(option.value)}
+                  className={cn(
+                    "flex w-full items-center justify-between rounded-button px-3 py-2 text-left text-sm text-ink-700 transition hover:bg-mist-50 focus-visible:bg-mist-50",
+                    option.disabled && "cursor-not-allowed text-ink-300",
+                    isSelected && "bg-primary-50 text-primary-700"
+                  )}
+                >
+                  <span>{option.label}</span>
+                  {isSelected ? <span aria-hidden="true">✓</span> : null}
+                </button>
+              );
+            })}
+          </div>,
+          document.body
+        )
         : null}
+
     </div>
   );
 }
