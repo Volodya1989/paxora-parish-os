@@ -6,31 +6,38 @@ import RsvpButtons from "@/components/events/RsvpButtons";
 import { formatRecurrenceSummary } from "@/lib/events/recurrence";
 import type { EventDetail } from "@/lib/queries/events";
 
+const PARISH_TZ = process.env.PARISH_TIMEZONE ?? "America/New_York";
+
 function formatDate(startsAt: Date) {
   return startsAt.toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
-    day: "numeric"
+    day: "numeric",
+    timeZone: PARISH_TZ
   });
 }
 
 function formatTimeRange(startsAt: Date, endsAt: Date) {
   const startTime = startsAt.toLocaleTimeString("en-US", {
     hour: "numeric",
-    minute: "2-digit"
+    minute: "2-digit",
+    timeZone: PARISH_TZ
   });
   const endTime = endsAt.toLocaleTimeString("en-US", {
     hour: "numeric",
-    minute: "2-digit"
+    minute: "2-digit",
+    timeZone: PARISH_TZ
   });
   return `${startTime} – ${endTime}`;
 }
+
 
 type EventDetailCardProps = {
   event: EventDetail;
 };
 
 export default function EventDetailCard({ event }: EventDetailCardProps) {
+
   const summaryText =
     event.summary.trim().length > 0
       ? event.summary
