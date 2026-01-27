@@ -8,6 +8,7 @@ import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import type { TaskDetail, TaskListItem } from "@/lib/queries/tasks";
+import { useTranslations } from "@/lib/i18n/provider";
 import {
   addTaskComment,
   assignTaskToSelf,
@@ -50,6 +51,7 @@ export default function TaskDetailDialog({
   onOpenChange,
   currentUserId
 }: TaskDetailDialogProps) {
+  const t = useTranslations();
   const router = useRouter();
   const { addToast } = useToast();
   const handleClose = useCallback(() => onOpenChange(false), [onOpenChange]);
@@ -137,13 +139,13 @@ export default function TaskDetailDialog({
         <div className="flex flex-wrap items-center gap-2 text-xs text-ink-500">
           <span className="rounded-full bg-mist-100 px-2 py-1 font-semibold text-ink-600">
             {taskSummary?.status === "DONE"
-              ? "Done"
+              ? t("common.done")
               : taskSummary?.status === "IN_PROGRESS"
-                ? "In progress"
-                : "Open"}
+                ? t("common.inProgress")
+                : t("common.todo")}
           </span>
           <span className="rounded-full bg-sky-50 px-2 py-1 font-semibold text-sky-700">
-            {taskSummary?.visibility === "PUBLIC" ? "Public" : "Private"}
+            {taskSummary?.visibility === "PUBLIC" ? t("common.public") : t("common.private")}
           </span>
           {taskSummary?.group ? (
             <span className="rounded-full bg-indigo-50 px-2 py-1 font-semibold text-indigo-700">

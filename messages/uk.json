@@ -1,0 +1,60 @@
+{
+  "nav": {
+    "thisWeek": "Цей тиждень",
+    "serve": "Служіння",
+    "groups": "Групи",
+    "calendar": "Календар",
+    "announcements": "Оголошення",
+    "profile": "Профіль",
+    "signIn": "Увійти",
+    "signOut": "Вийти"
+  },
+  "header": {
+    "appTitle": "Paxora Parish OS",
+    "weekSwitcherLabel": "Перемикач тижня",
+    "thisWeek": "Цей тиждень",
+    "nextWeek": "Наступний тиждень",
+    "addButton": "+ Додати"
+  },
+  "menu": {
+    "addMenuLabel": "Меню додавання",
+    "addServeItem": "Додати служіння",
+    "addEvent": "Додати подію",
+    "addGroup": "Додати групу",
+    "language": "Мова",
+    "more": "Більше",
+    "moreAbbrev": "БІЛЬШЕ",
+    "closeMoreMenu": "Закрити меню «Більше»"
+  },
+  "buttons": {
+    "save": "Зберегти",
+    "cancel": "Скасувати",
+    "create": "Створити",
+    "edit": "Редагувати",
+    "delete": "Видалити",
+    "back": "Назад",
+    "next": "Далі",
+    "submit": "Надіслати",
+    "close": "Закрити"
+  },
+  "empty": {
+    "noTasks": "Ще немає завдань",
+    "noGroups": "Ще немає груп",
+    "nothingScheduled": "Нічого не заплановано",
+    "noAnnouncements": "Ще немає оголошень"
+  },
+  "common": {
+    "private": "Приватне",
+    "public": "Публічне",
+    "draft": "Чернетка",
+    "published": "Опубліковано",
+    "todo": "До виконання",
+    "inProgress": "У процесі",
+    "done": "Готово",
+    "loading": "Завантаження",
+    "error": "Помилка"
+  },
+  "auth": {
+    "signingOut": "Вихід..."
+  }
+}

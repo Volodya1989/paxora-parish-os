@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import CalendarView from "@/components/calendar/CalendarView";
+import { withI18n } from "@/tests/utils/i18n";
 
 const now = new Date("2024-05-08T12:00:00.000Z");
 const weekRange = {
@@ -39,23 +40,25 @@ const sampleEvent = {
 
 test("Calendar view toggle renders week layout by default", () => {
   const markup = renderToStaticMarkup(
-    createElement(CalendarView, {
-      weekRange,
-      monthRange,
-      nextWeekRange,
-      weekEvents: [sampleEvent],
-      monthEvents: [sampleEvent],
-      nextWeekEvents: [sampleEvent],
-      now,
-      initialView: "week",
-      canCreateEvents: true,
-      canCreatePublicEvents: true,
-      canCreatePrivateEvents: true,
-      canCreateGroupEvents: true,
-      isEditor: true,
-      groupOptions: [],
-      viewerGroupIds: []
-    })
+    withI18n(
+      createElement(CalendarView, {
+        weekRange,
+        monthRange,
+        nextWeekRange,
+        weekEvents: [sampleEvent],
+        monthEvents: [sampleEvent],
+        nextWeekEvents: [sampleEvent],
+        now,
+        initialView: "week",
+        canCreateEvents: true,
+        canCreatePublicEvents: true,
+        canCreatePrivateEvents: true,
+        canCreateGroupEvents: true,
+        isEditor: true,
+        groupOptions: [],
+        viewerGroupIds: []
+      })
+    )
   );
 
   assert.match(markup, /data-testid="calendar-week-grid"/);
@@ -65,23 +68,25 @@ test("Calendar view toggle renders week layout by default", () => {
 
 test("Calendar view toggle can render month layout", () => {
   const markup = renderToStaticMarkup(
-    createElement(CalendarView, {
-      weekRange,
-      monthRange,
-      nextWeekRange,
-      weekEvents: [sampleEvent],
-      monthEvents: [sampleEvent],
-      nextWeekEvents: [sampleEvent],
-      now,
-      initialView: "month",
-      canCreateEvents: true,
-      canCreatePublicEvents: true,
-      canCreatePrivateEvents: true,
-      canCreateGroupEvents: true,
-      isEditor: true,
-      groupOptions: [],
-      viewerGroupIds: []
-    })
+    withI18n(
+      createElement(CalendarView, {
+        weekRange,
+        monthRange,
+        nextWeekRange,
+        weekEvents: [sampleEvent],
+        monthEvents: [sampleEvent],
+        nextWeekEvents: [sampleEvent],
+        now,
+        initialView: "month",
+        canCreateEvents: true,
+        canCreatePublicEvents: true,
+        canCreatePrivateEvents: true,
+        canCreateGroupEvents: true,
+        isEditor: true,
+        groupOptions: [],
+        viewerGroupIds: []
+      })
+    )
   );
 
   assert.match(markup, /data-testid="calendar-month-grid"/);

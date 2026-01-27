@@ -1,0 +1,1 @@
+-- no-op: keep index name "email_log_digest_unique" to match schema

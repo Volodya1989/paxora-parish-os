@@ -7,6 +7,7 @@ import Input from "@/components/ui/Input";
 import Label from "@/components/ui/Label";
 import SelectMenu from "@/components/ui/SelectMenu";
 import type { TaskFilters } from "@/lib/queries/tasks";
+import { useTranslations } from "@/lib/i18n/provider";
 
 type TaskFiltersProps = {
   filters: TaskFilters;
@@ -23,6 +24,7 @@ export default function TaskFilters({
   searchPlaceholder = "Search serve items or notes",
   layout = "inline"
 }: TaskFiltersProps) {
+  const t = useTranslations();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [queryValue, setQueryValue] = useState(filters.query ?? "");
@@ -75,9 +77,9 @@ export default function TaskFilters({
           onValueChange={(value) => updateParam("status", value)}
           options={[
             { value: "all", label: "All" },
-            { value: "open", label: "Open" },
-            { value: "in-progress", label: "In progress" },
-            { value: "done", label: "Done" }
+            { value: "open", label: t("common.todo") },
+            { value: "in-progress", label: t("common.inProgress") },
+            { value: "done", label: t("common.done") }
           ]}
         />
       </div>

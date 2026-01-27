@@ -4,6 +4,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import ScheduleView from "@/components/calendar/ScheduleView";
 import CalendarView from "@/components/calendar/CalendarView";
+import { withI18n } from "@/tests/utils/i18n";
 
 const now = new Date("2024-06-10T08:00:00.000Z");
 const event = {
@@ -42,12 +43,14 @@ const nextWeekRange = {
 
 test("ScheduleView renders day grouping", () => {
   const markup = renderToStaticMarkup(
-    createElement(ScheduleView, {
-      events: [event],
-      now,
-      isEditor: true,
-      onSelectEvent: () => undefined
-    })
+    withI18n(
+      createElement(ScheduleView, {
+        events: [event],
+        now,
+        isEditor: true,
+        onSelectEvent: () => undefined
+      })
+    )
   );
 
   assert.match(markup, /Today/);
@@ -58,23 +61,25 @@ test("ScheduleView renders day grouping", () => {
 
 test("CalendarView disables add button when user lacks permissions", () => {
   const markup = renderToStaticMarkup(
-    createElement(CalendarView, {
-      weekRange,
-      monthRange,
-      nextWeekRange,
-      weekEvents: [event],
-      monthEvents: [event],
-      nextWeekEvents: [event],
-      now,
-      initialView: "week",
-      canCreateEvents: false,
-      canCreatePublicEvents: false,
-      canCreatePrivateEvents: false,
-      canCreateGroupEvents: false,
-      isEditor: false,
-      groupOptions: [],
-      viewerGroupIds: []
-    })
+    withI18n(
+      createElement(CalendarView, {
+        weekRange,
+        monthRange,
+        nextWeekRange,
+        weekEvents: [event],
+        monthEvents: [event],
+        nextWeekEvents: [event],
+        now,
+        initialView: "week",
+        canCreateEvents: false,
+        canCreatePublicEvents: false,
+        canCreatePrivateEvents: false,
+        canCreateGroupEvents: false,
+        isEditor: false,
+        groupOptions: [],
+        viewerGroupIds: []
+      })
+    )
   );
 
   assert.match(markup, /disabled/);

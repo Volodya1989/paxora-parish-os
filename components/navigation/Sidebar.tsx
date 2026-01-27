@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getPrimaryNavItems, type NavRole } from "@/components/navigation/navItems";
 import { SignOutButton } from "@/components/navigation/SignOutButton";
+import { stripLocale } from "@/lib/i18n/routing";
+import { useTranslations } from "@/lib/i18n/provider";
 
 const STORAGE_KEY = "paxora.sidebarCollapsed";
 
@@ -25,8 +27,10 @@ export function Sidebar({
   onSignOut,
   parishRole
 }: SidebarProps) {
+  const t = useTranslations();
   const [internalCollapsed, setInternalCollapsed] = useState(initialCollapsed);
   const isCollapsed = collapsed ?? internalCollapsed;
+  const normalizedPath = stripLocale(currentPath);
 
   useEffect(() => {
     if (typeof window === "undefined" || collapsed !== undefined) {
@@ -65,7 +69,7 @@ export function Sidebar({
     >
       <div className="flex items-center justify-between gap-2 px-2">
         <div className={`text-sm font-semibold text-ink-900 ${isCollapsed ? "sr-only" : ""}`}>
-          Parish OS
+          {t("header.appTitle")}
         </div>
         <button
           type="button"
@@ -80,13 +84,13 @@ export function Sidebar({
 
       <nav aria-label="Primary" className="mt-6 flex-1 space-y-1">
         {items.map((item) => {
-          const isActive = currentPath === item.href;
+          const isActive = normalizedPath === item.href;
           return (
             <Link
               key={item.href}
               href={item.href}
               aria-current={isActive ? "page" : undefined}
-              title={isCollapsed ? item.label : undefined}
+              title={isCollapsed ? t(item.labelKey) : undefined}
               className={`group relative flex items-center gap-3 rounded-card px-3 py-2 text-sm font-medium transition focus-ring ${
                 isActive
                   ? "bg-emerald-50 text-emerald-900"
@@ -106,7 +110,7 @@ export function Sidebar({
               >
                 {item.icon}
               </span>
-              <span className={isCollapsed ? "sr-only" : ""}>{item.label}</span>
+              <span className={isCollapsed ? "sr-only" : ""}>{t(item.labelKey)}</span>
             </Link>
           );
         })}
@@ -118,7 +122,7 @@ export function Sidebar({
           className={`flex items-center gap-3 rounded-card px-3 py-2 text-sm font-medium text-ink-700 transition hover:bg-mist-50 focus-ring ${
             isCollapsed ? "justify-center" : ""
           }`}
-          title={isCollapsed ? "Profile" : undefined}
+          title={isCollapsed ? t("nav.profile") : undefined}
         >
           <span
             className="flex h-8 w-8 items-center justify-center rounded-full border border-mist-200 bg-mist-100 text-xs font-semibold text-ink-700"
@@ -126,7 +130,7 @@ export function Sidebar({
           >
             PR
           </span>
-          <span className={isCollapsed ? "sr-only" : ""}>Profile</span>
+          <span className={isCollapsed ? "sr-only" : ""}>{t("nav.profile")}</span>
         </Link>
         <SignOutButton compact={isCollapsed} onSignOut={onSignOut} />
       </div>

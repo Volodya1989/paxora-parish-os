@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useState } from "react";
 import MoreDrawer from "@/components/navigation/MoreDrawer";
 import { getPrimaryNavItems, type NavRole } from "@/components/navigation/navItems";
+import { stripLocale } from "@/lib/i18n/routing";
+import { useTranslations } from "@/lib/i18n/provider";
 
 type MobileTabsProps = {
   currentPath?: string;
@@ -23,8 +25,10 @@ export function MobileTabs({
   onSignOut,
   parishRole
 }: MobileTabsProps) {
+  const t = useTranslations();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = isMoreOpen ?? internalOpen;
+  const normalizedPath = stripLocale(currentPath);
 
   const setOpen = (nextOpen: boolean) => {
     onMoreOpenChange?.(nextOpen);
@@ -49,13 +53,13 @@ export function MobileTabs({
       >
         <div className="flex items-center justify-around px-2 py-2">
           {items.map((item) => {
-            const isActive = currentPath === item.href;
+            const isActive = normalizedPath === item.href;
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 aria-current={isActive ? "page" : undefined}
-                data-testid={`tab-${item.label.toLowerCase().replace(/\s+/g, "-")}`}
+                data-testid={`tab-${item.testId}`}
                 onClick={() => {
                   onNavigate?.(item.href);
                   setOpen(false);
@@ -74,7 +78,7 @@ export function MobileTabs({
                 >
                   {item.icon}
                 </span>
-                <span>{item.label}</span>
+                <span>{t(item.labelKey)}</span>
               </Link>
             );
           })}
@@ -96,9 +100,9 @@ export function MobileTabs({
               }`}
               aria-hidden="true"
             >
-              MORE
+              {t("menu.moreAbbrev")}
             </span>
-            <span>More</span>
+            <span>{t("menu.more")}</span>
           </button>
         </div>
       </nav>

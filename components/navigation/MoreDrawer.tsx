@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { moreNavItems } from "@/components/navigation/navItems";
 import { SignOutButton } from "@/components/navigation/SignOutButton";
+import { useTranslations } from "@/lib/i18n/provider";
 
 type MoreDrawerProps = {
   open: boolean;
@@ -13,6 +14,7 @@ type MoreDrawerProps = {
 };
 
 export function MoreDrawer({ open, onClose, onSignOut }: MoreDrawerProps) {
+  const t = useTranslations();
   const firstItemRef = useRef<HTMLAnchorElement | null>(null);
 
   useEffect(() => {
@@ -45,13 +47,13 @@ export function MoreDrawer({ open, onClose, onSignOut }: MoreDrawerProps) {
       <button
         type="button"
         className="absolute inset-0 bg-black/30"
-        aria-label="Close more menu"
+        aria-label={t("menu.closeMoreMenu")}
         onClick={onClose}
       />
       <div
         id="more-drawer"
         role="dialog"
-        aria-label="More"
+        aria-label={t("menu.more")}
         data-testid="more-drawer"
         className="absolute bottom-0 left-0 right-0 rounded-t-card border border-mist-200 bg-white px-4 pb-8 pt-5 shadow-overlay"
       >
@@ -64,7 +66,7 @@ export function MoreDrawer({ open, onClose, onSignOut }: MoreDrawerProps) {
               ref={index === 0 ? firstItemRef : undefined}
               className="flex items-center justify-between rounded-card border border-mist-200 bg-mist-50 px-4 py-3 text-sm font-medium text-ink-800 shadow-card transition hover:bg-mist-100 focus-ring"
             >
-              <span>{item.label}</span>
+              <span>{t(item.labelKey)}</span>
               <span className="text-xs text-ink-400" aria-hidden="true">
                 {item.icon}
               </span>
