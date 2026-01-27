@@ -27,7 +27,7 @@ function assertSession() {
 
 export async function requestParishAccess(formData: FormData) {
   const session = await assertSession();
-  const locale = await getLocaleFromCookies();
+  const locale = getLocaleFromCookies();
   const parishId = String(formData.get("parishId") ?? "").trim();
 
   if (!parishId) {
@@ -177,7 +177,7 @@ const parseApproveInput = (input: FormData | ApproveAccessInput): ApproveAccessI
 
 export async function approveParishAccess(input: FormData | ApproveAccessInput) {
   const session = await assertSession();
-  const locale = await getLocaleFromCookies();
+  const locale = getLocaleFromCookies();
   const { parishId, userId, role } = parseApproveInput(input);
 
   if (!parishId || !userId) {
@@ -280,7 +280,7 @@ const parseRejectInput = (input: FormData | RejectAccessInput): RejectAccessInpu
 
 export async function rejectParishAccess(input: FormData | RejectAccessInput) {
   const session = await assertSession();
-  const locale = await getLocaleFromCookies();
+  const locale = getLocaleFromCookies();
   const { parishId, userId } = parseRejectInput(input);
 
   if (!parishId || !userId) {

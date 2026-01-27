@@ -15,7 +15,7 @@ const I18nContext = createContext<I18nContextValue | null>(null);
 type I18nProviderProps = {
   locale: Locale;
   messages: Messages;
-  children?: React.ReactNode;
+  children: React.ReactNode;
 };
 
 export function I18nProvider({ locale, messages, children }: I18nProviderProps) {

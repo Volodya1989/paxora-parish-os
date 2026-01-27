@@ -9,7 +9,8 @@ import { authOptions } from "@/server/auth/options";
 import { createParish } from "@/server/actions/parish";
 import { getAccessGateState } from "@/lib/queries/access";
 import { getParishMembership } from "@/server/db/groups";
-import { getLocaleFromParam, stripLocale } from "@/lib/i18n/routing";
+import { stripLocale } from "@/lib/i18n/routing";
+import type { Locale } from "@/lib/i18n/config";
 
 async function getRequestPathname() {
   const headerList = await headers();
@@ -41,11 +42,10 @@ export default async function AppLayout({
   params
 }: {
   children: ReactNode;
-  params: Promise<{ locale: string }>;
+  params: { locale: Locale };
 }) {
   const session = await getServerSession(authOptions);
-  const { locale: localeParam } = await params;
-  const locale = getLocaleFromParam(localeParam);
+  const locale = params.locale;
 
   if (!session?.user?.id) {
     redirect(`/${locale}/sign-in`);

@@ -38,8 +38,7 @@ export default async function ThisWeekParishionerView({
   now,
   viewToggle
 }: ThisWeekParishionerViewProps) {
-  const locale = await getLocaleFromCookies();
-  const t = getTranslations(locale);
+  const t = getTranslations(getLocaleFromCookies());
   const publishedAnnouncements = [...data.announcements]
     .filter((announcement) => announcement.publishedAt)
     .sort((a, b) => {

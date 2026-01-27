@@ -10,9 +10,8 @@ type SectionScheduleProps = {
   events: EventPreview[];
 };
 
-export default async function SectionSchedule({ events }: SectionScheduleProps) {
-  const locale = await getLocaleFromCookies();
-  const t = getTranslations(locale);
+export default function SectionSchedule({ events }: SectionScheduleProps) {
+  const t = getTranslations(getLocaleFromCookies());
   return (
     <section id="services" className="scroll-mt-24">
       <AccentSectionCard

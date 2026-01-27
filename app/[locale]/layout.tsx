@@ -9,19 +9,14 @@ export default async function LocaleLayout({
   params
 }: {
   children: ReactNode;
-  params: Promise<{ locale: string }>;
+  params: { locale: string };
 }) {
-  const { locale: localeParam } = await params;
-  const locale = localeParam as Locale;
+  const locale = params.locale as Locale;
   if (!locales.includes(locale)) {
     notFound();
   }
 
   const messages = getMessages(locale);
 
-  return (
-    <I18nProvider locale={locale} messages={messages}>
-      {children}
-    </I18nProvider>
-  );
+  return <I18nProvider locale={locale} messages={messages}>{children}</I18nProvider>;
 }

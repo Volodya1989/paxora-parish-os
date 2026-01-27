@@ -9,7 +9,7 @@ import { getLocaleFromCookies } from "@/lib/i18n/server";
 
 export async function requestEmailVerification() {
   const session = await getServerSession(authOptions);
-  const locale = await getLocaleFromCookies();
+  const locale = getLocaleFromCookies();
 
   if (!session?.user?.id) {
     throw new Error("Unauthorized");

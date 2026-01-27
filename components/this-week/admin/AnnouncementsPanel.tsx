@@ -67,9 +67,8 @@ type AnnouncementsPanelProps = {
   announcements: AnnouncementPreview[];
 };
 
-export default async function AnnouncementsPanel({ announcements }: AnnouncementsPanelProps) {
-  const locale = await getLocaleFromCookies();
-  const t = getTranslations(locale);
+export default function AnnouncementsPanel({ announcements }: AnnouncementsPanelProps) {
+  const t = getTranslations(getLocaleFromCookies());
   if (announcements.length === 0) {
     return (
       <Card className="border-mist-200 bg-white">
