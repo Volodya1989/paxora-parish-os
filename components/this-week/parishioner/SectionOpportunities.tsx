@@ -35,8 +35,8 @@ export default function SectionOpportunities({ tasks }: SectionOpportunitiesProp
           {tasks.length === 0 ? (
             <div className="rounded-card border border-rose-100 bg-rose-50/40 px-4 py-3 text-sm text-ink-500">
               No opportunities right now. {" "}
-              <Link className="font-medium text-ink-700 underline" href={routes.groups}>
-                Browse groups
+              <Link className="font-medium text-ink-700 underline" href={routes.serve}>
+                Browse opportunities to serve
               </Link>
               .
             </div>

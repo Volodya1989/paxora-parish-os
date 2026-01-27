@@ -88,7 +88,7 @@ export function ToastViewport({ toasts: toastsProp, onDismiss }: ToastViewportPr
   return (
     <div
       aria-live="polite"
-      className="fixed inset-x-4 bottom-4 z-50 flex flex-col gap-3 sm:inset-auto sm:right-4 sm:top-4"
+      className="fixed inset-x-4 top-4 z-50 flex flex-col items-center gap-3 sm:inset-auto sm:right-4 sm:top-4 sm:items-end"
     >
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onDismiss={dismiss} />

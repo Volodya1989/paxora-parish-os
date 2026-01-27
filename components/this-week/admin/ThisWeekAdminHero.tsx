@@ -57,35 +57,38 @@ function ChevronRightIcon({ className }: { className?: string }) {
   );
 }
 
-function ProgressRing({ percent }: { percent: number }) {
+function ProgressRing({ percent, className }: { percent: number; className?: string }) {
+  const pct = Math.max(0, Math.min(100, Math.round(percent)));
+
   return (
-    <div className="relative h-10 w-10">
-      <svg className="h-10 w-10 -rotate-90" viewBox="0 0 36 36">
-        <circle
-          cx="18"
-          cy="18"
-          r="15.5"
-          fill="none"
-          className="stroke-mist-200"
-          strokeWidth="3"
-        />
+    <div className={cn("relative h-10 w-10", className)}>
+      <svg className="h-full w-full -rotate-90" viewBox="0 0 36 36">
+        <circle cx="18" cy="18" r="15.5" fill="none" className="stroke-mist-200" strokeWidth="3" />
         <circle
           cx="18"
           cy="18"
           r="15.5"
           fill="none"
           className="stroke-primary-600"
-          strokeWidth="3"
+          strokeWidth="2"
           strokeLinecap="round"
-          strokeDasharray={`${percent} 100`}
+          strokeDasharray={`${pct} 100`}
         />
       </svg>
-      <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-ink-700">
-        {percent}%
+
+      <span
+        className={cn(
+          "absolute inset-0 flex items-center justify-center font-semibold text-ink-700 tabular-nums leading-none",
+          pct === 100 ? "text-[8px] tracking-[-0.04em]" : "text-[10px] tracking-tight"
+        )}
+      >
+        {pct}%
       </span>
+
     </div>
   );
 }
+
 
 export default function ThisWeekAdminHero({
   weekLabel,
@@ -103,46 +106,41 @@ export default function ThisWeekAdminHero({
 
   return (
     <Card className="p-0">
-      <div className="p-4 sm:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-h2">This Week</h1>
-                <span className="rounded-md bg-mist-100 px-2.5 py-1 text-xs font-medium text-ink-600">
-                  {weekLabel}
-                </span>
-              </div>
-              <p className="mt-1 text-sm text-ink-500">
-                {dateRange} · {updatedLabel}
+      <div className="p-3 sm:p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-h2">This Week</h1>
+              <p className="text-sm font-medium text-ink-600">
+                Week {weekLabel} · {dateRange}
               </p>
             </div>
-
-            <div className="flex items-center gap-3 self-start rounded-card border border-mist-200 bg-mist-50 px-3 py-2">
-              <ProgressRing percent={completionPercentage} />
-              <div className="hidden sm:block">
-                <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
-                  Completion
-                </p>
-                <p className="text-sm font-semibold text-ink-900">
+            <div className="flex flex-wrap items-center gap-3 text-xs text-ink-500">
+              <span>{updatedLabel}</span>
+              <div className="flex items-center gap-2 rounded-card border border-mist-200 bg-mist-50 px-2 py-1">
+                <ProgressRing
+                  percent={completionPercentage}
+                  className="h-8 w-8 sm:h-7 sm:w-7"
+                />
+                <span className="font-medium text-ink-700">
                   {completedTasks}/{totalTasks} done
-                </p>
+                </span>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-1">
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-1">
               <Link
                 href="?week=previous"
                 aria-label="Previous week"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-button border border-mist-200 text-ink-500 transition hover:bg-mist-50 focus-ring"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-button border border-mist-200 text-ink-500 transition hover:bg-mist-50 focus-ring"
               >
                 <ChevronLeftIcon className="h-4 w-4" />
               </Link>
               <Dropdown>
                 <DropdownTrigger
-                  className="inline-flex h-8 min-w-[120px] items-center justify-between gap-2 rounded-button border border-mist-200 bg-white px-3 text-sm font-medium text-ink-700 hover:bg-mist-50 focus-ring"
+                  className="inline-flex h-9 min-w-[120px] items-center justify-between gap-2 rounded-button border border-mist-200 bg-white px-3 text-sm font-medium text-ink-700 hover:bg-mist-50 focus-ring"
                   aria-label="Select week"
                 >
                   <span>{selectedOption?.label ?? weekLabel}</span>
@@ -168,15 +166,15 @@ export default function ThisWeekAdminHero({
               <Link
                 href="?week=next"
                 aria-label="Next week"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-button border border-mist-200 text-ink-500 transition hover:bg-mist-50 focus-ring"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-button border border-mist-200 text-ink-500 transition hover:bg-mist-50 focus-ring"
               >
                 <ChevronRightIcon className="h-4 w-4" />
               </Link>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2">
               {viewToggle}
-              <Button onClick={() => setIsOpen(true)} className="w-full sm:w-auto">
+              <Button onClick={() => setIsOpen(true)} className="h-9 w-full sm:w-auto">
                 <span className="text-base leading-none">+</span>
                 Add
               </Button>
