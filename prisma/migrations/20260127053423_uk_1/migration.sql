@@ -1,0 +1,4 @@
+-- no-op
+-- Keep canonical index names to match schema.prisma:
+-- - email_log_digest_unique
+-- - email_log_join_request_unique
