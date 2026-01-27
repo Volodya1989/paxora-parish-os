@@ -2,6 +2,9 @@
 
 This inventory maps the current repo surface area to Direction A stories (A-001…A-012) and later dependencies. It focuses on what **exists today** and highlights route/action/model coverage.
 
+## 0) Story prompts & implementation briefs
+- **Bilingual i18n skeleton prompt**: `docs/specs/i18n-skeleton-prompt.md` (guidance for locale routing, translation scope, toggle UX, and tests).
+
 ## 1) Routes & pages (app router)
 
 ### App routes (`app/(app)/**`)

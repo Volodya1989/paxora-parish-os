@@ -14,24 +14,37 @@ All screens prioritize **“This Week”** as the primary surface and preserve a
 
 ## Navigation Model
 ### Mobile (Bottom Tabs)
-- Tabs: **This Week**, Tasks, Groups, Calendar, More
+- Tabs: **This Week**, Serve, Groups, Calendar, More
 - **More drawer**: Announcements, Profile/Settings, Sign out
 - Week switcher in top bar across screens
 - Active tab has filled icon + label color
 
 ### Desktop (Left Sidebar)
 - Left sidebar (collapsible) with **This Week pinned at top**
-- Secondary items: Tasks, Groups, Calendar, Announcements
+- Secondary items: Serve, Groups, Calendar, Announcements
 - Bottom of sidebar: Profile, Sign out
 - Top header on content area: page title + week switcher + “+ Add”
 
 ### Navigation Map
 - **This Week** → Task Detail, Event Detail, Announcement Detail
-- **Tasks** → Task Detail
+- **Serve** → Task Detail
 - **Groups** → Group Detail → Add Members
 - **Calendar** → Event Detail
 - **Announcements** → Announcement Detail
 - **Profile/Settings**
+
+### Translate ONLY
+- Paxora Parish OS
+- This week
+- Next week
+- + Add
+- Add serve item
+- Add event
+- Add group
+- More
+- Close more menu
+- Sign out
+- Signing out…
 
 ---
 
@@ -139,9 +152,9 @@ CRUD:
 
 ---
 
-### 4) Tasks List
+### 4) Serve List
 ```
-Header: Tasks   [+ Add Task]
+Header: Serve   [+ Add Task]
 Filters: Status, Due, Assigned
 
 [Task Row]
