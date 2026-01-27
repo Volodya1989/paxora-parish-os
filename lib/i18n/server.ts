@@ -4,9 +4,8 @@ import { getLocaleFromCookie } from "@/lib/i18n/routing";
 import { getMessages } from "@/lib/i18n/messages";
 import { createTranslator } from "@/lib/i18n/translator";
 
-export async function getLocaleFromCookies(): Promise<Locale> {
-  const cookieStore = await cookies();
-  const cookieLocale = cookieStore.get(localeCookie)?.value ?? null;
+export function getLocaleFromCookies(): Locale {
+  const cookieLocale = cookies().get(localeCookie)?.value ?? null;
   return getLocaleFromCookie(cookieLocale) ?? defaultLocale;
 }
 

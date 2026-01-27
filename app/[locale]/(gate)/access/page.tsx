@@ -7,7 +7,7 @@ import AccessGateContent from "@/components/access/AccessGateContent";
 import { requestParishAccess } from "@/app/actions/access";
 import { requestEmailVerification } from "@/app/actions/verification";
 import { getAccessGateState } from "@/lib/queries/access";
-import { buildLocalePathname, getLocaleFromParam } from "@/lib/i18n/routing";
+import { buildLocalePathname } from "@/lib/i18n/routing";
 
 type AccessPageProps = {
   searchParams?: { verify?: string };
@@ -15,7 +15,7 @@ type AccessPageProps = {
 };
 
 export default async function AccessPage({ searchParams, params }: AccessPageProps) {
-  const locale = getLocaleFromParam(params.locale);
+  const locale = params.locale;
   const access = await getAccessGateState();
   const resolvedSearchParams = await Promise.resolve(searchParams);
   const verifySent = resolvedSearchParams?.verify === "sent";

@@ -4,7 +4,6 @@ import React from "react";
 import { useState } from "react";
 import { signOut } from "next-auth/react";
 import { buildLocalePathname } from "@/lib/i18n/routing";
-import type { Locale } from "@/lib/i18n/config";
 import { useLocale, useTranslations } from "@/lib/i18n/provider";
 
 type SignOutButtonProps = {
@@ -15,7 +14,7 @@ type SignOutButtonProps = {
   compact?: boolean;
 };
 
-export async function defaultSignOut(locale?: Locale) {
+export async function defaultSignOut(locale?: string) {
   await signOut({ callbackUrl: locale ? buildLocalePathname(locale, "/sign-in") : "/sign-in" });
 }
 

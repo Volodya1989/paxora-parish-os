@@ -4,7 +4,7 @@ import { authOptions } from "@/server/auth/options";
 import { getOrCreateCurrentWeek } from "@/domain/week";
 import { buildDigestContent } from "@/domain/digest";
 import { getWeekDigestSummary } from "@/server/db/digest";
-import DigestComposer from "./DigestComposer";
+import DigestComposer from "@/app/(app)/digest/DigestComposer";
 
 function formatDateRange(startsOn: Date, endsOn: Date) {
   const start = startsOn.toLocaleDateString("en-US", {
