@@ -7,6 +7,8 @@ import { authOptions } from "@/server/auth/options";
 import { ParishRole } from "@prisma/client";
 import { prisma } from "@/server/db/prisma";
 import { issueEmailVerification } from "@/lib/auth/emailVerification";
+import { buildLocalePathname } from "@/lib/i18n/routing";
+import { getLocaleFromCookies } from "@/lib/i18n/server";
 import {
   selectJoinRequestAdminRecipients,
   sendJoinRequestAdminNotificationEmail,
@@ -25,6 +27,7 @@ function assertSession() {
 
 export async function requestParishAccess(formData: FormData) {
   const session = await assertSession();
+  const locale = await getLocaleFromCookies();
   const parishId = String(formData.get("parishId") ?? "").trim();
 
   if (!parishId) {
@@ -38,7 +41,7 @@ export async function requestParishAccess(formData: FormData) {
 
   if (!requester?.emailVerifiedAt) {
     await issueEmailVerification(session.user.id);
-    redirect("/access?verify=sent");
+    redirect(buildLocalePathname(locale, "/access?verify=sent"));
   }
 
   const membership = await prisma.membership.findUnique({
@@ -139,8 +142,8 @@ export async function requestParishAccess(formData: FormData) {
     })
   );
 
-  revalidatePath("/access");
-  revalidatePath("/profile");
+  revalidatePath(buildLocalePathname(locale, "/access"));
+  revalidatePath(buildLocalePathname(locale, "/profile"));
 }
 
 type ApproveAccessInput = {
@@ -174,6 +177,7 @@ const parseApproveInput = (input: FormData | ApproveAccessInput): ApproveAccessI
 
 export async function approveParishAccess(input: FormData | ApproveAccessInput) {
   const session = await assertSession();
+  const locale = await getLocaleFromCookies();
   const { parishId, userId, role } = parseApproveInput(input);
 
   if (!parishId || !userId) {
@@ -253,9 +257,9 @@ export async function approveParishAccess(input: FormData | ApproveAccessInput) 
     }
   }
 
-  revalidatePath("/access");
-  revalidatePath("/profile");
-  revalidatePath("/tasks");
+  revalidatePath(buildLocalePathname(locale, "/access"));
+  revalidatePath(buildLocalePathname(locale, "/profile"));
+  revalidatePath(buildLocalePathname(locale, "/tasks"));
 }
 
 type RejectAccessInput = {
@@ -276,6 +280,7 @@ const parseRejectInput = (input: FormData | RejectAccessInput): RejectAccessInpu
 
 export async function rejectParishAccess(input: FormData | RejectAccessInput) {
   const session = await assertSession();
+  const locale = await getLocaleFromCookies();
   const { parishId, userId } = parseRejectInput(input);
 
   if (!parishId || !userId) {
@@ -338,7 +343,7 @@ export async function rejectParishAccess(input: FormData | RejectAccessInput) {
     }
   }
 
-  revalidatePath("/access");
-  revalidatePath("/profile");
-  revalidatePath("/tasks");
+  revalidatePath(buildLocalePathname(locale, "/access"));
+  revalidatePath(buildLocalePathname(locale, "/profile"));
+  revalidatePath(buildLocalePathname(locale, "/tasks"));
 }

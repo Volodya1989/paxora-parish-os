@@ -5,6 +5,7 @@ import Card, { CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import RsvpButtons from "@/components/events/RsvpButtons";
 import { formatRecurrenceSummary } from "@/lib/events/recurrence";
 import type { EventDetail } from "@/lib/queries/events";
+import { getLocaleFromCookies, getTranslations } from "@/lib/i18n/server";
 
 const PARISH_TZ = process.env.PARISH_TIMEZONE ?? "America/New_York";
 
@@ -36,8 +37,9 @@ type EventDetailCardProps = {
   event: EventDetail;
 };
 
-export default function EventDetailCard({ event }: EventDetailCardProps) {
-
+export default async function EventDetailCard({ event }: EventDetailCardProps) {
+  const locale = await getLocaleFromCookies();
+  const t = getTranslations(locale);
   const summaryText =
     event.summary.trim().length > 0
       ? event.summary
@@ -57,10 +59,10 @@ export default function EventDetailCard({ event }: EventDetailCardProps) {
               </Badge>
               <Badge tone={event.visibility === "PUBLIC" ? "neutral" : "warning"}>
                 {event.visibility === "PUBLIC"
-                  ? "Public"
+                  ? t("common.public")
                   : event.visibility === "GROUP"
                     ? "Group"
-                    : "Private"}
+                    : t("common.private")}
               </Badge>
               {event.group?.name ? <Badge>{event.group.name}</Badge> : null}
             </div>

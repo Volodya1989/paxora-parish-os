@@ -4,12 +4,15 @@ import AccentSectionCard from "@/components/layout/AccentSectionCard";
 import { routes } from "@/lib/navigation/routes";
 import type { EventPreview } from "@/lib/queries/this-week";
 import { formatDayDate, formatTime } from "@/lib/this-week/formatters";
+import { getLocaleFromCookies, getTranslations } from "@/lib/i18n/server";
 
 type SectionScheduleProps = {
   events: EventPreview[];
 };
 
-export default function SectionSchedule({ events }: SectionScheduleProps) {
+export default async function SectionSchedule({ events }: SectionScheduleProps) {
+  const locale = await getLocaleFromCookies();
+  const t = getTranslations(locale);
   return (
     <section id="services" className="scroll-mt-24">
       <AccentSectionCard
@@ -29,7 +32,7 @@ export default function SectionSchedule({ events }: SectionScheduleProps) {
         <div className="space-y-3">
           {events.length === 0 ? (
             <div className="rounded-card border border-emerald-100 bg-emerald-50/40 px-4 py-3 text-sm text-ink-500">
-              Nothing scheduled yet.{" "}
+              {t("empty.nothingScheduled")}.{" "}
               <Link className="font-medium text-ink-700 underline" href={routes.calendar}>
                 View calendar
               </Link>

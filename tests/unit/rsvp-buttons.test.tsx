@@ -4,9 +4,10 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import RsvpButtons from "@/components/events/RsvpButtons";
 import { ToastProvider } from "@/components/ui/Toast";
+import { withI18n } from "@/tests/utils/i18n";
 
 function renderWithToast(element: ReturnType<typeof createElement>) {
-  return renderToStaticMarkup(createElement(ToastProvider, null, element));
+  return renderToStaticMarkup(withI18n(createElement(ToastProvider, null, element)));
 }
 
 test("RsvpButtons renders three responses", () => {

@@ -1,6 +1,9 @@
+"use client";
+
 import React from "react";
 import type { ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/ui/cn";
+import { useTranslations } from "@/lib/i18n/provider";
 
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 type ButtonSize = "sm" | "md";
@@ -43,6 +46,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(
   },
   ref
 ) {
+  const t = useTranslations();
   return (
     <button
       ref={ref}
@@ -63,7 +67,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(
             aria-hidden="true"
           />
           <span className="text-xs font-semibold uppercase tracking-wide">
-            Loading
+            {t("common.loading")}
           </span>
         </span>
       ) : (

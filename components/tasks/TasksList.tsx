@@ -22,6 +22,7 @@ import {
   volunteerForTask
 } from "@/server/actions/tasks";
 import type { TaskListItem } from "@/lib/queries/tasks";
+import { useTranslations } from "@/lib/i18n/provider";
 
 type TasksListProps = {
   tasks: TaskListItem[];
@@ -36,6 +37,7 @@ export default function TasksList({
   memberOptions,
   currentUserId
 }: TasksListProps) {
+  const t = useTranslations();
   const { addToast } = useToast();
   const router = useRouter();
   const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
@@ -221,7 +223,9 @@ export default function TasksList({
       {inProgressTasks.length > 0 ? (
         <section className="space-y-3">
           <div className="flex items-center justify-between text-xs text-ink-400">
-            <span className="font-semibold uppercase tracking-wide text-ink-400">In progress</span>
+            <span className="font-semibold uppercase tracking-wide text-ink-400">
+              {t("common.inProgress")}
+            </span>
             <span>{inProgressTasks.length}</span>
           </div>
           <div className="space-y-3">
@@ -310,18 +314,18 @@ export default function TasksList({
       <Modal
         open={Boolean(deleteTaskTarget)}
         onClose={() => setDeleteTaskTarget(null)}
-        title="Delete task?"
+        title={`${t("buttons.delete")} task?`}
         footer={
           <>
             <Button variant="secondary" onClick={() => setDeleteTaskTarget(null)}>
-              Cancel
+              {t("buttons.cancel")}
             </Button>
             <Button
               variant="danger"
               onClick={handleDeleteConfirm}
               isLoading={pendingTaskId === deleteTaskTarget?.id}
             >
-              Delete task
+              {t("buttons.delete")}
             </Button>
           </>
         }
@@ -333,18 +337,18 @@ export default function TasksList({
       <Drawer
         open={Boolean(deleteTaskTarget)}
         onClose={() => setDeleteTaskTarget(null)}
-        title="Delete task?"
+        title={`${t("buttons.delete")} task?`}
         footer={
           <>
             <Button variant="secondary" onClick={() => setDeleteTaskTarget(null)}>
-              Cancel
+              {t("buttons.cancel")}
             </Button>
             <Button
               variant="danger"
               onClick={handleDeleteConfirm}
               isLoading={pendingTaskId === deleteTaskTarget?.id}
             >
-              Delete task
+              {t("buttons.delete")}
             </Button>
           </>
         }

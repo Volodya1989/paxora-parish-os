@@ -3,10 +3,12 @@ import assert from "node:assert/strict";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import ThisWeekParishionerView from "@/components/this-week/ThisWeekParishionerView";
+import { withI18n } from "@/tests/utils/i18n";
 
 test("Parishioner view renders quick blocks and ordered sections", () => {
   const markup = renderToStaticMarkup(
-    createElement(ThisWeekParishionerView, {
+    withI18n(
+      createElement(ThisWeekParishionerView, {
       data: {
         week: {
           id: "week-1",
@@ -76,6 +78,7 @@ test("Parishioner view renders quick blocks and ordered sections", () => {
       ],
       now: new Date("2024-09-03T12:00:00Z")
     })
+    )
   );
 
   assert.match(markup, /Announcements/);

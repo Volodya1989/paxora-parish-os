@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import Button from "@/components/ui/Button";
+import { withI18n } from "@/tests/utils/i18n";
 
 test("Button renders variants", () => {
   const variants = {
@@ -15,7 +16,7 @@ test("Button renders variants", () => {
   (Object.entries(variants) as Array<[keyof typeof variants, RegExp]>).forEach(
     ([variant, pattern]) => {
       const markup = renderToStaticMarkup(
-        createElement(Button, { variant }, "Test")
+        withI18n(createElement(Button, { variant }, "Test"))
       );
       assert.match(markup, pattern);
     }
@@ -24,12 +25,12 @@ test("Button renders variants", () => {
 
 test("Button supports disabled and loading states", () => {
   const disabledMarkup = renderToStaticMarkup(
-    createElement(Button, { disabled: true }, "Disabled")
+    withI18n(createElement(Button, { disabled: true }, "Disabled"))
   );
   assert.match(disabledMarkup, /disabled/);
 
   const loadingMarkup = renderToStaticMarkup(
-    createElement(Button, { isLoading: true }, "Saving")
+    withI18n(createElement(Button, { isLoading: true }, "Saving"))
   );
   assert.match(loadingMarkup, /aria-busy=\"true\"/);
   assert.match(loadingMarkup, /Loading/);

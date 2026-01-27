@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
 import { resetPassword } from "@/app/actions/password";
+import { buildLocalePathname } from "@/lib/i18n/routing";
+import { useLocale } from "@/lib/i18n/provider";
 
 type PasswordResetState = {
   success?: boolean;
@@ -26,12 +28,13 @@ function SubmitButton() {
 export default function ResetPasswordForm({ token }: { token: string }) {
   const [state, formAction] = useActionState(resetPassword, initialState);
   const router = useRouter();
+  const locale = useLocale();
 
   useEffect(() => {
     if (state.success) {
-      router.replace("/sign-in?reset=success");
+      router.replace(buildLocalePathname(locale, "/sign-in?reset=success"));
     }
-  }, [router, state.success]);
+  }, [locale, router, state.success]);
 
   return (
     <form action={formAction} className="mt-6 space-y-4">
