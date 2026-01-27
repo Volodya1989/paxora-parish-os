@@ -2,9 +2,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { renderToStaticMarkup } from "react-dom/server";
 import StylePreview from "@/components/StylePreview";
+import { withI18n } from "@/tests/utils/i18n";
 
 test("StylePreview renders typography, buttons, and card tokens", () => {
-  const markup = renderToStaticMarkup(<StylePreview />);
+  const markup = renderToStaticMarkup(withI18n(<StylePreview />));
 
   assert.match(markup, /Heading One/);
   assert.match(markup, /Heading Two/);

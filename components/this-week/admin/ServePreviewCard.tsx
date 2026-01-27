@@ -6,6 +6,7 @@ import type { TaskPreview } from "@/lib/queries/this-week";
 import { routes } from "@/lib/navigation/routes";
 import { formatShortDate } from "@/lib/this-week/formatters";
 import { cn } from "@/lib/ui/cn";
+import { getLocaleFromCookies, getTranslations } from "@/lib/i18n/server";
 
 const statusTone = (status: TaskPreview["status"]) => {
   switch (status) {
@@ -137,7 +138,9 @@ type ServePreviewCardProps = {
   items: TaskPreview[];
 };
 
-export default function ServePreviewCard({ items }: ServePreviewCardProps) {
+export default async function ServePreviewCard({ items }: ServePreviewCardProps) {
+  const locale = await getLocaleFromCookies();
+  const t = getTranslations(locale);
   const activeCount = items.filter((item) => item.status !== "DONE").length;
 
   if (items.length === 0) {
@@ -196,7 +199,7 @@ export default function ServePreviewCard({ items }: ServePreviewCardProps) {
       </CardHeader>
       <CardContent className="space-y-2">
         {items.slice(0, 3).map((item) => (
-          <ServeRow key={item.id} item={item} />
+          <ServeRow key={item.id} item={item} t={t} />
         ))}
         {items.length > 3 ? (
           <p className="pt-1 text-center text-xs text-ink-500">+{items.length - 3} more items</p>
@@ -206,7 +209,7 @@ export default function ServePreviewCard({ items }: ServePreviewCardProps) {
   );
 }
 
-function ServeRow({ item }: { item: TaskPreview }) {
+function ServeRow({ item, t }: { item: TaskPreview; t: (key: string) => string }) {
   const dueLabel = item.dueBy ? formatShortDate(item.dueBy) : "Due date TBD";
 
   return (
@@ -222,8 +225,8 @@ function ServeRow({ item }: { item: TaskPreview }) {
               {item.status === "DONE"
                 ? "Completed"
                 : item.status === "IN_PROGRESS"
-                  ? "In progress"
-                  : "Open"}
+                  ? t("common.inProgress")
+                  : t("common.todo")}
             </Badge>
             <span className="flex items-center gap-1 rounded-full bg-mist-100 px-2 py-1 text-[10px] font-medium text-ink-500">
               <EyeIcon className="h-3 w-3" />

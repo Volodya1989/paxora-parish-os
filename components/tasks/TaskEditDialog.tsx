@@ -18,6 +18,7 @@ import {
 } from "@/server/actions/taskState";
 import type { TaskListItem } from "@/lib/queries/tasks";
 import { shouldCloseTaskDialog } from "@/components/tasks/taskDialogSuccess";
+import { useTranslations } from "@/lib/i18n/provider";
 
 function formatDateInput(date: Date) {
   const year = date.getFullYear();
@@ -228,12 +229,13 @@ export default function TaskEditDialog({
 }
 
 function TaskEditActions({ onCancel }: { onCancel: () => void }) {
+  const t = useTranslations();
   const { pending } = useFormStatus();
 
   return (
     <div className="mt-6 flex justify-end gap-2">
       <Button type="button" variant="ghost" onClick={onCancel} disabled={pending}>
-        Cancel
+        {t("buttons.cancel")}
       </Button>
       <Button type="submit" isLoading={pending}>
         Save changes

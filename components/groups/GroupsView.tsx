@@ -17,6 +17,7 @@ import PageShell from "@/components/app/page-shell";
 import FiltersDrawer from "@/components/app/filters-drawer";
 import Card from "@/components/ui/Card";
 import ListEmptyState from "@/components/app/list-empty-state";
+import { useTranslations } from "@/lib/i18n/provider";
 
 const EMPTY_GROUPS_MESSAGE = "Create a group to organize the people and ministries you lead.";
 const REQUEST_GROUP_MESSAGE = "Request a new group to gather people around a shared mission.";
@@ -36,6 +37,7 @@ export default function GroupsView({
   actorUserId,
   canManageGroups
 }: GroupsViewProps) {
+  const t = useTranslations();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { addToast } = useToast();
@@ -196,7 +198,7 @@ export default function GroupsView({
     if (activeTab === "active" && counts.active === 0) {
       return (
         <ListEmptyState
-          title="No groups yet"
+          title={t("empty.noGroups")}
           description={canManageGroups ? EMPTY_GROUPS_MESSAGE : REQUEST_GROUP_MESSAGE}
           action={
             <Button onClick={openCreateDialog}>

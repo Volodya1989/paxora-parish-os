@@ -3,6 +3,9 @@
 import React from "react";
 import { useState } from "react";
 import { signOut } from "next-auth/react";
+import { buildLocalePathname } from "@/lib/i18n/routing";
+import type { Locale } from "@/lib/i18n/config";
+import { useLocale, useTranslations } from "@/lib/i18n/provider";
 
 type SignOutButtonProps = {
   className?: string;
@@ -12,8 +15,8 @@ type SignOutButtonProps = {
   compact?: boolean;
 };
 
-export async function defaultSignOut() {
-  await signOut({ callbackUrl: "/sign-in" });
+export async function defaultSignOut(locale?: Locale) {
+  await signOut({ callbackUrl: locale ? buildLocalePathname(locale, "/sign-in") : "/sign-in" });
 }
 
 export function buildSignOutHandler(
@@ -32,12 +35,15 @@ export function buildSignOutHandler(
 
 export function SignOutButton({
   className = "",
-  label = "Sign out",
+  label,
   onSignOut,
   icon = "SO",
   compact = false
 }: SignOutButtonProps) {
+  const t = useTranslations();
+  const locale = useLocale();
   const [isLoading, setIsLoading] = useState(false);
+  const resolvedLabel = label ?? t("nav.signOut");
 
   const handleSignOut = async () => {
     if (isLoading) {
@@ -46,7 +52,7 @@ export function SignOutButton({
 
     setIsLoading(true);
     try {
-      const handler = buildSignOutHandler(onSignOut);
+      const handler = buildSignOutHandler(onSignOut, () => defaultSignOut(locale));
       await handler();
     } finally {
       setIsLoading(false);
@@ -69,7 +75,9 @@ export function SignOutButton({
       >
         {icon}
       </span>
-      <span className={compact ? "sr-only" : ""}>{isLoading ? "Signing out..." : label}</span>
+      <span className={compact ? "sr-only" : ""}>
+        {isLoading ? t("auth.signingOut") : resolvedLabel}
+      </span>
     </button>
   );
 }

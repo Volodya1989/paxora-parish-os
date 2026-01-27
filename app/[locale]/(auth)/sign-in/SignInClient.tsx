@@ -7,8 +7,12 @@ import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import SectionTitle from "@/components/ui/SectionTitle";
+import { buildLocalePathname } from "@/lib/i18n/routing";
+import { useLocale, useTranslations } from "@/lib/i18n/provider";
 
 export default function SignInPage() {
+  const t = useTranslations();
+  const locale = useLocale();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -36,13 +40,13 @@ export default function SignInPage() {
       return;
     }
 
-    window.location.href = "/post-login";
+    window.location.href = buildLocalePathname(locale, "/post-login");
   };
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-mist-50/60 px-4 py-12">
       <Card className="w-full max-w-md">
-        <SectionTitle title="Sign in" subtitle="Welcome back to Paxora." />
+        <SectionTitle title={t("nav.signIn")} subtitle="Welcome back to Paxora." />
         <p className="mt-3 text-sm text-ink-500">
           Enter your parish account details to continue.
         </p>
@@ -73,7 +77,10 @@ export default function SignInPage() {
               required
             />
             <div className="text-right">
-              <a className="text-xs text-ink-600 underline" href="/forgot-password">
+              <a
+                className="text-xs text-ink-600 underline"
+                href={buildLocalePathname(locale, "/forgot-password")}
+              >
                 Forgot password?
               </a>
             </div>
@@ -98,12 +105,12 @@ export default function SignInPage() {
           ) : null}
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
           <Button className="w-full" type="submit" isLoading={loading}>
-            Sign in
+            {t("nav.signIn")}
           </Button>
         </form>
         <p className="mt-4 text-sm text-ink-500">
           New here?{" "}
-          <a className="text-ink-900 underline" href="/sign-up">
+          <a className="text-ink-900 underline" href={buildLocalePathname(locale, "/sign-up")}>
             Create an account
           </a>
           .

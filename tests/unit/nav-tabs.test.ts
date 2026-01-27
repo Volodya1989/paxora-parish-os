@@ -3,10 +3,11 @@ import assert from "node:assert/strict";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
 import MobileTabs from "@/components/navigation/MobileTabs";
+import { withI18n } from "@/tests/utils/i18n";
 
 test("Mobile tabs render 5 tabs with active state", () => {
   const markup = renderToStaticMarkup(
-    createElement(MobileTabs, { currentPath: "/groups", isMoreOpen: false })
+    withI18n(createElement(MobileTabs, { currentPath: "/groups", isMoreOpen: false }))
   );
 
   const tabMatches = markup.match(/data-testid="tab-/g) ?? [];
@@ -20,11 +21,13 @@ test("Mobile tabs render 5 tabs with active state", () => {
 
 test("More drawer contains expected items", () => {
   const openMarkup = renderToStaticMarkup(
-    createElement(MobileTabs, {
-      currentPath: "/tasks",
-      isMoreOpen: true,
-      onMoreOpenChange: () => undefined
-    })
+    withI18n(
+      createElement(MobileTabs, {
+        currentPath: "/tasks",
+        isMoreOpen: true,
+        onMoreOpenChange: () => undefined
+      })
+    )
   );
 
   assert.match(openMarkup, /role="dialog"/);
