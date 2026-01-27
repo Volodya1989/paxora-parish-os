@@ -42,10 +42,10 @@ export default async function AppLayout({
   params
 }: {
   children: ReactNode;
-  params: Promise<{ locale: Locale }>;
+  params: { locale: Locale };
 }) {
   const session = await getServerSession(authOptions);
-  const { locale } = await params;
+  const locale = params.locale;
 
   if (!session?.user?.id) {
     redirect(`/${locale}/sign-in`);

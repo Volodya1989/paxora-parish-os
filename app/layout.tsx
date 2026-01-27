@@ -15,9 +15,8 @@ export const viewport = {
   viewportFit: "cover"
 };
 
-export default async function RootLayout({ children }: { children: ReactNode }) {
-  const cookieStore = await cookies();
-  const locale = cookieStore.get(localeCookie)?.value ?? defaultLocale;
+export default function RootLayout({ children }: { children: ReactNode }) {
+  const locale = cookies().get(localeCookie)?.value ?? defaultLocale;
   return (
     <html lang={locale}>
       <body className="min-h-screen">

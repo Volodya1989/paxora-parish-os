@@ -37,9 +37,8 @@ type EventDetailCardProps = {
   event: EventDetail;
 };
 
-export default async function EventDetailCard({ event }: EventDetailCardProps) {
-  const locale = await getLocaleFromCookies();
-  const t = getTranslations(locale);
+export default function EventDetailCard({ event }: EventDetailCardProps) {
+  const t = getTranslations(getLocaleFromCookies());
   const summaryText =
     event.summary.trim().length > 0
       ? event.summary

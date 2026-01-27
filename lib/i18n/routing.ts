@@ -42,13 +42,6 @@ export function getLocaleFromCookie(cookieValue?: string | null): Locale | null 
   return null;
 }
 
-export function getLocaleFromParam(locale?: string): Locale {
-  if (locale && locales.includes(locale as Locale)) {
-    return locale as Locale;
-  }
-  return defaultLocale;
-}
-
 export function detectLocaleFromHeader(acceptLanguage: string | null): Locale {
   if (!acceptLanguage) {
     return defaultLocale;

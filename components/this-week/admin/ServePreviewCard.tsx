@@ -138,9 +138,8 @@ type ServePreviewCardProps = {
   items: TaskPreview[];
 };
 
-export default async function ServePreviewCard({ items }: ServePreviewCardProps) {
-  const locale = await getLocaleFromCookies();
-  const t = getTranslations(locale);
+export default function ServePreviewCard({ items }: ServePreviewCardProps) {
+  const t = getTranslations(getLocaleFromCookies());
   const activeCount = items.filter((item) => item.status !== "DONE").length;
 
   if (items.length === 0) {
