@@ -23,6 +23,7 @@ import {
   type CalendarRange
 } from "@/lib/date/calendar";
 import type { CalendarEvent } from "@/lib/queries/events";
+import { useTranslations } from "@/lib/i18n/provider";
 
 type CalendarViewProps = {
   weekRange: CalendarRange;
@@ -76,6 +77,7 @@ export default function CalendarView({
   groupOptions,
   viewerGroupIds
 }: CalendarViewProps) {
+  const t = useTranslations();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [view, setView] = useState<CalendarViewValue>(initialView);
@@ -222,9 +224,9 @@ export default function CalendarView({
           onChange={(event) => setVisibilityFilter(event.target.value as VisibilityFilter)}
         >
           <option value="all">All visibility</option>
-          <option value="PUBLIC">Public</option>
+          <option value="PUBLIC">{t("common.public")}</option>
           <option value="GROUP">Group</option>
-          <option value="PRIVATE">Private</option>
+          <option value="PRIVATE">{t("common.private")}</option>
         </Select>
       ) : null}
       {viewerGroupIds.length > 0 ? (

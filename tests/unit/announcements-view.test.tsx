@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import AnnouncementsView from "@/components/announcements/AnnouncementsView";
 import { ToastProvider } from "@/components/ui/Toast";
+import { withI18n } from "@/tests/utils/i18n";
 
 test("Parishioner announcements view hides create actions", () => {
   const router = {
@@ -17,17 +18,19 @@ test("Parishioner announcements view hides create actions", () => {
   };
 
   const markup = renderToStaticMarkup(
-    createElement(
-      AppRouterContext.Provider,
-      { value: router as any },
+    withI18n(
       createElement(
-        ToastProvider,
-        null,
-        createElement(AnnouncementsView, {
-          drafts: [],
-          published: [],
-          canManage: false
-        })
+        AppRouterContext.Provider,
+        { value: router as any },
+        createElement(
+          ToastProvider,
+          null,
+          createElement(AnnouncementsView, {
+            drafts: [],
+            published: [],
+            canManage: false
+          })
+        )
       )
     )
   );

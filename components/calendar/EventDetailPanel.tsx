@@ -9,6 +9,7 @@ import { Drawer } from "@/components/ui/Drawer";
 import RsvpButtons from "@/components/events/RsvpButtons";
 import { formatRecurrenceSummary } from "@/lib/events/recurrence";
 import type { CalendarEvent } from "@/lib/queries/events";
+import { useTranslations } from "@/lib/i18n/provider";
 
 type EventDetailPanelProps = {
   event: CalendarEvent | null;
@@ -35,7 +36,7 @@ function formatTime(event: CalendarEvent) {
   return `${startTime} – ${endTime}`;
 }
 
-function EventDetailContent({ event }: { event: CalendarEvent }) {
+function EventDetailContent({ event, t }: { event: CalendarEvent; t: (key: string) => string }) {
   return (
     <div className="space-y-4 text-sm text-ink-700">
       <div className="space-y-1">
@@ -49,10 +50,10 @@ function EventDetailContent({ event }: { event: CalendarEvent }) {
           </Badge>
           <Badge tone={event.visibility === "PUBLIC" ? "neutral" : "warning"}>
             {event.visibility === "PUBLIC"
-              ? "Public"
+              ? t("common.public")
               : event.visibility === "GROUP"
                 ? "Group"
-                : "Private"}
+                : t("common.private")}
           </Badge>
         </div>
       </div>
@@ -100,12 +101,13 @@ function EventDetailContent({ event }: { event: CalendarEvent }) {
 }
 
 export default function EventDetailPanel({ event, onClose }: EventDetailPanelProps) {
+  const t = useTranslations();
   return (
     <>
       <div className="hidden lg:block">
         <Card>
           {event ? (
-            <EventDetailContent event={event} />
+            <EventDetailContent event={event} t={t} />
           ) : (
             <div className="space-y-2 text-sm text-ink-500">
               <h3 className="text-lg font-semibold text-ink-900">Event details</h3>
@@ -115,7 +117,7 @@ export default function EventDetailPanel({ event, onClose }: EventDetailPanelPro
         </Card>
       </div>
       <Drawer open={Boolean(event)} onClose={onClose} title="Event details">
-        {event ? <EventDetailContent event={event} /> : null}
+        {event ? <EventDetailContent event={event} t={t} /> : null}
       </Drawer>
     </>
   );
