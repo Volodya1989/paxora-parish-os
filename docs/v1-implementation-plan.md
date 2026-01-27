@@ -50,7 +50,9 @@
 - **UI components** live in `components/` and page-level layouts in `app/`.
 - **Server actions / route handlers** live in `server/actions` and `app/api`.
 - **DB access** lives in `server/db` with Prisma client wrappers and query functions.
-- **Tests** live in `tests/` (unit tests for domain logic, integration tests for server actions).
+- **Tests** live in `tests/` with unit tests in `tests/unit/` and integration tests in `tests/integration/`.
+  - For localization work, extend existing navigation/header unit tests (`tests/unit/nav-tabs.test.ts`, `tests/unit/nav-sidebar.test.ts`, `tests/unit/header-actions.test.ts`) to cover translated labels and language toggle behavior.
+  - Add integration coverage for locale redirects under `tests/integration/`.
 
 ## B) Domain Model (Week-first)
 
