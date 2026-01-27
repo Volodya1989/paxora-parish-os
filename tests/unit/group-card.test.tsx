@@ -4,6 +4,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import GroupCard from "@/components/groups/GroupCard";
 import type { GroupListItem } from "@/lib/queries/groups";
+import { withI18n } from "@/tests/utils/i18n";
 
 const baseGroup: GroupListItem = {
   id: "group-1",
@@ -23,19 +24,21 @@ const baseGroup: GroupListItem = {
 
 test("GroupCard renders name, member count, and archive menu items", () => {
   const markup = renderToStaticMarkup(
-    createElement(GroupCard, {
-      group: baseGroup,
-      canManageGroup: true,
-      canManageMembers: true,
-      onEdit: () => undefined,
-      onArchive: () => undefined,
-      onRestore: () => undefined,
-      onManageMembers: () => undefined,
-      onJoin: () => undefined,
-      onRequestJoin: () => undefined,
-      onLeave: () => undefined,
-      forceMenuOpen: true
-    })
+    withI18n(
+      createElement(GroupCard, {
+        group: baseGroup,
+        canManageGroup: true,
+        canManageMembers: true,
+        onEdit: () => undefined,
+        onArchive: () => undefined,
+        onRestore: () => undefined,
+        onManageMembers: () => undefined,
+        onJoin: () => undefined,
+        onRequestJoin: () => undefined,
+        onLeave: () => undefined,
+        forceMenuOpen: true
+      })
+    )
   );
 
   assert.match(markup, /Hospitality Team/);
@@ -46,19 +49,21 @@ test("GroupCard renders name, member count, and archive menu items", () => {
 
 test("GroupCard shows restore option for archived groups", () => {
   const markup = renderToStaticMarkup(
-    createElement(GroupCard, {
-      group: { ...baseGroup, archivedAt: new Date("2024-02-10T10:00:00.000Z") },
-      canManageGroup: true,
-      canManageMembers: true,
-      onEdit: () => undefined,
-      onArchive: () => undefined,
-      onRestore: () => undefined,
-      onManageMembers: () => undefined,
-      onJoin: () => undefined,
-      onRequestJoin: () => undefined,
-      onLeave: () => undefined,
-      forceMenuOpen: true
-    })
+    withI18n(
+      createElement(GroupCard, {
+        group: { ...baseGroup, archivedAt: new Date("2024-02-10T10:00:00.000Z") },
+        canManageGroup: true,
+        canManageMembers: true,
+        onEdit: () => undefined,
+        onArchive: () => undefined,
+        onRestore: () => undefined,
+        onManageMembers: () => undefined,
+        onJoin: () => undefined,
+        onRequestJoin: () => undefined,
+        onLeave: () => undefined,
+        forceMenuOpen: true
+      })
+    )
   );
 
   assert.match(markup, />Restore</);

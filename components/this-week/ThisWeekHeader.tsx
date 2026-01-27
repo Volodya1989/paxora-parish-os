@@ -9,6 +9,7 @@ import { Drawer } from "@/components/ui/Drawer";
 import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@/components/ui/Dropdown";
 import { cn } from "@/lib/ui/cn";
 import QuickActions from "@/components/this-week/QuickActions";
+import { useTranslations } from "@/lib/i18n/provider";
 
 export type WeekOption = {
   value: "previous" | "current" | "next";
@@ -80,6 +81,7 @@ export default function ThisWeekHeader({
   variant = "default",
   viewToggle
 }: ThisWeekHeaderProps) {
+  const t = useTranslations();
   const [isOpen, setIsOpen] = useState(false);
   const isCompact = variant === "compact";
 
@@ -162,7 +164,7 @@ export default function ThisWeekHeader({
             </Dropdown>
             <Link
               href={`?week=next`}
-              aria-label="Next week"
+              aria-label={t("header.nextWeek")}
               className={cn(
                 "inline-flex items-center justify-center rounded-button border border-mist-200 text-ink-700 transition hover:bg-mist-50 focus-ring",
                 isCompact ? "h-8 w-8 sm:h-9 sm:w-9" : "h-9 w-9"
@@ -179,7 +181,7 @@ export default function ThisWeekHeader({
               onClick={() => setIsOpen(true)}
               className={cn(isCompact ? "h-9 px-3 sm:h-10 sm:px-4" : "h-10 px-4")}
             >
-              + Add
+              {t("header.addButton")}
             </Button>
           ) : null}
         </div>

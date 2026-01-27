@@ -3,6 +3,7 @@
 import React from "react";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
+import { useTranslations } from "@/lib/i18n/provider";
 
 type TasksEmptyStateProps = {
   variant: "no-tasks" | "no-matches";
@@ -30,6 +31,7 @@ export default function TasksEmptyState({
   onCreate,
   onClearFilters
 }: TasksEmptyStateProps) {
+  const t = useTranslations();
   if (variant === "no-matches") {
     return (
       <EmptyState
@@ -48,7 +50,7 @@ export default function TasksEmptyState({
   return (
     <EmptyState
       icon={<TaskIcon />}
-      title="No serve items yet"
+      title={t("empty.noTasks")}
       description="Capture what matters this week and keep your teams aligned."
       action={
         onCreate ? (

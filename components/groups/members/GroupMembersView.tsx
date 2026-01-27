@@ -13,6 +13,7 @@ import { useToast } from "@/components/ui/Toast";
 import MemberRow from "@/components/groups/members/MemberRow";
 import InviteDrawer from "@/components/groups/members/InviteDrawer";
 import PendingInvites from "@/components/groups/members/PendingInvites";
+import { useTranslations } from "@/lib/i18n/provider";
 import {
   acceptInvite,
   approveJoinRequest,
@@ -70,6 +71,7 @@ export default function GroupMembersView({
   canManage,
   viewer
 }: GroupMembersViewProps) {
+  const t = useTranslations();
   const { addToast } = useToast();
   const router = useRouter();
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -225,7 +227,7 @@ export default function GroupMembersView({
         />
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone={group.visibility === "PUBLIC" ? "success" : "neutral"}>
-            {group.visibility === "PUBLIC" ? "Public" : "Private"}
+            {group.visibility === "PUBLIC" ? t("common.public") : t("common.private")}
           </Badge>
           <Badge tone="neutral">
             {group.joinPolicy === "OPEN"
