@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import TaskEditDialog from "@/components/tasks/TaskEditDialog";
 import TaskDetailDialog from "@/components/tasks/TaskDetailDialog";
 import TaskRow from "@/components/tasks/TaskRow";
+import { Drawer } from "@/components/ui/Drawer";
+import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
+import Button from "@/components/ui/Button";
 import {
   archiveTask,
   assignTaskToSelf,
@@ -38,6 +41,7 @@ export default function TasksList({
   const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<TaskListItem | null>(null);
   const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
+  const [deleteTaskTarget, setDeleteTaskTarget] = useState<TaskListItem | null>(null);
   const [showCompleted, setShowCompleted] = useState(false);
   const [, startTransition] = useTransition();
 
@@ -115,13 +119,17 @@ export default function TasksList({
     setEditingTask(task);
   };
 
-  const handleDelete = async (taskId: string) => {
-    const confirmed = window.confirm(
-      "Delete this task? This can’t be undone."
-    );
-    if (!confirmed) {
+  const handleDeleteRequest = (taskId: string) => {
+    const target = tasks.find((task) => task.id === taskId) ?? null;
+    setDeleteTaskTarget(target);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTaskTarget) {
       return;
     }
+    const taskId = deleteTaskTarget.id;
+    setDeleteTaskTarget(null);
     await runTaskAction(taskId, async () => {
       await deleteTask({ taskId });
       addToast({
@@ -178,7 +186,8 @@ export default function TasksList({
   };
 
   return (
-    <div className="space-y-6">
+    <>
+      <div className="space-y-6">
       {openTasks.length > 0 ? (
         <section className="space-y-3">
           <div className="flex items-center justify-between text-xs text-ink-400">
@@ -200,7 +209,7 @@ export default function TasksList({
                 onViewDetails={() => setDetailTaskId(task.id)}
                 onArchive={handleArchive}
                 onEdit={handleEdit}
-                onDelete={handleDelete}
+                onDelete={handleDeleteRequest}
                 currentUserId={currentUserId}
                 isBusy={pendingTaskId === task.id}
               />
@@ -230,7 +239,7 @@ export default function TasksList({
                 onViewDetails={() => setDetailTaskId(task.id)}
                 onArchive={handleArchive}
                 onEdit={handleEdit}
-                onDelete={handleDelete}
+                onDelete={handleDeleteRequest}
                 currentUserId={currentUserId}
                 isBusy={pendingTaskId === task.id}
               />
@@ -264,7 +273,7 @@ export default function TasksList({
                   onViewDetails={() => setDetailTaskId(task.id)}
                   onArchive={handleArchive}
                   onEdit={handleEdit}
-                  onDelete={handleDelete}
+                  onDelete={handleDeleteRequest}
                   currentUserId={currentUserId}
                   isBusy={pendingTaskId === task.id}
                 />
@@ -297,6 +306,53 @@ export default function TasksList({
         taskSummary={detailTask}
         currentUserId={currentUserId}
       />
-    </div>
+      </div>
+      <Modal
+        open={Boolean(deleteTaskTarget)}
+        onClose={() => setDeleteTaskTarget(null)}
+        title="Delete task?"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setDeleteTaskTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleDeleteConfirm}
+              isLoading={pendingTaskId === deleteTaskTarget?.id}
+            >
+              Delete task
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-ink-600">
+          {deleteTaskTarget?.title ?? "This task"} will be removed permanently. This can’t be undone.
+        </p>
+      </Modal>
+      <Drawer
+        open={Boolean(deleteTaskTarget)}
+        onClose={() => setDeleteTaskTarget(null)}
+        title="Delete task?"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setDeleteTaskTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleDeleteConfirm}
+              isLoading={pendingTaskId === deleteTaskTarget?.id}
+            >
+              Delete task
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-ink-600">
+          {deleteTaskTarget?.title ?? "This task"} will be removed permanently. This can’t be undone.
+        </p>
+      </Drawer>
+    </>
   );
 }
