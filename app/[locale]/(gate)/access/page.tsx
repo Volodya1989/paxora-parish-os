@@ -7,19 +7,22 @@ import AccessGateContent from "@/components/access/AccessGateContent";
 import { requestParishAccess } from "@/app/actions/access";
 import { requestEmailVerification } from "@/app/actions/verification";
 import { getAccessGateState } from "@/lib/queries/access";
+import { buildLocalePathname, getLocaleFromParam } from "@/lib/i18n/routing";
 
 type AccessPageProps = {
   searchParams?: { verify?: string };
+  params: { locale: string };
 };
 
-export default async function AccessPage({ searchParams }: AccessPageProps) {
+export default async function AccessPage({ searchParams, params }: AccessPageProps) {
+  const locale = getLocaleFromParam(params.locale);
   const access = await getAccessGateState();
   const resolvedSearchParams = await Promise.resolve(searchParams);
   const verifySent = resolvedSearchParams?.verify === "sent";
 
   if (access.status === "approved") {
     // Approved members land on Home (/).
-    redirect("/");
+    redirect(buildLocalePathname(locale, "/"));
   }
 
   const hasParish = Boolean(access.parishId);
@@ -68,7 +71,7 @@ export default async function AccessPage({ searchParams }: AccessPageProps) {
         )}
 
         <div className="rounded-card border border-mist-200 bg-white p-3">
-          <SignOutButton compact label="Sign out" />
+          <SignOutButton compact />
         </div>
       </Card>
     </main>

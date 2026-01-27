@@ -6,6 +6,7 @@ import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@/compone
 import Card from "@/components/ui/Card";
 import { cn } from "@/lib/ui/cn";
 import type { AnnouncementListItem } from "@/lib/queries/announcements";
+import { useTranslations } from "@/lib/i18n/provider";
 
 type AnnouncementRowProps = {
   announcement: AnnouncementListItem;
@@ -40,6 +41,7 @@ export default function AnnouncementRow({
   isBusy = false,
   isReadOnly = false
 }: AnnouncementRowProps) {
+  const t = useTranslations();
   const isPublished = Boolean(announcement.publishedAt);
   const nextPublished = !isPublished;
   const timestamp = isPublished
@@ -58,7 +60,7 @@ export default function AnnouncementRow({
           <h3 className="text-base font-semibold text-ink-900">{announcement.title}</h3>
           {isReadOnly ? null : (
             <Badge tone={isPublished ? "success" : "warning"}>
-              {isPublished ? "Published" : "Draft"}
+              {isPublished ? t("common.published") : t("common.draft")}
             </Badge>
           )}
         </div>
@@ -81,7 +83,7 @@ export default function AnnouncementRow({
           </Button>
           {onEdit ? (
             <Button size="sm" variant="ghost" onClick={() => onEdit(announcement.id)}>
-              Edit
+              {t("buttons.edit")}
             </Button>
           ) : null}
           <Dropdown>
@@ -113,7 +115,7 @@ export default function AnnouncementRow({
                     isBusy && "pointer-events-none opacity-50 text-ink-300"
                   )}
                 >
-                  Delete
+                  {t("buttons.delete")}
                 </DropdownItem>
               ) : null}
             </DropdownMenu>

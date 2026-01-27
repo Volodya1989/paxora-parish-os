@@ -5,6 +5,7 @@ import Card from "@/components/ui/Card";
 import { getDateKey } from "@/lib/date/calendar";
 import { formatRecurrenceSummary } from "@/lib/events/recurrence";
 import type { CalendarEvent } from "@/lib/queries/events";
+import { useTranslations } from "@/lib/i18n/provider";
 
 const visibilityTone: Record<CalendarEvent["visibility"], "neutral" | "warning"> = {
   PUBLIC: "neutral",
@@ -66,6 +67,7 @@ type ScheduleViewProps = {
 };
 
 export default function ScheduleView({ events, now, isEditor, onSelectEvent }: ScheduleViewProps) {
+  const t = useTranslations();
   const grouped = events.reduce<Record<string, ScheduleEvent[]>>((acc, event) => {
     const key = getDateKey(event.startsAt);
     if (!acc[key]) {
@@ -120,10 +122,10 @@ export default function ScheduleView({ events, now, isEditor, onSelectEvent }: S
                       {isEditor ? (
                         <Badge tone={visibilityTone[event.visibility]}>
                           {event.visibility === "PUBLIC"
-                            ? "Public"
+                            ? t("common.public")
                             : event.visibility === "GROUP"
                               ? "Group"
-                              : "Private"}
+                              : t("common.private")}
                         </Badge>
                       ) : event.visibility !== "PUBLIC" ? (
                         <span

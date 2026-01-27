@@ -5,6 +5,7 @@ import Card, { CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import type { AnnouncementPreview } from "@/lib/queries/this-week";
 import { routes } from "@/lib/navigation/routes";
 import { formatShortDate } from "@/lib/this-week/formatters";
+import { getLocaleFromCookies, getTranslations } from "@/lib/i18n/server";
 
 function SendIcon({ className }: { className?: string }) {
   return (
@@ -66,7 +67,9 @@ type AnnouncementsPanelProps = {
   announcements: AnnouncementPreview[];
 };
 
-export default function AnnouncementsPanel({ announcements }: AnnouncementsPanelProps) {
+export default async function AnnouncementsPanel({ announcements }: AnnouncementsPanelProps) {
+  const locale = await getLocaleFromCookies();
+  const t = getTranslations(locale);
   if (announcements.length === 0) {
     return (
       <Card className="border-mist-200 bg-white">
@@ -125,7 +128,7 @@ export default function AnnouncementsPanel({ announcements }: AnnouncementsPanel
       <CardContent>
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {announcements.slice(0, 3).map((announcement) => (
-            <AnnouncementCard key={announcement.id} announcement={announcement} />
+            <AnnouncementCard key={announcement.id} announcement={announcement} t={t} />
           ))}
           <Link
             href={`${routes.announcements}/new`}
@@ -142,7 +145,13 @@ export default function AnnouncementsPanel({ announcements }: AnnouncementsPanel
   );
 }
 
-function AnnouncementCard({ announcement }: { announcement: AnnouncementPreview }) {
+function AnnouncementCard({
+  announcement,
+  t
+}: {
+  announcement: AnnouncementPreview;
+  t: (key: string) => string;
+}) {
   const isPublished = Boolean(announcement.publishedAt);
   const badgeTone = isPublished ? "success" : "warning";
   const updatedLabel = formatShortDate(announcement.updatedAt);
@@ -155,7 +164,9 @@ function AnnouncementCard({ announcement }: { announcement: AnnouncementPreview 
         </h4>
         <Badge tone={badgeTone} className="gap-1 text-[10px]">
           <EyeIcon className="h-3 w-3" />
-          <span className="hidden sm:inline">{isPublished ? "Published" : "Draft"}</span>
+          <span className="hidden sm:inline">
+            {isPublished ? t("common.published") : t("common.draft")}
+          </span>
         </Badge>
       </div>
       <p className="mt-auto pt-3 text-[10px] text-ink-500 sm:text-xs">
