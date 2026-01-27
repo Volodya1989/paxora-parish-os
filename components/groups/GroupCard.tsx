@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/Dropdown";
 import type { GroupListItem } from "@/lib/queries/groups";
 import { cn } from "@/lib/ui/cn";
+import { useTranslations } from "@/lib/i18n/provider";
 
 const placeholderNames = ["Alex", "Jordan", "Casey", "Morgan", "Riley", "Quinn", "Harper"];
 
@@ -81,6 +82,7 @@ export default function GroupCard({
   isBusy = false,
   forceMenuOpen
 }: GroupCardProps) {
+  const t = useTranslations();
   const [menuOpen, setMenuOpen] = useState(false);
   const isArchived = Boolean(group.archivedAt);
   const isPending = group.status === "PENDING_APPROVAL";
@@ -121,7 +123,7 @@ export default function GroupCard({
             {isPending ? <Badge tone="warning">Pending approval</Badge> : null}
             {isRejected ? <Badge tone="neutral">Not approved</Badge> : null}
             <Badge tone={group.visibility === "PUBLIC" ? "success" : "neutral"}>
-              {group.visibility === "PUBLIC" ? "Public" : "Private"}
+              {group.visibility === "PUBLIC" ? t("common.public") : t("common.private")}
             </Badge>
             <Badge tone="neutral">
               {group.joinPolicy === "OPEN"

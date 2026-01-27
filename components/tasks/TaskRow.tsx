@@ -5,6 +5,7 @@ import Button from "@/components/ui/Button";
 import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@/components/ui/Dropdown";
 import { cn } from "@/lib/ui/cn";
 import type { TaskListItem } from "@/lib/queries/tasks";
+import { useTranslations } from "@/lib/i18n/provider";
 
 type TaskRowProps = {
   task: TaskListItem;
@@ -70,6 +71,7 @@ export default function TaskRow({
   currentUserId,
   isBusy = false
 }: TaskRowProps) {
+  const t = useTranslations();
   const isDone = task.status === "DONE";
   const isInProgress = task.status === "IN_PROGRESS";
   const isVolunteerTask = task.volunteersNeeded > 1;
@@ -91,7 +93,7 @@ export default function TaskRow({
         ? "Rejected"
         : "Approved";
   const approvalTone = task.approvalStatus === "APPROVED" ? "success" : "warning";
-  const visibilityLabel = task.visibility === "PUBLIC" ? "Public" : "Private";
+  const visibilityLabel = task.visibility === "PUBLIC" ? t("common.public") : t("common.private");
   const isPrivate = task.visibility === "PRIVATE";
   const estimatedHoursLabel = formatEstimatedHours(task);
   const volunteerCountLabel = `${task.volunteerCount}/${task.volunteersNeeded}`;
@@ -133,7 +135,7 @@ export default function TaskRow({
           </div>
           <div className="flex flex-wrap items-center gap-2 text-xs text-ink-500">
             <Badge tone={isDone ? "success" : isInProgress ? "warning" : "neutral"}>
-              {isDone ? "Done" : isInProgress ? "In progress" : "Open"}
+              {isDone ? t("common.done") : isInProgress ? t("common.inProgress") : t("common.todo")}
             </Badge>
             {showApprovalBadge ? (
               <Badge
@@ -275,7 +277,7 @@ export default function TaskRow({
                 disabled={!canManage}
                 className={cn(!canManage && "pointer-events-none opacity-50")}
               >
-                Edit task
+                {t("buttons.edit")}
               </DropdownItem>
               <DropdownItem
                 onClick={() => onArchive(task.id)}
@@ -293,7 +295,7 @@ export default function TaskRow({
                     !task.canDelete && "pointer-events-none opacity-50"
                   )}
                 >
-                  Delete task
+                  {t("buttons.delete")}
                 </DropdownItem>
               ) : null}
             </DropdownMenu>

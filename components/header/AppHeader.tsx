@@ -13,20 +13,23 @@ import {
 import {
   buildAddHref,
   buildWeekHref,
-  getPageTitle,
+  getPageTitleKey,
   normalizeWeekSelection
 } from "@/components/header/headerUtils";
 import { routes } from "@/lib/navigation/routes";
+import { useTranslations } from "@/lib/i18n/provider";
+import LanguageSwitcher from "@/components/navigation/LanguageSwitcher";
 
 type AddTarget = "task" | "event" | "group";
 
-const addTargets: Array<{ label: string; target: AddTarget; href: string }> = [
-  { label: "Add serve item", target: "task", href: routes.serve },
-  { label: "Add event", target: "event", href: routes.calendar },
-  { label: "Add group", target: "group", href: routes.groups }
+const addTargets: Array<{ labelKey: string; target: AddTarget; href: string }> = [
+  { labelKey: "menu.addServeItem", target: "task", href: routes.serve },
+  { labelKey: "menu.addEvent", target: "event", href: routes.calendar },
+  { labelKey: "menu.addGroup", target: "group", href: routes.groups }
 ];
 
 export function AppHeader() {
+  const t = useTranslations();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -41,36 +44,37 @@ export function AppHeader() {
     <header className="flex flex-wrap items-center justify-between gap-4 border-b border-mist-200 bg-white/70 px-4 py-4 shadow-card md:px-8">
       <div className="space-y-1">
         <p className="text-caption uppercase tracking-wide text-ink-400">
-          Paxora Parish OS
+          {t("header.appTitle")}
         </p>
-        <h1 className="text-h2">{getPageTitle(pathname)}</h1>
+        <h1 className="text-h2">{t(getPageTitleKey(pathname))}</h1>
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <label className="text-sm font-medium text-ink-700">
-          <span className="sr-only">Week switcher</span>
+          <span className="sr-only">{t("header.weekSwitcherLabel")}</span>
           <Select value={weekSelection} onChange={(event) => handleWeekChange(event.target.value)}>
-            <option value="current">This week</option>
-            <option value="next">Next week</option>
+            <option value="current">{t("header.thisWeek")}</option>
+            <option value="next">{t("header.nextWeek")}</option>
           </Select>
         </label>
         <div className="relative">
           <Dropdown>
             <DropdownTrigger asChild>
-              <Button type="button">+ Add</Button>
+              <Button type="button">{t("header.addButton")}</Button>
             </DropdownTrigger>
-            <DropdownMenu ariaLabel="Add menu">
+            <DropdownMenu ariaLabel={t("menu.addMenuLabel")}>
               {addTargets.map((item) => (
                 <DropdownItem key={item.target} asChild>
                   <Link
                     href={buildAddHref(item.href, searchParams?.toString() ?? "", item.target)}
                   >
-                    {item.label}
+                    {t(item.labelKey)}
                   </Link>
                 </DropdownItem>
               ))}
             </DropdownMenu>
           </Dropdown>
         </div>
+        <LanguageSwitcher />
       </div>
     </header>
   );

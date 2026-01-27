@@ -18,6 +18,7 @@ import type { AnnouncementListItem, AnnouncementStatus } from "@/lib/queries/ann
 import PageShell from "@/components/app/page-shell";
 import Card from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
+import { useTranslations } from "@/lib/i18n/provider";
 
 type AnnouncementsViewProps = {
   drafts: AnnouncementListItem[];
@@ -30,6 +31,7 @@ export default function AnnouncementsView({
   published,
   canManage = true
 }: AnnouncementsViewProps) {
+  const t = useTranslations();
   const [activeTab, setActiveTab] = useState<AnnouncementStatus>("draft");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AnnouncementListItem | null>(null);
@@ -150,8 +152,8 @@ export default function AnnouncementsView({
           {canManage ? (
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="flex flex-wrap justify-start">
-                <TabsTrigger value="draft">Drafts</TabsTrigger>
-                <TabsTrigger value="published">Published</TabsTrigger>
+                <TabsTrigger value="draft">{t("common.draft")}</TabsTrigger>
+                <TabsTrigger value="published">{t("common.published")}</TabsTrigger>
               </TabsList>
               <TabsPanel value="draft">
                 <div className="mt-4 space-y-4">
@@ -220,7 +222,7 @@ export default function AnnouncementsView({
             <div className="space-y-4">
               {published.length === 0 ? (
                 <ListEmptyState
-                  title="No announcements yet"
+                  title={t("empty.noAnnouncements")}
                   description="Check back soon for parish updates."
                 />
               ) : (
@@ -243,14 +245,14 @@ export default function AnnouncementsView({
       <Modal
         open={Boolean(deleteTarget)}
         onClose={() => setDeleteTarget(null)}
-        title="Delete announcement"
+        title={`${t("buttons.delete")} announcement`}
         footer={
           <>
             <Button type="button" variant="ghost" onClick={() => setDeleteTarget(null)}>
-              Cancel
+              {t("buttons.cancel")}
             </Button>
             <Button type="button" variant="danger" onClick={handleDelete}>
-              Delete
+              {t("buttons.delete")}
             </Button>
           </>
         }

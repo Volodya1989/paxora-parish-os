@@ -5,6 +5,7 @@ import Card, { CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import type { AnnouncementPreview } from "@/lib/queries/this-week";
 import { routes } from "@/lib/navigation/routes";
 import { formatShortDate } from "@/lib/this-week/formatters";
+import { getLocaleFromCookies, getTranslations } from "@/lib/i18n/server";
 
 function SendIcon({ className }: { className?: string }) {
   return (
@@ -67,6 +68,7 @@ type AnnouncementsPanelProps = {
 };
 
 export default function AnnouncementsPanel({ announcements }: AnnouncementsPanelProps) {
+  const t = getTranslations(getLocaleFromCookies());
   if (announcements.length === 0) {
     return (
       <Card className="border-mist-200 bg-white">
@@ -155,7 +157,9 @@ function AnnouncementCard({ announcement }: { announcement: AnnouncementPreview 
         </h4>
         <Badge tone={badgeTone} className="gap-1 text-[10px]">
           <EyeIcon className="h-3 w-3" />
-          <span className="hidden sm:inline">{isPublished ? "Published" : "Draft"}</span>
+          <span className="hidden sm:inline">
+            {isPublished ? t("common.published") : t("common.draft")}
+          </span>
         </Badge>
       </div>
       <p className="mt-auto pt-3 text-[10px] text-ink-500 sm:text-xs">

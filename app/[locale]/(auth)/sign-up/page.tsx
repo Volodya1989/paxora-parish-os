@@ -7,18 +7,21 @@ import SectionTitle from "@/components/ui/SectionTitle";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { createUser, type SignUpState } from "@/server/actions/auth";
+import { buildLocalePathname } from "@/lib/i18n/routing";
+import { useLocale } from "@/lib/i18n/provider";
 
 const initialState: SignUpState = {};
 
 export default function SignUpPage() {
   const [state, formAction] = useActionState(createUser, initialState);
   const router = useRouter();
+  const locale = useLocale();
 
   useEffect(() => {
     if (state?.success) {
-      router.push("/sign-in?verify=sent");
+      router.push(buildLocalePathname(locale, "/sign-in?verify=sent"));
     }
-  }, [router, state?.success]);
+  }, [locale, router, state?.success]);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-mist-50/60 px-4 py-12">
@@ -65,7 +68,7 @@ export default function SignUpPage() {
         </form>
         <p className="mt-4 text-sm text-ink-500">
           Already have an account?{" "}
-          <a className="text-ink-900 underline" href="/sign-in">
+          <a className="text-ink-900 underline" href={buildLocalePathname(locale, "/sign-in")}>
             Sign in
           </a>
           .

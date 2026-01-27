@@ -6,6 +6,7 @@ import type { TaskPreview } from "@/lib/queries/this-week";
 import { routes } from "@/lib/navigation/routes";
 import { formatShortDate } from "@/lib/this-week/formatters";
 import { cn } from "@/lib/ui/cn";
+import { getLocaleFromCookies, getTranslations } from "@/lib/i18n/server";
 
 const statusTone = (status: TaskPreview["status"]) => {
   switch (status) {
@@ -138,6 +139,7 @@ type ServePreviewCardProps = {
 };
 
 export default function ServePreviewCard({ items }: ServePreviewCardProps) {
+  const t = getTranslations(getLocaleFromCookies());
   const activeCount = items.filter((item) => item.status !== "DONE").length;
 
   if (items.length === 0) {
@@ -222,8 +224,8 @@ function ServeRow({ item }: { item: TaskPreview }) {
               {item.status === "DONE"
                 ? "Completed"
                 : item.status === "IN_PROGRESS"
-                  ? "In progress"
-                  : "Open"}
+                  ? t("common.inProgress")
+                  : t("common.todo")}
             </Badge>
             <span className="flex items-center gap-1 rounded-full bg-mist-100 px-2 py-1 text-[10px] font-medium text-ink-500">
               <EyeIcon className="h-3 w-3" />
