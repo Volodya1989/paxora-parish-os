@@ -9,6 +9,8 @@ import { authOptions } from "@/server/auth/options";
 import { createParish } from "@/server/actions/parish";
 import { getAccessGateState } from "@/lib/queries/access";
 import { getParishMembership } from "@/server/db/groups";
+import { stripLocale } from "@/lib/i18n/routing";
+import type { Locale } from "@/lib/i18n/config";
 
 async function getRequestPathname() {
   const headerList = await headers();
@@ -35,11 +37,18 @@ async function getRequestPathname() {
   }
 }
 
-export default async function AppLayout({ children }: { children: ReactNode }) {
+export default async function AppLayout({
+  children,
+  params
+}: {
+  children: ReactNode;
+  params: Promise<{ locale: Locale }>;
+}) {
   const session = await getServerSession(authOptions);
+  const { locale } = await params;
 
   if (!session?.user?.id) {
-    redirect("/sign-in");
+    redirect(`/${locale}/sign-in`);
   }
 
   const access = await getAccessGateState();
@@ -48,11 +57,11 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     return <ParishSetup action={createParish} userName={session.user.name} />;
   }
 
-  const pathname = await getRequestPathname();
+  const pathname = stripLocale(await getRequestPathname());
   const isProfileRoute = pathname.startsWith("/profile");
 
   if (access.status !== "approved" && !isProfileRoute) {
-    redirect("/access");
+    redirect(`/${locale}/access`);
   }
 
   if (access.status !== "approved") {

@@ -1,17 +1,43 @@
+import { NextResponse } from "next/server";
 import { withAuth } from "next-auth/middleware";
+import type { NextRequest } from "next/server";
+import { handleLocaleRouting } from "@/lib/i18n/localeMiddleware";
+import { stripLocale } from "@/lib/i18n/routing";
 
-export default withAuth({
-  callbacks: {
-    authorized: ({ token }) => !!token,
+const publicPaths = new Set([
+  "/",
+  "/sign-in",
+  "/sign-up",
+  "/post-login",
+  "/verify-email",
+  "/forgot-password",
+  "/reset-password"
+]);
+
+function isPublicPath(pathname: string) {
+  return publicPaths.has(stripLocale(pathname));
+}
+
+const authMiddleware = withAuth(
+  (request: NextRequest) => {
+    const localeResponse = handleLocaleRouting(request);
+    if (localeResponse) {
+      return localeResponse;
+    }
+    return NextResponse.next();
   },
-  pages: {
-    signIn: "/sign-in",
-  },
-});
+  {
+    callbacks: {
+      authorized: ({ token, req }) => Boolean(token) || isPublicPath(req.nextUrl.pathname)
+    },
+    pages: {
+      signIn: "/sign-in"
+    }
+  }
+);
+
+export default authMiddleware;
 
 export const config = {
-  matcher: [
-    "/this-week",
-    "/((?!api/auth|sign-in|sign-up|post-login|verify-email|forgot-password|reset-password|_next|favicon.ico).*)",
-  ],
+  matcher: ["/((?!api|_next|favicon.ico|robots.txt|sitemap.xml).*)"]
 };

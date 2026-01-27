@@ -1,3 +1,5 @@
+import { stripLocale } from "@/lib/i18n/routing";
+
 export type WeekSelection = "current" | "next";
 
 export function normalizeWeekSelection(value: string | null): WeekSelection {
@@ -20,11 +22,12 @@ export function buildAddHref(pathname: string, search: string, target: string) {
   return `${pathname}?${params.toString()}`;
 }
 
-export function getPageTitle(pathname: string) {
-  if (pathname.startsWith("/tasks")) return "Serve";
-  if (pathname.startsWith("/groups")) return "Groups";
-  if (pathname.startsWith("/calendar")) return "Calendar";
-  if (pathname.startsWith("/announcements")) return "Announcements";
-  if (pathname.startsWith("/profile")) return "Profile";
-  return "This Week";
+export function getPageTitleKey(pathname: string) {
+  const normalized = stripLocale(pathname);
+  if (normalized.startsWith("/tasks")) return "nav.serve";
+  if (normalized.startsWith("/groups")) return "nav.groups";
+  if (normalized.startsWith("/calendar")) return "nav.calendar";
+  if (normalized.startsWith("/announcements")) return "nav.announcements";
+  if (normalized.startsWith("/profile")) return "nav.profile";
+  return "nav.thisWeek";
 }

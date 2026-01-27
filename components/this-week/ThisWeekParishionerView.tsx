@@ -21,6 +21,7 @@ import {
   formatShortDate,
   formatUpdatedLabel
 } from "@/lib/this-week/formatters";
+import { getLocaleFromCookies, getTranslations } from "@/lib/i18n/server";
 
 type ThisWeekParishionerViewProps = {
   data: ThisWeekData;
@@ -30,13 +31,15 @@ type ThisWeekParishionerViewProps = {
   viewToggle?: ReactNode;
 };
 
-export default function ThisWeekParishionerView({
+export default async function ThisWeekParishionerView({
   data,
   weekSelection,
   weekOptions,
   now,
   viewToggle
 }: ThisWeekParishionerViewProps) {
+  const locale = await getLocaleFromCookies();
+  const t = getTranslations(locale);
   const publishedAnnouncements = [...data.announcements]
     .filter((announcement) => announcement.publishedAt)
     .sort((a, b) => {
@@ -61,7 +64,7 @@ export default function ThisWeekParishionerView({
   const servicesSummary =
     data.events.length > 0
       ? `Next: ${formatDayDate(data.events[0].startsAt)}`
-      : "Nothing scheduled yet";
+      : t("empty.nothingScheduled");
   const communitySummary =
     data.memberGroups.length > 0
       ? `${data.memberGroups.length} group${data.memberGroups.length === 1 ? "" : "s"}`
