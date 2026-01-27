@@ -9,6 +9,7 @@ import { Drawer } from "@/components/ui/Drawer";
 import RsvpButtons from "@/components/events/RsvpButtons";
 import { formatRecurrenceSummary } from "@/lib/events/recurrence";
 import type { CalendarEvent } from "@/lib/queries/events";
+import { useTranslations } from "@/lib/i18n/provider";
 
 type EventDetailPanelProps = {
   event: CalendarEvent | null;
@@ -49,10 +50,10 @@ function EventDetailContent({ event }: { event: CalendarEvent }) {
           </Badge>
           <Badge tone={event.visibility === "PUBLIC" ? "neutral" : "warning"}>
             {event.visibility === "PUBLIC"
-              ? "Public"
+              ? t("common.public")
               : event.visibility === "GROUP"
                 ? "Group"
-                : "Private"}
+                : t("common.private")}
           </Badge>
         </div>
       </div>
@@ -100,6 +101,7 @@ function EventDetailContent({ event }: { event: CalendarEvent }) {
 }
 
 export default function EventDetailPanel({ event, onClose }: EventDetailPanelProps) {
+  const t = useTranslations();
   return (
     <>
       <div className="hidden lg:block">

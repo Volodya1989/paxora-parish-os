@@ -1,0 +1,60 @@
+{
+  "nav": {
+    "thisWeek": "This Week",
+    "serve": "Serve",
+    "groups": "Groups",
+    "calendar": "Calendar",
+    "announcements": "Announcements",
+    "profile": "Profile",
+    "signIn": "Sign in",
+    "signOut": "Sign out"
+  },
+  "header": {
+    "appTitle": "Paxora Parish OS",
+    "weekSwitcherLabel": "Week switcher",
+    "thisWeek": "This week",
+    "nextWeek": "Next week",
+    "addButton": "+ Add"
+  },
+  "menu": {
+    "addMenuLabel": "Add menu",
+    "addServeItem": "Add serve item",
+    "addEvent": "Add event",
+    "addGroup": "Add group",
+    "language": "Language",
+    "more": "More",
+    "moreAbbrev": "MORE",
+    "closeMoreMenu": "Close more menu"
+  },
+  "buttons": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "create": "Create",
+    "edit": "Edit",
+    "delete": "Delete",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "close": "Close"
+  },
+  "empty": {
+    "noTasks": "No tasks yet",
+    "noGroups": "No groups yet",
+    "nothingScheduled": "Nothing scheduled",
+    "noAnnouncements": "No announcements yet"
+  },
+  "common": {
+    "private": "Private",
+    "public": "Public",
+    "draft": "Draft",
+    "published": "Published",
+    "todo": "To Do",
+    "inProgress": "In Progress",
+    "done": "Done",
+    "loading": "Loading",
+    "error": "Error"
+  },
+  "auth": {
+    "signingOut": "Signing out..."
+  }
+}
