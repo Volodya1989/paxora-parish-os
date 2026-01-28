@@ -14,6 +14,7 @@ type CreateTaskInput = {
   volunteersNeeded?: number;
   dueAt?: Date;
   visibility: "PRIVATE" | "PUBLIC";
+  openToVolunteers?: boolean;
   approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
 };
 
@@ -60,6 +61,7 @@ export async function createTask({
   volunteersNeeded,
   dueAt,
   visibility,
+  openToVolunteers,
   approvalStatus
 }: CreateTaskInput) {
   const resolvedDueAt = dueAt ?? getDefaultDueAt();
@@ -69,6 +71,7 @@ export async function createTask({
       weekId,
       ownerId,
       createdById,
+      updatedByUserId: createdById,
       groupId,
       title,
       notes,
@@ -76,6 +79,7 @@ export async function createTask({
       volunteersNeeded: volunteersNeeded ?? 1,
       dueAt: resolvedDueAt,
       visibility,
+      openToVolunteers: openToVolunteers ?? false,
       approvalStatus
     }
   });
@@ -106,7 +110,10 @@ async function assertTaskOwnership({ taskId, parishId, actorUserId }: TaskAction
   }
 
   if (task.ownerId !== actorUserId && task.createdById !== actorUserId) {
-    throw new Error("Forbidden");
+    const membership = await getParishMembership(parishId, actorUserId);
+    if (!membership || !isParishLeader(membership.role)) {
+      throw new Error("Forbidden");
+    }
   }
 
   return task;
@@ -144,6 +151,7 @@ async function assertTaskAccess({ taskId, parishId, actorUserId }: TaskActionInp
       parishId: true,
       groupId: true,
       visibility: true,
+      openToVolunteers: true,
       approvalStatus: true,
       volunteersNeeded: true,
       dueAt: true
@@ -154,20 +162,24 @@ async function assertTaskAccess({ taskId, parishId, actorUserId }: TaskActionInp
     throw new Error("Task not found");
   }
 
-  if (task.ownerId === actorUserId || task.createdById === actorUserId) {
+  const parishMembership = await getParishMembership(parishId, actorUserId);
+  if (!parishMembership) {
+    throw new Error("Forbidden");
+  }
+  const isLeader = isParishLeader(parishMembership.role);
+
+  if (task.visibility === "PRIVATE") {
+    if (!isLeader && task.createdById !== actorUserId) {
+      throw new Error("Forbidden");
+    }
     return task;
   }
 
-  if (task.visibility === "PRIVATE") {
-    throw new Error("Forbidden");
+  if (task.ownerId === actorUserId || task.createdById === actorUserId || isLeader) {
+    return task;
   }
 
   if (task.approvalStatus !== "APPROVED") {
-    throw new Error("Forbidden");
-  }
-
-  const parishMembership = await getParishMembership(parishId, actorUserId);
-  if (!parishMembership) {
     throw new Error("Forbidden");
   }
 
@@ -233,6 +245,8 @@ async function assertTaskStatusAccess({ taskId, parishId, actorUserId }: TaskAct
       approvalStatus: true,
       ownerId: true,
       createdById: true,
+      coordinatorId: true,
+      openToVolunteers: true,
       groupId: true,
       volunteersNeeded: true,
       volunteers: {
@@ -251,20 +265,26 @@ async function assertTaskStatusAccess({ taskId, parishId, actorUserId }: TaskAct
     throw new Error("Forbidden");
   }
 
-  if (isParishLeader(parishMembership.role)) {
+  const isLeader = isParishLeader(parishMembership.role);
+  const isCoordinator = task.coordinatorId === actorUserId;
+
+  if (isLeader || isCoordinator) {
     return task;
   }
 
   if (task.visibility === "PRIVATE") {
-    if (task.ownerId !== actorUserId && task.createdById !== actorUserId) {
-      throw new Error("Only the creator, assignee, or parish leaders can update this private task.");
+    if (task.createdById !== actorUserId) {
+      throw new Error("Only the creator or parish leaders can update this private task.");
     }
     return task;
   }
 
   if (task.volunteersNeeded > 1) {
     const hasVolunteered = task.volunteers.length > 0;
-    if (task.ownerId !== actorUserId && !hasVolunteered) {
+    if (task.ownerId === actorUserId) {
+      return task;
+    }
+    if (!task.openToVolunteers || !hasVolunteered) {
       throw new Error("Forbidden");
     }
   } else {
@@ -303,7 +323,8 @@ export async function markTaskDone({ taskId, parishId, actorUserId }: TaskAction
       status: "DONE",
       completedAt: new Date(),
       completedById: actorUserId,
-      inProgressAt: null
+      inProgressAt: null,
+      updatedByUserId: actorUserId
     }
   });
 
@@ -325,7 +346,8 @@ export async function unmarkTaskDone({ taskId, parishId, actorUserId }: TaskActi
       status: "OPEN",
       completedAt: null,
       completedById: null,
-      inProgressAt: null
+      inProgressAt: null,
+      updatedByUserId: actorUserId
     }
   });
 
@@ -356,7 +378,8 @@ export async function markTaskInProgress({ taskId, parishId, actorUserId }: Task
       ownerId: task.volunteersNeeded > 1 ? task.ownerId : actorUserId,
       inProgressAt: new Date(),
       completedAt: null,
-      completedById: null
+      completedById: null,
+      updatedByUserId: actorUserId
     }
   });
 
@@ -378,7 +401,8 @@ export async function markTaskOpen({ taskId, parishId, actorUserId }: TaskAction
       status: "OPEN",
       inProgressAt: null,
       completedAt: null,
-      completedById: null
+      completedById: null,
+      updatedByUserId: actorUserId
     }
   });
 
@@ -397,7 +421,8 @@ export async function deferTask({ taskId, parishId, actorUserId, targetWeekId }:
   return prisma.task.update({
     where: { id: taskId },
     data: {
-      weekId: targetWeekId
+      weekId: targetWeekId,
+      updatedByUserId: actorUserId
     }
   });
 }
@@ -408,7 +433,8 @@ export async function archiveTask({ taskId, parishId, actorUserId }: TaskActionI
   const updated = await prisma.task.update({
     where: { id: taskId },
     data: {
-      archivedAt: new Date()
+      archivedAt: new Date(),
+      updatedByUserId: actorUserId
     }
   });
 
@@ -427,7 +453,8 @@ export async function unarchiveTask({ taskId, parishId, actorUserId }: TaskActio
   const updated = await prisma.task.update({
     where: { id: taskId },
     data: {
-      archivedAt: null
+      archivedAt: null,
+      updatedByUserId: actorUserId
     }
   });
 
@@ -511,7 +538,9 @@ export async function updateTask({
       volunteersNeeded: volunteersNeeded ?? task.volunteersNeeded,
       dueAt: dueAt ?? task.dueAt,
       visibility: nextVisibility,
-      approvalStatus
+      approvalStatus,
+      openToVolunteers: nextVisibility === "PRIVATE" ? false : task.openToVolunteers,
+      updatedByUserId: actorUserId
     }
   });
 
@@ -540,6 +569,84 @@ export async function updateTask({
   return updated;
 }
 
+export async function setTaskCoordinator({
+  taskId,
+  parishId,
+  actorUserId,
+  coordinatorId
+}: TaskActionInput & { coordinatorId: string | null }) {
+  const membership = await getParishMembership(parishId, actorUserId);
+  if (!membership || !isParishLeader(membership.role)) {
+    throw new Error("Forbidden");
+  }
+
+  if (coordinatorId) {
+    const coordinatorMembership = await prisma.membership.findUnique({
+      where: {
+        parishId_userId: {
+          parishId,
+          userId: coordinatorId
+        }
+      },
+      select: { id: true }
+    });
+
+    if (!coordinatorMembership) {
+      throw new Error("Coordinator must be a parish member.");
+    }
+  }
+
+  const task = await prisma.task.findUnique({
+    where: { id: taskId },
+    select: { parishId: true }
+  });
+
+  if (!task || task.parishId !== parishId) {
+    throw new Error("Task not found");
+  }
+
+  return prisma.task.update({
+    where: { id: taskId },
+    data: {
+      coordinatorId,
+      updatedByUserId: actorUserId
+    }
+  });
+}
+
+export async function toggleTaskOpenToVolunteers({
+  taskId,
+  parishId,
+  actorUserId,
+  openToVolunteers
+}: TaskActionInput & { openToVolunteers: boolean }) {
+  const membership = await getParishMembership(parishId, actorUserId);
+  if (!membership || !isParishLeader(membership.role)) {
+    throw new Error("Forbidden");
+  }
+
+  const task = await prisma.task.findUnique({
+    where: { id: taskId },
+    select: { parishId: true, visibility: true }
+  });
+
+  if (!task || task.parishId !== parishId) {
+    throw new Error("Task not found");
+  }
+
+  if (task.visibility !== "PUBLIC") {
+    throw new Error("Only public tasks can be opened to volunteers.");
+  }
+
+  return prisma.task.update({
+    where: { id: taskId },
+    data: {
+      openToVolunteers,
+      updatedByUserId: actorUserId
+    }
+  });
+}
+
 export async function deleteTask({ taskId, parishId, actorUserId }: TaskActionInput) {
   await assertTaskDeleteAccess({ taskId, parishId, actorUserId });
 
@@ -559,7 +666,9 @@ export async function assignTaskToSelf({ taskId, parishId, actorUserId }: TaskAc
       groupId: true,
       visibility: true,
       approvalStatus: true,
-      volunteersNeeded: true
+      volunteersNeeded: true,
+      openToVolunteers: true,
+      coordinatorId: true
     }
   });
 
@@ -583,6 +692,11 @@ export async function assignTaskToSelf({ taskId, parishId, actorUserId }: TaskAc
   if (!parishMembership) {
     throw new Error("Forbidden");
   }
+  const isLeader = isParishLeader(parishMembership.role);
+  const isCoordinator = task.coordinatorId === actorUserId;
+  if (!task.openToVolunteers && !isLeader && !isCoordinator) {
+    throw new Error("This task is not open to volunteers.");
+  }
 
   if (task.groupId) {
     const membership = await getGroupMembership(task.groupId, actorUserId);
@@ -594,7 +708,8 @@ export async function assignTaskToSelf({ taskId, parishId, actorUserId }: TaskAc
   const updated = await prisma.task.update({
     where: { id: taskId },
     data: {
-      ownerId: actorUserId
+      ownerId: actorUserId,
+      updatedByUserId: actorUserId
     }
   });
 
@@ -624,7 +739,9 @@ export async function assignTaskToUser({
       status: true,
       visibility: true,
       approvalStatus: true,
-      volunteersNeeded: true
+      volunteersNeeded: true,
+      openToVolunteers: true,
+      coordinatorId: true
     }
   });
 
@@ -652,12 +769,14 @@ export async function assignTaskToUser({
   if (!parishMembership) {
     throw new Error("Forbidden");
   }
+  const isLeader = isParishLeader(parishMembership.role);
+  const isTaskCoordinator = task.coordinatorId === actorUserId;
 
   if (task.groupId) {
     const groupMembership = await getGroupMembership(task.groupId, actorUserId);
     const groupRole = groupMembership?.status === "ACTIVE" ? groupMembership.role : null;
     const canManageGroup = canManageGroupMembership(parishMembership.role, groupRole);
-    if (!canManageGroup) {
+    if (!canManageGroup && !isTaskCoordinator && !isLeader) {
       throw new Error("Forbidden");
     }
 
@@ -673,7 +792,7 @@ export async function assignTaskToUser({
     if (!member) {
       throw new Error("Assignee must be a member of the selected group.");
     }
-  } else if (!isParishLeader(parishMembership.role)) {
+  } else if (!isLeader && !isTaskCoordinator) {
     throw new Error("Forbidden");
   }
 
@@ -694,7 +813,8 @@ export async function assignTaskToUser({
   const updated = await prisma.task.update({
     where: { id: taskId },
     data: {
-      ownerId
+      ownerId,
+      updatedByUserId: actorUserId
     }
   });
 
@@ -725,7 +845,9 @@ export async function unassignTask({
       parishId: true,
       ownerId: true,
       createdById: true,
-      groupId: true
+      groupId: true,
+      visibility: true,
+      coordinatorId: true
     }
   });
 
@@ -741,6 +863,8 @@ export async function unassignTask({
   if (!parishMembership) {
     throw new Error("Forbidden");
   }
+  const isLeader = isParishLeader(parishMembership.role);
+  const isTaskCoordinator = task.coordinatorId === actorUserId;
 
   const groupMembership = task.groupId
     ? await getGroupMembership(task.groupId, actorUserId)
@@ -748,14 +872,25 @@ export async function unassignTask({
   const groupRole = groupMembership?.status === "ACTIVE" ? groupMembership.role : null;
   const canManageGroup = canManageGroupMembership(parishMembership.role, groupRole);
 
-  if (task.ownerId !== actorUserId && task.createdById !== actorUserId && !canManageGroup) {
+  if (task.visibility === "PRIVATE") {
+    if (!isLeader && task.createdById !== actorUserId) {
+      throw new Error("Forbidden");
+    }
+  } else if (
+    task.ownerId !== actorUserId &&
+    task.createdById !== actorUserId &&
+    !canManageGroup &&
+    !isLeader &&
+    !isTaskCoordinator
+  ) {
     throw new Error("Forbidden");
   }
 
   const updated = await prisma.task.update({
     where: { id: taskId },
     data: {
-      ownerId: null
+      ownerId: null,
+      updatedByUserId: actorUserId
     }
   });
 
@@ -780,7 +915,9 @@ export async function volunteerForTask({
       parishId: true,
       visibility: true,
       approvalStatus: true,
-      volunteersNeeded: true
+      volunteersNeeded: true,
+      openToVolunteers: true,
+      coordinatorId: true
     }
   });
 
@@ -800,6 +937,11 @@ export async function volunteerForTask({
   if (!parishMembership) {
     throw new Error("Forbidden");
   }
+  const isLeader = isParishLeader(parishMembership.role);
+  const isTaskCoordinator = task.coordinatorId === actorUserId;
+  if (!task.openToVolunteers && !isLeader && !isTaskCoordinator) {
+    throw new Error("This task is not open to volunteers.");
+  }
 
   const currentCount = await prisma.taskVolunteer.count({
     where: { taskId }
@@ -814,6 +956,11 @@ export async function volunteerForTask({
       taskId,
       userId: actorUserId
     }
+  });
+
+  await prisma.task.update({
+    where: { id: taskId },
+    data: { updatedByUserId: actorUserId }
   });
 
   await createTaskActivity({
@@ -850,6 +997,11 @@ export async function leaveTaskVolunteer({
       taskId,
       userId: actorUserId
     }
+  });
+
+  await prisma.task.update({
+    where: { id: taskId },
+    data: { updatedByUserId: actorUserId }
   });
 
   await createTaskActivity({
@@ -903,6 +1055,11 @@ export async function removeTaskVolunteer({
 
   await prisma.taskVolunteer.deleteMany({
     where: { taskId, userId: volunteerUserId }
+  });
+
+  await prisma.task.update({
+    where: { id: taskId },
+    data: { updatedByUserId: actorUserId }
   });
 
   await createTaskActivity({
