@@ -133,11 +133,9 @@ export default function GroupCard({
                 : "Invite only"}
             </Badge>
           </div>
-          <p className="text-sm text-ink-500">
-            {group.description?.trim()
-              ? group.description
-              : "No description yet. Add a short note to help the team understand this group."}
-          </p>
+          {group.description?.trim() ? (
+            <p className="text-sm text-ink-500">{group.description}</p>
+          ) : null}
         </div>
         {showMenu ? (
           <Dropdown
@@ -197,17 +195,16 @@ export default function GroupCard({
           {isMember ? <Badge tone="neutral">Member</Badge> : null}
           {isInvited ? <Badge tone="warning">Invited</Badge> : null}
           {isRequested ? <Badge tone="warning">Request pending</Badge> : null}
-          {!isMember && !isInvited && !isRequested && !isArchived && !isPending ? (
-            <Badge tone="neutral">
-              {group.joinPolicy === "OPEN"
-                ? "Join instantly"
-                : group.joinPolicy === "REQUEST_TO_JOIN"
-                ? "Request approval"
-                : "Invite only"}
-            </Badge>
-          ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {isMember && !isArchived ? (
+            <Link
+              className="text-xs font-medium text-ink-700 underline"
+              href={`/groups/${group.id}/chat`}
+            >
+              Open chat
+            </Link>
+          ) : null}
           {isMember && !isArchived ? (
             <Button type="button" variant="ghost" size="sm" onClick={onLeave}>
               Leave group

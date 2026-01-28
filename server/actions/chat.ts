@@ -3,9 +3,21 @@
 import { getServerSession, type Session } from "next-auth";
 import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
-import { getGroupMembership, getParishMembership, isCoordinatorForGroup, isCoordinatorInParish } from "@/server/db/groups";
-import { canModerateChatChannel, canPostAnnouncementChannel, canPostGroupChannel, isParishLeader } from "@/lib/permissions";
+import {
+  getGroupMembership,
+  getParishMembership,
+  isCoordinatorForGroup,
+  isCoordinatorInParish
+} from "@/server/db/groups";
+import {
+  canModerateChatChannel,
+  canPostAnnouncementChannel,
+  canPostGroupChannel,
+  isParishLeader
+} from "@/lib/permissions";
 import { getNow as defaultGetNow } from "@/lib/time/getNow";
+
+const MESSAGE_EDIT_WINDOW_MS = 15 * 60 * 1000;
 
 function assertSession(session: Session | null) {
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -125,10 +137,19 @@ async function requireModerationAccess(userId: string, parishId: string, channel
   return channel;
 }
 
-export async function postMessage(channelId: string, body: string, getNow?: () => Date) {
-  
+export async function postMessage(
+  channelId: string,
+  body: string,
+  parentMessageIdOrGetNow?: string | (() => Date),
+  getNow?: () => Date
+) {
   const session = await getServerSession(authOptions);
   const { userId, parishId } = assertSession(session);
+
+  const parentMessageId =
+    typeof parentMessageIdOrGetNow === "string" ? parentMessageIdOrGetNow : undefined;
+  const resolveNow =
+    typeof parentMessageIdOrGetNow === "function" ? parentMessageIdOrGetNow : getNow;
 
   const { channel, parishMembership, groupMembership } = await requireChannelAccess(
     userId,
@@ -156,12 +177,30 @@ export async function postMessage(channelId: string, body: string, getNow?: () =
     }
   }
 
-  const now = (getNow ?? defaultGetNow)();
+  let parentMessage: { id: string; channelId: string } | null = null;
+  if (parentMessageId) {
+    parentMessage = await prisma.chatMessage.findUnique({
+      where: {
+        id: parentMessageId
+      },
+      select: {
+        id: true,
+        channelId: true
+      }
+    });
+
+    if (!parentMessage || parentMessage.channelId !== channel.id) {
+      throw new Error("Invalid parent message");
+    }
+  }
+
+  const now = (resolveNow ?? defaultGetNow)();
 
   const message = await prisma.chatMessage.create({
     data: {
       channelId: channel.id,
       authorId: userId,
+      parentMessageId: parentMessage?.id ?? null,
       body: trimmed,
       createdAt: now
     },
@@ -169,7 +208,23 @@ export async function postMessage(channelId: string, body: string, getNow?: () =
       id: true,
       body: true,
       createdAt: true,
+      editedAt: true,
       deletedAt: true,
+      parentMessage: {
+        select: {
+          id: true,
+          body: true,
+          createdAt: true,
+          deletedAt: true,
+          author: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          }
+        }
+      },
       author: {
         select: {
           id: true,
@@ -184,11 +239,27 @@ export async function postMessage(channelId: string, body: string, getNow?: () =
     id: message.id,
     body: message.body,
     createdAt: message.createdAt,
+    editedAt: message.editedAt,
     deletedAt: message.deletedAt,
     author: {
       id: message.author.id,
       name: message.author.name ?? message.author.email ?? "Parish member"
-    }
+    },
+    parentMessage: message.parentMessage
+      ? {
+          id: message.parentMessage.id,
+          body: message.parentMessage.body,
+          createdAt: message.parentMessage.createdAt,
+          deletedAt: message.parentMessage.deletedAt,
+          author: {
+            id: message.parentMessage.author.id,
+            name:
+              message.parentMessage.author.name ??
+              message.parentMessage.author.email ??
+              "Parish member"
+          }
+        }
+      : null
   };
 }
 
@@ -202,7 +273,10 @@ export async function deleteMessage(messageId: string, getNow?: () => Date) {
     },
     select: {
       id: true,
-      channelId: true
+      channelId: true,
+      authorId: true,
+      createdAt: true,
+      deletedAt: true
     }
   });
 
@@ -210,9 +284,30 @@ export async function deleteMessage(messageId: string, getNow?: () => Date) {
     throw new Error("Not found");
   }
 
-  await requireModerationAccess(userId, parishId, message.channelId);
+  const { channel, parishMembership } = await requireChannelAccess(
+    userId,
+    parishId,
+    message.channelId
+  );
+
+  const isCoordinator = channel.groupId
+    ? await isCoordinatorForGroup(channel.groupId, userId)
+    : await isCoordinatorInParish(parishId, userId);
+
+  const canModerate = canModerateChatChannel(parishMembership.role, isCoordinator);
 
   const now = (getNow ?? defaultGetNow)();
+  const isWithinWindow =
+    message.authorId === userId &&
+    now.getTime() - message.createdAt.getTime() <= MESSAGE_EDIT_WINDOW_MS;
+
+  if (!canModerate && !isWithinWindow) {
+    throw new Error("Forbidden");
+  }
+
+  if (message.deletedAt) {
+    return;
+  }
 
   await prisma.chatMessage.update({
     where: {
@@ -222,6 +317,121 @@ export async function deleteMessage(messageId: string, getNow?: () => Date) {
       deletedAt: now
     }
   });
+}
+
+export async function editMessage(messageId: string, body: string, getNow?: () => Date) {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  const message = await prisma.chatMessage.findUnique({
+    where: {
+      id: messageId
+    },
+    select: {
+      id: true,
+      channelId: true,
+      authorId: true,
+      createdAt: true,
+      deletedAt: true
+    }
+  });
+
+  if (!message) {
+    throw new Error("Not found");
+  }
+
+  if (message.deletedAt) {
+    throw new Error("Cannot edit deleted message");
+  }
+
+  const { channel, parishMembership } = await requireChannelAccess(
+    userId,
+    parishId,
+    message.channelId
+  );
+
+  const isCoordinator = channel.groupId
+    ? await isCoordinatorForGroup(channel.groupId, userId)
+    : await isCoordinatorInParish(parishId, userId);
+
+  const canModerate = canModerateChatChannel(parishMembership.role, isCoordinator);
+
+  const now = (getNow ?? defaultGetNow)();
+  const isWithinWindow =
+    message.authorId === userId &&
+    now.getTime() - message.createdAt.getTime() <= MESSAGE_EDIT_WINDOW_MS;
+
+  if (!canModerate && !isWithinWindow) {
+    throw new Error("Forbidden");
+  }
+
+  const trimmed = assertMessageBody(body);
+
+  const updated = await prisma.chatMessage.update({
+    where: {
+      id: messageId
+    },
+    data: {
+      body: trimmed,
+      editedAt: now
+    },
+    select: {
+      id: true,
+      body: true,
+      createdAt: true,
+      editedAt: true,
+      deletedAt: true,
+      parentMessage: {
+        select: {
+          id: true,
+          body: true,
+          createdAt: true,
+          deletedAt: true,
+          author: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          }
+        }
+      },
+      author: {
+        select: {
+          id: true,
+          name: true,
+          email: true
+        }
+      }
+    }
+  });
+
+  return {
+    id: updated.id,
+    body: updated.body,
+    createdAt: updated.createdAt,
+    editedAt: updated.editedAt,
+    deletedAt: updated.deletedAt,
+    author: {
+      id: updated.author.id,
+      name: updated.author.name ?? updated.author.email ?? "Parish member"
+    },
+    parentMessage: updated.parentMessage
+      ? {
+          id: updated.parentMessage.id,
+          body: updated.parentMessage.body,
+          createdAt: updated.parentMessage.createdAt,
+          deletedAt: updated.parentMessage.deletedAt,
+          author: {
+            id: updated.parentMessage.author.id,
+            name:
+              updated.parentMessage.author.name ??
+              updated.parentMessage.author.email ??
+              "Parish member"
+          }
+        }
+      : null
+  };
 }
 
 export async function pinMessage(messageId: string, getNow?: () => Date) {
