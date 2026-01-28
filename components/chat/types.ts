@@ -16,11 +16,22 @@ export type ChatMessage = {
   id: string;
   body: string;
   createdAt: Date;
+  editedAt?: Date | null;
   deletedAt: Date | null;
   author: {
     id: string;
     name: string;
   };
+  parentMessage: {
+    id: string;
+    body: string;
+    createdAt: Date;
+    deletedAt: Date | null;
+    author: {
+      id: string;
+      name: string;
+    };
+  } | null;
 };
 
 export type ChatPinnedMessage = {

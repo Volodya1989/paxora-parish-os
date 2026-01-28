@@ -94,9 +94,24 @@ export default async function GroupChatPage({ params }: GroupChatPageProps) {
   const canModerate = canModerateChatChannel(parishMembership.role, isCoordinator);
   const canPost = canPostGroupChannel(parishMembership.role, isMember);
 
-  const [messages, pinnedMessage] = await Promise.all([
+  const [messages, pinnedMessage, groupMembers] = await Promise.all([
     listMessages({ channelId: selectedChannel.id }),
-    getPinnedMessage(selectedChannel.id)
+    getPinnedMessage(selectedChannel.id),
+    prisma.groupMembership.findMany({
+      where: {
+        groupId,
+        status: "ACTIVE"
+      },
+      select: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        }
+      }
+    })
   ]);
 
   return (
@@ -111,6 +126,11 @@ export default async function GroupChatPage({ params }: GroupChatPageProps) {
         initialPinnedMessage={pinnedMessage}
         canPost={canPost}
         canModerate={canModerate}
+        currentUserId={userId}
+        mentionableUsers={groupMembers.map((member) => ({
+          id: member.user.id,
+          name: member.user.name ?? member.user.email ?? "Parish member"
+        }))}
       />
     </PageShell>
   );

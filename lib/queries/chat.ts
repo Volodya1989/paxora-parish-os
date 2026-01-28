@@ -21,11 +21,22 @@ export type ChatMessageItem = {
   id: string;
   body: string;
   createdAt: Date;
+  editedAt?: Date | null;
   deletedAt: Date | null;
   author: {
     id: string;
     name: string;
   };
+  parentMessage: {
+    id: string;
+    body: string;
+    createdAt: Date;
+    deletedAt: Date | null;
+    author: {
+      id: string;
+      name: string;
+    };
+  } | null;
 };
 
 export type ChatPinnedMessageItem = {
@@ -230,7 +241,23 @@ export async function listMessages({ channelId, cursor, limit = 50, getNow }: Li
       id: true,
       body: true,
       createdAt: true,
+      editedAt: true,
       deletedAt: true,
+      parentMessage: {
+        select: {
+          id: true,
+          body: true,
+          createdAt: true,
+          deletedAt: true,
+          author: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          }
+        }
+      },
       author: {
         select: {
           id: true,
@@ -245,11 +272,27 @@ export async function listMessages({ channelId, cursor, limit = 50, getNow }: Li
     id: message.id,
     body: message.body,
     createdAt: message.createdAt,
+    editedAt: message.editedAt,
     deletedAt: message.deletedAt,
     author: {
       id: message.author.id,
       name: message.author.name ?? message.author.email ?? "Parish member"
-    }
+    },
+    parentMessage: message.parentMessage
+      ? {
+          id: message.parentMessage.id,
+          body: message.parentMessage.body,
+          createdAt: message.parentMessage.createdAt,
+          deletedAt: message.parentMessage.deletedAt,
+          author: {
+            id: message.parentMessage.author.id,
+            name:
+              message.parentMessage.author.name ??
+              message.parentMessage.author.email ??
+              "Parish member"
+          }
+        }
+      : null
   })) as ChatMessageItem[];
 }
 
@@ -274,7 +317,23 @@ export async function getPinnedMessage(channelId: string) {
           id: true,
           body: true,
           createdAt: true,
+          editedAt: true,
           deletedAt: true,
+          parentMessage: {
+            select: {
+              id: true,
+              body: true,
+              createdAt: true,
+              deletedAt: true,
+              author: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true
+                }
+              }
+            }
+          },
           author: {
             select: {
               id: true,
@@ -303,11 +362,27 @@ export async function getPinnedMessage(channelId: string) {
       id: pinned.message.id,
       body: pinned.message.body,
       createdAt: pinned.message.createdAt,
+      editedAt: pinned.message.editedAt,
       deletedAt: pinned.message.deletedAt,
       author: {
         id: pinned.message.author.id,
         name: pinned.message.author.name ?? pinned.message.author.email ?? "Parish member"
-      }
+      },
+      parentMessage: pinned.message.parentMessage
+        ? {
+            id: pinned.message.parentMessage.id,
+            body: pinned.message.parentMessage.body,
+            createdAt: pinned.message.parentMessage.createdAt,
+            deletedAt: pinned.message.parentMessage.deletedAt,
+            author: {
+              id: pinned.message.parentMessage.author.id,
+              name:
+                pinned.message.parentMessage.author.name ??
+                pinned.message.parentMessage.author.email ??
+                "Parish member"
+            }
+          }
+        : null
     }
   } as ChatPinnedMessageItem;
 }

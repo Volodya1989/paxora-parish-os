@@ -8,7 +8,17 @@ function serializeMessage(message: Awaited<ReturnType<typeof listMessages>>[numb
   return {
     ...message,
     createdAt: message.createdAt.toISOString(),
-    deletedAt: message.deletedAt ? message.deletedAt.toISOString() : null
+    editedAt: message.editedAt ? message.editedAt.toISOString() : null,
+    deletedAt: message.deletedAt ? message.deletedAt.toISOString() : null,
+    parentMessage: message.parentMessage
+      ? {
+          ...message.parentMessage,
+          createdAt: message.parentMessage.createdAt.toISOString(),
+          deletedAt: message.parentMessage.deletedAt
+            ? message.parentMessage.deletedAt.toISOString()
+            : null
+        }
+      : null
   };
 }
 
@@ -23,7 +33,17 @@ function serializePinned(pinned: Awaited<ReturnType<typeof getPinnedMessage>>) {
     message: {
       ...pinned.message,
       createdAt: pinned.message.createdAt.toISOString(),
-      deletedAt: pinned.message.deletedAt ? pinned.message.deletedAt.toISOString() : null
+      editedAt: pinned.message.editedAt ? pinned.message.editedAt.toISOString() : null,
+      deletedAt: pinned.message.deletedAt ? pinned.message.deletedAt.toISOString() : null,
+      parentMessage: pinned.message.parentMessage
+        ? {
+            ...pinned.message.parentMessage,
+            createdAt: pinned.message.parentMessage.createdAt.toISOString(),
+            deletedAt: pinned.message.parentMessage.deletedAt
+              ? pinned.message.parentMessage.deletedAt.toISOString()
+              : null
+          }
+        : null
     }
   };
 }
@@ -83,4 +103,3 @@ export async function GET(
     lockedAt: channel.lockedAt ? channel.lockedAt.toISOString() : null
   });
 }
-

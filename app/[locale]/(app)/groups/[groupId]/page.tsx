@@ -98,6 +98,7 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
     throw new Error("Unauthorized");
   }
 
+  const canAccessChat = groupMembership?.status === "ACTIVE";
   const canViewMembers = groupMembership?.status === "ACTIVE" || isLeader;
 
   const tasks = await prisma.task.findMany({
@@ -137,12 +138,14 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <SectionTitle title={group.name} subtitle={group.description ?? `Week ${week.label}`} />
         <div className="flex flex-wrap items-center gap-3">
-          <Link
-            className="text-sm font-medium text-ink-900 underline"
-            href={`/groups/${group.id}/chat`}
-          >
-            Group chat
-          </Link>
+          {canAccessChat ? (
+            <Link
+              className="text-sm font-medium text-ink-900 underline"
+              href={`/groups/${group.id}/chat`}
+            >
+              Group chat
+            </Link>
+          ) : null}
           {canViewMembers ? (
             <Link
               className="text-sm font-medium text-ink-900 underline"

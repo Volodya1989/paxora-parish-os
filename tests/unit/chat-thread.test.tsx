@@ -11,22 +11,28 @@ const messages = [
     id: "msg-1",
     body: "First message",
     createdAt: new Date("2024-04-01T09:00:00.000Z"),
+    editedAt: null,
     deletedAt: null,
-    author: baseAuthor
+    author: baseAuthor,
+    parentMessage: null
   },
   {
     id: "msg-2",
     body: "Second message",
     createdAt: new Date("2024-04-01T10:00:00.000Z"),
+    editedAt: null,
     deletedAt: null,
-    author: { id: "author-2", name: "Jordan" }
+    author: { id: "author-2", name: "Jordan" },
+    parentMessage: null
   },
   {
     id: "msg-3",
     body: "Later day",
     createdAt: new Date("2024-04-02T09:00:00.000Z"),
+    editedAt: null,
     deletedAt: null,
-    author: baseAuthor
+    author: baseAuthor,
+    parentMessage: null
   }
 ];
 
@@ -44,6 +50,9 @@ test("ChatThread renders pinned banner and message order", () => {
       messages,
       pinnedMessage,
       canModerate: false,
+      currentUserId: "author-1",
+      onReply: () => undefined,
+      onEdit: () => undefined,
       onPin: () => undefined,
       onUnpin: () => undefined,
       onDelete: () => undefined,

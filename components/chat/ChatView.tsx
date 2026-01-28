@@ -16,6 +16,7 @@ import type {
 import {
   addMember,
   deleteMessage,
+  editMessage,
   lockChannel,
   pinMessage,
   postMessage,
@@ -33,10 +34,22 @@ function sortMessages(items: ChatMessage[]) {
 }
 
 function parseMessage(message: any): ChatMessage {
+  const parentMessage = message.parentMessage
+    ? {
+        ...message.parentMessage,
+        createdAt: new Date(message.parentMessage.createdAt),
+        deletedAt: message.parentMessage.deletedAt
+          ? new Date(message.parentMessage.deletedAt)
+          : null
+      }
+    : null;
+
   return {
     ...message,
     createdAt: new Date(message.createdAt),
-    deletedAt: message.deletedAt ? new Date(message.deletedAt) : null
+    deletedAt: message.deletedAt ? new Date(message.deletedAt) : null,
+    editedAt: message.editedAt ? new Date(message.editedAt) : null,
+    parentMessage
   } as ChatMessage;
 }
 
@@ -55,6 +68,8 @@ export default function ChatView({
   initialPinnedMessage,
   canPost,
   canModerate,
+  currentUserId,
+  mentionableUsers,
   channelMembers
 }: {
   channels: ChatChannelSummary[];
@@ -63,6 +78,8 @@ export default function ChatView({
   initialPinnedMessage: ChatPinnedMessage | null;
   canPost: boolean;
   canModerate: boolean;
+  currentUserId: string;
+  mentionableUsers?: { id: string; name: string }[];
   channelMembers?: ChatChannelMember[];
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>(() =>
@@ -77,6 +94,8 @@ export default function ChatView({
   const [members, setMembers] = useState<ChatChannelMember[]>(channelMembers ?? []);
   const [membersOpen, setMembersOpen] = useState(false);
   const [isPollingReady, setIsPollingReady] = useState(false);
+  const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
+  const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
 
   const messagesRef = useRef(messages);
 
@@ -131,8 +150,20 @@ export default function ChatView({
   }, [poll]);
 
   const handleSend = async (body: string) => {
-    const created = await postMessage(channel.id, body);
+    if (editingMessage) {
+      const updated = await editMessage(editingMessage.id, body);
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === updated.id ? { ...message, ...parseMessage(updated) } : message
+        )
+      );
+      setEditingMessage(null);
+      return;
+    }
+
+    const created = await postMessage(channel.id, body, replyTo?.id);
     setMessages((prev) => sortMessages([...prev, parseMessage(created)]));
+    setReplyTo(null);
   };
 
   const handleDelete = async (messageId: string) => {
@@ -142,6 +173,12 @@ export default function ChatView({
         message.id === messageId ? { ...message, deletedAt: new Date() } : message
       )
     );
+    if (editingMessage?.id === messageId) {
+      setEditingMessage(null);
+    }
+    if (replyTo?.id === messageId) {
+      setReplyTo(null);
+    }
   };
 
   const handlePin = async (messageId: string) => {
@@ -205,12 +242,47 @@ export default function ChatView({
           messages={messages}
           pinnedMessage={pinnedMessageState}
           canModerate={canModerate}
+          currentUserId={currentUserId}
+          onReply={(message) => {
+            if (message.deletedAt) return;
+            setReplyTo(message);
+            setEditingMessage(null);
+          }}
+          onEdit={(message) => {
+            if (message.deletedAt) return;
+            setEditingMessage(message);
+            setReplyTo(null);
+          }}
           onPin={handlePin}
           onUnpin={handleUnpin}
           onDelete={handleDelete}
           isLoading={!isPollingReady}
         />
-        <Composer disabled={!canPost || Boolean(lockedAt)} onSend={handleSend} />
+        <Composer
+          disabled={!canPost || Boolean(lockedAt)}
+          onSend={handleSend}
+          replyTo={
+            replyTo
+              ? {
+                  id: replyTo.id,
+                  authorName: replyTo.author.name,
+                  body: replyTo.body,
+                  deletedAt: replyTo.deletedAt
+                }
+              : null
+          }
+          onCancelReply={() => setReplyTo(null)}
+          editingMessage={
+            editingMessage
+              ? {
+                  id: editingMessage.id,
+                  body: editingMessage.body
+                }
+              : null
+          }
+          onCancelEdit={() => setEditingMessage(null)}
+          mentionableUsers={mentionableUsers}
+        />
       </section>
 
       {showMemberManagement ? (
