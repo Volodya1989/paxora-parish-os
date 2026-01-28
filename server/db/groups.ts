@@ -31,6 +31,29 @@ export async function getGroupMembership(groupId: string, userId: string) {
   });
 }
 
+export async function isCoordinatorInParish(parishId: string, userId: string) {
+  const membership = await prisma.groupMembership.findFirst({
+    where: {
+      userId,
+      role: "COORDINATOR",
+      status: "ACTIVE",
+      group: {
+        parishId
+      }
+    },
+    select: {
+      id: true
+    }
+  });
+
+  return Boolean(membership);
+}
+
+export async function isCoordinatorForGroup(groupId: string, userId: string) {
+  const membership = await getGroupMembership(groupId, userId);
+  return membership?.status === "ACTIVE" && membership.role === "COORDINATOR";
+}
+
 export async function listGroupsByParish(parishId: string) {
   return prisma.group.findMany({
     where: { parishId, archivedAt: null, status: "ACTIVE" },

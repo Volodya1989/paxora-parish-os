@@ -1,0 +1,86 @@
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/server/auth/options";
+import { prisma } from "@/server/db/prisma";
+import { listChannelsForUser, listMessages, getPinnedMessage } from "@/lib/queries/chat";
+
+function serializeMessage(message: Awaited<ReturnType<typeof listMessages>>[number]) {
+  return {
+    ...message,
+    createdAt: message.createdAt.toISOString(),
+    deletedAt: message.deletedAt ? message.deletedAt.toISOString() : null
+  };
+}
+
+function serializePinned(pinned: Awaited<ReturnType<typeof getPinnedMessage>>) {
+  if (!pinned) {
+    return null;
+  }
+
+  return {
+    ...pinned,
+    pinnedAt: pinned.pinnedAt.toISOString(),
+    message: {
+      ...pinned.message,
+      createdAt: pinned.message.createdAt.toISOString(),
+      deletedAt: pinned.message.deletedAt ? pinned.message.deletedAt.toISOString() : null
+    }
+  };
+}
+
+export async function GET(
+  request: Request,
+  ctx: { params: Promise<{ channelId: string }> }
+) {
+  const { channelId } = await ctx.params; // ✅ unwrap promise params
+
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id || !session.user.activeParishId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const parishId = session.user.activeParishId;
+  const userId = session.user.id;
+
+  // ✅ don't turn DB errors into 403
+  const channels = await listChannelsForUser(parishId, userId);
+
+  const channel = channels.find((item) => item.id === channelId);
+  if (!channel) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const cursorId = searchParams.get("cursor");
+
+  let cursor:
+    | {
+      createdAt: Date;
+      id: string;
+    }
+    | undefined;
+
+  if (cursorId) {
+    const cursorMessage = await prisma.chatMessage.findUnique({
+      where: { id: cursorId },
+      select: { id: true, createdAt: true, channelId: true }
+    });
+
+    if (cursorMessage && cursorMessage.channelId === channelId) {
+      cursor = { id: cursorMessage.id, createdAt: cursorMessage.createdAt };
+    }
+  }
+
+  const [messages, pinned] = await Promise.all([
+    listMessages({ channelId, cursor, limit: 50 }),
+    getPinnedMessage(channelId)
+  ]);
+
+  return NextResponse.json({
+    messages: messages.map(serializeMessage),
+    pinnedMessage: serializePinned(pinned),
+    lockedAt: channel.lockedAt ? channel.lockedAt.toISOString() : null
+  });
+}
+

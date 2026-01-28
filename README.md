@@ -158,6 +158,19 @@ Paxora Parish OS is a people-serving, shepherd-anchored operating system for par
 
 ### Style Preview (`/style-preview`)
 - **Purpose:** internal UI kit preview for Direction A tokens.
+
+## 14. Validation Commands
+Use these commands to validate UI changes and database workflows before shipping:
+
+### UI validation
+- `npm run lint` (lint UI + app code)
+- `npm run typecheck` (TypeScript + Prisma client generation)
+- `npm run build` (Next.js production build)
+
+### Database validation
+- `npm run prisma:migrate` (apply migrations locally)
+- `npm run prisma:seed` (seed demo data)
+- `npm run test` (integration/unit tests; requires `DATABASE_URL`)
 - **Key features:**
   - Visual reference for typography, buttons, and cards.
   - Helpful for verifying design system consistency.

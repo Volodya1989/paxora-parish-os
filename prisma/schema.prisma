@@ -86,6 +86,17 @@ enum EventRecurrenceFrequency {
   WEEKLY
 }
 
+enum ChatChannelType {
+  ANNOUNCEMENT
+  GROUP
+  PARISH
+}
+
+enum ChatChannelMembershipRole {
+  MEMBER
+  MODERATOR
+}
+
 enum AccessRequestStatus {
   PENDING
   APPROVED
@@ -129,6 +140,7 @@ model Parish {
   events          Event[]
   digests         Digest[]
   announcements   Announcement[]
+  chatChannels    ChatChannel[]
   emailLogs       EmailLog[]
 }
 
@@ -160,6 +172,9 @@ model User {
   digestsCreated   Digest[] @relation("DigestAuthor")
   createdAnnouncements Announcement[] @relation("AnnouncementAuthor")
   eventRsvps       EventRsvp[]
+  chatMessages     ChatMessage[]
+  chatChannelMemberships ChatChannelMembership[]
+  chatPinnedMessages ChatPinnedMessage[] @relation("ChatPinnedBy")
   accounts         Account[]
   sessions         Session[]
   emailLogs        EmailLog[]
@@ -285,6 +300,7 @@ model Group {
   memberships GroupMembership[]
   tasks        Task[]
   events       Event[]
+  chatChannels ChatChannel[]
 
   @@unique([parishId, name])
 }
@@ -307,6 +323,66 @@ model GroupMembership {
   approvedBy User? @relation("GroupApprovalActor", fields: [approvedByUserId], references: [id])
 
   @@unique([groupId, userId])
+}
+
+model ChatChannel {
+  id String @id @default(cuid())
+  parishId String
+  groupId String?
+  type ChatChannelType
+  name String
+  description String?
+  lockedAt DateTime?
+  createdAt DateTime @default(now())
+
+  parish Parish @relation(fields: [parishId], references: [id], onDelete: Cascade)
+  group Group? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  messages ChatMessage[]
+  memberships ChatChannelMembership[]
+  pinnedMessage ChatPinnedMessage?
+
+  @@index([parishId])
+}
+
+model ChatMessage {
+  id String @id @default(cuid())
+  channelId String
+  authorId String
+  body String
+  createdAt DateTime @default(now())
+  deletedAt DateTime?
+
+  channel ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  pinned ChatPinnedMessage?
+
+  @@index([channelId, createdAt, id])
+}
+
+model ChatChannelMembership {
+  id String @id @default(cuid())
+  channelId String
+  userId String
+  role ChatChannelMembershipRole @default(MEMBER)
+  createdAt DateTime @default(now())
+
+  channel ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, userId])
+  @@index([userId])
+}
+
+model ChatPinnedMessage {
+  id String @id @default(cuid())
+  channelId String @unique
+  messageId String @unique
+  pinnedAt DateTime @default(now())
+  pinnedById String
+
+  channel ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  pinnedBy User @relation("ChatPinnedBy", fields: [pinnedById], references: [id], onDelete: Cascade)
 }
 
 model Task {

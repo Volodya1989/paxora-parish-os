@@ -8,3 +8,15 @@ export function isParishLeader(role: ParishRole) {
 export function canManageGroupMembership(parishRole: ParishRole, groupRole?: GroupRole | null) {
   return isParishLeader(parishRole) || groupRole === "COORDINATOR";
 }
+
+export function canPostAnnouncementChannel(parishRole: ParishRole, isCoordinator: boolean) {
+  return isParishLeader(parishRole) || isCoordinator;
+}
+
+export function canPostGroupChannel(parishRole: ParishRole, isGroupMember: boolean) {
+  return isParishLeader(parishRole) || isGroupMember;
+}
+
+export function canModerateChatChannel(parishRole: ParishRole, isCoordinator: boolean) {
+  return isParishLeader(parishRole) || isCoordinator;
+}
