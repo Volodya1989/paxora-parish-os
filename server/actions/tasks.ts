@@ -152,6 +152,7 @@ export async function createTask(
   const approvalStatus =
     visibility === "PRIVATE" || isParishLeader(membership.role) ? "APPROVED" : "PENDING";
   const volunteersNeeded = visibility === "PRIVATE" ? 1 : parsed.data.volunteersNeeded;
+  const openToVolunteers = visibility === "PUBLIC";
   const ownerId =
     visibility === "PRIVATE"
       ? parsed.data.ownerId ?? userId
@@ -172,6 +173,7 @@ export async function createTask(
     groupId: parsed.data.groupId,
     dueAt: parsed.data.dueAt ?? defaultDueAt,
     visibility,
+    openToVolunteers,
     approvalStatus
   });
 

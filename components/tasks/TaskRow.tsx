@@ -55,6 +55,17 @@ function formatDueDateLabel(value: string) {
   });
 }
 
+function formatCompactName(name: string) {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    return "";
+  }
+  if (trimmed.length === 1) {
+    return trimmed.toUpperCase();
+  }
+  return `${trimmed[0]}${trimmed[trimmed.length - 1]}`.toUpperCase();
+}
+
 export default function TaskRow({
   task,
   onStartWork,
@@ -98,6 +109,7 @@ export default function TaskRow({
   const estimatedHoursLabel = formatEstimatedHours(task);
   const volunteerCountLabel = `${task.volunteerCount}/${task.volunteersNeeded}`;
   const isVolunteerFull = task.volunteerCount >= task.volunteersNeeded;
+  const ownerCompactName = task.owner ? formatCompactName(task.owner.name) : null;
   const showAssignToMe = !isPrivate && !isVolunteerTask && !task.owner && task.canAssignToSelf;
   const showUnassignSelf =
     !isPrivate && !isVolunteerTask && task.owner?.id === currentUserId && task.canManage;
@@ -167,10 +179,12 @@ export default function TaskRow({
             {!isPrivate ? (
               task.owner ? (
                 <span className="flex items-center gap-2">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-mist-100 text-[11px] font-semibold text-ink-700">
-                    {task.owner.initials}
+                  <span
+                    className="flex h-7 w-7 items-center justify-center rounded-full bg-mist-100 text-[11px] font-semibold text-ink-700"
+                    title={task.owner.name}
+                  >
+                    {ownerCompactName}
                   </span>
-                  <span>{task.owner.name}</span>
                   {showUnassignSelf ? (
                     <Button
                       type="button"
@@ -220,24 +234,34 @@ export default function TaskRow({
               <span className="text-xs text-emerald-600">{completedLabel}</span>
             ) : null}
             {inProgressLabel && !isDone && task.owner ? (
-              <span className="text-xs text-amber-600">
-                {inProgressLabel} by {task.owner.name}
+              <span className="text-xs text-amber-600" title={task.owner.name}>
+                {inProgressLabel} by {ownerCompactName}
               </span>
             ) : null}
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {isVolunteerTask ? (
+          {isVolunteerTask && (task.canVolunteer || task.hasVolunteered) ? (
             <Button
               type="button"
               variant={task.hasVolunteered ? "secondary" : "primary"}
               onClick={() =>
                 task.hasVolunteered ? onLeaveVolunteer(task.id) : onVolunteer(task.id)
               }
-              disabled={isBusy || (!task.hasVolunteered && isVolunteerFull)}
+              disabled={
+                isBusy ||
+                (!task.hasVolunteered &&
+                  (isVolunteerFull || !task.canVolunteer))
+              }
             >
-              {task.hasVolunteered ? "Leave" : isVolunteerFull ? "Full" : "Volunteer"}
+              {task.hasVolunteered
+                ? "Leave"
+                : isVolunteerFull
+                  ? "Full"
+                  : task.canVolunteer
+                    ? "Volunteer"
+                    : "Closed"}
             </Button>
           ) : null}
 

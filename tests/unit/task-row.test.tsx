@@ -16,26 +16,32 @@ const baseTask: TaskListItem = {
   hasVolunteered: false,
   status: "OPEN",
   visibility: "PUBLIC",
+  openToVolunteers: true,
   approvalStatus: "APPROVED",
   dueAt: "2026-01-21T00:00:00.000Z",
   completedAt: null,
   inProgressAt: null,
+  updatedAt: "2026-01-20T00:00:00.000Z",
+  updatedBy: null,
   completedBy: null,
   owner: {
     id: "user-1",
     name: "Alex Kim",
     initials: "AK"
   },
+  coordinator: null,
   group: {
     id: "group-1",
     name: "Liturgy"
   },
+  createdById: "user-1",
   canManage: true,
   canDelete: true,
   canStartWork: true,
   canManageStatus: true,
   canAssignToSelf: false,
   canAssignOthers: false,
+  canVolunteer: true,
   createdByRole: "MEMBER"
 };
 

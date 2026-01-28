@@ -24,10 +24,16 @@ export type TaskListItem = {
   hasVolunteered: boolean;
   status: "OPEN" | "IN_PROGRESS" | "DONE";
   visibility: "PRIVATE" | "PUBLIC";
+  openToVolunteers: boolean;
   approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
   dueAt: string;
   completedAt: string | null;
   inProgressAt: string | null;
+  updatedAt: string;
+  updatedBy: {
+    id: string;
+    name: string;
+  } | null;
   completedBy: {
     id: string;
     name: string;
@@ -37,16 +43,22 @@ export type TaskListItem = {
     name: string;
     initials: string;
   } | null;
+  coordinator: {
+    id: string;
+    name: string;
+  } | null;
   group: {
     id: string;
     name: string;
   } | null;
+  createdById: string;
   canManage: boolean;
   canDelete: boolean;
   canStartWork: boolean;
   canManageStatus: boolean;
   canAssignToSelf: boolean;
   canAssignOthers: boolean;
+  canVolunteer: boolean;
   createdByRole: "ADMIN" | "SHEPHERD" | "MEMBER" | null;
 };
 
@@ -163,6 +175,28 @@ export async function listTasks({
     query: filters?.query
   };
 
+  const parishMembership = await prisma.membership.findUnique({
+    where: {
+      parishId_userId: {
+        parishId,
+        userId: actorUserId
+      }
+    },
+    select: { role: true }
+  });
+  const isLeader = parishMembership ? isParishLeader(parishMembership.role) : false;
+  const groupMemberships = await prisma.groupMembership.findMany({
+    where: {
+      userId: actorUserId,
+      status: "ACTIVE",
+      group: { parishId }
+    },
+    select: {
+      groupId: true,
+      role: true
+    }
+  });
+
   const baseWhere = {
     parishId,
     weekId: effectiveWeekId,
@@ -172,16 +206,22 @@ export async function listTasks({
   const visibilityWhere: Prisma.TaskWhereInput =
     viewMode === "opportunities"
       ? { visibility: TaskVisibility.PUBLIC, approvalStatus: TaskApprovalStatus.APPROVED }
-      : {
-          OR: [
-            { visibility: TaskVisibility.PUBLIC, approvalStatus: TaskApprovalStatus.APPROVED },
-            { ownerId: actorUserId },
-            { createdById: actorUserId }
-          ]
-        };
+      : isLeader
+        ? {}
+        : {
+            OR: [
+              { visibility: TaskVisibility.PUBLIC, approvalStatus: TaskApprovalStatus.APPROVED },
+              { createdById: actorUserId },
+              { visibility: TaskVisibility.PUBLIC, ownerId: actorUserId }
+            ]
+          };
 
   const andFilters: Prisma.TaskWhereInput[] = [visibilityWhere];
   const where: Prisma.TaskWhereInput = { ...baseWhere, AND: andFilters };
+
+  if (viewMode === "opportunities" && !isLeader) {
+    andFilters.push({ openToVolunteers: true });
+  }
 
   if (normalizedFilters.status === "open") {
     andFilters.push({ status: "OPEN" });
@@ -212,7 +252,7 @@ export async function listTasks({
     });
   }
 
-  const [tasks, statusCounts, parishMembership, groupMemberships] = await Promise.all([
+  const [tasks, statusCounts] = await Promise.all([
     prisma.task.findMany({
       where,
       orderBy: [{ status: "asc" }, { createdAt: "asc" }],
@@ -224,8 +264,10 @@ export async function listTasks({
         volunteersNeeded: true,
         status: true,
         visibility: true,
+        openToVolunteers: true,
         approvalStatus: true,
         createdAt: true,
+        updatedAt: true,
         dueAt: true,
         inProgressAt: true,
         completedAt: true,
@@ -233,7 +275,23 @@ export async function listTasks({
         ownerId: true,
         createdById: true,
         groupId: true,
+        coordinatorId: true,
+        updatedByUserId: true,
         owner: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
+        coordinator: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
+        updatedBy: {
           select: {
             id: true,
             name: true,
@@ -277,26 +335,6 @@ export async function listTasks({
       by: ["status"],
       where: { ...baseWhere, AND: [visibilityWhere] },
       _count: { _all: true }
-    }),
-    prisma.membership.findUnique({
-      where: {
-        parishId_userId: {
-          parishId,
-          userId: actorUserId
-        }
-      },
-      select: { role: true }
-    }),
-    prisma.groupMembership.findMany({
-      where: {
-        userId: actorUserId,
-        status: "ACTIVE",
-        group: { parishId }
-      },
-      select: {
-        groupId: true,
-        role: true
-      }
     })
   ]);
 
@@ -318,7 +356,7 @@ export async function listTasks({
   const taskItems: TaskListItem[] = tasks.map((task) => {
     const ownerName = task.owner ? getDisplayName(task.owner.name, task.owner.email) : null;
     const groupRole = task.groupId ? groupRoleMap.get(task.groupId) ?? null : null;
-    const isLeader = parishMembership ? isParishLeader(parishMembership.role) : false;
+    const isCoordinator = task.coordinatorId === actorUserId;
     const canManageGroup =
       task.visibility === "PUBLIC" &&
       task.approvalStatus === "APPROVED" &&
@@ -326,19 +364,28 @@ export async function listTasks({
         ? canManageGroupMembership(parishMembership.role, groupRole)
         : false;
     const canManage =
-      task.ownerId === actorUserId || task.createdById === actorUserId || canManageGroup;
+      isLeader ||
+      isCoordinator ||
+      task.ownerId === actorUserId ||
+      task.createdById === actorUserId ||
+      canManageGroup;
     const hasVolunteered = task.volunteers.length > 0;
-    const canManageStatus =
-      task.volunteersNeeded > 1
-        ? task.ownerId === actorUserId || hasVolunteered
-        : task.ownerId === actorUserId;
-    const canStartWork =
-      Boolean(parishMembership) &&
-      task.visibility === "PUBLIC" &&
-      task.approvalStatus === "APPROVED" &&
-      task.status !== "DONE" &&
-      task.ownerId === actorUserId &&
-      task.volunteersNeeded <= 1;
+    const canManageStatus = (() => {
+      if (isLeader || isCoordinator) {
+        return true;
+      }
+      if (task.visibility === "PRIVATE") {
+        return task.createdById === actorUserId;
+      }
+      if (task.volunteersNeeded > 1) {
+        if (task.ownerId === actorUserId) {
+          return true;
+        }
+        return task.openToVolunteers && hasVolunteered;
+      }
+      return task.ownerId === actorUserId;
+    })();
+    const canStartWork = canManageStatus && task.status === "OPEN";
     const canAssignToSelf =
       Boolean(parishMembership) &&
       task.visibility === "PUBLIC" &&
@@ -346,13 +393,30 @@ export async function listTasks({
       task.status === "OPEN" &&
       !task.ownerId &&
       task.volunteersNeeded <= 1 &&
-      (!task.groupId || groupRoleMap.has(task.groupId));
+      (!task.groupId || groupRoleMap.has(task.groupId)) &&
+      (task.openToVolunteers || isLeader || isCoordinator);
     const canAssignOthers =
-      Boolean(parishMembership) && (isLeader || (task.groupId ? canManageGroup : false));
+      Boolean(parishMembership) &&
+      task.visibility === "PUBLIC" &&
+      (isLeader || isCoordinator || (task.groupId ? canManageGroup : false));
+    const canVolunteer =
+      Boolean(parishMembership) &&
+      task.visibility === "PUBLIC" &&
+      task.approvalStatus === "APPROVED" &&
+      task.status !== "DONE" &&
+      task.volunteersNeeded > 1 &&
+      (!task.groupId || groupRoleMap.has(task.groupId)) &&
+      (task.openToVolunteers || isLeader || isCoordinator);
     const completedByName = task.completedBy
       ? getDisplayName(task.completedBy.name, task.completedBy.email)
       : null;
     const createdByRole = task.createdBy.memberships[0]?.role ?? null;
+    const updatedByName = task.updatedBy
+      ? getDisplayName(task.updatedBy.name, task.updatedBy.email)
+      : null;
+    const coordinatorName = task.coordinator
+      ? getDisplayName(task.coordinator.name, task.coordinator.email)
+      : null;
 
     return {
       id: task.id,
@@ -364,10 +428,18 @@ export async function listTasks({
       hasVolunteered: task.volunteers.length > 0,
       status: task.status,
       visibility: task.visibility,
+      openToVolunteers: task.openToVolunteers,
       approvalStatus: task.approvalStatus,
       inProgressAt: task.inProgressAt ? task.inProgressAt.toISOString() : null,
       completedAt: task.completedAt ? task.completedAt.toISOString() : null,
       dueAt: resolveDueAt(task.dueAt, task.createdAt).toISOString(),
+      updatedAt: task.updatedAt.toISOString(),
+      updatedBy: updatedByName && task.updatedBy
+        ? {
+            id: task.updatedBy.id,
+            name: updatedByName
+          }
+        : null,
       completedBy: completedByName && task.completedBy
         ? {
             id: task.completedBy.id,
@@ -381,13 +453,21 @@ export async function listTasks({
             initials: getInitials(ownerName)
           }
         : null,
+      coordinator: coordinatorName && task.coordinator
+        ? {
+            id: task.coordinator.id,
+            name: coordinatorName
+          }
+        : null,
       group: task.group ? { id: task.group.id, name: task.group.name } : null,
+      createdById: task.createdById,
       canManage,
       canDelete: isLeader || task.createdById === actorUserId,
       canStartWork,
       canManageStatus,
       canAssignToSelf,
       canAssignOthers,
+      canVolunteer,
       createdByRole
     };
   });

@@ -45,6 +45,17 @@ function formatDueDate(value?: string) {
   return formatTimestamp(value);
 }
 
+function formatCompactName(name: string) {
+  const trimmed = name.trim();
+  if (!trimmed) {
+    return "";
+  }
+  if (trimmed.length === 1) {
+    return trimmed.toUpperCase();
+  }
+  return `${trimmed[0]}${trimmed[trimmed.length - 1]}`.toUpperCase();
+}
+
 export default function TaskDetailDialog({
   taskSummary,
   open,
@@ -66,8 +77,10 @@ export default function TaskDetailDialog({
     detail?.volunteers.some((volunteer) => volunteer.id === currentUserId) ??
     taskSummary?.hasVolunteered ??
     false;
+  const canVolunteer = Boolean(taskSummary?.canVolunteer);
   const showAssignToMe =
     Boolean(taskSummary?.canAssignToSelf) && !taskSummary?.owner && !isVolunteerTask;
+  const ownerCompactName = taskSummary?.owner ? formatCompactName(taskSummary.owner.name) : null;
 
   const refreshDetail = useCallback(async () => {
     if (!taskId) {
@@ -155,8 +168,11 @@ export default function TaskDetailDialog({
         </div>
         <p className="text-xs text-ink-500">
           Lead:{" "}
-          <span className="font-medium text-ink-700">
-            {taskSummary?.owner?.name ?? "Unassigned"}
+          <span
+            className="font-medium text-ink-700"
+            title={taskSummary?.owner?.name ?? "Unassigned"}
+          >
+            {ownerCompactName ?? "Unassigned"}
           </span>
         </p>
         <p className="text-xs text-ink-500">
@@ -221,7 +237,7 @@ export default function TaskDetailDialog({
                 {taskSummary?.volunteersNeeded ?? 0}
               </p>
             </div>
-            {taskId ? (
+            {taskId && (canVolunteer || hasVolunteered) ? (
               hasVolunteered ? (
                 <Button
                   type="button"
@@ -239,10 +255,11 @@ export default function TaskDetailDialog({
                     handleAction(() => volunteerForTask({ taskId }), "Added to volunteers")
                   }
                   disabled={
+                    !canVolunteer ||
                     (detail?.volunteers.length ?? 0) >= (taskSummary?.volunteersNeeded ?? 0)
                   }
                 >
-                  Volunteer
+                  {canVolunteer ? "Volunteer" : "Closed"}
                 </Button>
               )
             ) : null}
@@ -255,10 +272,18 @@ export default function TaskDetailDialog({
                   className="flex items-center justify-between rounded-card border border-mist-100 bg-white px-3 py-2"
                 >
                   <div className="flex items-center gap-2">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-mist-100 text-[11px] font-semibold text-ink-700">
-                      {volunteer.initials}
+                    <span
+                      className="flex h-7 w-7 items-center justify-center rounded-full bg-mist-100 text-[11px] font-semibold text-ink-700"
+                      title={volunteer.name}
+                    >
+                      {formatCompactName(volunteer.name)}
                     </span>
-                    <span className="text-sm font-medium text-ink-700">{volunteer.name}</span>
+                    <span
+                      className="text-sm font-medium text-ink-700"
+                      title={volunteer.name}
+                    >
+                      {formatCompactName(volunteer.name)}
+                    </span>
                   </div>
                   {taskSummary?.canManage && volunteer.id !== currentUserId ? (
                     <Button

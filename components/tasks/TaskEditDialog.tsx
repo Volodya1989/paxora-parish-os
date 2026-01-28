@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useId, useRef, useTransition, type RefObject } from "react";
+import { useActionState, useEffect, useId, useRef, useState, useTransition, type RefObject } from "react";
 import { useRouter } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import Button from "@/components/ui/Button";
@@ -63,12 +63,16 @@ export default function TaskEditDialog({
   const groupId = useId();
   const ownerId = useId();
   const volunteersNeeded = task?.volunteersNeeded ?? 1;
+  const [visibility, setVisibility] = useState<"public" | "private">(
+    task?.visibility === "PRIVATE" ? "private" : "public"
+  );
 
   useEffect(() => {
     if (open) {
       handledSuccess.current = false;
+      setVisibility(task?.visibility === "PRIVATE" ? "private" : "public");
     }
-  }, [open]);
+  }, [open, task?.visibility]);
 
   useEffect(() => {
     if (state.status !== "success") {
@@ -143,25 +147,15 @@ export default function TaskEditDialog({
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor={volunteersId}>Volunteers needed</Label>
-        <Input
-          id={volunteersId}
-          name="volunteersNeeded"
-          type="number"
-          min={1}
-          step={1}
-          defaultValue={volunteersNeeded}
-        />
-        <p className="text-xs text-ink-400">
-          Set this above 1 to allow multiple volunteers to join.
-        </p>
-      </div>
-      <div className="space-y-2">
         <Label htmlFor={visibilityId}>Visibility</Label>
         <SelectMenu
           id={visibilityId}
           name="visibility"
-          defaultValue={task?.visibility === "PRIVATE" ? "private" : "public"}
+          value={visibility}
+          onValueChange={(nextValue) => {
+            const nextVisibility = nextValue === "public" ? "public" : "private";
+            setVisibility(nextVisibility);
+          }}
           options={[
             { value: "public", label: "Public (shared with the parish)" },
             { value: "private", label: "Private (just you + assignee)" }
@@ -171,35 +165,59 @@ export default function TaskEditDialog({
           Public tasks created by members require approval before they appear for everyone.
         </p>
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor={groupId}>Group</Label>
-          <SelectMenu
-            id={groupId}
-            name="groupId"
-            defaultValue={task?.group?.id ?? ""}
-            placeholder="No group"
-            options={[
-              { value: "", label: "No group" },
-              ...groupOptions.map((group) => ({ value: group.id, label: group.name }))
-            ]}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={ownerId}>
-            {volunteersNeeded > 1 ? "Lead (optional)" : "Assignee (optional)"}
-          </Label>
-          <SelectMenu
-            id={ownerId}
-            name="ownerId"
-            defaultValue={task?.owner?.id ?? ""}
-            options={memberOptions.map((member) => ({
-              value: member.id,
-              label: `${member.name}${member.id === currentUserId ? " (You)" : ""}`
-            }))}
-          />
-        </div>
-      </div>
+      {visibility === "private" ? (
+        <>
+          <input type="hidden" name="volunteersNeeded" value="1" />
+          <input type="hidden" name="groupId" value="" />
+          <input type="hidden" name="ownerId" value={task?.createdById ?? currentUserId} />
+        </>
+      ) : (
+        <>
+          <div className="space-y-2">
+            <Label htmlFor={volunteersId}>Volunteers needed</Label>
+            <Input
+              id={volunteersId}
+              name="volunteersNeeded"
+              type="number"
+              min={1}
+              step={1}
+              defaultValue={volunteersNeeded}
+            />
+            <p className="text-xs text-ink-400">
+              Set this above 1 to allow multiple volunteers to join.
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor={groupId}>Group</Label>
+              <SelectMenu
+                id={groupId}
+                name="groupId"
+                defaultValue={task?.group?.id ?? ""}
+                placeholder="No group"
+                options={[
+                  { value: "", label: "No group" },
+                  ...groupOptions.map((group) => ({ value: group.id, label: group.name }))
+                ]}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={ownerId}>
+                {volunteersNeeded > 1 ? "Lead (optional)" : "Assignee (optional)"}
+              </Label>
+              <SelectMenu
+                id={ownerId}
+                name="ownerId"
+                defaultValue={task?.owner?.id ?? ""}
+                options={memberOptions.map((member) => ({
+                  value: member.id,
+                  label: `${member.name}${member.id === currentUserId ? " (You)" : ""}`
+                }))}
+              />
+            </div>
+          </div>
+        </>
+      )}
 
       {state.status === "error" ? (
         <p role="alert" className="text-sm text-rose-600">
