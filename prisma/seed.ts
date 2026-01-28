@@ -137,6 +137,65 @@ async function main() {
     ]
   });
 
+  const announcementChannel = await prisma.chatChannel.create({
+    data: {
+      parishId: parish.id,
+      type: "ANNOUNCEMENT",
+      name: "Announcements",
+      description: "Official parish updates"
+    }
+  });
+
+  const generalChannel = await prisma.chatChannel.create({
+    data: {
+      parishId: parish.id,
+      type: "PARISH",
+      name: "General",
+      description: "Parish-wide conversation"
+    }
+  });
+
+  await prisma.chatChannel.create({
+    data: {
+      parishId: parish.id,
+      groupId: group.id,
+      type: "GROUP",
+      name: `${group.name} chat`,
+      description: `Updates for ${group.name}`
+    }
+  });
+
+  await prisma.chatChannelMembership.createMany({
+    data: [
+      {
+        channelId: generalChannel.id,
+        userId: coordinator.id,
+        role: "MEMBER"
+      },
+      {
+        channelId: generalChannel.id,
+        userId: parishioner.id,
+        role: "MEMBER"
+      }
+    ]
+  });
+
+  const pinnedMessage = await prisma.chatMessage.create({
+    data: {
+      channelId: generalChannel.id,
+      authorId: user.id,
+      body: "Welcome to parish chat! Share updates and prayer requests here."
+    }
+  });
+
+  await prisma.chatPinnedMessage.create({
+    data: {
+      channelId: generalChannel.id,
+      messageId: pinnedMessage.id,
+      pinnedById: user.id
+    }
+  });
+
   await prisma.task.createMany({
     data: [
       {

@@ -575,6 +575,15 @@ Stories are prioritized: Foundations → Layout → UI Kit → This Week → oth
 - Reply context shown inline with parent message preview.
 - Composer supports replying to a specific message.
 - Backend support for parent message reference.
+On Group card, show a “Group Chat” button only if the user is a member of that group.
+
+If the user is not a member, hide the “Group Chat” button (no disabled state).
+
+Clean up Group card content:
+
+Remove placeholder text: “No description yet. Add a short note…”
+
+Remove duplicated tag: “Join instantly” (show only once, or remove if redundant).
 
 **Acceptance Criteria**
 - Users can reply to a message and see the parent preview.

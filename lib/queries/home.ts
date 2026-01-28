@@ -7,6 +7,7 @@ import { prisma } from "@/server/db/prisma";
 import { getOrCreateCurrentWeek } from "@/domain/week";
 import { getNow } from "@/lib/time/getNow";
 import { listAnnouncements } from "@/lib/queries/announcements";
+import { listChannelsForUser } from "@/lib/queries/chat";
 import { listEventsForWeek } from "@/lib/queries/events";
 
 export type HomeWeekCompletion = {
@@ -182,6 +183,38 @@ export async function getHomeSummary({
 }
 
 export async function listCommunityRoomsPreview(): Promise<CommunityRoomPreview[]> {
-  // TODO: Replace with real chat room query once A-014 lands.
-  return [];
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  const parishId = await resolveParishId(session.user.id, session.user.activeParishId);
+  const channels = (await listChannelsForUser(parishId, session.user.id)).filter(
+    (channel) => channel.type !== "GROUP"
+  );
+
+  const previews = await Promise.all(
+    channels.map(async (channel) => {
+      const lastMessage = await prisma.chatMessage.findFirst({
+        where: {
+          channelId: channel.id,
+          deletedAt: null
+        },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        select: {
+          body: true
+        }
+      });
+
+      return {
+        id: channel.id,
+        name: channel.name,
+        lastMessage: lastMessage?.body ?? null,
+        unreadCount: null
+      } satisfies CommunityRoomPreview;
+    })
+  );
+
+  return previews;
 }

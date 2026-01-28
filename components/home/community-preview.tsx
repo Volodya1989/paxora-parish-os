@@ -4,8 +4,7 @@ import Card from "@/components/ui/Card";
 import EmptyState from "@/components/ui/EmptyState";
 import type { CommunityRoomPreview } from "@/lib/queries/home";
 
-// TODO: Switch to the community chat route once A-014 ships.
-const COMMUNITY_ROUTE = "/groups";
+const COMMUNITY_ROUTE = "/community/chat";
 
 export default function CommunityPreview({ rooms }: { rooms: CommunityRoomPreview[] }) {
   return (
@@ -23,8 +22,8 @@ export default function CommunityPreview({ rooms }: { rooms: CommunityRoomPrevie
 
         {rooms.length === 0 ? (
           <EmptyState
-            title="Community chat coming soon"
-            description="Rooms will appear here once chat is enabled for your parish."
+            title="No community rooms yet"
+            description="Check back once parish chat rooms are available."
             className="border-dashed border-stone-200 bg-stone-50"
             icon={
               <span className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
@@ -33,7 +32,7 @@ export default function CommunityPreview({ rooms }: { rooms: CommunityRoomPrevie
             }
             action={
               <Link className="text-sm font-medium text-ink-700 underline" href={COMMUNITY_ROUTE}>
-                Learn more
+                Open chat
               </Link>
             }
           />
