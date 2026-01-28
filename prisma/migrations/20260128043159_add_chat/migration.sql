@@ -5,7 +5,15 @@ CREATE TYPE "ChatChannelType" AS ENUM ('ANNOUNCEMENT', 'GROUP', 'PARISH');
 CREATE TYPE "ChatChannelMembershipRole" AS ENUM ('MEMBER', 'MODERATOR');
 
 -- AlterTable
-ALTER TABLE "Task" ALTER COLUMN "updatedAt" DROP DEFAULT;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema='public' AND table_name='Task' AND column_name='updatedAt'
+  ) THEN
+    ALTER TABLE "Task" ALTER COLUMN "updatedAt" DROP DEFAULT;
+  END IF;
+END $$;
 
 -- CreateTable
 CREATE TABLE "ChatChannel" (
@@ -101,7 +109,21 @@ ALTER TABLE "ChatPinnedMessage" ADD CONSTRAINT "ChatPinnedMessage_messageId_fkey
 ALTER TABLE "ChatPinnedMessage" ADD CONSTRAINT "ChatPinnedMessage_pinnedById_fkey" FOREIGN KEY ("pinnedById") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- RenameIndex
-ALTER INDEX "email_log_digest_unique" RENAME TO "EmailLog_parishId_weekId_userId_type_key";
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname='public' AND c.relkind='i' AND c.relname='email_log_digest_unique'
+  ) THEN
+    ALTER INDEX "email_log_digest_unique" RENAME TO "EmailLog_parishId_weekId_userId_type_key";
+  END IF;
 
--- RenameIndex
-ALTER INDEX "email_log_join_request_unique" RENAME TO "EmailLog_joinRequestId_toEmail_type_key";
+  IF EXISTS (
+    SELECT 1 FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname='public' AND c.relkind='i' AND c.relname='email_log_join_request_unique'
+  ) THEN
+    ALTER INDEX "email_log_join_request_unique" RENAME TO "EmailLog_joinRequestId_toEmail_type_key";
+  END IF;
+END $$;
