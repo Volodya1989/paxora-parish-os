@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ListSkeleton from "@/components/app/list-skeleton";
 import PinnedBanner from "@/components/chat/PinnedBanner";
 import type { ChatMessage, ChatPinnedMessage } from "@/components/chat/types";
 import { REACTION_EMOJIS } from "@/lib/chat/reactions";
+import { cn } from "@/lib/ui/cn";
 
 const EDIT_WINDOW_MS = 15 * 60 * 1000;
 
@@ -33,10 +34,10 @@ function formatTime(date: Date) {
   }).format(date);
 }
 
-function getSnippet(text: string, maxLength = 120) {
+function getSnippet(text: string, maxLength = 100) {
   const trimmed = text.trim();
   if (trimmed.length <= maxLength) return trimmed;
-  return `${trimmed.slice(0, maxLength)}…`;
+  return `${trimmed.slice(0, maxLength)}...`;
 }
 
 export default function ChatThread({
@@ -68,9 +69,29 @@ export default function ChatThread({
   initialReactionMenuMessageId?: string | null;
   isLoading?: boolean;
 }) {
+  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const [openReactionMessageId, setOpenReactionMessageId] = useState<string | null>(
     initialReactionMenuMessageId ?? null
   );
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Close selection when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setSelectedMessageId(null);
+        setOpenReactionMessageId(null);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, []);
+
   const grouped = useMemo(() => {
     const groups: {
       key: string;
@@ -97,26 +118,37 @@ export default function ChatThread({
     return groups;
   }, [messages]);
 
+  const handleMessageTap = (messageId: string) => {
+    setSelectedMessageId((prev) => (prev === messageId ? null : messageId));
+    if (openReactionMessageId && openReactionMessageId !== messageId) {
+      setOpenReactionMessageId(null);
+    }
+  };
+
   return (
-    <div className="rounded-card border border-mist-100 bg-gradient-to-b from-mist-50/70 via-white to-mist-50/40 p-3 shadow-sm">
-      <div className="space-y-4">
+    <div
+      ref={containerRef}
+      className="rounded-card border border-mist-100 bg-white"
+    >
+      <div className="space-y-1 p-2">
         {pinnedMessage ? (
           <PinnedBanner pinned={pinnedMessage} canModerate={canModerate} onUnpin={onUnpin} />
         ) : null}
         {isLoading ? <ListSkeleton rows={3} /> : null}
         {messages.length === 0 && !isLoading ? (
-          <div className="rounded-card border border-dashed border-mist-200 bg-mist-50 px-4 py-6 text-center text-sm text-ink-500">
-            No messages yet. Start the conversation.
+          <div className="px-3 py-8 text-center">
+            <p className="text-sm text-ink-500">No messages yet</p>
+            <p className="mt-1 text-xs text-ink-400">Start the conversation</p>
           </div>
         ) : null}
         {grouped.map((group) => (
-          <div key={group.key} className="space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="h-px flex-1 bg-mist-100" />
-              <span className="text-xs font-semibold text-ink-400">{group.label}</span>
-              <div className="h-px flex-1 bg-mist-100" />
+          <div key={group.key} className="space-y-1">
+            <div className="flex items-center justify-center py-2">
+              <span className="rounded-full bg-mist-100 px-3 py-1 text-xs font-medium text-ink-500">
+                {group.label}
+              </span>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-0.5">
               {group.messages.map((message) => {
                 const initials = getInitials(message.author.name) || "PS";
                 const isDeleted = Boolean(message.deletedAt);
@@ -133,146 +165,301 @@ export default function ChatThread({
                     : message.parentMessage.body
                   : null;
                 const showThreadLink = Boolean(onViewThread && message.replyCount > 0);
-                const showActionRow = canReply || canModify || canModerate;
                 const reactions = message.reactions ?? [];
                 const hasReactions = reactions.length > 0;
                 const canReact = Boolean(onToggleReaction && !isDeleted);
-                const isMenuOpen = openReactionMessageId === message.id;
+                const isSelected = selectedMessageId === message.id;
+                const isReactionMenuOpen = openReactionMessageId === message.id;
+                const showActions = isSelected || isReactionMenuOpen;
+
                 return (
                   <div
                     key={message.id}
-                    className="group flex items-start gap-3 rounded-card border border-mist-100 bg-white/90 px-3 py-2 shadow-[0_1px_0_rgba(15,23,42,0.04)]"
+                    className={cn(
+                      "group relative rounded-lg px-2 py-1.5 transition-colors",
+                      isSelected && "bg-mist-50",
+                      !isSelected && "hover:bg-mist-50/50"
+                    )}
+                    onClick={() => handleMessageTap(message.id)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        handleMessageTap(message.id);
+                      }
+                    }}
                   >
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-xs font-semibold text-emerald-800">
-                      {initials}
-                    </div>
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-ink-900">
-                          {message.author.name}
-                        </p>
-                        <p className="text-xs text-ink-400">
-                          {formatTime(new Date(message.createdAt))}
-                        </p>
+                    <div className="flex items-start gap-2.5">
+                      {/* Avatar - smaller for compact view */}
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-semibold text-emerald-800">
+                        {initials}
                       </div>
-                      {message.parentMessage ? (
-                        <div className="rounded-md border border-mist-100 bg-mist-50 px-3 py-2 text-xs text-ink-500">
-                          <p className="font-semibold text-ink-600">
-                            {message.parentMessage.author.name}
-                          </p>
-                          <p className="mt-1 break-words text-ink-500">
-                            {parentPreview ? getSnippet(parentPreview, 140) : "Message unavailable"}
-                          </p>
+
+                      {/* Message content */}
+                      <div className="min-w-0 flex-1">
+                        {/* Header row */}
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-sm font-semibold text-ink-900">
+                            {message.author.name}
+                          </span>
+                          <span className="text-xs text-ink-400">
+                            {formatTime(new Date(message.createdAt))}
+                          </span>
                         </div>
-                      ) : null}
-                      <p
-                        className={
-                          isDeleted
-                            ? "break-words whitespace-pre-wrap text-sm italic text-ink-400"
-                            : "break-words whitespace-pre-wrap text-sm text-ink-700"
-                        }
-                      >
-                        {isDeleted ? "This message was deleted." : message.body}
-                      </p>
-                      {showThreadLink ? (
-                        <button
-                          type="button"
-                          className="text-xs font-semibold text-emerald-700 hover:text-emerald-900"
-                          onClick={() => onViewThread?.(message)}
-                        >
-                          View thread ({message.replyCount})
-                        </button>
-                      ) : null}
-                      {hasReactions || canReact ? (
-                        <div className="flex flex-wrap items-center gap-2">
-                          {reactions.map((reaction) => (
-                            <button
-                              key={`${message.id}-${reaction.emoji}`}
-                              type="button"
-                              className={
-                                reaction.reactedByMe
-                                  ? "inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-800"
-                                  : "inline-flex items-center gap-1 rounded-full border border-mist-200 bg-white px-2 py-1 text-xs font-medium text-ink-600"
-                              }
-                              onClick={() => onToggleReaction?.(message.id, reaction.emoji)}
-                            >
-                              <span aria-hidden="true">{reaction.emoji}</span>
-                              <span>{reaction.count}</span>
-                            </button>
-                          ))}
-                          {canReact ? (
-                            <div className="relative">
-                              <button
-                                type="button"
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-mist-200 bg-white text-sm text-ink-500 hover:text-ink-900"
-                                aria-label="Add reaction"
-                                aria-expanded={isMenuOpen}
-                                onClick={() =>
-                                  setOpenReactionMessageId(isMenuOpen ? null : message.id)
-                                }
-                              >
-                                +
-                              </button>
-                              {isMenuOpen ? (
-                                <div className="absolute left-0 top-full z-10 mt-2 grid w-[280px] grid-cols-6 gap-2 rounded-card border border-mist-200 bg-white p-2 shadow-lg">
-                                  {REACTION_EMOJIS.map((emoji) => (
-                                    <button
-                                      key={`${message.id}-${emoji}`}
-                                      type="button"
-                                      className="flex h-11 w-11 items-center justify-center rounded-full border border-transparent text-lg transition hover:border-mist-200 hover:bg-mist-50"
-                                      onClick={() => {
-                                        onToggleReaction?.(message.id, emoji);
-                                        setOpenReactionMessageId(null);
-                                      }}
-                                    >
-                                      {emoji}
-                                    </button>
-                                  ))}
-                                </div>
-                              ) : null}
+
+                        {/* Reply quote - more compact */}
+                        {message.parentMessage ? (
+                          <div className="mt-1 flex items-center gap-2 rounded border-l-2 border-emerald-300 bg-mist-50 py-1 pl-2 pr-2">
+                            <div className="min-w-0 flex-1">
+                              <span className="text-xs font-medium text-ink-600">
+                                {message.parentMessage.author.name}:
+                              </span>
+                              <span className="ml-1 text-xs text-ink-500">
+                                {parentPreview ? getSnippet(parentPreview, 60) : "Message unavailable"}
+                              </span>
                             </div>
-                          ) : null}
-                        </div>
-                      ) : null}
-                    </div>
-                    {showActionRow ? (
-                      <div className="flex items-center gap-2 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100">
+                          </div>
+                        ) : null}
+
+                        {/* Message body */}
+                        <p
+                          className={cn(
+                            "mt-0.5 break-words text-sm leading-relaxed",
+                            isDeleted ? "italic text-ink-400" : "text-ink-700"
+                          )}
+                        >
+                          {isDeleted ? "This message was deleted." : message.body}
+                        </p>
+
+                        {/* Thread link */}
+                        {showThreadLink ? (
+                          <button
+                            type="button"
+                            className="mt-1 text-xs font-medium text-emerald-600 hover:text-emerald-700"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onViewThread?.(message);
+                            }}
+                          >
+                            View thread ({message.replyCount})
+                          </button>
+                        ) : null}
+
+                        {/* Reactions - always visible if present */}
+                        {hasReactions ? (
+                          <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                            {reactions.map((reaction) => (
+                              <button
+                                key={`${message.id}-${reaction.emoji}`}
+                                type="button"
+                                className={cn(
+                                  "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-xs transition",
+                                  reaction.reactedByMe
+                                    ? "border border-emerald-200 bg-emerald-50 font-medium text-emerald-800"
+                                    : "border border-mist-200 bg-white text-ink-600 hover:bg-mist-50"
+                                )}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onToggleReaction?.(message.id, reaction.emoji);
+                                }}
+                              >
+                                <span aria-hidden="true">{reaction.emoji}</span>
+                                {reaction.count > 1 && <span>{reaction.count}</span>}
+                              </button>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+
+                      {/* Desktop: hover actions */}
+                      <div className="hidden items-center gap-1 opacity-0 transition group-hover:opacity-100 sm:flex">
+                        {canReact ? (
+                          <button
+                            type="button"
+                            className="rounded p-1 text-ink-400 hover:bg-mist-100 hover:text-ink-600"
+                            aria-label="Add reaction"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenReactionMessageId(
+                                isReactionMenuOpen ? null : message.id
+                              );
+                            }}
+                          >
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </button>
+                        ) : null}
                         {canReply ? (
                           <button
                             type="button"
-                            className="text-xs font-medium text-ink-500 hover:text-ink-900"
-                            onClick={() => onReply(message)}
+                            className="rounded p-1 text-ink-400 hover:bg-mist-100 hover:text-ink-600"
+                            aria-label="Reply"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onReply(message);
+                            }}
                           >
-                            Reply
+                            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                            </svg>
                           </button>
                         ) : null}
-                        {canModify ? (
-                          <button
-                            type="button"
-                            className="text-xs font-medium text-ink-500 hover:text-ink-900"
-                            onClick={() => onEdit(message)}
-                          >
-                            Edit
-                          </button>
-                        ) : null}
-                        {canModerate && !isDeleted ? (
-                          <button
-                            type="button"
-                            className="text-xs font-medium text-ink-500 hover:text-ink-900"
-                            onClick={() => onPin(message.id)}
-                          >
-                            Pin
-                          </button>
-                        ) : null}
-                        {canModify ? (
-                          <button
-                            type="button"
-                            className="text-xs font-medium text-rose-600 hover:text-rose-700"
-                            onClick={() => onDelete(message.id)}
-                          >
-                            Delete
-                          </button>
-                        ) : null}
+                      </div>
+                    </div>
+
+                    {/* Mobile: action bar appears on tap */}
+                    {showActions ? (
+                      <div
+                        className="mt-2 flex items-center justify-between gap-2 border-t border-mist-100 pt-2 sm:hidden"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {/* Reaction picker */}
+                        {canReact ? (
+                          <div className="flex items-center gap-1">
+                            {REACTION_EMOJIS.slice(0, 6).map((emoji) => (
+                              <button
+                                key={`quick-${message.id}-${emoji}`}
+                                type="button"
+                                className="flex h-8 w-8 items-center justify-center rounded-full text-lg hover:bg-mist-100"
+                                onClick={() => {
+                                  onToggleReaction?.(message.id, emoji);
+                                  setSelectedMessageId(null);
+                                }}
+                              >
+                                {emoji}
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <div />
+                        )}
+
+                        {/* Action buttons */}
+                        <div className="flex items-center gap-3 text-xs font-medium">
+                          {canReply ? (
+                            <button
+                              type="button"
+                              className="text-ink-600 hover:text-ink-900"
+                              onClick={() => {
+                                onReply(message);
+                                setSelectedMessageId(null);
+                              }}
+                            >
+                              Reply
+                            </button>
+                          ) : null}
+                          {canModify ? (
+                            <button
+                              type="button"
+                              className="text-ink-600 hover:text-ink-900"
+                              onClick={() => {
+                                onEdit(message);
+                                setSelectedMessageId(null);
+                              }}
+                            >
+                              Edit
+                            </button>
+                          ) : null}
+                          {canModerate && !isDeleted ? (
+                            <button
+                              type="button"
+                              className="text-ink-600 hover:text-ink-900"
+                              onClick={() => {
+                                onPin(message.id);
+                                setSelectedMessageId(null);
+                              }}
+                            >
+                              Pin
+                            </button>
+                          ) : null}
+                          {canModify ? (
+                            <button
+                              type="button"
+                              className="text-rose-600 hover:text-rose-700"
+                              onClick={() => {
+                                onDelete(message.id);
+                                setSelectedMessageId(null);
+                              }}
+                            >
+                              Delete
+                            </button>
+                          ) : null}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {/* Desktop: reaction menu popup */}
+                    {isReactionMenuOpen ? (
+                      <div
+                        className="absolute right-0 top-0 z-20 hidden rounded-lg border border-mist-200 bg-white p-2 shadow-lg sm:block"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="flex items-center gap-1">
+                          {REACTION_EMOJIS.map((emoji) => (
+                            <button
+                              key={`menu-${message.id}-${emoji}`}
+                              type="button"
+                              className="flex h-9 w-9 items-center justify-center rounded-full text-lg hover:bg-mist-100"
+                              onClick={() => {
+                                onToggleReaction?.(message.id, emoji);
+                                setOpenReactionMessageId(null);
+                              }}
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="mt-2 flex items-center justify-end gap-2 border-t border-mist-100 pt-2 text-xs font-medium">
+                          {canReply ? (
+                            <button
+                              type="button"
+                              className="rounded px-2 py-1 text-ink-600 hover:bg-mist-50"
+                              onClick={() => {
+                                onReply(message);
+                                setOpenReactionMessageId(null);
+                              }}
+                            >
+                              Reply
+                            </button>
+                          ) : null}
+                          {canModify ? (
+                            <button
+                              type="button"
+                              className="rounded px-2 py-1 text-ink-600 hover:bg-mist-50"
+                              onClick={() => {
+                                onEdit(message);
+                                setOpenReactionMessageId(null);
+                              }}
+                            >
+                              Edit
+                            </button>
+                          ) : null}
+                          {canModerate && !isDeleted ? (
+                            <button
+                              type="button"
+                              className="rounded px-2 py-1 text-ink-600 hover:bg-mist-50"
+                              onClick={() => {
+                                onPin(message.id);
+                                setOpenReactionMessageId(null);
+                              }}
+                            >
+                              Pin
+                            </button>
+                          ) : null}
+                          {canModify ? (
+                            <button
+                              type="button"
+                              className="rounded px-2 py-1 text-rose-600 hover:bg-rose-50"
+                              onClick={() => {
+                                onDelete(message.id);
+                                setOpenReactionMessageId(null);
+                              }}
+                            >
+                              Delete
+                            </button>
+                          ) : null}
+                        </div>
                       </div>
                     ) : null}
                   </div>
