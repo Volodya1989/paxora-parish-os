@@ -59,26 +59,6 @@ function RefreshIcon({ className }: { className?: string }) {
   );
 }
 
-function UsersIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <circle cx="8" cy="8" r="3" />
-      <circle cx="16" cy="8" r="3" />
-      <path d="M3.5 19c0-2.5 3-4 4.5-4s4.5 1.5 4.5 4" />
-      <path d="M11 19c0-2.1 2.6-3.6 4-3.9 1.4-.3 5 1.1 5 3.9" />
-    </svg>
-  );
-}
-
 function ClockIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -93,24 +73,6 @@ function ClockIcon({ className }: { className?: string }) {
     >
       <circle cx="12" cy="12" r="8" />
       <path d="M12 8v5l3 2" />
-    </svg>
-  );
-}
-
-function EyeIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z" />
-      <circle cx="12" cy="12" r="3" />
     </svg>
   );
 }
@@ -161,15 +123,21 @@ export default async function ServePreviewCard({ items }: ServePreviewCardProps)
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center rounded-card border border-dashed border-mist-200 bg-mist-50/60 px-4 py-8 text-center">
-            <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-mist-100">
-              <ChecklistIcon className="h-5 w-5 text-ink-400" />
+          <div className="flex flex-col gap-3 rounded-card border border-mist-200 bg-mist-50/60 px-3 py-3 text-left sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-mist-100">
+                <ChecklistIcon className="h-4 w-4 text-ink-400" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-sm font-semibold text-ink-900">
+                  No serve items for this week
+                </h3>
+                <p className="text-xs text-ink-500">
+                  Capture what needs to happen and keep your parish teams aligned.
+                </p>
+              </div>
             </div>
-            <h3 className="text-sm font-semibold text-ink-900">No serve items for this week</h3>
-            <p className="mt-1.5 max-w-sm text-xs text-ink-500">
-              Capture what needs to happen and keep your parish teams aligned.
-            </p>
-            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-center">
+            <div className="flex flex-wrap gap-2">
               <Link href={`${routes.serve}?create=task`}>
                 <Button>Add a serve item</Button>
               </Link>
@@ -215,12 +183,12 @@ function ServeRow({ item, t }: { item: TaskPreview; t: (key: string) => string }
   return (
     <Link
       href={`${routes.serve}?taskId=${item.id}`}
-      className="group block rounded-card border border-mist-100 bg-mist-50/60 p-3 transition hover:border-primary-200 hover:bg-primary-50/40"
+      className="group block rounded-card border border-mist-100 bg-mist-50/60 p-2.5 transition hover:border-primary-200 hover:bg-primary-50/40"
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <h4 className="truncate text-sm font-medium text-ink-900">{item.title}</h4>
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-ink-500">
+          <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-ink-500">
             <Badge tone={statusTone(item.status)}>
               {item.status === "DONE"
                 ? "Completed"
@@ -228,14 +196,6 @@ function ServeRow({ item, t }: { item: TaskPreview; t: (key: string) => string }
                   ? t("common.inProgress")
                   : t("common.todo")}
             </Badge>
-            <span className="flex items-center gap-1 rounded-full bg-mist-100 px-2 py-1 text-[10px] font-medium text-ink-500">
-              <EyeIcon className="h-3 w-3" />
-              Visibility TBD
-            </span>
-            <span className="flex items-center gap-1 text-[10px] text-ink-500">
-              <UsersIcon className="h-3 w-3" />
-              Volunteers TBD
-            </span>
             <span className="flex items-center gap-1 text-[10px] text-ink-500">
               <ClockIcon className="h-3 w-3" />
               {dueLabel}

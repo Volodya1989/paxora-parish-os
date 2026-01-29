@@ -102,62 +102,72 @@ export async function createGroup(input: {
     throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
   }
 
-  const group = await prisma.$transaction(async (tx) => {
-    if (!isLeader) {
-      const now = new Date();
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      const requestCount = await tx.group.count({
-        where: {
+  const group = await prisma
+    .$transaction(async (tx) => {
+      if (!isLeader) {
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const requestCount = await tx.group.count({
+          where: {
+            parishId,
+            createdById: userId,
+            createdAt: {
+              gte: monthStart
+            }
+          }
+        });
+
+        if (requestCount >= 2) {
+          throw new Error("You can request up to two groups per month.");
+        }
+      }
+
+      const status = isLeader ? "ACTIVE" : "PENDING_APPROVAL";
+      const createdGroup = await tx.group.create({
+        data: {
           parishId,
           createdById: userId,
-          createdAt: {
-            gte: monthStart
+          name: parsed.data.name,
+          description: parsed.data.description?.trim() || undefined,
+          visibility: parsed.data.visibility,
+          joinPolicy: parsed.data.joinPolicy,
+          status
+        },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          visibility: true,
+          joinPolicy: true,
+          createdAt: true,
+          archivedAt: true,
+          status: true
+        }
+      } as any);
+
+      if (isLeader) {
+        await tx.groupMembership.create({
+          data: {
+            groupId: createdGroup.id,
+            userId,
+            role: "COORDINATOR",
+            status: "ACTIVE",
+            approvedByUserId: userId
           }
-        }
-      });
-
-      if (requestCount >= 2) {
-        throw new Error("You can request up to two groups per month.");
+        });
       }
-    }
 
-    const status = isLeader ? "ACTIVE" : "PENDING_APPROVAL";
-    const createdGroup = await tx.group.create({
-      data: {
-        parishId,
-        createdById: userId,
-        name: parsed.data.name,
-        description: parsed.data.description?.trim() || undefined,
-        visibility: parsed.data.visibility,
-        joinPolicy: parsed.data.joinPolicy,
-        status
-      },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        visibility: true,
-        joinPolicy: true,
-        createdAt: true,
-        archivedAt: true,
-        status: true
+      return createdGroup;
+    })
+    .catch((error: unknown) => {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        throw new Error("A group with this name already exists. Please use a unique name.");
       }
-    } as any);
-
-    if (isLeader) {
-      await tx.groupMembership.create({
-        data: {
-          groupId: createdGroup.id,
-          userId,
-          role: "COORDINATOR",
-          status: "ACTIVE",
-          approvedByUserId: userId
-        }
-      });
-    }
-
-    return createdGroup;
-  });
+      throw error;
+    });
 
   revalidatePath("/groups");
 
