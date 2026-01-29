@@ -8,6 +8,7 @@ import type {
 } from "@prisma/client";
 import { isAdminClergy } from "@/lib/authz/membership";
 import { prisma } from "@/server/db/prisma";
+import { listUnreadCountsForRooms } from "@/lib/queries/chat";
 
 type GroupListRecord = {
   id: string;
@@ -46,6 +47,7 @@ export type GroupListItem = {
   memberCount: number | null;
   viewerMembershipStatus: GroupMembershipStatus | null;
   viewerMembershipRole: GroupRole | null;
+  unreadCount?: number | null;
 };
 
 export async function listGroups(
@@ -128,6 +130,26 @@ export async function listGroups(
     }
   } as any)) as unknown as GroupListRecord[];
 
+  const memberGroupIds = groups
+    .filter((group) => group.memberships?.[0]?.status === "ACTIVE")
+    .map((group) => group.id);
+  const chatChannels = await prisma.chatChannel.findMany({
+    where: {
+      groupId: {
+        in: memberGroupIds.length ? memberGroupIds : ["__none__"]
+      },
+      type: "GROUP"
+    },
+    select: {
+      id: true,
+      groupId: true
+    }
+  });
+
+  const roomIds = chatChannels.map((channel) => channel.id);
+  const unreadCounts = await listUnreadCountsForRooms(roomIds, actorUserId);
+  const groupToRoomMap = new Map(chatChannels.map((channel) => [channel.groupId, channel.id]));
+
   return groups.map((group) => ({
     id: group.id,
     createdById: group.createdById,
@@ -141,6 +163,9 @@ export async function listGroups(
     createdBy: group.createdBy ?? null,
     memberCount: group._count?.memberships ?? null,
     viewerMembershipStatus: group.memberships?.[0]?.status ?? null,
-    viewerMembershipRole: group.memberships?.[0]?.role ?? null
+    viewerMembershipRole: group.memberships?.[0]?.role ?? null,
+    unreadCount: groupToRoomMap.has(group.id)
+      ? unreadCounts.get(groupToRoomMap.get(group.id)!) ?? 0
+      : null
   }));
 }

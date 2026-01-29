@@ -13,6 +13,8 @@ const messages = [
     createdAt: new Date("2024-04-01T09:00:00.000Z"),
     editedAt: null,
     deletedAt: null,
+    replyCount: 0,
+    reactions: [],
     author: baseAuthor,
     parentMessage: null
   },
@@ -22,6 +24,14 @@ const messages = [
     createdAt: new Date("2024-04-01T10:00:00.000Z"),
     editedAt: null,
     deletedAt: null,
+    replyCount: 1,
+    reactions: [
+      {
+        emoji: "👍",
+        count: 2,
+        reactedByMe: true
+      }
+    ],
     author: { id: "author-2", name: "Jordan" },
     parentMessage: null
   },
@@ -31,6 +41,8 @@ const messages = [
     createdAt: new Date("2024-04-02T09:00:00.000Z"),
     editedAt: null,
     deletedAt: null,
+    replyCount: 0,
+    reactions: [],
     author: baseAuthor,
     parentMessage: null
   }
@@ -38,10 +50,20 @@ const messages = [
 
 const pinnedMessage = {
   id: "pin-1",
-  messageId: "msg-2",
+  messageId: "msg-pin",
   pinnedAt: new Date("2024-04-02T12:00:00.000Z"),
   pinnedBy: baseAuthor,
-  message: messages[1]!
+  message: {
+    id: "msg-pin",
+    body: "Pinned note",
+    createdAt: new Date("2024-04-02T08:30:00.000Z"),
+    editedAt: null,
+    deletedAt: null,
+    replyCount: 0,
+    reactions: [],
+    author: baseAuthor,
+    parentMessage: null
+  }
 };
 
 test("ChatThread renders pinned banner and message order", () => {
@@ -69,4 +91,79 @@ test("ChatThread renders pinned banner and message order", () => {
 
   assert.ok(firstIndex < secondIndex);
   assert.ok(secondIndex < thirdIndex);
+});
+
+test("ChatThread shows thread affordance and reactions", () => {
+  const markup = renderToStaticMarkup(
+    createElement(ChatThread, {
+      messages,
+      pinnedMessage: null,
+      canModerate: false,
+      currentUserId: "author-1",
+      onReply: () => undefined,
+      onEdit: () => undefined,
+      onPin: () => undefined,
+      onUnpin: () => undefined,
+      onDelete: () => undefined,
+      onToggleReaction: () => undefined,
+      onViewThread: () => undefined,
+      isLoading: false
+    })
+  );
+
+  assert.ok(markup.includes("View thread (1)"));
+  assert.ok(markup.includes("👍"));
+});
+
+test("ChatThread wraps long message text", () => {
+  const longMessage = {
+    id: "msg-long",
+    body: "Supercalifragilisticexpialidocious".repeat(5),
+    createdAt: new Date("2024-04-03T09:00:00.000Z"),
+    editedAt: null,
+    deletedAt: null,
+    replyCount: 0,
+    reactions: [],
+    author: baseAuthor,
+    parentMessage: null
+  };
+
+  const markup = renderToStaticMarkup(
+    createElement(ChatThread, {
+      messages: [longMessage],
+      pinnedMessage: null,
+      canModerate: false,
+      currentUserId: "author-1",
+      onReply: () => undefined,
+      onEdit: () => undefined,
+      onPin: () => undefined,
+      onUnpin: () => undefined,
+      onDelete: () => undefined,
+      isLoading: false
+    })
+  );
+
+  assert.ok(markup.includes("break-words"));
+});
+
+test("ChatThread renders fixed emoji menu when opened", () => {
+  const markup = renderToStaticMarkup(
+    createElement(ChatThread, {
+      messages,
+      pinnedMessage: null,
+      canModerate: false,
+      currentUserId: "author-1",
+      onReply: () => undefined,
+      onEdit: () => undefined,
+      onPin: () => undefined,
+      onUnpin: () => undefined,
+      onDelete: () => undefined,
+      onToggleReaction: () => undefined,
+      initialReactionMenuMessageId: "msg-1",
+      isLoading: false
+    })
+  );
+
+  assert.ok(markup.includes("👍"));
+  assert.ok(markup.includes("❤️"));
 });

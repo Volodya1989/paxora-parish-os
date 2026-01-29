@@ -14,6 +14,8 @@ const messages = [
     createdAt: new Date("2024-04-02T10:00:00.000Z"),
     editedAt: null,
     deletedAt: null,
+    replyCount: 0,
+    reactions: [],
     author: childAuthor,
     parentMessage: {
       id: "msg-1",
