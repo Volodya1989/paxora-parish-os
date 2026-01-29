@@ -64,15 +64,21 @@ export default function EventsPreviewCard({ events }: EventsPreviewCardProps) {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center rounded-card border border-dashed border-mist-200 bg-mist-50/60 px-4 py-8 text-center">
-            <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-mist-100">
-              <CalendarIcon className="h-5 w-5 text-ink-400" />
+          <div className="flex flex-col gap-3 rounded-card border border-mist-200 bg-mist-50/60 px-3 py-3 text-left sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-mist-100">
+                <CalendarIcon className="h-4 w-4 text-ink-400" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-sm font-semibold text-ink-900">
+                  No events scheduled this week
+                </h3>
+                <p className="text-xs text-ink-500">
+                  Plan services, rehearsals, and gatherings so everyone stays in sync.
+                </p>
+              </div>
             </div>
-            <h3 className="text-sm font-semibold text-ink-900">No events scheduled this week</h3>
-            <p className="mt-1.5 max-w-sm text-xs text-ink-500">
-              Plan services, rehearsals, and gatherings so everyone stays in sync.
-            </p>
-            <Link href={`${routes.calendar}?create=event`} className="mt-4">
+            <Link href={`${routes.calendar}?create=event`}>
               <Button className="gap-2">
                 <PlusIcon className="h-4 w-4" />
                 Add event
@@ -114,7 +120,7 @@ function EventRow({ event }: { event: EventPreview }) {
   const timeLabel = formatTime(event.startsAt);
 
   return (
-    <div className="group flex items-center justify-between gap-2 rounded-card border border-mist-100 bg-mist-50/60 p-3">
+    <div className="group flex items-center justify-between gap-2 rounded-card border border-mist-100 bg-mist-50/60 p-2.5">
       <div className="flex min-w-0 flex-1 items-start gap-3">
         <div className="flex shrink-0 flex-col items-center rounded-md bg-primary-50 px-2.5 py-1.5">
           <span className="text-[10px] font-semibold uppercase text-primary-700">{dayLabel}</span>

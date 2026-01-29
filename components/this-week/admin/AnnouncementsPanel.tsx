@@ -85,15 +85,19 @@ export default async function AnnouncementsPanel({ announcements }: Announcement
           </div>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center justify-center rounded-card border border-dashed border-mist-200 bg-mist-50/60 px-4 py-8 text-center">
-            <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-mist-100">
-              <SendIcon className="h-5 w-5 text-ink-400" />
+          <div className="flex flex-col gap-3 rounded-card border border-mist-200 bg-mist-50/60 px-3 py-3 text-left sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-mist-100">
+                <SendIcon className="h-4 w-4 text-ink-400" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-sm font-semibold text-ink-900">Share a parish update</h3>
+                <p className="text-xs text-ink-500">
+                  Draft announcements to keep parishioners informed and in the loop.
+                </p>
+              </div>
             </div>
-            <h3 className="text-sm font-semibold text-ink-900">Share a parish update</h3>
-            <p className="mt-1.5 max-w-sm text-xs text-ink-500">
-              Draft announcements to keep parishioners informed and in the loop.
-            </p>
-            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-center">
+            <div className="flex flex-wrap gap-2">
               <Link href={`${routes.announcements}/new`}>
                 <Button>Create announcement</Button>
               </Link>

@@ -1,12 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import ChannelList from "@/components/chat/ChannelList";
 import ChatHeader from "@/components/chat/ChatHeader";
 import ChatThread from "@/components/chat/ChatThread";
 import Composer from "@/components/chat/Composer";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
+import { Drawer } from "@/components/ui/Drawer";
 import type {
   ChatChannelMember,
   ChatChannelSummary,
@@ -26,6 +28,7 @@ import {
   unlockChannel,
   unpinMessage
 } from "@/server/actions/chat";
+import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 
 function sortMessages(items: ChatMessage[]) {
   return [...items].sort((a, b) => {
@@ -98,9 +101,10 @@ export default function ChatView({
   const [members, setMembers] = useState<ChatChannelMember[]>(channelMembers ?? []);
   const [membersOpen, setMembersOpen] = useState(false);
   const [isPollingReady, setIsPollingReady] = useState(false);
-  const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
   const [threadRoot, setThreadRoot] = useState<ChatMessage | null>(null);
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const router = useRouter();
 
   const messagesRef = useRef(messages);
 
@@ -185,7 +189,6 @@ export default function ChatView({
   }, [channel.id]);
 
   useEffect(() => {
-    setReplyTo(null);
     setEditingMessage(null);
     setThreadRoot(null);
   }, [channel.id]);
@@ -209,26 +212,26 @@ export default function ChatView({
       return;
     }
 
-    const replyTarget =
-      replyTo && messagesRef.current.some((message) => message.id === replyTo.id) ? replyTo : null;
-    if (!replyTarget) {
-      setReplyTo(null);
-    }
-    const created = await postMessage(channel.id, body, replyTarget?.id);
+    const created = await postMessage(channel.id, body);
     setMessages((prev) => {
       const next = [...prev, parseMessage(created)];
-      if (replyTarget) {
-        return sortMessages(
-          next.map((message) =>
-            message.id === replyTarget.id
-              ? { ...message, replyCount: Math.max(0, message.replyCount + 1) }
-              : message
-          )
-        );
-      }
       return sortMessages(next);
     });
-    setReplyTo(null);
+  };
+
+  const handleSendThread = async (body: string) => {
+    if (!threadRoot) return;
+    const created = await postMessage(channel.id, body, threadRoot.id);
+    setMessages((prev) => {
+      const next = [...prev, parseMessage(created)];
+      return sortMessages(
+        next.map((message) =>
+          message.id === threadRoot.id
+            ? { ...message, replyCount: Math.max(0, message.replyCount + 1) }
+            : message
+        )
+      );
+    });
   };
 
   const handleDelete = async (messageId: string) => {
@@ -241,8 +244,8 @@ export default function ChatView({
     if (editingMessage?.id === messageId) {
       setEditingMessage(null);
     }
-    if (replyTo?.id === messageId) {
-      setReplyTo(null);
+    if (threadRoot?.id === messageId) {
+      setThreadRoot(null);
     }
   };
 
@@ -342,6 +345,11 @@ export default function ChatView({
     }
   };
 
+  const channelMessages = useMemo(
+    () => messages.filter((message) => !message.parentMessage),
+    [messages]
+  );
+
   const threadMessages = useMemo(() => {
     if (!threadRoot) return [];
     const root = messages.find((message) => message.id === threadRoot.id) ?? threadRoot;
@@ -351,30 +359,38 @@ export default function ChatView({
 
   return (
     <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
-      <aside className="space-y-4">
+      <aside className="hidden space-y-4 lg:block">
         <ChannelList channels={channels} activeChannelId={channel.id} />
       </aside>
       <section className="space-y-4">
         <ChatHeader
           channel={{ ...channel, lockedAt }}
+          channels={channels}
           canModerate={canModerate}
           onToggleLock={handleToggleLock}
           onManageMembers={showMemberManagement ? () => setMembersOpen(true) : undefined}
+          onChannelChange={(channelId) => {
+            const selected = channels.find((item) => item.id === channelId);
+            if (selected?.type === "GROUP" && selected.group) {
+              router.push(`/groups/${selected.group.id}/chat`);
+              return;
+            }
+            router.push(`/community/chat?channel=${channelId}`);
+          }}
         />
         <ChatThread
-          messages={messages}
+          messages={channelMessages}
           pinnedMessage={pinnedMessageState}
           canModerate={canModerate}
           currentUserId={currentUserId}
           onReply={(message) => {
             if (message.deletedAt) return;
-            setReplyTo(message);
             setEditingMessage(null);
+            setThreadRoot(message);
           }}
           onEdit={(message) => {
             if (message.deletedAt) return;
             setEditingMessage(message);
-            setReplyTo(null);
           }}
           onPin={handlePin}
           onUnpin={handleUnpin}
@@ -386,17 +402,6 @@ export default function ChatView({
         <Composer
           disabled={!canPost || Boolean(lockedAt)}
           onSend={handleSend}
-          replyTo={
-            replyTo
-              ? {
-                  id: replyTo.id,
-                  authorName: replyTo.author.name,
-                  body: replyTo.body,
-                  deletedAt: replyTo.deletedAt
-                }
-              : null
-          }
-          onCancelReply={() => setReplyTo(null)}
           editingMessage={
             editingMessage
               ? {
@@ -411,33 +416,93 @@ export default function ChatView({
       </section>
 
       {threadRoot ? (
-        <Modal
-          open={Boolean(threadRoot)}
-          onClose={() => setThreadRoot(null)}
-          title={`Thread (${threadRoot.replyCount})`}
-        >
-          <ChatThread
-            messages={threadMessages}
-            pinnedMessage={null}
-            canModerate={canModerate}
-            currentUserId={currentUserId}
-            onReply={(message) => {
-              if (message.deletedAt) return;
-              setReplyTo(message);
-              setEditingMessage(null);
-            }}
-            onEdit={(message) => {
-              if (message.deletedAt) return;
-              setEditingMessage(message);
-              setReplyTo(null);
-            }}
-            onPin={handlePin}
-            onUnpin={handleUnpin}
-            onDelete={handleDelete}
-            onToggleReaction={handleToggleReaction}
-            isLoading={false}
-          />
-        </Modal>
+        <>
+          {isDesktop ? (
+            <Modal
+              open={Boolean(threadRoot)}
+              onClose={() => setThreadRoot(null)}
+              title={`Thread (${threadRoot.replyCount})`}
+            >
+              <div className="space-y-4">
+                <ChatThread
+                  messages={threadMessages}
+                  pinnedMessage={null}
+                  canModerate={canModerate}
+                  currentUserId={currentUserId}
+                  onReply={() => undefined}
+                  onEdit={(message) => {
+                    if (message.deletedAt) return;
+                    setEditingMessage(message);
+                  }}
+                  onPin={handlePin}
+                  onUnpin={handleUnpin}
+                  onDelete={handleDelete}
+                  onToggleReaction={handleToggleReaction}
+                  isLoading={false}
+                />
+                <Composer
+                  disabled={!canPost || Boolean(lockedAt)}
+                  onSend={handleSendThread}
+                  replyTo={
+                    threadRoot
+                      ? {
+                          id: threadRoot.id,
+                          authorName: threadRoot.author.name,
+                          body: threadRoot.body,
+                          deletedAt: threadRoot.deletedAt
+                        }
+                      : null
+                  }
+                  onCancelReply={() => setThreadRoot(null)}
+                  mentionableUsers={mentionableUsers}
+                />
+              </div>
+            </Modal>
+          ) : (
+            <Drawer
+              open={Boolean(threadRoot)}
+              onClose={() => setThreadRoot(null)}
+              title={`Thread (${threadRoot.replyCount})`}
+              footer={
+                <div className="w-full">
+                  <Composer
+                    disabled={!canPost || Boolean(lockedAt)}
+                    onSend={handleSendThread}
+                    replyTo={
+                      threadRoot
+                        ? {
+                            id: threadRoot.id,
+                            authorName: threadRoot.author.name,
+                            body: threadRoot.body,
+                            deletedAt: threadRoot.deletedAt
+                          }
+                        : null
+                    }
+                    onCancelReply={() => setThreadRoot(null)}
+                    mentionableUsers={mentionableUsers}
+                  />
+                </div>
+              }
+            >
+              <ChatThread
+                messages={threadMessages}
+                pinnedMessage={null}
+                canModerate={canModerate}
+                currentUserId={currentUserId}
+                onReply={() => undefined}
+                onEdit={(message) => {
+                  if (message.deletedAt) return;
+                  setEditingMessage(message);
+                }}
+                onPin={handlePin}
+                onUnpin={handleUnpin}
+                onDelete={handleDelete}
+                onToggleReaction={handleToggleReaction}
+                isLoading={false}
+              />
+            </Drawer>
+          )}
+        </>
       ) : null}
 
       {showMemberManagement ? (

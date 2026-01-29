@@ -5,6 +5,7 @@ import ListSkeleton from "@/components/app/list-skeleton";
 import PinnedBanner from "@/components/chat/PinnedBanner";
 import type { ChatMessage, ChatPinnedMessage } from "@/components/chat/types";
 import { REACTION_EMOJIS } from "@/lib/chat/reactions";
+import { cn } from "@/lib/ui/cn";
 
 const EDIT_WINDOW_MS = 15 * 60 * 1000;
 
@@ -31,6 +32,14 @@ function formatTime(date: Date) {
     hour: "numeric",
     minute: "2-digit"
   }).format(date);
+}
+
+function formatDisplayName(name: string) {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 0) return name;
+  if (parts.length === 1) return parts[0];
+  const lastInitial = parts[parts.length - 1]?.[0];
+  return `${parts[0]} ${lastInitial ? `${lastInitial}.` : ""}`.trim();
 }
 
 function getSnippet(text: string, maxLength = 120) {
@@ -71,6 +80,7 @@ export default function ChatThread({
   const [openReactionMessageId, setOpenReactionMessageId] = useState<string | null>(
     initialReactionMenuMessageId ?? null
   );
+  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
   const grouped = useMemo(() => {
     const groups: {
       key: string;
@@ -98,7 +108,13 @@ export default function ChatThread({
   }, [messages]);
 
   return (
-    <div className="rounded-card border border-mist-100 bg-gradient-to-b from-mist-50/70 via-white to-mist-50/40 p-3 shadow-sm">
+    <div
+      className="rounded-card border border-mist-100 bg-gradient-to-b from-mist-50/70 via-white to-mist-50/40 p-3 shadow-sm"
+      onClick={() => {
+        setSelectedMessageId(null);
+        setOpenReactionMessageId(null);
+      }}
+    >
       <div className="space-y-4">
         {pinnedMessage ? (
           <PinnedBanner pinned={pinnedMessage} canModerate={canModerate} onUnpin={onUnpin} />
@@ -117,9 +133,11 @@ export default function ChatThread({
               <div className="h-px flex-1 bg-mist-100" />
             </div>
             <div className="space-y-3">
-              {group.messages.map((message) => {
+              {group.messages.map((message, messageIndex) => {
+                const previousMessage = messageIndex > 0 ? group.messages[messageIndex - 1] : null;
                 const initials = getInitials(message.author.name) || "PS";
                 const isDeleted = Boolean(message.deletedAt);
+                const isMine = Boolean(currentUserId && message.author.id === currentUserId);
                 const now = Date.now();
                 const canEditOwn =
                   Boolean(currentUserId) &&
@@ -138,25 +156,58 @@ export default function ChatThread({
                 const hasReactions = reactions.length > 0;
                 const canReact = Boolean(onToggleReaction && !isDeleted);
                 const isMenuOpen = openReactionMessageId === message.id;
+                const isSelected = selectedMessageId === message.id;
+                const showControls = isSelected || isMenuOpen;
+                const showAuthor =
+                  !previousMessage ||
+                  previousMessage.author.id !== message.author.id ||
+                  Boolean(previousMessage.deletedAt);
                 return (
                   <div
                     key={message.id}
-                    className="group flex items-start gap-3 rounded-card border border-mist-100 bg-white/90 px-3 py-2 shadow-[0_1px_0_rgba(15,23,42,0.04)]"
+                    className={cn(
+                      "group relative flex items-start gap-3 rounded-card border border-slate-200 px-3 py-2 shadow-[0_1px_0_rgba(15,23,42,0.04)] focus-within:border-primary-200",
+                      isMine ? "bg-emerald-50/70" : "bg-slate-50/70",
+                      isSelected && "border-primary-200 bg-white"
+                    )}
+                    tabIndex={0}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setSelectedMessageId((prev) => (prev === message.id ? null : message.id));
+                    }}
+                    onFocus={() => setSelectedMessageId(message.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setSelectedMessageId((prev) => (prev === message.id ? null : message.id));
+                      }
+                    }}
                   >
-                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-xs font-semibold text-emerald-800">
-                      {initials}
-                    </div>
-                    <div className="flex-1 space-y-2">
+                    <button
+                      type="button"
+                      className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-xs font-semibold text-emerald-800"
+                      title={message.author.name}
+                      aria-label={`View profile for ${message.author.name}`}
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      <span aria-hidden="true">
+                        {initials}
+                      </span>
+                    </button>
+                    <div className="min-w-0 flex-1 space-y-2 pr-4 sm:pr-24">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-ink-900">
-                          {message.author.name}
-                        </p>
+                        {showAuthor ? (
+                          <span className="text-xs font-semibold text-ink-700 sm:hidden">
+                            {formatDisplayName(message.author.name)}
+                          </span>
+                        ) : null}
+                        <span className="sr-only">{message.author.name}</span>
                         <p className="text-xs text-ink-400">
                           {formatTime(new Date(message.createdAt))}
                         </p>
                       </div>
                       {message.parentMessage ? (
-                        <div className="rounded-md border border-mist-100 bg-mist-50 px-3 py-2 text-xs text-ink-500">
+                        <div className="rounded-md border border-mist-100 border-l-4 border-l-emerald-500/60 bg-emerald-50/50 px-3 py-2 text-xs text-ink-500">
                           <p className="font-semibold text-ink-600">
                             {message.parentMessage.author.name}
                           </p>
@@ -166,11 +217,10 @@ export default function ChatThread({
                         </div>
                       ) : null}
                       <p
-                        className={
-                          isDeleted
-                            ? "break-words whitespace-pre-wrap text-sm italic text-ink-400"
-                            : "break-words whitespace-pre-wrap text-sm text-ink-700"
-                        }
+                        className={cn(
+                          "whitespace-pre-wrap text-sm [overflow-wrap:anywhere] [word-break:break-word]",
+                          isDeleted ? "italic text-ink-400" : "text-ink-700"
+                        )}
                       >
                         {isDeleted ? "This message was deleted." : message.body}
                       </p>
@@ -204,23 +254,33 @@ export default function ChatThread({
                             <div className="relative">
                               <button
                                 type="button"
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-mist-200 bg-white text-sm text-ink-500 hover:text-ink-900"
+                                className={cn(
+                                  "inline-flex h-8 w-8 items-center justify-center rounded-full border border-mist-200 bg-white text-sm text-ink-500 transition-opacity hover:text-ink-900",
+                                  showControls
+                                    ? "opacity-100"
+                                    : "opacity-0 sm:group-hover:opacity-100 group-focus-within:opacity-100"
+                                )}
                                 aria-label="Add reaction"
                                 aria-expanded={isMenuOpen}
-                                onClick={() =>
-                                  setOpenReactionMessageId(isMenuOpen ? null : message.id)
-                                }
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  setOpenReactionMessageId(isMenuOpen ? null : message.id);
+                                }}
                               >
                                 +
                               </button>
                               {isMenuOpen ? (
-                                <div className="absolute left-0 top-full z-10 mt-2 grid w-[280px] grid-cols-6 gap-2 rounded-card border border-mist-200 bg-white p-2 shadow-lg">
+                                <div
+                                  className="absolute left-0 top-full z-10 mt-2 grid w-[280px] grid-cols-6 gap-2 rounded-card border border-mist-200 bg-white p-2 shadow-lg"
+                                  onClick={(event) => event.stopPropagation()}
+                                >
                                   {REACTION_EMOJIS.map((emoji) => (
                                     <button
                                       key={`${message.id}-${emoji}`}
                                       type="button"
                                       className="flex h-11 w-11 items-center justify-center rounded-full border border-transparent text-lg transition hover:border-mist-200 hover:bg-mist-50"
-                                      onClick={() => {
+                                      onClick={(event) => {
+                                        event.stopPropagation();
                                         onToggleReaction?.(message.id, emoji);
                                         setOpenReactionMessageId(null);
                                       }}
@@ -236,12 +296,23 @@ export default function ChatThread({
                       ) : null}
                     </div>
                     {showActionRow ? (
-                      <div className="flex items-center gap-2 opacity-100 transition sm:opacity-0 sm:group-hover:opacity-100">
+                      <div
+                        className={cn(
+                          "absolute right-3 top-2 flex items-center gap-2 transition-opacity",
+                          showControls
+                            ? "opacity-100"
+                            : "opacity-0 sm:group-hover:opacity-100 group-focus-within:opacity-100"
+                        )}
+                        onClick={(event) => event.stopPropagation()}
+                      >
                         {canReply ? (
                           <button
                             type="button"
                             className="text-xs font-medium text-ink-500 hover:text-ink-900"
-                            onClick={() => onReply(message)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onReply(message);
+                            }}
                           >
                             Reply
                           </button>
@@ -250,7 +321,10 @@ export default function ChatThread({
                           <button
                             type="button"
                             className="text-xs font-medium text-ink-500 hover:text-ink-900"
-                            onClick={() => onEdit(message)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onEdit(message);
+                            }}
                           >
                             Edit
                           </button>
@@ -259,7 +333,10 @@ export default function ChatThread({
                           <button
                             type="button"
                             className="text-xs font-medium text-ink-500 hover:text-ink-900"
-                            onClick={() => onPin(message.id)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onPin(message.id);
+                            }}
                           >
                             Pin
                           </button>
@@ -268,7 +345,10 @@ export default function ChatThread({
                           <button
                             type="button"
                             className="text-xs font-medium text-rose-600 hover:text-rose-700"
-                            onClick={() => onDelete(message.id)}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onDelete(message.id);
+                            }}
                           >
                             Delete
                           </button>

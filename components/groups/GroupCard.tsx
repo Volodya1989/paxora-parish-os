@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
@@ -84,6 +85,8 @@ export default function GroupCard({
 }: GroupCardProps) {
   const t = useTranslations();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const router = useRouter();
   const isArchived = Boolean(group.archivedAt);
   const isPending = group.status === "PENDING_APPROVAL";
   const isRejected = group.status === "REJECTED";
@@ -114,18 +117,105 @@ export default function GroupCard({
     }
   };
 
+  const handleCardClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!canOpenChat) return;
+    const target = event.target as HTMLElement | null;
+    const interactiveTarget = target?.closest(
+      "button, a, input, textarea, select, [role='button']"
+    );
+    if (interactiveTarget && interactiveTarget !== event.currentTarget) {
+      return;
+    }
+    router.push(`/groups/${group.id}/chat`);
+  };
+
+  const handleCardKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!canOpenChat) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      router.push(`/groups/${group.id}/chat`);
+    }
+  };
+
   return (
-    <Card className={cn("space-y-4", isBusy && "opacity-70")}>
+    <Card
+      className={cn(
+        "space-y-3 p-3 sm:p-4",
+        canOpenChat && "cursor-pointer transition hover:border-primary-200 hover:bg-primary-50/40",
+        isBusy && "opacity-70"
+      )}
+      onClick={handleCardClick}
+      onKeyDown={handleCardKeyDown}
+      role={canOpenChat ? "button" : undefined}
+      tabIndex={canOpenChat ? 0 : undefined}
+    >
       <div className="flex items-start justify-between gap-3">
-        <div className="space-y-2">
+        <div className="min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-lg font-semibold text-ink-900">{group.name}</h3>
+            <h3 className="text-base font-semibold text-ink-900 break-words">{group.name}</h3>
             {isArchived ? <Badge tone="warning">Archived</Badge> : null}
             {isPending ? <Badge tone="warning">Pending approval</Badge> : null}
             {isRejected ? <Badge tone="neutral">Not approved</Badge> : null}
             <Badge tone={group.visibility === "PUBLIC" ? "success" : "neutral"}>
               {group.visibility === "PUBLIC" ? t("common.public") : t("common.private")}
             </Badge>
+            {group.unreadCount && group.unreadCount > 0 ? (
+              <Badge tone="warning">{group.unreadCount}</Badge>
+            ) : null}
+          </div>
+          {detailsOpen && group.description?.trim() ? (
+            <p className="text-xs text-ink-500 break-words">{group.description}</p>
+          ) : null}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-mist-200 text-ink-500 transition hover:bg-mist-50 focus-ring"
+            onClick={(event) => {
+              event.stopPropagation();
+              setDetailsOpen((prev) => !prev);
+            }}
+            aria-label={detailsOpen ? "Hide details" : "Show details"}
+          >
+            <span className={cn("text-lg transition", detailsOpen ? "rotate-180" : "rotate-0")}>
+              ▾
+            </span>
+          </button>
+          {showMenu ? (
+            <Dropdown
+              open={open}
+              onOpenChange={(nextOpen) => {
+                if (forceMenuOpen === undefined) {
+                  setMenuOpen(nextOpen);
+                }
+              }}
+            >
+              <DropdownTrigger asChild iconOnly aria-label="Group options">
+                <Button type="button" variant="ghost" size="sm" className="text-ink-500">
+                  ⋯
+                </Button>
+              </DropdownTrigger>
+              <DropdownMenu ariaLabel="Group menu">
+                {canManageGroup ? <DropdownItem onClick={onEdit}>Edit</DropdownItem> : null}
+                {canManageGroup ? (
+                  isArchived ? (
+                    <DropdownItem onClick={onRestore}>Restore</DropdownItem>
+                  ) : (
+                    <DropdownItem onClick={onArchive}>Archive</DropdownItem>
+                  )
+                ) : null}
+                {canManageMembers ? (
+                  <DropdownItem onClick={onManageMembers}>Manage members</DropdownItem>
+                ) : null}
+              </DropdownMenu>
+            </Dropdown>
+          ) : null}
+        </div>
+      </div>
+
+      {detailsOpen ? (
+        <div className="space-y-2 rounded-card border border-mist-100 bg-mist-50/60 px-3 py-2 text-xs text-ink-600">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge tone="neutral">
               {group.joinPolicy === "OPEN"
                 ? "Join instantly"
@@ -133,86 +223,33 @@ export default function GroupCard({
                 ? "Request approval"
                 : "Invite only"}
             </Badge>
+            {isMember ? <Badge tone="neutral">Member</Badge> : null}
+            {isInvited ? <Badge tone="warning">Invited</Badge> : null}
+            {isRequested ? <Badge tone="warning">Request pending</Badge> : null}
           </div>
-          {group.description?.trim() ? (
-            <p className="text-sm text-ink-500">{group.description}</p>
-          ) : null}
-        </div>
-        {showMenu ? (
-          <Dropdown
-            open={open}
-            onOpenChange={(nextOpen) => {
-              if (forceMenuOpen === undefined) {
-                setMenuOpen(nextOpen);
-              }
-            }}
-          >
-            <DropdownTrigger asChild iconOnly aria-label="Group options">
-              <Button type="button" variant="ghost" size="sm" className="text-ink-500">
-                ⋯
-              </Button>
-            </DropdownTrigger>
-            <DropdownMenu ariaLabel="Group menu">
-              {canManageGroup ? <DropdownItem onClick={onEdit}>Edit</DropdownItem> : null}
-              {canManageGroup ? (
-                isArchived ? (
-                  <DropdownItem onClick={onRestore}>Restore</DropdownItem>
-                ) : (
-                  <DropdownItem onClick={onArchive}>Archive</DropdownItem>
-                )
-              ) : null}
-              {canManageMembers ? (
-                <DropdownItem onClick={onManageMembers}>Manage members</DropdownItem>
-              ) : null}
-            </DropdownMenu>
-          </Dropdown>
-        ) : null}
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="flex -space-x-2">
-            {avatarInitials.map((initials, index) => (
-              <span
-                key={`${initials}-${index}`}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-white bg-emerald-100 text-xs font-semibold text-emerald-800"
-              >
-                {initials}
+          <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-ink-500">
+            <div className="flex items-center gap-2">
+              <div className="flex -space-x-2">
+                {avatarInitials.map((initials, index) => (
+                  <span
+                    key={`${initials}-${index}`}
+                    className="flex h-7 w-7 items-center justify-center rounded-full border border-white bg-emerald-100 text-[10px] font-semibold text-emerald-800"
+                  >
+                    {initials}
+                  </span>
+                ))}
+              </div>
+              <span className="font-medium text-ink-700">
+                {memberCountLabel === "—" ? "—" : `${memberCountLabel} ${memberSuffix}`}
               </span>
-            ))}
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-wide text-ink-400">Members</p>
-            <p className="text-sm font-semibold text-ink-700">
-              {memberCountLabel === "—" ? "—" : `${memberCountLabel} ${memberSuffix}`}
-            </p>
+            </div>
+            <span>Last updated {formatDate(group.createdAt)}</span>
           </div>
         </div>
-        <p className="text-xs text-ink-400">Last updated {formatDate(group.createdAt)}</p>
-      </div>
+      ) : null}
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2 text-xs text-ink-500">
-          {isMember ? <Badge tone="neutral">Member</Badge> : null}
-          {isInvited ? <Badge tone="warning">Invited</Badge> : null}
-          {isRequested ? <Badge tone="warning">Request pending</Badge> : null}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {canOpenChat ? (
-            <div className="flex items-center gap-2">
-              <Link
-                className={cn(
-                  "inline-flex items-center justify-center rounded-button bg-primary-700 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-primary-600 focus-ring"
-                )}
-                href={`/groups/${group.id}/chat`}
-              >
-                Open chat
-              </Link>
-              {group.unreadCount && group.unreadCount > 0 ? (
-                <Badge tone="warning">{group.unreadCount}</Badge>
-              ) : null}
-            </div>
-          ) : null}
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           {isMember && !isArchived ? (
             <Button type="button" variant="ghost" size="sm" onClick={onLeave}>
               Leave group
