@@ -18,9 +18,11 @@ import {
   deleteMessage,
   editMessage,
   lockChannel,
+  markRoomRead,
   pinMessage,
   postMessage,
   removeMember,
+  toggleReaction,
   unlockChannel,
   unpinMessage
 } from "@/server/actions/chat";
@@ -49,7 +51,9 @@ function parseMessage(message: any): ChatMessage {
     createdAt: new Date(message.createdAt),
     deletedAt: message.deletedAt ? new Date(message.deletedAt) : null,
     editedAt: message.editedAt ? new Date(message.editedAt) : null,
-    parentMessage
+    parentMessage,
+    replyCount: message.replyCount ?? 0,
+    reactions: message.reactions ?? []
   } as ChatMessage;
 }
 
@@ -96,6 +100,7 @@ export default function ChatView({
   const [isPollingReady, setIsPollingReady] = useState(false);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
+  const [threadRoot, setThreadRoot] = useState<ChatMessage | null>(null);
 
   const messagesRef = useRef(messages);
 
@@ -118,11 +123,37 @@ export default function ChatView({
         setMessages((prev) => {
           const existing = new Set(prev.map((m) => m.id));
           const merged = [...prev];
+          const replyIncrements = new Map<string, number>();
+
           for (const msg of incoming) {
-            if (!existing.has(msg.id)) merged.push(msg);
+            if (!existing.has(msg.id)) {
+              merged.push(msg);
+              if (msg.parentMessage) {
+                replyIncrements.set(
+                  msg.parentMessage.id,
+                  (replyIncrements.get(msg.parentMessage.id) ?? 0) + 1
+                );
+              }
+            }
           }
-          return sortMessages(merged);
+
+          const next = replyIncrements.size
+            ? merged.map((message) =>
+                replyIncrements.has(message.id)
+                  ? {
+                      ...message,
+                      replyCount: Math.max(
+                        0,
+                        message.replyCount + (replyIncrements.get(message.id) ?? 0)
+                      )
+                    }
+                  : message
+              )
+            : merged;
+
+          return sortMessages(next);
         });
+        void markRoomRead(channel.id);
       }
 
       setPinnedMessageState(data.pinnedMessage ? parsePinned(data.pinnedMessage) : null);
@@ -149,20 +180,54 @@ export default function ChatView({
     };
   }, [poll]);
 
+  useEffect(() => {
+    void markRoomRead(channel.id);
+  }, [channel.id]);
+
+  useEffect(() => {
+    setReplyTo(null);
+    setEditingMessage(null);
+    setThreadRoot(null);
+  }, [channel.id]);
+
   const handleSend = async (body: string) => {
     if (editingMessage) {
       const updated = await editMessage(editingMessage.id, body);
       setMessages((prev) =>
         prev.map((message) =>
-          message.id === updated.id ? { ...message, ...parseMessage(updated) } : message
+          message.id === updated.id
+            ? {
+                ...message,
+                ...parseMessage(updated),
+                reactions: message.reactions,
+                replyCount: message.replyCount
+              }
+            : message
         )
       );
       setEditingMessage(null);
       return;
     }
 
-    const created = await postMessage(channel.id, body, replyTo?.id);
-    setMessages((prev) => sortMessages([...prev, parseMessage(created)]));
+    const replyTarget =
+      replyTo && messagesRef.current.some((message) => message.id === replyTo.id) ? replyTo : null;
+    if (!replyTarget) {
+      setReplyTo(null);
+    }
+    const created = await postMessage(channel.id, body, replyTarget?.id);
+    setMessages((prev) => {
+      const next = [...prev, parseMessage(created)];
+      if (replyTarget) {
+        return sortMessages(
+          next.map((message) =>
+            message.id === replyTarget.id
+              ? { ...message, replyCount: Math.max(0, message.replyCount + 1) }
+              : message
+          )
+        );
+      }
+      return sortMessages(next);
+    });
     setReplyTo(null);
   };
 
@@ -226,6 +291,64 @@ export default function ChatView({
     );
   };
 
+  const handleToggleReaction = async (messageId: string, emoji: string) => {
+    const snapshot = messagesRef.current;
+    setMessages((prev) =>
+      prev.map((message) => {
+        if (message.id !== messageId) return message;
+        const reactions = message.reactions ?? [];
+        const existing = reactions.find((reaction) => reaction.emoji === emoji);
+        if (existing) {
+          const nextCount = existing.reactedByMe ? existing.count - 1 : existing.count + 1;
+          const updated = reactions
+            .map((reaction) =>
+              reaction.emoji === emoji
+                ? {
+                    ...reaction,
+                    count: nextCount,
+                    reactedByMe: !reaction.reactedByMe
+                  }
+                : reaction
+            )
+            .filter((reaction) => reaction.count > 0);
+          return {
+            ...message,
+            reactions: updated
+          };
+        }
+        return {
+          ...message,
+          reactions: [
+            ...reactions,
+            {
+              emoji,
+              count: 1,
+              reactedByMe: true
+            }
+          ]
+        };
+      })
+    );
+
+    try {
+      const updated = await toggleReaction(messageId, emoji);
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === messageId ? { ...message, reactions: updated.reactions } : message
+        )
+      );
+    } catch (error) {
+      setMessages(snapshot);
+    }
+  };
+
+  const threadMessages = useMemo(() => {
+    if (!threadRoot) return [];
+    const root = messages.find((message) => message.id === threadRoot.id) ?? threadRoot;
+    const replies = messages.filter((message) => message.parentMessage?.id === root.id);
+    return sortMessages([root, ...replies]);
+  }, [messages, threadRoot]);
+
   return (
     <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
       <aside className="space-y-4">
@@ -256,6 +379,8 @@ export default function ChatView({
           onPin={handlePin}
           onUnpin={handleUnpin}
           onDelete={handleDelete}
+          onToggleReaction={handleToggleReaction}
+          onViewThread={(message) => setThreadRoot(message)}
           isLoading={!isPollingReady}
         />
         <Composer
@@ -284,6 +409,36 @@ export default function ChatView({
           mentionableUsers={mentionableUsers}
         />
       </section>
+
+      {threadRoot ? (
+        <Modal
+          open={Boolean(threadRoot)}
+          onClose={() => setThreadRoot(null)}
+          title={`Thread (${threadRoot.replyCount})`}
+        >
+          <ChatThread
+            messages={threadMessages}
+            pinnedMessage={null}
+            canModerate={canModerate}
+            currentUserId={currentUserId}
+            onReply={(message) => {
+              if (message.deletedAt) return;
+              setReplyTo(message);
+              setEditingMessage(null);
+            }}
+            onEdit={(message) => {
+              if (message.deletedAt) return;
+              setEditingMessage(message);
+              setReplyTo(null);
+            }}
+            onPin={handlePin}
+            onUnpin={handleUnpin}
+            onDelete={handleDelete}
+            onToggleReaction={handleToggleReaction}
+            isLoading={false}
+          />
+        </Modal>
+      ) : null}
 
       {showMemberManagement ? (
         <Modal

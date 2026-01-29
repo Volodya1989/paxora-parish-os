@@ -1,7 +1,13 @@
-import type { ChatChannelMembershipRole, ChatChannelType, ParishRole } from "@prisma/client";
+import {
+  Prisma,
+  type ChatChannelMembershipRole,
+  type ChatChannelType,
+  type ParishRole
+} from "@prisma/client";
 import { prisma } from "@/server/db/prisma";
 import { isParishLeader } from "@/lib/permissions";
 import { getNow as defaultGetNow } from "@/lib/time/getNow";
+import { REACTION_EMOJIS } from "@/lib/chat/reactions";
 
 export type ChatChannelListItem = {
   id: string;
@@ -23,6 +29,12 @@ export type ChatMessageItem = {
   createdAt: Date;
   editedAt?: Date | null;
   deletedAt: Date | null;
+  replyCount: number;
+  reactions: {
+    emoji: string;
+    count: number;
+    reactedByMe: boolean;
+  }[];
   author: {
     id: string;
     name: string;
@@ -66,8 +78,136 @@ type ListMessagesInput = {
     id: string;
   };
   limit?: number;
+  userId?: string;
   getNow?: () => Date;
 };
+
+type ReactionSummary = {
+  emoji: string;
+  count: number;
+  reactedByMe: boolean;
+};
+
+function buildReactionSummary(
+  messageIds: string[],
+  counts: Array<{ messageId: string; emoji: string; count: number }>,
+  reacted: Array<{ messageId: string; emoji: string }>
+) {
+  const countMap = new Map<string, Map<string, number>>();
+  const reactedMap = new Map<string, Set<string>>();
+
+  counts.forEach((entry) => {
+    const map = countMap.get(entry.messageId) ?? new Map<string, number>();
+    map.set(entry.emoji, entry.count);
+    countMap.set(entry.messageId, map);
+  });
+
+  reacted.forEach((entry) => {
+    const set = reactedMap.get(entry.messageId) ?? new Set<string>();
+    set.add(entry.emoji);
+    reactedMap.set(entry.messageId, set);
+  });
+
+  const summaryMap = new Map<string, ReactionSummary[]>();
+
+  messageIds.forEach((messageId) => {
+    const messageCounts = countMap.get(messageId);
+    if (!messageCounts) {
+      summaryMap.set(messageId, []);
+      return;
+    }
+
+    const reactedSet = reactedMap.get(messageId) ?? new Set<string>();
+    const summary = REACTION_EMOJIS.flatMap((emoji) => {
+      const count = messageCounts.get(emoji);
+      if (!count) return [];
+      return [
+        {
+          emoji,
+          count,
+          reactedByMe: reactedSet.has(emoji)
+        }
+      ];
+    });
+
+    summaryMap.set(messageId, summary);
+  });
+
+  return summaryMap;
+}
+
+async function listReactionsForMessages(messageIds: string[], userId?: string) {
+  if (messageIds.length === 0) {
+    return new Map<string, ReactionSummary[]>();
+  }
+
+  const [counts, reacted] = await Promise.all([
+    prisma.chatReaction.groupBy({
+      by: ["messageId", "emoji"],
+      where: {
+        messageId: {
+          in: messageIds
+        }
+      },
+      _count: {
+        _all: true
+      }
+    }),
+    userId
+      ? prisma.chatReaction.findMany({
+          where: {
+            userId,
+            messageId: {
+              in: messageIds
+            }
+          },
+          select: {
+            messageId: true,
+            emoji: true
+          }
+        })
+      : Promise.resolve([])
+  ]);
+
+  const normalizedCounts = counts.map((entry) => ({
+    messageId: entry.messageId,
+    emoji: entry.emoji,
+    count: entry._count._all
+  }));
+
+  return buildReactionSummary(messageIds, normalizedCounts, reacted);
+}
+
+export async function listUnreadCountsForRooms(roomIds: string[], userId: string) {
+  if (roomIds.length === 0) {
+    return new Map<string, number>();
+  }
+
+  const rows = await prisma.$queryRaw<
+    Array<{
+      roomId: string;
+      count: number;
+    }>
+  >(
+    Prisma.sql`
+      SELECT m."channelId" as "roomId", COUNT(*)::int as "count"
+      FROM "ChatMessage" m
+      LEFT JOIN "ChatRoomReadState" r
+        ON r."roomId" = m."channelId" AND r."userId" = ${userId}
+      WHERE m."channelId" IN (${Prisma.join(roomIds)})
+        AND m."authorId" != ${userId}
+        AND m."createdAt" > COALESCE(r."lastReadAt", '1970-01-01')
+      GROUP BY m."channelId"
+    `
+  );
+
+  const map = new Map<string, number>();
+  rows.forEach((row) => {
+    map.set(row.roomId, Number(row.count));
+  });
+
+  return map;
+}
 
 export async function listChannelsForUser(parishId: string, userId: string) {
   const parishMembership = await prisma.membership.findUnique({
@@ -151,7 +291,7 @@ export async function listChannelsForUser(parishId: string, userId: string) {
     }
   });
 
-  return channels
+  const visibleChannels = channels
     .filter((channel) => {
       if (channel.type === "GROUP") {
         return true;
@@ -180,7 +320,17 @@ export async function listChannelsForUser(parishId: string, userId: string) {
           : channel._count.memberships === 0
             ? true
             : channel.memberships.length > 0 || isLeader
-    })) as ChatChannelListItem[];
+    }));
+
+  const unreadCounts = await listUnreadCountsForRooms(
+    visibleChannels.map((channel) => channel.id),
+    userId
+  );
+
+  return visibleChannels.map((channel) => ({
+    ...channel,
+    unreadCount: unreadCounts.get(channel.id) ?? 0
+  })) as ChatChannelListItem[];
 }
 
 export async function getChannelById(parishId: string, channelId: string) {
@@ -208,7 +358,13 @@ export async function getChannelById(parishId: string, channelId: string) {
   });
 }
 
-export async function listMessages({ channelId, cursor, limit = 50, getNow }: ListMessagesInput) {
+export async function listMessages({
+  channelId,
+  cursor,
+  limit = 50,
+  userId,
+  getNow
+}: ListMessagesInput) {
   const resolveNow = getNow ?? defaultGetNow;
   void resolveNow;
 
@@ -243,6 +399,11 @@ export async function listMessages({ channelId, cursor, limit = 50, getNow }: Li
       createdAt: true,
       editedAt: true,
       deletedAt: true,
+      _count: {
+        select: {
+          replies: true
+        }
+      },
       parentMessage: {
         select: {
           id: true,
@@ -268,12 +429,17 @@ export async function listMessages({ channelId, cursor, limit = 50, getNow }: Li
     }
   });
 
+  const messageIds = messages.map((message) => message.id);
+  const reactionMap = await listReactionsForMessages(messageIds, userId);
+
   return messages.map((message) => ({
     id: message.id,
     body: message.body,
     createdAt: message.createdAt,
     editedAt: message.editedAt,
     deletedAt: message.deletedAt,
+    replyCount: message._count.replies ?? 0,
+    reactions: reactionMap.get(message.id) ?? [],
     author: {
       id: message.author.id,
       name: message.author.name ?? message.author.email ?? "Parish member"
@@ -296,7 +462,7 @@ export async function listMessages({ channelId, cursor, limit = 50, getNow }: Li
   })) as ChatMessageItem[];
 }
 
-export async function getPinnedMessage(channelId: string) {
+export async function getPinnedMessage(channelId: string, userId?: string) {
   const pinned = await prisma.chatPinnedMessage.findUnique({
     where: {
       channelId
@@ -319,6 +485,11 @@ export async function getPinnedMessage(channelId: string) {
           createdAt: true,
           editedAt: true,
           deletedAt: true,
+          _count: {
+            select: {
+              replies: true
+            }
+          },
           parentMessage: {
             select: {
               id: true,
@@ -350,6 +521,8 @@ export async function getPinnedMessage(channelId: string) {
     return null;
   }
 
+  const reactions = await listReactionsForMessages([pinned.message.id], userId);
+
   return {
     id: pinned.id,
     messageId: pinned.messageId,
@@ -364,6 +537,8 @@ export async function getPinnedMessage(channelId: string) {
       createdAt: pinned.message.createdAt,
       editedAt: pinned.message.editedAt,
       deletedAt: pinned.message.deletedAt,
+      replyCount: pinned.message._count.replies ?? 0,
+      reactions: reactions.get(pinned.message.id) ?? [],
       author: {
         id: pinned.message.author.id,
         name: pinned.message.author.name ?? pinned.message.author.email ?? "Parish member"

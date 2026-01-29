@@ -175,6 +175,8 @@ model User {
   chatMessages     ChatMessage[]
   chatChannelMemberships ChatChannelMembership[]
   chatPinnedMessages ChatPinnedMessage[] @relation("ChatPinnedBy")
+  chatReactions    ChatReaction[]
+  chatRoomReadStates ChatRoomReadState[]
   accounts         Account[]
   sessions         Session[]
   emailLogs        EmailLog[]
@@ -340,6 +342,7 @@ model ChatChannel {
   messages ChatMessage[]
   memberships ChatChannelMembership[]
   pinnedMessage ChatPinnedMessage?
+  readStates ChatRoomReadState[]
 
   @@index([parishId])
 }
@@ -359,6 +362,7 @@ model ChatMessage {
   parentMessage ChatMessage? @relation("ChatMessageReplies", fields: [parentMessageId], references: [id], onDelete: SetNull)
   replies ChatMessage[] @relation("ChatMessageReplies")
   pinned ChatPinnedMessage?
+  reactions ChatReaction[]
 
   @@index([channelId, createdAt, id])
   @@index([parentMessageId])
@@ -388,6 +392,35 @@ model ChatPinnedMessage {
   channel ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
   message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
   pinnedBy User @relation("ChatPinnedBy", fields: [pinnedById], references: [id], onDelete: Cascade)
+}
+
+model ChatReaction {
+  id String @id @default(cuid())
+  messageId String
+  userId String
+  emoji String
+  createdAt DateTime @default(now())
+
+  message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+  @@index([userId])
+}
+
+model ChatRoomReadState {
+  id String @id @default(cuid())
+  roomId String
+  userId String
+  lastReadAt DateTime
+  updatedAt DateTime @updatedAt
+
+  room ChatChannel @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
+  @@index([userId])
 }
 
 model Task {

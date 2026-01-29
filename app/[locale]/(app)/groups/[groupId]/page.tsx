@@ -140,7 +140,7 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
         <div className="flex flex-wrap items-center gap-3">
           {canAccessChat ? (
             <Link
-              className="text-sm font-medium text-ink-900 underline"
+              className="inline-flex items-center justify-center rounded-button bg-primary-700 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-primary-600 focus-ring"
               href={`/groups/${group.id}/chat`}
             >
               Group chat

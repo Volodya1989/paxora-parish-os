@@ -98,6 +98,7 @@ export default function GroupCard({
   const memberSuffix =
     typeof group.memberCount === "number" && group.memberCount === 1 ? "member" : "members";
   const isMember = group.viewerMembershipStatus === "ACTIVE";
+  const canOpenChat = isMember && !isArchived && group.status === "ACTIVE";
   const isInvited = group.viewerMembershipStatus === "INVITED";
   const isRequested = group.viewerMembershipStatus === "REQUESTED";
   const showJoinActions = !isMember && !isInvited && !isRequested && !isArchived && !isPending;
@@ -197,13 +198,20 @@ export default function GroupCard({
           {isRequested ? <Badge tone="warning">Request pending</Badge> : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {isMember && !isArchived ? (
-            <Link
-              className="text-xs font-medium text-ink-700 underline"
-              href={`/groups/${group.id}/chat`}
-            >
-              Open chat
-            </Link>
+          {canOpenChat ? (
+            <div className="flex items-center gap-2">
+              <Link
+                className={cn(
+                  "inline-flex items-center justify-center rounded-button bg-primary-700 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-primary-600 focus-ring"
+                )}
+                href={`/groups/${group.id}/chat`}
+              >
+                Open chat
+              </Link>
+              {group.unreadCount && group.unreadCount > 0 ? (
+                <Badge tone="warning">{group.unreadCount}</Badge>
+              ) : null}
+            </div>
           ) : null}
           {isMember && !isArchived ? (
             <Button type="button" variant="ghost" size="sm" onClick={onLeave}>

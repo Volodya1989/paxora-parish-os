@@ -10,6 +10,8 @@ function serializeMessage(message: Awaited<ReturnType<typeof listMessages>>[numb
     createdAt: message.createdAt.toISOString(),
     editedAt: message.editedAt ? message.editedAt.toISOString() : null,
     deletedAt: message.deletedAt ? message.deletedAt.toISOString() : null,
+    replyCount: message.replyCount,
+    reactions: message.reactions,
     parentMessage: message.parentMessage
       ? {
           ...message.parentMessage,
@@ -35,6 +37,8 @@ function serializePinned(pinned: Awaited<ReturnType<typeof getPinnedMessage>>) {
       createdAt: pinned.message.createdAt.toISOString(),
       editedAt: pinned.message.editedAt ? pinned.message.editedAt.toISOString() : null,
       deletedAt: pinned.message.deletedAt ? pinned.message.deletedAt.toISOString() : null,
+      replyCount: pinned.message.replyCount,
+      reactions: pinned.message.reactions,
       parentMessage: pinned.message.parentMessage
         ? {
             ...pinned.message.parentMessage,
@@ -93,8 +97,8 @@ export async function GET(
   }
 
   const [messages, pinned] = await Promise.all([
-    listMessages({ channelId, cursor, limit: 50 }),
-    getPinnedMessage(channelId)
+    listMessages({ channelId, cursor, limit: 50, userId }),
+    getPinnedMessage(channelId, userId)
   ]);
 
   return NextResponse.json({

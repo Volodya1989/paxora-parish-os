@@ -19,7 +19,8 @@ const baseGroup: GroupListItem = {
   createdBy: { name: "Alex Kim", email: "alex@example.com" },
   memberCount: 4,
   viewerMembershipStatus: null,
-  viewerMembershipRole: null
+  viewerMembershipRole: null,
+  unreadCount: 0
 };
 
 test("GroupCard renders name, member count, and archive menu items", () => {
@@ -67,4 +68,47 @@ test("GroupCard shows restore option for archived groups", () => {
   );
 
   assert.match(markup, />Restore</);
+});
+
+test("GroupCard shows unread badge when available", () => {
+  const markup = renderToStaticMarkup(
+    withI18n(
+      createElement(GroupCard, {
+        group: { ...baseGroup, unreadCount: 3, viewerMembershipStatus: "ACTIVE" },
+        canManageGroup: false,
+        canManageMembers: false,
+        onEdit: () => undefined,
+        onArchive: () => undefined,
+        onRestore: () => undefined,
+        onManageMembers: () => undefined,
+        onJoin: () => undefined,
+        onRequestJoin: () => undefined,
+        onLeave: () => undefined
+      })
+    )
+  );
+
+  assert.match(markup, />3</);
+  assert.match(markup, /Open chat/);
+});
+
+test("GroupCard hides chat CTA for non-members", () => {
+  const markup = renderToStaticMarkup(
+    withI18n(
+      createElement(GroupCard, {
+        group: { ...baseGroup, viewerMembershipStatus: null },
+        canManageGroup: false,
+        canManageMembers: false,
+        onEdit: () => undefined,
+        onArchive: () => undefined,
+        onRestore: () => undefined,
+        onManageMembers: () => undefined,
+        onJoin: () => undefined,
+        onRequestJoin: () => undefined,
+        onLeave: () => undefined
+      })
+    )
+  );
+
+  assert.doesNotMatch(markup, /Open chat/);
 });

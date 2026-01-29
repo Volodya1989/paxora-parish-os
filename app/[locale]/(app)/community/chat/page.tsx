@@ -54,8 +54,8 @@ export default async function CommunityChatPage({ searchParams }: CommunityChatP
   }
 
   const [messages, pinnedMessage, channelMembers] = await Promise.all([
-    listMessages({ channelId: selectedChannel.id }),
-    getPinnedMessage(selectedChannel.id),
+    listMessages({ channelId: selectedChannel.id, userId }),
+    getPinnedMessage(selectedChannel.id, userId),
     selectedChannel.type !== "GROUP"
       ? listChannelMembers(parishId, selectedChannel.id)
       : Promise.resolve(undefined)

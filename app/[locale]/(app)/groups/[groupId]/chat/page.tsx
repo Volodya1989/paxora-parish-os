@@ -95,8 +95,8 @@ export default async function GroupChatPage({ params }: GroupChatPageProps) {
   const canPost = canPostGroupChannel(parishMembership.role, isMember);
 
   const [messages, pinnedMessage, groupMembers] = await Promise.all([
-    listMessages({ channelId: selectedChannel.id }),
-    getPinnedMessage(selectedChannel.id),
+    listMessages({ channelId: selectedChannel.id, userId }),
+    getPinnedMessage(selectedChannel.id, userId),
     prisma.groupMembership.findMany({
       where: {
         groupId,

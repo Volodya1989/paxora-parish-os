@@ -18,6 +18,12 @@ export type ChatMessage = {
   createdAt: Date;
   editedAt?: Date | null;
   deletedAt: Date | null;
+  replyCount: number;
+  reactions: {
+    emoji: string;
+    count: number;
+    reactedByMe: boolean;
+  }[];
   author: {
     id: string;
     name: string;
