@@ -350,11 +350,16 @@ export default function ChatView({
   }, [messages, threadRoot]);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
-      <aside className="space-y-4">
-        <ChannelList channels={channels} activeChannelId={channel.id} />
+    <div className="flex flex-col gap-4 lg:flex-row lg:gap-6">
+      {/* Sidebar - collapsible on mobile */}
+      <aside className="hidden w-full shrink-0 lg:block lg:w-56">
+        <div className="sticky top-4 rounded-lg border border-mist-100 bg-white p-2">
+          <ChannelList channels={channels} activeChannelId={channel.id} />
+        </div>
       </aside>
-      <section className="space-y-4">
+      
+      {/* Main chat area */}
+      <section className="min-w-0 flex-1 space-y-3">
         <ChatHeader
           channel={{ ...channel, lockedAt }}
           canModerate={canModerate}
@@ -409,6 +414,8 @@ export default function ChatView({
           mentionableUsers={mentionableUsers}
         />
       </section>
+      
+      {/* Mobile channel list toggle would go here if needed */}
 
       {threadRoot ? (
         <Modal

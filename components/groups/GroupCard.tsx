@@ -1,8 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import {
@@ -15,8 +14,6 @@ import type { GroupListItem } from "@/lib/queries/groups";
 import { cn } from "@/lib/ui/cn";
 import { useTranslations } from "@/lib/i18n/provider";
 
-const placeholderNames = ["Alex", "Jordan", "Casey", "Morgan", "Riley", "Quinn", "Harper"];
-
 function getInitials(name: string) {
   return name
     .split(" ")
@@ -25,32 +22,6 @@ function getInitials(name: string) {
     .slice(0, 2)
     .join("")
     .toUpperCase();
-}
-
-function hashString(value: string) {
-  return value.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-}
-
-function buildAvatarInitials(name: string, memberCount: number | null) {
-  const baseInitials = getInitials(name) || "GR";
-  const avatarCount = memberCount && memberCount > 0 ? Math.min(3, memberCount) : 2;
-  const seed = hashString(name);
-  const initials = [baseInitials];
-
-  for (let i = 1; i < avatarCount; i += 1) {
-    const placeholder = placeholderNames[(seed + i) % placeholderNames.length];
-    initials.push(getInitials(placeholder));
-  }
-
-  return initials;
-}
-
-function formatDate(date: Date) {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric"
-  }).format(date);
 }
 
 type GroupCardProps = {
@@ -84,19 +55,14 @@ export default function GroupCard({
 }: GroupCardProps) {
   const t = useTranslations();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const isArchived = Boolean(group.archivedAt);
   const isPending = group.status === "PENDING_APPROVAL";
   const isRejected = group.status === "REJECTED";
   const open = forceMenuOpen ?? menuOpen;
 
-  const avatarInitials = useMemo(
-    () => buildAvatarInitials(group.name, group.memberCount),
-    [group.memberCount, group.name]
-  );
-
-  const memberCountLabel = group.memberCount ?? "—";
-  const memberSuffix =
-    typeof group.memberCount === "number" && group.memberCount === 1 ? "member" : "members";
+  const initials = getInitials(group.name) || "GR";
+  const memberCount = group.memberCount ?? 0;
   const isMember = group.viewerMembershipStatus === "ACTIVE";
   const canOpenChat = isMember && !isArchived && group.status === "ACTIVE";
   const isInvited = group.viewerMembershipStatus === "INVITED";
@@ -115,134 +81,150 @@ export default function GroupCard({
   };
 
   return (
-    <Card className={cn("space-y-4", isBusy && "opacity-70")}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-lg font-semibold text-ink-900">{group.name}</h3>
-            {isArchived ? <Badge tone="warning">Archived</Badge> : null}
-            {isPending ? <Badge tone="warning">Pending approval</Badge> : null}
-            {isRejected ? <Badge tone="neutral">Not approved</Badge> : null}
-            <Badge tone={group.visibility === "PUBLIC" ? "success" : "neutral"}>
+    <div className={cn(
+      "rounded-lg border border-mist-100 bg-white transition",
+      isBusy && "opacity-70"
+    )}>
+      {/* Compact row - always visible */}
+      <div className="flex items-center gap-3 p-3">
+        {/* Group avatar */}
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-semibold text-emerald-800">
+          {initials}
+        </div>
+
+        {/* Group info */}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <h3 className="truncate text-sm font-semibold text-ink-900">{group.name}</h3>
+            <Badge tone={group.visibility === "PUBLIC" ? "success" : "neutral"} className="shrink-0 text-[10px]">
               {group.visibility === "PUBLIC" ? t("common.public") : t("common.private")}
             </Badge>
+            {isArchived ? <Badge tone="warning" className="shrink-0 text-[10px]">Archived</Badge> : null}
+          </div>
+          <p className="mt-0.5 text-xs text-ink-500">
+            {memberCount} {memberCount === 1 ? "member" : "members"}
+            {group.unreadCount && group.unreadCount > 0 ? (
+              <span className="ml-2 font-medium text-amber-600">
+                {group.unreadCount} new
+              </span>
+            ) : null}
+          </p>
+        </div>
+
+        {/* Actions */}
+        <div className="flex shrink-0 items-center gap-1">
+          {showMenu ? (
+            <Dropdown
+              open={open}
+              onOpenChange={(nextOpen) => {
+                if (forceMenuOpen === undefined) {
+                  setMenuOpen(nextOpen);
+                }
+              }}
+            >
+              <DropdownTrigger asChild iconOnly aria-label="Group options">
+                <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0 text-ink-400">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                  </svg>
+                </Button>
+              </DropdownTrigger>
+              <DropdownMenu ariaLabel="Group menu">
+                {canManageGroup ? <DropdownItem onClick={onEdit}>Edit</DropdownItem> : null}
+                {canManageGroup ? (
+                  isArchived ? (
+                    <DropdownItem onClick={onRestore}>Restore</DropdownItem>
+                  ) : (
+                    <DropdownItem onClick={onArchive}>Archive</DropdownItem>
+                  )
+                ) : null}
+                {canManageMembers ? (
+                  <DropdownItem onClick={onManageMembers}>Manage members</DropdownItem>
+                ) : null}
+              </DropdownMenu>
+            </Dropdown>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => setExpanded(!expanded)}
+            className="flex h-8 w-8 items-center justify-center rounded text-ink-400 hover:bg-mist-50 hover:text-ink-600"
+            aria-label={expanded ? "Hide details" : "Show details"}
+          >
+            <svg
+              className={cn("h-4 w-4 transition-transform", expanded && "rotate-180")}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Expanded content */}
+      {expanded ? (
+        <div className="border-t border-mist-100 px-3 py-3">
+          {/* Status badges */}
+          <div className="flex flex-wrap items-center gap-2">
+            {isPending ? <Badge tone="warning">Pending approval</Badge> : null}
+            {isRejected ? <Badge tone="neutral">Not approved</Badge> : null}
+            {isMember ? <Badge tone="neutral">Member</Badge> : null}
+            {isInvited ? <Badge tone="warning">Invited</Badge> : null}
+            {isRequested ? <Badge tone="warning">Request pending</Badge> : null}
             <Badge tone="neutral">
               {group.joinPolicy === "OPEN"
                 ? "Join instantly"
                 : group.joinPolicy === "REQUEST_TO_JOIN"
-                ? "Request approval"
-                : "Invite only"}
+                  ? "Request approval"
+                  : "Invite only"}
             </Badge>
           </div>
+
+          {/* Description */}
           {group.description?.trim() ? (
-            <p className="text-sm text-ink-500">{group.description}</p>
+            <p className="mt-2 text-sm text-ink-600">{group.description}</p>
           ) : null}
-        </div>
-        {showMenu ? (
-          <Dropdown
-            open={open}
-            onOpenChange={(nextOpen) => {
-              if (forceMenuOpen === undefined) {
-                setMenuOpen(nextOpen);
-              }
-            }}
-          >
-            <DropdownTrigger asChild iconOnly aria-label="Group options">
-              <Button type="button" variant="ghost" size="sm" className="text-ink-500">
-                ⋯
-              </Button>
-            </DropdownTrigger>
-            <DropdownMenu ariaLabel="Group menu">
-              {canManageGroup ? <DropdownItem onClick={onEdit}>Edit</DropdownItem> : null}
-              {canManageGroup ? (
-                isArchived ? (
-                  <DropdownItem onClick={onRestore}>Restore</DropdownItem>
-                ) : (
-                  <DropdownItem onClick={onArchive}>Archive</DropdownItem>
-                )
-              ) : null}
-              {canManageMembers ? (
-                <DropdownItem onClick={onManageMembers}>Manage members</DropdownItem>
-              ) : null}
-            </DropdownMenu>
-          </Dropdown>
-        ) : null}
-      </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="flex -space-x-2">
-            {avatarInitials.map((initials, index) => (
-              <span
-                key={`${initials}-${index}`}
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-white bg-emerald-100 text-xs font-semibold text-emerald-800"
-              >
-                {initials}
-              </span>
-            ))}
-          </div>
-          <div>
-            <p className="text-xs uppercase tracking-wide text-ink-400">Members</p>
-            <p className="text-sm font-semibold text-ink-700">
-              {memberCountLabel === "—" ? "—" : `${memberCountLabel} ${memberSuffix}`}
-            </p>
-          </div>
-        </div>
-        <p className="text-xs text-ink-400">Last updated {formatDate(group.createdAt)}</p>
-      </div>
-
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2 text-xs text-ink-500">
-          {isMember ? <Badge tone="neutral">Member</Badge> : null}
-          {isInvited ? <Badge tone="warning">Invited</Badge> : null}
-          {isRequested ? <Badge tone="warning">Request pending</Badge> : null}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {canOpenChat ? (
-            <div className="flex items-center gap-2">
+          {/* Action buttons */}
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {canOpenChat ? (
               <Link
-                className={cn(
-                  "inline-flex items-center justify-center rounded-button bg-primary-700 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-primary-600 focus-ring"
-                )}
+                className="inline-flex items-center justify-center rounded-lg bg-primary-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-primary-600"
                 href={`/groups/${group.id}/chat`}
               >
                 Open chat
               </Link>
-              {group.unreadCount && group.unreadCount > 0 ? (
-                <Badge tone="warning">{group.unreadCount}</Badge>
-              ) : null}
-            </div>
-          ) : null}
-          {isMember && !isArchived ? (
-            <Button type="button" variant="ghost" size="sm" onClick={onLeave}>
-              Leave group
-            </Button>
-          ) : null}
-          {showJoinActions ? (
-            group.joinPolicy === "INVITE_ONLY" ? (
-              <span className="text-xs font-medium text-ink-400">Invite only</span>
-            ) : (
-              <Button type="button" size="sm" onClick={joinAction}>
-                {group.joinPolicy === "OPEN" ? "Join" : "Request to join"}
+            ) : null}
+            {showJoinActions ? (
+              group.joinPolicy === "INVITE_ONLY" ? (
+                <span className="text-sm text-ink-400">Invite only</span>
+              ) : (
+                <Button type="button" size="sm" onClick={joinAction}>
+                  {group.joinPolicy === "OPEN" ? "Join" : "Request to join"}
+                </Button>
+              )
+            ) : null}
+            {isMember && !isArchived ? (
+              <Button type="button" variant="ghost" size="sm" onClick={onLeave}>
+                Leave group
               </Button>
-            )
-          ) : null}
-          {canManageMembers ? (
+            ) : null}
             <Link
-              className="text-xs font-medium text-ink-700 underline"
+              className="text-sm font-medium text-ink-600 hover:text-ink-900"
               href={`/groups/${group.id}/members`}
             >
               Members
             </Link>
-          ) : null}
-          <Link
-            className="text-xs font-medium text-ink-700 underline"
-            href={`/groups/${group.id}`}
-          >
-            View details
-          </Link>
+            <Link
+              className="text-sm font-medium text-ink-600 hover:text-ink-900"
+              href={`/groups/${group.id}`}
+            >
+              View details
+            </Link>
+          </div>
         </div>
-      </div>
-    </Card>
+      ) : null}
+    </div>
   );
 }
