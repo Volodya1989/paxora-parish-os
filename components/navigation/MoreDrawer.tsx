@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
-import { moreNavItems } from "@/components/navigation/navItems";
+import { getMoreNavItems, type NavRole } from "@/components/navigation/navItems";
 import { SignOutButton } from "@/components/navigation/SignOutButton";
 import { useTranslations } from "@/lib/i18n/provider";
 
@@ -11,11 +11,13 @@ type MoreDrawerProps = {
   open: boolean;
   onClose: () => void;
   onSignOut?: () => Promise<void> | void;
+  parishRole?: NavRole;
 };
 
-export function MoreDrawer({ open, onClose, onSignOut }: MoreDrawerProps) {
+export function MoreDrawer({ open, onClose, onSignOut, parishRole }: MoreDrawerProps) {
   const t = useTranslations();
   const firstItemRef = useRef<HTMLAnchorElement | null>(null);
+  const items = getMoreNavItems(parishRole);
 
   useEffect(() => {
     if (!open) {
@@ -59,7 +61,7 @@ export function MoreDrawer({ open, onClose, onSignOut }: MoreDrawerProps) {
       >
         <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-mist-200" />
         <div className="space-y-2">
-          {moreNavItems.map((item, index) => (
+          {items.map((item, index) => (
             <Link
               key={item.href}
               href={item.href}
