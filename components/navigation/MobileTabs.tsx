@@ -106,7 +106,12 @@ export function MobileTabs({
           </button>
         </div>
       </nav>
-      <MoreDrawer open={open} onClose={handleClose} onSignOut={onSignOut} />
+      <MoreDrawer
+        open={open}
+        onClose={handleClose}
+        onSignOut={onSignOut}
+        parishRole={parishRole}
+      />
     </>
   );
 }

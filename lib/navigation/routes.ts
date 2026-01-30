@@ -4,5 +4,6 @@ export const routes = {
   gratitudeBoard: "/gratitude-board",
   calendar: "/calendar",
   groups: "/groups",
-  announcements: "/announcements"
+  announcements: "/announcements",
+  adminPeople: "/admin/people"
 } as const;

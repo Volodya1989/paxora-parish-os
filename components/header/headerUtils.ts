@@ -28,6 +28,7 @@ export function getPageTitleKey(pathname: string) {
   if (normalized.startsWith("/groups")) return "nav.groups";
   if (normalized.startsWith("/calendar")) return "nav.calendar";
   if (normalized.startsWith("/announcements")) return "nav.announcements";
+  if (normalized.startsWith("/admin/people")) return "nav.people";
   if (normalized.startsWith("/profile")) return "nav.profile";
   return "nav.thisWeek";
 }

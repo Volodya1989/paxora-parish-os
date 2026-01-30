@@ -25,13 +25,15 @@ test("More drawer contains expected items", () => {
       createElement(MobileTabs, {
         currentPath: "/tasks",
         isMoreOpen: true,
-        onMoreOpenChange: () => undefined
+        onMoreOpenChange: () => undefined,
+        parishRole: "ADMIN"
       })
     )
   );
 
   assert.match(openMarkup, /role="dialog"/);
   assert.match(openMarkup, /Announcements/);
+  assert.match(openMarkup, /People/);
   assert.match(openMarkup, /Profile/);
   assert.match(openMarkup, /Sign out/);
 });

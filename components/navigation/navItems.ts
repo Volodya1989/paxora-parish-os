@@ -18,10 +18,27 @@ export const primaryNavItems: NavItem[] = [
 export type NavRole = "ADMIN" | "SHEPHERD" | "MEMBER" | null | undefined;
 
 export function getPrimaryNavItems(role?: NavRole) {
+  if (role === "ADMIN" || role === "SHEPHERD") {
+    return [
+      ...primaryNavItems,
+      { labelKey: "nav.people", href: routes.adminPeople, icon: "PE", testId: "people" }
+    ];
+  }
   return primaryNavItems;
 }
 
-export const moreNavItems: NavItem[] = [
+const baseMoreNavItems: NavItem[] = [
   { labelKey: "nav.announcements", href: routes.announcements, icon: "AN", testId: "announcements" },
   { labelKey: "nav.profile", href: "/profile", icon: "PR", testId: "profile" }
 ];
+
+export function getMoreNavItems(role?: NavRole) {
+  if (role === "ADMIN" || role === "SHEPHERD") {
+    return [
+      baseMoreNavItems[0],
+      { labelKey: "nav.people", href: routes.adminPeople, icon: "PE", testId: "people" },
+      baseMoreNavItems[1]
+    ];
+  }
+  return baseMoreNavItems;
+}
