@@ -4,8 +4,10 @@ import type { ParishRole } from "@prisma/client";
 import { authOptions } from "@/server/auth/options";
 import { ensureParishBootstrap } from "@/server/auth/bootstrap";
 import { prisma } from "@/server/db/prisma";
+import { isCoordinatorInParish } from "@/server/db/groups";
 import { getWeekForSelection, type WeekSelection } from "@/domain/week";
 import { getNow } from "@/lib/time/getNow";
+import { getGratitudeSpotlight } from "@/lib/queries/gratitude";
 
 export type TaskPreview = {
   id: string;
@@ -35,6 +37,7 @@ export type AnnouncementPreview = {
 };
 
 export type ThisWeekData = {
+  parishId: string;
   week: {
     id: string;
     label: string;
@@ -58,6 +61,16 @@ export type ThisWeekData = {
   };
   pendingTaskApprovals: number;
   pendingAccessRequests: number;
+  canManageSpotlight: boolean;
+  gratitudeSpotlight: {
+    enabled: boolean;
+    limit: number;
+    items: Array<{
+      id: string;
+      nomineeName: string;
+      reason: string;
+    }>;
+  };
 };
 
 function getInitials(name: string) {
@@ -100,7 +113,9 @@ export async function getThisWeekDataForUser({
     memberGroups,
     publicGroupCount,
     pendingApprovals,
-    pendingAccessRequests
+    pendingAccessRequests,
+    gratitudeSpotlight,
+    coordinatorStatus
   ] = await Promise.all([
     prisma.task.findMany({
       where: {
@@ -205,7 +220,9 @@ export async function getThisWeekDataForUser({
             status: "PENDING"
           }
         })
-      : Promise.resolve(0)
+      : Promise.resolve(0),
+    getGratitudeSpotlight({ parishId, weekId: week.id }),
+    isCoordinatorInParish(parishId, userId)
   ]);
 
   const dueByDefault = new Date(week.endsOn.getTime() - 1);
@@ -229,6 +246,7 @@ export async function getThisWeekDataForUser({
   const completionPct = tasksTotal === 0 ? 0 : Math.round((tasksDone / tasksTotal) * 100);
 
   return {
+    parishId,
     week: {
       id: week.id,
       label: week.label,
@@ -256,7 +274,11 @@ export async function getThisWeekDataForUser({
       membership?.role && ["ADMIN", "SHEPHERD"].includes(membership.role)
         ? pendingApprovals
         : 0,
-    pendingAccessRequests
+    pendingAccessRequests,
+    canManageSpotlight:
+      Boolean(membership?.role && ["ADMIN", "SHEPHERD"].includes(membership.role)) ||
+      coordinatorStatus,
+    gratitudeSpotlight
   };
 }
 

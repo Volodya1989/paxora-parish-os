@@ -12,12 +12,14 @@ const VIEW_PARISHIONER = "parishioner";
 
 export function getThisWeekViewMode({
   sessionRole,
+  canManage = false,
   searchParams
 }: {
   sessionRole: ParishRole | null;
+  canManage?: boolean;
   searchParams?: ThisWeekSearchParams | undefined;
 }): ThisWeekViewMode {
-  if (!isAdminClergy(sessionRole ?? undefined)) {
+  if (!isAdminClergy(sessionRole ?? undefined) && !canManage) {
     return VIEW_PARISHIONER;
   }
 

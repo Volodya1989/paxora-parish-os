@@ -8,6 +8,7 @@ import SelectMenu from "@/components/ui/SelectMenu";
 import PageShell from "@/components/app/page-shell";
 import Card from "@/components/ui/Card";
 import TaskDetailDialog from "@/components/tasks/TaskDetailDialog";
+import TaskCompletionDialog from "@/components/tasks/TaskCompletionDialog";
 import { useToast } from "@/components/ui/Toast";
 import {
   claimTask,
@@ -93,6 +94,7 @@ export default function ServeBoardView({
   });
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
+  const [completeTaskId, setCompleteTaskId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   const orderStorageKey = `serve-board-order-${currentUserId}`;
@@ -184,6 +186,10 @@ export default function ServeBoardView({
     () => tasks.find((task) => task.id === detailTaskId) ?? null,
     [detailTaskId, tasks]
   );
+  const completionTask = useMemo(
+    () => tasks.find((task) => task.id === completeTaskId) ?? null,
+    [completeTaskId, tasks]
+  );
 
   const refreshBoard = () => {
     startTransition(() => {
@@ -209,8 +215,30 @@ export default function ServeBoardView({
     }
   };
 
-  const handleStatusChange = (taskId: string, status: "OPEN" | "IN_PROGRESS" | "DONE") =>
-    runTaskAction(taskId, () => updateTaskStatus({ taskId, status }));
+  const handleStatusChange = (taskId: string, status: "OPEN" | "IN_PROGRESS" | "DONE") => {
+    if (status === "DONE") {
+      setCompleteTaskId(taskId);
+      return;
+    }
+    void runTaskAction(taskId, () => updateTaskStatus({ taskId, status }));
+  };
+
+  const handleConfirmComplete = async ({
+    taskId,
+    hoursMode,
+    manualHours
+  }: {
+    taskId: string;
+    hoursMode: "estimated" | "manual" | "skip";
+    manualHours?: number | null;
+  }) => {
+    await runTaskAction(
+      taskId,
+      () => updateTaskStatus({ taskId, status: "DONE", hoursMode, manualHours }),
+      "Marked complete"
+    );
+    setCompleteTaskId(null);
+  };
 
   const handleClaim = (taskId: string) =>
     runTaskAction(taskId, () => claimTask({ taskId }), "Assigned to you");
@@ -540,6 +568,17 @@ export default function ServeBoardView({
           }
         }}
         currentUserId={currentUserId}
+        onRequestComplete={(taskId) => setCompleteTaskId(taskId)}
+      />
+      <TaskCompletionDialog
+        task={completionTask}
+        open={Boolean(completeTaskId)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCompleteTaskId(null);
+          }
+        }}
+        onConfirm={handleConfirmComplete}
       />
     </div>
   );

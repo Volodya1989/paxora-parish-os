@@ -10,6 +10,7 @@ type ProfileSettingsProps = {
   initialSettings: {
     notificationsEnabled: boolean;
     weeklyDigestEnabled: boolean;
+    volunteerHoursOptIn: boolean;
   };
 };
 
@@ -58,7 +59,9 @@ export function ProfileSettings({ initialSettings }: ProfileSettingsProps) {
   const [isPending, startTransition] = useTransition();
   const { addToast } = useToast();
 
-  const handleToggle = (key: "notificationsEnabled" | "weeklyDigestEnabled") => {
+  const handleToggle = (
+    key: "notificationsEnabled" | "weeklyDigestEnabled" | "volunteerHoursOptIn"
+  ) => {
     const nextSettings = {
       ...settings,
       [key]: !settings[key]
@@ -99,6 +102,13 @@ export function ProfileSettings({ initialSettings }: ProfileSettingsProps) {
             enabled={settings.weeklyDigestEnabled}
             disabled={isPending}
             onToggle={() => handleToggle("weeklyDigestEnabled")}
+          />
+          <ToggleRow
+            label="Share hours on leaderboards"
+            description="Opt in to be listed by name on gratitude leaderboards."
+            enabled={settings.volunteerHoursOptIn}
+            disabled={isPending}
+            onToggle={() => handleToggle("volunteerHoursOptIn")}
           />
         </div>
       </div>

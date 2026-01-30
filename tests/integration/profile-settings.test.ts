@@ -90,20 +90,24 @@ test.skip("updateProfileSettings persists and returns updated settings", async (
 
   const result = await actions.updateProfileSettings({
     notificationsEnabled: false,
-    weeklyDigestEnabled: true
+    weeklyDigestEnabled: true,
+    volunteerHoursOptIn: true
   });
 
   assert.equal(result.notificationsEnabled, false);
   assert.equal(result.weeklyDigestEnabled, true);
+  assert.equal(result.volunteerHoursOptIn, true);
 
   const stored = await prisma.user.findUnique({
     where: { id: user.id },
     select: {
       notificationsEnabled: true,
-      weeklyDigestEnabled: true
+      weeklyDigestEnabled: true,
+      volunteerHoursOptIn: true
     }
   });
 
   assert.equal(stored?.notificationsEnabled, false);
   assert.equal(stored?.weeklyDigestEnabled, true);
+  assert.equal(stored?.volunteerHoursOptIn, true);
 });

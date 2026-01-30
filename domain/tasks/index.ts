@@ -1,4 +1,5 @@
 import { canManageGroupMembership, isParishLeader } from "@/lib/permissions";
+import { calculateEstimatedHoursPerParticipant } from "@/lib/hours/allocations";
 import { getGroupMembership, getParishMembership } from "@/server/db/groups";
 import { prisma } from "@/server/db/prisma";
 
@@ -33,6 +34,11 @@ type TaskActionInput = {
   taskId: string;
   parishId: string;
   actorUserId: string;
+};
+
+export type TaskCompletionHoursInput = {
+  mode?: "estimated" | "manual" | "skip";
+  manualHours?: number | null;
 };
 
 type AssignTaskInput = TaskActionInput & {
@@ -314,24 +320,120 @@ async function createTaskActivity({
   });
 }
 
-export async function markTaskDone({ taskId, parishId, actorUserId }: TaskActionInput) {
+export async function markTaskDone({
+  taskId,
+  parishId,
+  actorUserId,
+  hours
+}: TaskActionInput & { hours?: TaskCompletionHoursInput }) {
   const task = await assertTaskStatusAccess({ taskId, parishId, actorUserId });
-
-  const updated = await prisma.task.update({
+  const parishMembership = await getParishMembership(parishId, actorUserId);
+  const isLeader = parishMembership ? isParishLeader(parishMembership.role) : false;
+  const taskDetails = await prisma.task.findUnique({
     where: { id: taskId },
-    data: {
-      status: "DONE",
-      completedAt: new Date(),
-      completedById: actorUserId,
-      inProgressAt: null,
-      updatedByUserId: actorUserId
+    select: {
+      id: true,
+      parishId: true,
+      weekId: true,
+      groupId: true,
+      ownerId: true,
+      estimatedHours: true,
+      volunteersNeeded: true,
+      volunteers: {
+        select: { userId: true }
+      }
     }
   });
 
-  await createTaskActivity({
-    taskId,
-    actorUserId,
-    description: `Marked task done${task.ownerId ? "" : " (no assignee)"}.`
+  if (!taskDetails || taskDetails.parishId !== parishId) {
+    throw new Error("Task not found");
+  }
+
+  const participants = new Set<string>();
+  if (taskDetails.ownerId) {
+    participants.add(taskDetails.ownerId);
+  }
+  taskDetails.volunteers.forEach((volunteer) => participants.add(volunteer.userId));
+
+  if (participants.size === 0 && !isLeader) {
+    throw new Error("Add at least one participant before completing this task.");
+  }
+
+  const hoursMode = hours?.mode ?? "estimated";
+  const hasParticipants = participants.size > 0;
+  // A-016: log volunteer hours when tasks are completed.
+  const shouldLogHours = hoursMode !== "skip" && hasParticipants;
+  const estimatedHours = taskDetails.estimatedHours ?? 0;
+  const volunteersNeeded = Math.max(1, taskDetails.volunteersNeeded);
+  const manualHours = hours?.manualHours ?? null;
+
+  const hoursPerParticipant =
+    hoursMode === "manual" && manualHours !== null
+      ? manualHours
+      : shouldLogHours
+        ? calculateEstimatedHoursPerParticipant({
+            estimatedHours,
+            volunteersNeeded,
+            participantCount: participants.size
+          })
+        : null;
+
+  if (hoursMode === "manual" && manualHours === null) {
+    throw new Error("Enter the hours served before completing this task.");
+  }
+
+  const updated = await prisma.$transaction(async (tx) => {
+    const updatedTask = await tx.task.update({
+      where: { id: taskId },
+      data: {
+        status: "DONE",
+        completedAt: new Date(),
+        completedById: actorUserId,
+        inProgressAt: null,
+        updatedByUserId: actorUserId
+      }
+    });
+
+    if (shouldLogHours && hoursPerParticipant !== null) {
+      await Promise.all(
+        [...participants].map((participantId) =>
+          tx.hoursEntry.upsert({
+            where: {
+              taskId_userId: {
+                taskId,
+                userId: participantId
+              }
+            },
+            update: {
+              hours: hoursPerParticipant,
+              estimatedHours: taskDetails.estimatedHours,
+              source: hoursMode === "manual" ? "MANUAL" : "ESTIMATED",
+              groupId: taskDetails.groupId
+            },
+            create: {
+              taskId,
+              userId: participantId,
+              parishId,
+              weekId: taskDetails.weekId,
+              groupId: taskDetails.groupId,
+              estimatedHours: taskDetails.estimatedHours,
+              hours: hoursPerParticipant,
+              source: hoursMode === "manual" ? "MANUAL" : "ESTIMATED"
+            }
+          })
+        )
+      );
+    }
+
+    await tx.taskActivity.create({
+      data: {
+        taskId,
+        actorId: actorUserId,
+        description: `Marked task done${task.ownerId ? "" : " (no assignee)"}.`
+      }
+    });
+
+    return updatedTask;
   });
 
   return updated;
@@ -340,21 +442,31 @@ export async function markTaskDone({ taskId, parishId, actorUserId }: TaskAction
 export async function unmarkTaskDone({ taskId, parishId, actorUserId }: TaskActionInput) {
   await assertTaskStatusAccess({ taskId, parishId, actorUserId });
 
-  const updated = await prisma.task.update({
-    where: { id: taskId },
-    data: {
-      status: "OPEN",
-      completedAt: null,
-      completedById: null,
-      inProgressAt: null,
-      updatedByUserId: actorUserId
-    }
-  });
+  const updated = await prisma.$transaction(async (tx) => {
+    const updatedTask = await tx.task.update({
+      where: { id: taskId },
+      data: {
+        status: "OPEN",
+        completedAt: null,
+        completedById: null,
+        inProgressAt: null,
+        updatedByUserId: actorUserId
+      }
+    });
 
-  await createTaskActivity({
-    taskId,
-    actorUserId,
-    description: "Reopened the task."
+    await tx.hoursEntry.deleteMany({
+      where: { taskId }
+    });
+
+    await tx.taskActivity.create({
+      data: {
+        taskId,
+        actorId: actorUserId,
+        description: "Reopened the task."
+      }
+    });
+
+    return updatedTask;
   });
 
   return updated;

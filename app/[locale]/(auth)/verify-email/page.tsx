@@ -6,11 +6,12 @@ import { buildLocalePathname, getLocaleFromParam } from "@/lib/i18n/routing";
 
 type VerifyEmailPageProps = {
   searchParams: Promise<{ token?: string }>;
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
 export default async function VerifyEmailPage({ searchParams, params }: VerifyEmailPageProps) {
-  const locale = getLocaleFromParam(params.locale);
+  const { locale: localeParam } = await params;
+  const locale = getLocaleFromParam(localeParam);
   const sp = await searchParams;
   const token = sp?.token?.trim();
 

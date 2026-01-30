@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import TaskEditDialog from "@/components/tasks/TaskEditDialog";
 import TaskDetailDialog from "@/components/tasks/TaskDetailDialog";
+import TaskCompletionDialog from "@/components/tasks/TaskCompletionDialog";
 import TaskRow from "@/components/tasks/TaskRow";
 import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
@@ -44,6 +45,7 @@ export default function TasksList({
   const [editingTask, setEditingTask] = useState<TaskListItem | null>(null);
   const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
   const [deleteTaskTarget, setDeleteTaskTarget] = useState<TaskListItem | null>(null);
+  const [completeTaskId, setCompleteTaskId] = useState<string | null>(null);
   const [showCompleted, setShowCompleted] = useState(false);
   const [, startTransition] = useTransition();
 
@@ -58,6 +60,10 @@ export default function TasksList({
   const detailTask = useMemo(
     () => tasks.find((task) => task.id === detailTaskId) ?? null,
     [detailTaskId, tasks]
+  );
+  const completionTask = useMemo(
+    () => tasks.find((task) => task.id === completeTaskId) ?? null,
+    [completeTaskId, tasks]
   );
 
   const refreshList = () => {
@@ -152,13 +158,26 @@ export default function TasksList({
   };
 
   const handleComplete = async (taskId: string) => {
+    setCompleteTaskId(taskId);
+  };
+
+  const handleConfirmComplete = async ({
+    taskId,
+    hoursMode,
+    manualHours
+  }: {
+    taskId: string;
+    hoursMode: "estimated" | "manual" | "skip";
+    manualHours?: number | null;
+  }) => {
     await runTaskAction(taskId, async () => {
-      await markTaskDone({ taskId });
+      await markTaskDone({ taskId, hoursMode, manualHours });
       addToast({
         title: "Completed",
         description: "This task is now marked as complete."
       });
     });
+    setCompleteTaskId(null);
   };
 
   const handleMarkOpen = async (taskId: string) => {
@@ -309,6 +328,17 @@ export default function TasksList({
         }}
         taskSummary={detailTask}
         currentUserId={currentUserId}
+        onRequestComplete={(taskId) => setCompleteTaskId(taskId)}
+      />
+      <TaskCompletionDialog
+        task={completionTask}
+        open={Boolean(completeTaskId)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCompleteTaskId(null);
+          }
+        }}
+        onConfirm={handleConfirmComplete}
       />
       </div>
       <Modal
