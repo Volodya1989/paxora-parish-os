@@ -26,6 +26,7 @@ type TaskDetailDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentUserId: string;
+  onRequestComplete?: (taskId: string) => void;
 };
 
 function formatTimestamp(value: string) {
@@ -60,7 +61,8 @@ export default function TaskDetailDialog({
   taskSummary,
   open,
   onOpenChange,
-  currentUserId
+  currentUserId,
+  onRequestComplete
 }: TaskDetailDialogProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -199,7 +201,11 @@ export default function TaskDetailDialog({
           {taskSummary.status === "IN_PROGRESS" ? (
             <Button
               type="button"
-              onClick={() => handleAction(() => markTaskDone({ taskId }), "Marked complete")}
+              onClick={() =>
+                onRequestComplete
+                  ? onRequestComplete(taskId)
+                  : handleAction(() => markTaskDone({ taskId }), "Marked complete")
+              }
             >
               Complete task
             </Button>

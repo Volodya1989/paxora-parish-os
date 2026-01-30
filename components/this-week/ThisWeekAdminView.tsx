@@ -7,6 +7,7 @@ import AnnouncementsPanel from "@/components/this-week/admin/AnnouncementsPanel"
 import EventsPreviewCard from "@/components/this-week/admin/EventsPreviewCard";
 import ServePreviewCard from "@/components/this-week/admin/ServePreviewCard";
 import ThisWeekAdminHero from "@/components/this-week/admin/ThisWeekAdminHero";
+import GratitudeSpotlightAdminSection from "@/components/this-week/admin/GratitudeSpotlightAdminSection";
 import type { WeekOption } from "@/components/this-week/ThisWeekHeader";
 import type { ThisWeekData } from "@/lib/queries/this-week";
 import { routes } from "@/lib/navigation/routes";
@@ -19,6 +20,19 @@ type ThisWeekAdminViewProps = {
   dateRange: string;
   now: Date;
   viewToggle?: ReactNode;
+  spotlightAdmin?: {
+    settings: {
+      enabled: boolean;
+      limit: number;
+    };
+    nominations: Array<{
+      id: string;
+      reason: string;
+      status: "DRAFT" | "PUBLISHED";
+      nominee: { id: string; name: string };
+    }>;
+    memberOptions: Array<{ id: string; name: string; label?: string }>;
+  } | null;
 };
 
 export default function ThisWeekAdminView({
@@ -27,7 +41,8 @@ export default function ThisWeekAdminView({
   weekOptions,
   dateRange,
   now,
-  viewToggle
+  viewToggle,
+  spotlightAdmin
 }: ThisWeekAdminViewProps) {
   const alerts = [
     data.pendingTaskApprovals > 0
@@ -80,6 +95,14 @@ export default function ThisWeekAdminView({
       </div>
 
       <AnnouncementsPanel announcements={data.announcements} />
+
+      <div className="grid gap-6">
+        <GratitudeSpotlightAdminSection
+          weekId={data.week.id}
+          spotlight={data.gratitudeSpotlight}
+          admin={spotlightAdmin ?? null}
+        />
+      </div>
     </div>
   );
 }

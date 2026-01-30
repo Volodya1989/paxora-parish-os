@@ -359,11 +359,19 @@ export async function getTaskDetail({ taskId }: { taskId: string }) {
   return getTaskDetailQuery({ taskId: parsed.data.taskId, actorUserId: userId });
 }
 
-export async function markTaskDone({ taskId }: { taskId: string }) {
+export async function markTaskDone({
+  taskId,
+  hoursMode,
+  manualHours
+}: {
+  taskId: string;
+  hoursMode?: "estimated" | "manual" | "skip";
+  manualHours?: number | null;
+}) {
   const session = await getServerSession(authOptions);
   const { userId, parishId } = assertSession(session);
 
-  const parsed = markTaskDoneSchema.safeParse({ taskId });
+  const parsed = markTaskDoneSchema.safeParse({ taskId, hoursMode, manualHours });
 
   if (!parsed.success) {
     throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
@@ -372,7 +380,11 @@ export async function markTaskDone({ taskId }: { taskId: string }) {
   await markTaskDoneDomain({
     taskId: parsed.data.taskId,
     parishId,
-    actorUserId: userId
+    actorUserId: userId,
+    hours: {
+      mode: parsed.data.hoursMode,
+      manualHours: parsed.data.manualHours
+    }
   });
 
   revalidatePath("/tasks");

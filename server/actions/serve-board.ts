@@ -24,10 +24,14 @@ function assertSession(session: Session | null) {
 
 export async function updateTaskStatus({
   taskId,
-  status
+  status,
+  hoursMode,
+  manualHours
 }: {
   taskId: string;
   status: "OPEN" | "IN_PROGRESS" | "DONE";
+  hoursMode?: "estimated" | "manual" | "skip";
+  manualHours?: number | null;
 }) {
   const session = await getServerSession(authOptions);
   const { userId, parishId } = assertSession(session);
@@ -37,7 +41,15 @@ export async function updateTaskStatus({
   } else if (status === "IN_PROGRESS") {
     await markTaskInProgress({ taskId, parishId, actorUserId: userId });
   } else {
-    await markTaskDone({ taskId, parishId, actorUserId: userId });
+    await markTaskDone({
+      taskId,
+      parishId,
+      actorUserId: userId,
+      hours: {
+        mode: hoursMode,
+        manualHours
+      }
+    });
   }
 
   revalidatePath("/serve-board");

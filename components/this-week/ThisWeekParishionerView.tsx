@@ -15,6 +15,7 @@ import Card from "@/components/ui/Card";
 import Link from "next/link";
 import type { ThisWeekData } from "@/lib/queries/this-week";
 import { routes } from "@/lib/navigation/routes";
+import GratitudeSpotlightCard from "@/components/gratitude/GratitudeSpotlightCard";
 import {
   formatDateRange,
   formatDayDate,
@@ -91,6 +92,20 @@ export default async function ThisWeekParishionerView({
         viewToggle={viewToggle}
       />
 
+      {/* A-016: Gratitude board entry point. */}
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-card border border-mist-200 bg-white px-4 py-3">
+        <div>
+          <p className="text-sm font-semibold text-ink-900">Hours & Gratitude Board</p>
+          <p className="text-xs text-ink-500">See this week’s gratitude and hours offered.</p>
+        </div>
+        <Link
+          href={routes.gratitudeBoard}
+          className="text-xs font-semibold text-primary-700 underline"
+        >
+          View Gratitude Board
+        </Link>
+      </div>
+
       {data.pendingTaskApprovals > 0 ? (
         <Card className="flex flex-wrap items-center justify-between gap-3 border-amber-200 bg-amber-50/70">
           <div>
@@ -150,6 +165,13 @@ export default async function ThisWeekParishionerView({
             accentClass: "border-rose-200 bg-rose-50/70 text-rose-700"
           }
         ]}
+      />
+
+      {/* A-016: Weekly gratitude spotlight. */}
+      <GratitudeSpotlightCard
+        enabled={data.gratitudeSpotlight.enabled}
+        limit={data.gratitudeSpotlight.limit}
+        items={data.gratitudeSpotlight.items}
       />
 
       <div className="space-y-5 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0">

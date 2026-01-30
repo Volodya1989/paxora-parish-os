@@ -37,6 +37,21 @@ const optionalHours = z.preprocess(
   z.number().min(0, "Estimated hours must be 0 or more").optional()
 );
 
+const optionalManualHours = z.preprocess(
+  (value) => {
+    if (typeof value !== "string") {
+      return value;
+    }
+    const trimmed = value.trim();
+    if (trimmed.length === 0) {
+      return undefined;
+    }
+    const parsed = Number(trimmed);
+    return Number.isNaN(parsed) ? value : parsed;
+  },
+  z.number().min(0, "Hours must be 0 or more").optional()
+);
+
 const optionalVolunteersNeeded = z.preprocess(
   (value) => {
     if (typeof value !== "string") {
@@ -93,7 +108,9 @@ export const createGroupTaskSchema = createTaskSchema.extend({
 });
 
 export const markTaskDoneSchema = z.object({
-  taskId: z.string().min(1)
+  taskId: z.string().min(1),
+  hoursMode: z.enum(["estimated", "manual", "skip"]).optional(),
+  manualHours: optionalManualHours
 });
 
 export const unmarkTaskDoneSchema = markTaskDoneSchema;

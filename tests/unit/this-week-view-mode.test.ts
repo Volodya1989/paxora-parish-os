@@ -22,3 +22,12 @@ test("Parishioner ignores view param", () => {
   });
   assert.equal(mode, "parishioner");
 });
+
+test("Coordinator can access admin view", () => {
+  const mode = getThisWeekViewMode({
+    sessionRole: "MEMBER",
+    canManage: true,
+    searchParams: { view: "admin" }
+  });
+  assert.equal(mode, "admin");
+});

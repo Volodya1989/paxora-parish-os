@@ -7,7 +7,7 @@ import { getWeekLabel, parseWeekSelection } from "@/domain/week";
 import { getNow } from "@/lib/time/getNow";
 import { formatDateRange } from "@/lib/this-week/formatters";
 import { getThisWeekViewMode } from "@/lib/this-week/viewMode";
-import { isAdminClergy } from "@/lib/authz/membership";
+import { getGratitudeAdminData } from "@/lib/queries/gratitude";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -50,11 +50,16 @@ export default async function ThisWeekPage({
   const dateRange = formatDateRange(data.week.startsOn, data.week.endsOn);
   const viewMode = getThisWeekViewMode({
     sessionRole: data.parishRole,
+    canManage: data.canManageSpotlight,
     searchParams: resolvedSearchParams
   });
-  const viewToggle = isAdminClergy(data.parishRole) ? (
+  const viewToggle = data.canManageSpotlight ? (
     <ThisWeekViewToggle value={viewMode} />
   ) : null;
+  const spotlightAdmin =
+    viewMode === "admin" && data.canManageSpotlight
+      ? await getGratitudeAdminData({ parishId: data.parishId, weekId: data.week.id })
+      : null;
 
   return viewMode === "admin" ? (
     <ThisWeekAdminView
@@ -64,6 +69,7 @@ export default async function ThisWeekPage({
       dateRange={dateRange}
       now={now}
       viewToggle={viewToggle}
+      spotlightAdmin={spotlightAdmin}
     />
   ) : (
     <ThisWeekParishionerView

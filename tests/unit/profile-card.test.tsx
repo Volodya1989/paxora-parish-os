@@ -28,7 +28,8 @@ test("ProfileSettings renders toggles with aria-checked state", () => {
       createElement(ProfileSettings, {
         initialSettings: {
           notificationsEnabled: true,
-          weeklyDigestEnabled: false
+          weeklyDigestEnabled: false,
+          volunteerHoursOptIn: true
         }
       })
     )

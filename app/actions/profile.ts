@@ -8,11 +8,13 @@ import { prisma } from "@/server/db/prisma";
 type UpdateProfileSettingsInput = {
   notificationsEnabled: boolean;
   weeklyDigestEnabled: boolean;
+  volunteerHoursOptIn: boolean;
 };
 
 export async function updateProfileSettings({
   notificationsEnabled,
-  weeklyDigestEnabled
+  weeklyDigestEnabled,
+  volunteerHoursOptIn
 }: UpdateProfileSettingsInput) {
   const session = await getServerSession(authOptions);
 
@@ -25,37 +27,49 @@ export async function updateProfileSettings({
     throw new Error("Missing active parish");
   }
 
-  if (typeof notificationsEnabled !== "boolean" || typeof weeklyDigestEnabled !== "boolean") {
+  if (
+    typeof notificationsEnabled !== "boolean" ||
+    typeof weeklyDigestEnabled !== "boolean" ||
+    typeof volunteerHoursOptIn !== "boolean"
+  ) {
     throw new Error("Invalid settings");
   }
 
-  const updated = await prisma.membership.upsert({
-    where: {
-      parishId_userId: {
+  const [, updatedMembership] = await Promise.all([
+    prisma.user.update({
+      where: { id: session.user.id },
+      data: { volunteerHoursOptIn },
+      select: { volunteerHoursOptIn: true }
+    }),
+    prisma.membership.upsert({
+      where: {
+        parishId_userId: {
+          parishId,
+          userId: session.user.id
+        }
+      },
+      update: {
+        notifyEmailEnabled: notificationsEnabled,
+        weeklyDigestEnabled
+      },
+      create: {
         parishId,
-        userId: session.user.id
+        userId: session.user.id,
+        notifyEmailEnabled: notificationsEnabled,
+        weeklyDigestEnabled
+      },
+      select: {
+        notifyEmailEnabled: true,
+        weeklyDigestEnabled: true
       }
-    },
-    update: {
-      notifyEmailEnabled: notificationsEnabled,
-      weeklyDigestEnabled
-    },
-    create: {
-      parishId,
-      userId: session.user.id,
-      notifyEmailEnabled: notificationsEnabled,
-      weeklyDigestEnabled
-    },
-    select: {
-      notifyEmailEnabled: true,
-      weeklyDigestEnabled: true
-    }
-  });
+    })
+  ]);
 
   revalidatePath("/profile");
 
   return {
-    notificationsEnabled: updated.notifyEmailEnabled,
-    weeklyDigestEnabled: updated.weeklyDigestEnabled
+    notificationsEnabled: updatedMembership.notifyEmailEnabled,
+    weeklyDigestEnabled: updatedMembership.weeklyDigestEnabled,
+    volunteerHoursOptIn
   };
 }

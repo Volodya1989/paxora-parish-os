@@ -19,6 +19,8 @@ import type { PendingTaskApproval } from "@/lib/queries/tasks";
 import { approveTask, rejectTask } from "@/server/actions/tasks";
 import TaskQuickAdd from "@/components/tasks/TaskQuickAdd";
 import { cn } from "@/lib/ui/cn";
+import Link from "next/link";
+import { routes } from "@/lib/navigation/routes";
 
 type TasksViewProps = {
   title?: string;
@@ -221,6 +223,12 @@ export default function TasksView({
         actions={
           <>
             {renderViewToggle("hidden md:inline-flex")}
+            <Link
+              href={routes.gratitudeBoard}
+              className="rounded-button border border-mist-200 bg-white px-3 py-2 text-xs font-semibold text-ink-700 shadow-card transition hover:bg-mist-50"
+            >
+              Hours &amp; Gratitude Board
+            </Link>
             {showCreateButton ? (
               <Button onClick={() => setIsCreateOpen(true)} className="h-9 px-3 text-sm">
                 {ctaLabel}

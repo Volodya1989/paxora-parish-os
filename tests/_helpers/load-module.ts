@@ -109,13 +109,31 @@ const unwrapDefaultIfPresent = <T,>(value: unknown) => {
 export const loadModuleFromRoot = async <T,>(path: string): Promise<T> => {
   const mod = (await import(resolveFromRoot(path))) as Record<string, unknown>;
   const preferred = preferNamedExports<T>(mod);
-  const normalized = unwrapDefaultIfPresent<T>(preferred);
+  let normalized = unwrapDefaultIfPresent<T>(preferred);
 
   if (normalized && (typeof normalized === "object" || typeof normalized === "function")) {
-    const keys = getExportKeys(normalized as Record<string, unknown>);
+    const normalizedRecord = normalized as Record<string, unknown>;
+    const keys = getExportKeys(normalizedRecord);
     if (keys.length === 1 && keys[0] === "default") {
-      return unwrapDefaultExport((normalized as Record<string, unknown>).default) as T;
+      return unwrapDefaultExport(normalizedRecord.default) as T;
     }
+
+    if ("default" in normalizedRecord) {
+      const defaultValue = normalizedRecord.default;
+      if (defaultValue && (typeof defaultValue === "object" || typeof defaultValue === "function")) {
+        normalized = unwrapDefaultExport(defaultValue) as T;
+      }
+    }
+  }
+
+  if (
+    normalized &&
+    typeof normalized === "object" &&
+    !Array.isArray(normalized) &&
+    Object.keys(normalized as Record<string, unknown>).length === 0 &&
+    mod.default
+  ) {
+    return unwrapDefaultExport(mod.default) as T;
   }
 
   return normalized;

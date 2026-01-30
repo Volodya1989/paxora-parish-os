@@ -10,6 +10,7 @@ test("Parishioner view renders quick blocks and ordered sections", () => {
     withI18n(
       createElement(ThisWeekParishionerView, {
       data: {
+        parishId: "parish-1",
         week: {
           id: "week-1",
           label: "2024-W36",
@@ -68,7 +69,13 @@ test("Parishioner view renders quick blocks and ordered sections", () => {
           completionPct: 0
         },
         pendingTaskApprovals: 0,
-        pendingAccessRequests: 0
+        pendingAccessRequests: 0,
+        canManageSpotlight: false,
+        gratitudeSpotlight: {
+          enabled: true,
+          limit: 3,
+          items: []
+        }
       },
       weekSelection: "current",
       weekOptions: [

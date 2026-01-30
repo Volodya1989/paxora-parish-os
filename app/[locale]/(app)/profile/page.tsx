@@ -8,6 +8,7 @@ import { getPendingAccessRequests } from "@/lib/queries/access";
 import { approveParishAccess, rejectParishAccess } from "@/app/actions/access";
 import ProfileCard from "@/components/profile/ProfileCard";
 import ProfileSettings from "@/components/profile/ProfileSettings";
+import VolunteerHoursCard from "@/components/profile/VolunteerHoursCard";
 
 export default async function ProfilePage() {
   const session = await getServerSession(authOptions);
@@ -27,10 +28,18 @@ export default async function ProfilePage() {
       <SectionTitle title="Profile" subtitle="Account details and preferences" />
 
       <ProfileCard name={profile.name} email={profile.email} role={profile.parishRole} />
+      <VolunteerHoursCard
+        ytdHours={profile.ytdHours}
+        tier={profile.milestoneTier}
+        bronzeHours={profile.bronzeHours}
+        silverHours={profile.silverHours}
+        goldHours={profile.goldHours}
+      />
       <ProfileSettings
         initialSettings={{
           notificationsEnabled: profile.notificationsEnabled,
-          weeklyDigestEnabled: profile.weeklyDigestEnabled
+          weeklyDigestEnabled: profile.weeklyDigestEnabled,
+          volunteerHoursOptIn: profile.volunteerHoursOptIn
         }}
       />
 
