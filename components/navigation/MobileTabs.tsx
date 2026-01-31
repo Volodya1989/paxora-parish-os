@@ -64,12 +64,12 @@ export function MobileTabs({
                   onNavigate?.(item.href);
                   setOpen(false);
                 }}
-                className={`flex flex-col items-center gap-1 rounded-button px-2 py-1 text-xs font-medium transition focus-ring ${
+                className={`flex min-w-0 flex-col items-center gap-1 rounded-button px-1.5 py-1 text-xs font-medium transition focus-ring ${
                   isActive ? "text-primary-700" : "text-ink-500"
                 }`}
               >
                 <span
-                  className={`flex h-8 w-8 items-center justify-center rounded-full border text-[10px] font-semibold ${
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-[10px] font-semibold ${
                     isActive
                       ? "border-primary-200 bg-primary-50 text-primary-700"
                       : "border-mist-200 bg-mist-100 text-ink-500"
@@ -78,7 +78,7 @@ export function MobileTabs({
                 >
                   {item.icon}
                 </span>
-                <span>{t(item.labelKey)}</span>
+                <span className="truncate text-center">{t(item.labelKey)}</span>
               </Link>
             );
           })}
@@ -88,12 +88,12 @@ export function MobileTabs({
             aria-expanded={open}
             data-testid="tab-more"
             onClick={handleMoreToggle}
-            className={`flex flex-col items-center gap-1 rounded-button px-2 py-1 text-xs font-medium transition focus-ring ${
+            className={`flex min-w-0 flex-col items-center gap-1 rounded-button px-1.5 py-1 text-xs font-medium transition focus-ring ${
               open ? "text-primary-700" : "text-ink-500"
             }`}
           >
             <span
-              className={`flex h-8 w-8 items-center justify-center rounded-full border text-[10px] font-semibold ${
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-[10px] font-semibold ${
                 open
                   ? "border-primary-200 bg-primary-50 text-primary-700"
                   : "border-mist-200 bg-mist-100 text-ink-500"
@@ -102,7 +102,7 @@ export function MobileTabs({
             >
               {t("menu.moreAbbrev")}
             </span>
-            <span>{t("menu.more")}</span>
+            <span className="truncate text-center">{t("menu.more")}</span>
           </button>
         </div>
       </nav>

@@ -18,13 +18,8 @@ export const primaryNavItems: NavItem[] = [
 
 export type NavRole = "ADMIN" | "SHEPHERD" | "MEMBER" | null | undefined;
 
-export function getPrimaryNavItems(role?: NavRole) {
-  if (role === "ADMIN" || role === "SHEPHERD") {
-    return [
-      ...primaryNavItems,
-      { labelKey: "nav.people", href: routes.adminPeople, icon: "PE", testId: "people" }
-    ];
-  }
+export function getPrimaryNavItems(_role?: NavRole) {
+  // People is always in the More drawer, not in the primary nav
   return primaryNavItems;
 }
 
