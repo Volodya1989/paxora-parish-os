@@ -75,7 +75,7 @@ export default async function AppLayout({
 
   return (
     <AppShell parishRole={membership?.role ?? null}>
-      <AppHeader />
+      <AppHeader parishRole={membership?.role ?? null} />
       <main className="flex-1 bg-mist-50 px-4 py-6 pb-[calc(6rem+env(safe-area-inset-bottom))] md:px-8 md:pb-8">
         {children}
       </main>

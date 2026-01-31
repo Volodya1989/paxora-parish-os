@@ -19,6 +19,7 @@ import {
 import { routes } from "@/lib/navigation/routes";
 import { useTranslations } from "@/lib/i18n/provider";
 import LanguageSwitcher from "@/components/navigation/LanguageSwitcher";
+import { stripLocale } from "@/lib/i18n/routing";
 
 type AddTarget = "task" | "event" | "group";
 
@@ -28,12 +29,30 @@ const addTargets: Array<{ labelKey: string; target: AddTarget; href: string }> =
   { labelKey: "menu.addGroup", target: "group", href: routes.groups }
 ];
 
-export function AppHeader() {
+type AppHeaderProps = {
+  /** User's parish role for conditional rendering */
+  parishRole?: "ADMIN" | "SHEPHERD" | "MEMBER" | null;
+};
+
+export function AppHeader({ parishRole }: AppHeaderProps) {
   const t = useTranslations();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
   const weekSelection = normalizeWeekSelection(searchParams?.get("week") ?? null);
+  const viewMode = searchParams?.get("view") ?? "parishioner";
+
+  // Check if we're on the This Week landing page as a regular member in parishioner view
+  const strippedPath = stripLocale(pathname);
+  const isThisWeekLanding = strippedPath === "/this-week" || strippedPath === "";
+  const isRegularMember = parishRole === "MEMBER" || !parishRole;
+  const isParishionerView = viewMode === "parishioner";
+
+  // Hide the admin header for regular members on the This Week page in parishioner view
+  // The parishioner landing page has its own welcoming header
+  if (isThisWeekLanding && isRegularMember && isParishionerView) {
+    return null;
+  }
 
   const handleWeekChange = (value: string) => {
     const href = buildWeekHref(pathname, searchParams?.toString() ?? "", value as "current" | "next");
