@@ -5,5 +5,6 @@ export const routes = {
   calendar: "/calendar",
   groups: "/groups",
   announcements: "/announcements",
+  parish: "/parish",
   adminPeople: "/admin/people"
 } as const;
