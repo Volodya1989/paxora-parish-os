@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "../server/db/prisma";
+import { createDefaultParishHubItems } from "../server/db/parish-hub";
 import { getWeekStartMonday, getWeekLabel } from "../domain/week";
 
 async function main() {
@@ -50,6 +51,8 @@ async function main() {
       slug: "st-paxora"
     }
   });
+
+  await createDefaultParishHubItems(parish.id);
 
   await prisma.membership.create({
     data: {

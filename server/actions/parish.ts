@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
+import { createDefaultParishHubItems } from "@/server/db/parish-hub";
 
 export async function createParish() {
   const session = await getServerSession(authOptions);
@@ -22,6 +23,8 @@ export async function createParish() {
       slug: `parish-${session.user.id.slice(0, 8)}`
     }
   });
+
+  await createDefaultParishHubItems(parish.id);
 
   await prisma.membership.create({
     data: {

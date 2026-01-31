@@ -132,6 +132,27 @@ enum ParishEmailDomainStatus {
   FAILED
 }
 
+enum ParishHubTargetType {
+  EXTERNAL
+  INTERNAL
+}
+
+enum ParishHubVisibility {
+  PUBLIC
+  LOGGED_IN
+}
+
+enum ParishIcon {
+  BULLETIN
+  MASS_TIMES
+  CONFESSION
+  WEBSITE
+  CALENDAR
+  READINGS
+  GIVING
+  CONTACT
+}
+
 model Parish {
   id                        String                  @id @default(cuid())
   name                      String
@@ -146,6 +167,8 @@ model Parish {
   bronzeHours               Float                   @default(10)
   silverHours               Float                   @default(25)
   goldHours                 Float                   @default(50)
+  hubGridEnabled            Boolean                 @default(true)
+  hubGridPublicEnabled      Boolean                 @default(false)
 
   memberships     Membership[]
   accessRequests  AccessRequest[]
@@ -160,6 +183,28 @@ model Parish {
   hoursEntries    HoursEntry[]
   heroNominations HeroNomination[]
   parishInvites   ParishInvite[]
+  hubItems        ParishHubItem[]
+}
+
+model ParishHubItem {
+  id            String              @id @default(cuid())
+  parishId      String
+  label         String
+  icon          ParishIcon
+  targetType    ParishHubTargetType
+  targetUrl     String?
+  internalRoute String?
+  visibility    ParishHubVisibility
+  order         Int
+  enabled       Boolean             @default(true)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  parish Parish @relation(fields: [parishId], references: [id], onDelete: Cascade)
+
+  @@unique([parishId, order])
+  @@index([parishId])
+  @@index([parishId, enabled])
 }
 
 model User {
