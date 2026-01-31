@@ -88,7 +88,7 @@ export default async function ThisWeekParishionerView({
       : "New opportunities";
 
   return (
-    <div className="space-y-4 overflow-x-hidden">
+    <div className="space-y-6 overflow-x-hidden">
       <ThisWeekHeader
         title="This Week"
         weekLabel={data.week.label}
@@ -105,16 +105,16 @@ export default async function ThisWeekParishionerView({
       />
 
 {/* A-016: Gratitude board entry point. */}
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-card border border-mist-200 bg-white px-4 py-3">
-        <div>
-          <p className="text-sm font-semibold text-ink-900">Hours & Gratitude Board</p>
-          <p className="text-xs text-ink-500">See this week's gratitude and hours offered.</p>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-mist-200 bg-white px-4 py-4 shadow-card transition-shadow hover:shadow-md">
+        <div className="space-y-0.5">
+          <p className="font-medium text-ink-900">Hours & Gratitude Board</p>
+          <p className="text-sm text-ink-500">See this week's gratitude and hours offered.</p>
         </div>
         <Link
           href={routes.gratitudeBoard}
-          className="text-xs font-semibold text-primary-700 underline"
+          className="rounded-button bg-mist-100 px-3 py-1.5 text-sm font-medium text-ink-700 transition-colors hover:bg-mist-200"
         >
-          View Gratitude Board
+          View Board
         </Link>
       </div>
 
@@ -122,19 +122,19 @@ export default async function ThisWeekParishionerView({
       {hubItems.length > 0 && <ParishHubPreview items={hubItems} maxVisible={6} />}
 
       {data.pendingTaskApprovals > 0 ? (
-        <Card className="flex flex-wrap items-center justify-between gap-3 border-amber-200 bg-amber-50/70">
-          <div>
-            <p className="text-sm font-semibold text-amber-800">
+        <Card className="flex flex-wrap items-center justify-between gap-4 border-amber-200 bg-amber-50/70">
+          <div className="space-y-0.5">
+            <p className="font-medium text-amber-800">
               {data.pendingTaskApprovals} approval
               {data.pendingTaskApprovals === 1 ? "" : "s"} needed
             </p>
-            <p className="text-xs text-amber-700">
+            <p className="text-sm text-amber-700">
               Review member-submitted serve items awaiting approval.
             </p>
           </div>
           <Link
             href={`${routes.serve}?view=opportunities`}
-            className="text-sm font-semibold text-amber-800 underline"
+            className="rounded-button bg-amber-200 px-3 py-1.5 text-sm font-medium text-amber-900 transition-colors hover:bg-amber-300"
           >
             Review now
           </Link>

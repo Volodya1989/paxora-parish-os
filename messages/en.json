@@ -40,10 +40,14 @@
     "close": "Close"
   },
   "empty": {
-    "noTasks": "No tasks yet",
+    "noTasks": "All clear for now",
+    "noTasksDesc": "When there are opportunities to serve, they'll appear here.",
     "noGroups": "No groups yet",
+    "noGroupsDesc": "Join a community group to connect with fellow parishioners.",
     "nothingScheduled": "Nothing scheduled",
-    "noAnnouncements": "No announcements yet"
+    "nothingScheduledDesc": "Check back soon for upcoming events and services.",
+    "noAnnouncements": "All caught up",
+    "noAnnouncementsDesc": "Check back soon for parish updates and news."
   },
   "common": {
     "private": "Private",

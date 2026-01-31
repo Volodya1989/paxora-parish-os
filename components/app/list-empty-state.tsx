@@ -1,16 +1,38 @@
 import type { ReactNode } from "react";
-import EmptyState from "@/components/ui/EmptyState";
+import EmptyState, { type EmptyStateVariant } from "@/components/ui/EmptyState";
+import { cn } from "@/lib/ui/cn";
 
 type ListEmptyStateProps = {
   title: string;
   description?: string;
   action?: ReactNode;
+  icon?: ReactNode;
+  /** Visual style variant */
+  variant?: EmptyStateVariant;
+  className?: string;
 };
 
-export default function ListEmptyState({ title, description, action }: ListEmptyStateProps) {
+/**
+ * Empty state specifically for list views.
+ * Uses calmer styling appropriate for parish community context.
+ */
+export default function ListEmptyState({
+  title,
+  description,
+  action,
+  icon,
+  variant = "calm",
+  className
+}: ListEmptyStateProps) {
   return (
-    <div className="rounded-card border border-dashed border-mist-200 bg-white p-4">
-      <EmptyState title={title} description={description ?? ""} action={action ?? null} />
+    <div className={cn("py-2", className)}>
+      <EmptyState
+        title={title}
+        description={description ?? "Check back soon for updates."}
+        action={action ?? null}
+        icon={icon}
+        variant={variant}
+      />
     </div>
   );
 }

@@ -19,11 +19,11 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-primary-700 text-white hover:bg-primary-600 disabled:bg-primary-300",
+    "bg-primary-700 text-white hover:bg-primary-600 active:bg-primary-800 disabled:bg-primary-300 shadow-sm hover:shadow",
   secondary:
-    "border border-mist-200 bg-white text-ink-900 hover:bg-mist-50 disabled:border-mist-100 disabled:text-ink-400",
-  ghost: "text-ink-700 hover:bg-mist-100 disabled:text-ink-400",
-  danger: "bg-rose-600 text-white hover:bg-rose-500 disabled:bg-rose-300"
+    "border border-mist-200 bg-white text-ink-900 hover:bg-mist-50 hover:border-mist-300 active:bg-mist-100 disabled:border-mist-100 disabled:text-ink-400",
+  ghost: "text-ink-700 hover:bg-mist-100 active:bg-mist-200 disabled:text-ink-400",
+  danger: "bg-rose-600 text-white hover:bg-rose-500 active:bg-rose-700 disabled:bg-rose-300 shadow-sm hover:shadow"
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -51,7 +51,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(function Button(
     <button
       ref={ref}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-button font-medium transition focus-ring disabled:cursor-not-allowed disabled:opacity-70",
+        "inline-flex items-center justify-center gap-2 rounded-button font-medium transition-all duration-150 focus-ring disabled:cursor-not-allowed disabled:opacity-70",
         variantClasses[variant],
         sizeClasses[size],
         className
