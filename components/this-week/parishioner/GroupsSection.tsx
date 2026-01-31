@@ -66,7 +66,7 @@ export default function GroupsSection({ groups, hasPublicGroups, className }: Gr
           {groups.slice(0, 4).map((group) => (
             <Link
               key={group.id}
-              href={`/groups/${group.id}`}
+              href={`/groups/${group.id}/chat`}
               className="group flex items-center gap-3 rounded-xl border border-mist-100 bg-white px-4 py-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-mist-200 hover:shadow-md active:scale-[0.99]"
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-600 transition-colors group-hover:bg-sky-200">
