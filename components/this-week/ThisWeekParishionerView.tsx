@@ -7,6 +7,7 @@ import {
 } from "@/components/icons/ParishIcons";
 import ThisWeekHeader, { type WeekOption } from "@/components/this-week/ThisWeekHeader";
 import QuickBlocksRow from "@/components/this-week/parishioner/QuickBlocksRow";
+import ParishHubPreview from "@/components/this-week/parishioner/ParishHubPreview";
 import SectionAnnouncements from "@/components/this-week/parishioner/SectionAnnouncements";
 import SectionSchedule from "@/components/this-week/parishioner/SectionSchedule";
 import SectionCommunity from "@/components/this-week/parishioner/SectionCommunity";
@@ -24,12 +25,22 @@ import {
 } from "@/lib/this-week/formatters";
 import { getLocaleFromCookies, getTranslations } from "@/lib/i18n/server";
 
+type HubItemPreview = {
+  id: string;
+  label: string;
+  icon: "BULLETIN" | "MASS_TIMES" | "CONFESSION" | "WEBSITE" | "CALENDAR" | "READINGS" | "GIVING" | "CONTACT" | "FACEBOOK" | "YOUTUBE" | "PRAYER" | "NEWS";
+  targetType: "EXTERNAL" | "INTERNAL";
+  targetUrl: string | null;
+  internalRoute: string | null;
+};
+
 type ThisWeekParishionerViewProps = {
   data: ThisWeekData;
   weekSelection: "previous" | "current" | "next";
   weekOptions: WeekOption[];
   now: Date;
   viewToggle?: ReactNode;
+  hubItems?: HubItemPreview[];
 };
 
 export default async function ThisWeekParishionerView({
@@ -37,7 +48,8 @@ export default async function ThisWeekParishionerView({
   weekSelection,
   weekOptions,
   now,
-  viewToggle
+  viewToggle,
+  hubItems = []
 }: ThisWeekParishionerViewProps) {
   const locale = await getLocaleFromCookies();
   const t = getTranslations(locale);
@@ -92,11 +104,11 @@ export default async function ThisWeekParishionerView({
         viewToggle={viewToggle}
       />
 
-      {/* A-016: Gratitude board entry point. */}
+{/* A-016: Gratitude board entry point. */}
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-card border border-mist-200 bg-white px-4 py-3">
         <div>
           <p className="text-sm font-semibold text-ink-900">Hours & Gratitude Board</p>
-          <p className="text-xs text-ink-500">See this week’s gratitude and hours offered.</p>
+          <p className="text-xs text-ink-500">See this week's gratitude and hours offered.</p>
         </div>
         <Link
           href={routes.gratitudeBoard}
@@ -105,6 +117,9 @@ export default async function ThisWeekParishionerView({
           View Gratitude Board
         </Link>
       </div>
+
+      {/* Parish Hub quick access */}
+      {hubItems.length > 0 && <ParishHubPreview items={hubItems} maxVisible={6} />}
 
       {data.pendingTaskApprovals > 0 ? (
         <Card className="flex flex-wrap items-center justify-between gap-3 border-amber-200 bg-amber-50/70">

@@ -8,6 +8,7 @@ import { getNow } from "@/lib/time/getNow";
 import { formatDateRange } from "@/lib/this-week/formatters";
 import { getThisWeekViewMode } from "@/lib/this-week/viewMode";
 import { getGratitudeAdminData } from "@/lib/queries/gratitude";
+import { listParishHubItemsForMember, ensureParishHubDefaults } from "@/server/actions/parish-hub";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -61,6 +62,33 @@ export default async function ThisWeekPage({
       ? await getGratitudeAdminData({ parishId: data.parishId, weekId: data.week.id })
       : null;
 
+  // Fetch Parish Hub items for parishioner view
+  let hubItems: Array<{
+    id: string;
+    label: string;
+    icon: "BULLETIN" | "MASS_TIMES" | "CONFESSION" | "WEBSITE" | "CALENDAR" | "READINGS" | "GIVING" | "CONTACT" | "FACEBOOK" | "YOUTUBE" | "PRAYER" | "NEWS";
+    targetType: "EXTERNAL" | "INTERNAL";
+    targetUrl: string | null;
+    internalRoute: string | null;
+  }> = [];
+
+  if (viewMode === "parishioner") {
+    try {
+      await ensureParishHubDefaults();
+      const items = await listParishHubItemsForMember();
+      hubItems = items.map((item) => ({
+        id: item.id,
+        label: item.label,
+        icon: item.icon as typeof hubItems[number]["icon"],
+        targetType: item.targetType,
+        targetUrl: item.targetUrl,
+        internalRoute: item.internalRoute
+      }));
+    } catch {
+      // Parish Hub not enabled or error - show nothing
+    }
+  }
+
   return viewMode === "admin" ? (
     <ThisWeekAdminView
       data={data}
@@ -78,6 +106,7 @@ export default async function ThisWeekPage({
       weekOptions={weekOptions}
       now={now}
       viewToggle={viewToggle}
+      hubItems={hubItems}
     />
   );
 }
