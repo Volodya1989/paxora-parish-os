@@ -1,7 +1,19 @@
 import { type ParishRole } from "@prisma/client";
+import { getServerSession } from "next-auth";
 import { prisma } from "@/server/db/prisma";
 import { getUserYtdHours } from "@/lib/queries/hours";
 import { getMilestoneTier, type MilestoneTier } from "@/lib/hours/milestones";
+import { authOptions } from "@/server/auth/options";
+
+export type CurrentUserProfile = {
+  name: string | null;
+  email: string;
+  birthdayMonth: number | null;
+  birthdayDay: number | null;
+  anniversaryMonth: number | null;
+  anniversaryDay: number | null;
+  greetingsOptIn: boolean;
+};
 
 export type ProfileSettings = {
   name: string | null;
@@ -90,4 +102,31 @@ export async function getProfileSettings({ userId, parishId, getNow }: GetProfil
   };
 
   return profile;
+}
+
+export async function getCurrentUserProfile(): Promise<CurrentUserProfile> {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      name: true,
+      email: true,
+      birthdayMonth: true,
+      birthdayDay: true,
+      anniversaryMonth: true,
+      anniversaryDay: true,
+      greetingsOptIn: true
+    }
+  });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  return user;
 }

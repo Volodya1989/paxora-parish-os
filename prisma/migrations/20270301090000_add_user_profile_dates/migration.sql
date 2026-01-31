@@ -1,0 +1,5 @@
+ALTER TABLE "User" ADD COLUMN "birthdayMonth" INTEGER;
+ALTER TABLE "User" ADD COLUMN "birthdayDay" INTEGER;
+ALTER TABLE "User" ADD COLUMN "anniversaryMonth" INTEGER;
+ALTER TABLE "User" ADD COLUMN "anniversaryDay" INTEGER;
+ALTER TABLE "User" ADD COLUMN "greetingsOptIn" BOOLEAN NOT NULL DEFAULT false;
