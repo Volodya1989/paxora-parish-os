@@ -75,6 +75,8 @@ export default async function ServeBoardPage() {
           pageTitle="Help Needed"
           parishName={parish?.name ?? "My Parish"}
           subtitle="Volunteer opportunities to serve our community"
+          quote="Each of you should use whatever gift you have received to serve others."
+          quoteSource="1 Peter 4:10"
           gradientClass="from-sky-500 via-sky-400 to-cyan-500"
         />
       )}

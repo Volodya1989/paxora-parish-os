@@ -12,16 +12,16 @@ test("Shepherds land on This Week", () => {
   assert.equal(getPostLoginRedirect("SHEPHERD"), buildLocalePathname(defaultLocale, "/this-week"));
 });
 
-test("Members land on opportunities", () => {
+test("Members land on This Week", () => {
   assert.equal(
     getPostLoginRedirect("MEMBER"),
-    buildLocalePathname(defaultLocale, "/tasks?view=opportunities")
+    buildLocalePathname(defaultLocale, "/this-week")
   );
 });
 
-test("Missing role lands on opportunities", () => {
+test("Missing role lands on This Week", () => {
   assert.equal(
     getPostLoginRedirect(null),
-    buildLocalePathname(defaultLocale, "/tasks?view=opportunities")
+    buildLocalePathname(defaultLocale, "/this-week")
   );
 });

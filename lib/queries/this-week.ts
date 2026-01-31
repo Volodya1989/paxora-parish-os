@@ -8,6 +8,7 @@ import { isCoordinatorInParish } from "@/server/db/groups";
 import { getWeekForSelection, type WeekSelection } from "@/domain/week";
 import { getNow } from "@/lib/time/getNow";
 import { getGratitudeSpotlight } from "@/lib/queries/gratitude";
+import { listUnreadCountsForRooms } from "@/lib/queries/chat";
 
 export type TaskPreview = {
   id: string;
@@ -52,6 +53,7 @@ export type ThisWeekData = {
     id: string;
     name: string;
     description: string | null;
+    unreadCount?: number | null;
   }>;
   hasPublicGroups: boolean;
   stats: {
@@ -245,6 +247,35 @@ export async function getThisWeekDataForUser({
   const tasksTotal = taskPreviews.length;
   const completionPct = tasksTotal === 0 ? 0 : Math.round((tasksDone / tasksTotal) * 100);
 
+  // Fetch unread counts for member groups
+  const groupChannels = await prisma.chatChannel.findMany({
+    where: {
+      group: {
+        id: {
+          in: memberGroups.map((m) => m.group.id)
+        }
+      }
+    },
+    select: {
+      id: true,
+      groupId: true
+    }
+  });
+
+  const unreadCounts = await listUnreadCountsForRooms(
+    groupChannels.map((ch) => ch.id),
+    userId
+  );
+
+  // Create a map of groupId to unreadCount
+  const unreadCountByGroupId = new Map<string, number>();
+  groupChannels.forEach((channel) => {
+    if (channel.groupId) {
+      const count = unreadCounts.get(channel.id) ?? 0;
+      unreadCountByGroupId.set(channel.groupId, count);
+    }
+  });
+
   return {
     parishId,
     week: {
@@ -263,7 +294,10 @@ export async function getThisWeekDataForUser({
       publishedAt: announcement.publishedAt
     })),
     parishRole: membership?.role ?? null,
-    memberGroups: memberGroups.map((membership) => membership.group),
+    memberGroups: memberGroups.map((m) => ({
+      ...m.group,
+      unreadCount: unreadCountByGroupId.get(m.group.id) ?? 0
+    })),
     hasPublicGroups: publicGroupCount > 0,
     stats: {
       tasksDone,

@@ -49,6 +49,8 @@ export default async function ParishHubPage() {
           pageTitle="Parish Hub"
           parishName={parish?.name ?? "My Parish"}
           subtitle="Quick links to parish resources and information"
+          quote="Welcome one another, therefore, as Christ has welcomed you."
+          quoteSource="Romans 15:7"
           gradientClass="from-primary-600 via-primary-500 to-emerald-500"
         />
       )}

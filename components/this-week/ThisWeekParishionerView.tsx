@@ -82,7 +82,13 @@ export default async function ThisWeekParishionerView({
   return (
     <div className="space-y-6 overflow-x-hidden">
       {/* Clean, welcoming header with personalized greeting */}
-      <ParishionerHeader parishName={parishName} userName={userName} actions={viewToggle} />
+      <ParishionerHeader
+        parishName={parishName}
+        userName={userName}
+        actions={viewToggle}
+        quote="Teach us to number our days, that we may gain a heart of wisdom."
+        quoteSource="Psalm 90:12"
+      />
 
       {/* Hero Section: Four Main Action Tiles */}
       <QuickBlocksRow
