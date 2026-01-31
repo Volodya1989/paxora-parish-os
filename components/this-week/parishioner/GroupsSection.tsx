@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { UsersIcon } from "@/components/icons/ParishIcons";
 import Button from "@/components/ui/Button";
+import Badge from "@/components/ui/Badge";
 import { routes } from "@/lib/navigation/routes";
 import { useTranslations } from "@/lib/i18n/provider";
 import { cn } from "@/lib/ui/cn";
@@ -11,6 +12,7 @@ type GroupPreview = {
   id: string;
   name: string;
   description: string | null;
+  unreadCount?: number | null;
 };
 
 type GroupsSectionProps = {
@@ -78,9 +80,12 @@ export default function GroupsSection({ groups, hasPublicGroups, className }: Gr
                   <p className="truncate text-sm text-ink-500">{group.description}</p>
                 )}
               </div>
-              <span className="text-ink-400 transition-transform group-hover:translate-x-0.5">
-                ›
-              </span>
+              <div className="flex items-center gap-2">
+                {group.unreadCount && group.unreadCount > 0 ? (
+                  <Badge tone="warning">{group.unreadCount}</Badge>
+                ) : null}
+                <span className="text-ink-400 transition-transform group-hover:translate-x-0.5">›</span>
+              </div>
             </Link>
           ))}
           {groups.length > 4 && (
