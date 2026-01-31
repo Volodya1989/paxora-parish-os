@@ -72,6 +72,45 @@ PageHeader (`/components/header/PageHeader.tsx`) is for **parishioner-facing pag
 - Chat or inline content owns its own title
 - Page has no meaningful title
 
+### Rule 5: The One-Quote-Per-Page Rule
+
+PageHeader supports optional inspirational quotes to reinforce page purpose and build emotional connection:
+
+**Quote Rule:**
+- ✅ Each parishioner page may display **at most ONE quote**
+- ✅ Quotes **must live ONLY inside PageHeader** (never duplicated in page content)
+- ✅ Quote content must be **inspirational, mission-aligned, or contextual** to the page
+- ✅ Quote attribution (`quoteSource`) is **optional but recommended**
+- ✅ Quote placement automatically prevents duplicate quotes (one header = one voice)
+
+**When to use quotes:**
+- Pages with mission-critical actions (Help Needed, Volunteer, Serve)
+- Pages celebrating community (Gratitude Board, Groups)
+- Pages inviting deeper engagement (This Week overview)
+
+**When NOT to use quotes:**
+- Admin/leader pages (AppHeader never shows quotes)
+- Technical pages (settings, profile)
+- Simple navigation pages without emotional resonance
+
+**PageHeader Props for Quotes:**
+```typescript
+<PageHeader
+  pageTitle="Help Needed"
+  parishName="My Parish"
+  subtitle="Volunteer opportunities to serve our community"
+  quote="'The greatest among you must be a servant.' — Matthew 23:11"
+  quoteSource="Jesus Christ"
+  gradientClass="from-sky-500 via-sky-400 to-cyan-500"
+/>
+```
+
+**Quote rendering:**
+- Displayed in italic, smaller text than title
+- Indented with a left border (visual distinction)
+- Attribution shown in lighter color, smallest font
+- Responsive: works well on mobile and desktop
+
 ## Color Mapping by Page Purpose
 
 Use gradient colors to reinforce page identity and tone:

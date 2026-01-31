@@ -107,6 +107,30 @@ Use this checklist when reviewing changes to header rendering, page layouts, or 
 
 ---
 
+### E. Quote Rule Compliance (AC-5.1 to AC-5.3)
+
+**AC-5.1: At most ONE quote per parishioner page**
+- [ ] For each parishioner page (Groups, Tasks, Serve, Gratitude, This Week, etc.):
+  - [ ] Search page content for quote text
+  - [ ] ✅ EXPECT: 0 or 1 quote visible on page
+  - [ ] ✅ EXPECT: If quote exists, it's INSIDE PageHeader (not duplicated in page content)
+  - [ ] ✅ EXPECT: Quote is inspirational/mission-aligned, not technical
+
+**AC-5.2: Quotes appear ONLY in PageHeader, never in AppHeader**
+- [ ] Inspect all admin/leader pages (Tasks admin view, Serve Board admin view, etc.)
+- [ ] ✅ EXPECT: AppHeader never contains a quote element
+- [ ] ✅ EXPECT: Quote rule applies ONLY to PageHeader (parishioner-facing)
+
+**AC-5.3: Quote attribution and rendering are correct**
+- [ ] For pages that include a quote:
+  - [ ] ✅ EXPECT: Quote text is italicized and visually distinct
+  - [ ] ✅ EXPECT: Quote attribution (`quoteSource`) is present and properly formatted
+  - [ ] ✅ EXPECT: Quote doesn't overflow on mobile (375px viewport)
+  - [ ] ✅ EXPECT: Quote color is `white/90` text with `white/70` attribution
+  - [ ] ✅ EXPECT: Quote indentation (left border) is visible
+
+---
+
 ## PR Description Template
 
 When submitting a PR that modifies headers, fill this section:
@@ -137,6 +161,8 @@ When submitting a PR that modifies headers, fill this section:
 - [ ] No orphaned headers (header stacking)
 - [ ] Tested on mobile (375px) AND desktop (1440px)
 - [ ] Language switching works with header
+- [ ] **Quote Rule**: Each page has 0–1 quote, only in PageHeader if present
+- [ ] No duplicate quotes (one header = one voice)
 ```
 
 ---
