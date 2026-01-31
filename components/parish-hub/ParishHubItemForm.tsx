@@ -17,7 +17,11 @@ const ICON_OPTIONS: Array<{ value: ParishHubIcon; label: string }> = [
   { value: "CALENDAR", label: "Calendar" },
   { value: "READINGS", label: "Readings" },
   { value: "GIVING", label: "Giving" },
-  { value: "CONTACT", label: "Contact" }
+  { value: "CONTACT", label: "Contact" },
+  { value: "FACEBOOK", label: "Facebook" },
+  { value: "YOUTUBE", label: "YouTube" },
+  { value: "PRAYER", label: "Prayer" },
+  { value: "NEWS", label: "News" }
 ];
 
 const VISIBILITY_OPTIONS: Array<{ value: "PUBLIC" | "LOGGED_IN"; label: string }> = [
