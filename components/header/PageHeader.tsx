@@ -81,6 +81,14 @@ export default function PageHeader({
             )}
           </blockquote>
         )}
+        {quote && (
+          <blockquote className="mt-4 border-l-4 border-white/40 pl-4 text-sm italic text-white/90">
+            <p>{quote}</p>
+            {quoteSource && (
+              <footer className="mt-2 text-xs text-white/70">— {quoteSource}</footer>
+            )}
+          </blockquote>
+        )}
       </div>
     </header>
   );
