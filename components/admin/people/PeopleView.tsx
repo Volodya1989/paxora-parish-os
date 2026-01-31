@@ -8,14 +8,19 @@ import Card, { CardDescription, CardHeader, CardTitle } from "@/components/ui/Ca
 import Badge from "@/components/ui/Badge";
 import EmptyState from "@/components/ui/EmptyState";
 import SectionTitle from "@/components/ui/SectionTitle";
+import Input from "@/components/ui/Input";
+import Label from "@/components/ui/Label";
+import SelectMenu from "@/components/ui/SelectMenu";
 import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
 import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@/components/ui/Dropdown";
 import { useToast } from "@/components/ui/Toast";
 import RoleChip from "@/components/groups/members/RoleChip";
 import { removeMember, updateMemberRole } from "@/app/actions/people";
-import type { ParishMemberRecord } from "@/lib/queries/people";
+import { createParishInvite, revokeParishInvite } from "@/app/actions/parishInvites";
+import type { ParishInviteRecord, ParishMemberRecord } from "@/lib/queries/people";
 import type { PeopleActionState } from "@/lib/types/people";
+import type { ParishInviteActionState } from "@/lib/types/parishInvites";
 
 const roleOptions: Array<{ role: ParishRole; label: string }> = [
   { role: "ADMIN", label: "Admin" },
@@ -23,10 +28,14 @@ const roleOptions: Array<{ role: ParishRole; label: string }> = [
   { role: "MEMBER", label: "Parishioner" }
 ];
 
-const invitesEnabled = false;
+const inviteRoleOptions = [
+  { value: "MEMBER", label: "Parishioner" },
+  { value: "SHEPHERD", label: "Clergy" },
+  { value: "ADMIN", label: "Admin" }
+] satisfies Array<{ value: ParishRole; label: string }>;
 
 const handleResult = (
-  result: PeopleActionState,
+  result: PeopleActionState | ParishInviteActionState,
   addToast: ReturnType<typeof useToast>["addToast"],
   fallback: string
 ) => {
@@ -42,14 +51,21 @@ const handleResult = (
 
 type PeopleViewProps = {
   members: ParishMemberRecord[];
+  invites: ParishInviteRecord[];
   viewerId: string;
+  parishId: string;
 };
 
-export default function PeopleView({ members, viewerId }: PeopleViewProps) {
+export default function PeopleView({ members, invites, viewerId, parishId }: PeopleViewProps) {
   const { addToast } = useToast();
   const router = useRouter();
   const [pendingMemberId, setPendingMemberId] = useState<string | null>(null);
+  const [pendingInviteId, setPendingInviteId] = useState<string | null>(null);
   const [removeTarget, setRemoveTarget] = useState<ParishMemberRecord | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<ParishRole>("MEMBER");
+  const [isPendingInvite, startInviteTransition] = useTransition();
   const [, startTransition] = useTransition();
 
   const refresh = () => {
@@ -58,7 +74,10 @@ export default function PeopleView({ members, viewerId }: PeopleViewProps) {
     });
   };
 
-  const runAction = async (action: () => Promise<PeopleActionState>, successTitle: string) => {
+  const runAction = async (
+    action: () => Promise<PeopleActionState | ParishInviteActionState>,
+    successTitle: string
+  ) => {
     const result = await action();
     if (handleResult(result, addToast, "Please try again.")) {
       addToast({
@@ -103,6 +122,50 @@ export default function PeopleView({ members, viewerId }: PeopleViewProps) {
   };
 
   const removeName = removeTarget?.name ?? removeTarget?.email ?? "this member";
+  const inviteRows = invites.map((invite) => {
+    const isBusy = pendingInviteId === invite.id;
+    const invitedBy =
+      invite.invitedBy?.name ?? invite.invitedBy?.email ?? "a parish leader";
+    return (
+      <div
+        key={invite.id}
+        className="flex flex-wrap items-start justify-between gap-3 rounded-card border border-mist-200 bg-white px-4 py-3"
+      >
+        <div>
+          <p className="text-sm font-semibold text-ink-900">{invite.email}</p>
+          <p className="text-xs text-ink-500">Invited by {invitedBy}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 text-xs text-ink-400">
+          <RoleChip role={invite.role} />
+          <Badge tone="neutral">Invited</Badge>
+          <span>
+            {invite.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            onClick={() => {
+              setPendingInviteId(invite.id);
+              void runAction(
+                async () => {
+                  const result = await revokeParishInvite({ inviteId: invite.id });
+                  setPendingInviteId(null);
+                  return result;
+                },
+                "Invite revoked"
+              );
+            }}
+            disabled={isBusy}
+          >
+            Revoke
+          </Button>
+        </div>
+      </div>
+    );
+  });
 
   const memberRows = members.map((member) => {
     const displayName = member.name ?? member.email;
@@ -175,7 +238,7 @@ export default function PeopleView({ members, viewerId }: PeopleViewProps) {
               title="No members yet"
               description="Invite parishioners to start coordinating people and roles."
               action={
-                <Button type="button" variant="secondary" disabled>
+                <Button type="button" variant="secondary" onClick={() => setInviteOpen(true)}>
                   Invite member
                 </Button>
               }
@@ -192,23 +255,21 @@ export default function PeopleView({ members, viewerId }: PeopleViewProps) {
             <CardTitle>Invites</CardTitle>
             <CardDescription>Track outstanding invitations to join your parish.</CardDescription>
           </CardHeader>
-          {invitesEnabled ? (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-ink-500">
+              Send invites to new parishioners and track who still needs to accept.
+            </p>
+            <Button type="button" variant="secondary" onClick={() => setInviteOpen(true)}>
+              Invite member
+            </Button>
+          </div>
+          {invites.length === 0 ? (
             <EmptyState
               title="No pending invites"
               description="Invites will appear here once they are sent."
             />
           ) : (
-            <div className="rounded-card border border-dashed border-mist-200 bg-mist-50/70 px-4 py-5 text-sm text-ink-500">
-              <p className="font-medium text-ink-700">Invites are not yet available.</p>
-              <p className="mt-1">
-                TODO: Enable parish invite infrastructure before exposing the invite flow.
-              </p>
-              <div className="mt-4">
-                <Button type="button" variant="secondary" disabled>
-                  Invite member
-                </Button>
-              </div>
-            </div>
+            <div className="space-y-3">{inviteRows}</div>
           )}
         </div>
       </Card>
@@ -271,6 +332,158 @@ export default function PeopleView({ members, viewerId }: PeopleViewProps) {
         <p>
           Remove {removeName} from this parish? They will lose access immediately.
         </p>
+      </Drawer>
+
+      <Modal
+        open={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+        title="Invite a parishioner"
+        footer={
+          <>
+            <Button type="button" variant="ghost" onClick={() => setInviteOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                if (!inviteEmail.trim()) {
+                  addToast({
+                    title: "Email required",
+                    description: "Enter an email address to send an invite."
+                  });
+                  return;
+                }
+                startInviteTransition(async () => {
+                  const result = await createParishInvite({
+                    parishId,
+                    email: inviteEmail.trim(),
+                    role: inviteRole
+                  });
+                  if (result.status === "error") {
+                    addToast({
+                      title: "Invite failed",
+                      description: result.message
+                    });
+                    return;
+                  }
+                  addToast({
+                    title: "Invite sent",
+                    description: "We let them know how to join the parish."
+                  });
+                  setInviteEmail("");
+                  setInviteRole("MEMBER");
+                  setInviteOpen(false);
+                  refresh();
+                });
+              }}
+              isLoading={isPendingInvite}
+            >
+              Send invite
+            </Button>
+          </>
+        }
+      >
+        <p className="mb-4 text-sm text-ink-500">
+          Send a simple invitation to join this parish community.
+        </p>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="invite-email">Email</Label>
+            <Input
+              id="invite-email"
+              type="email"
+              placeholder="name@example.com"
+              value={inviteEmail}
+              onChange={(event) => setInviteEmail(event.currentTarget.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="invite-role">Role</Label>
+            <SelectMenu
+              id="invite-role"
+              name="role"
+              value={inviteRole}
+              onValueChange={(value) => setInviteRole(value as ParishRole)}
+              options={inviteRoleOptions}
+            />
+          </div>
+        </div>
+      </Modal>
+
+      <Drawer
+        open={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+        title="Invite a parishioner"
+        footer={
+          <>
+            <Button type="button" variant="ghost" onClick={() => setInviteOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                if (!inviteEmail.trim()) {
+                  addToast({
+                    title: "Email required",
+                    description: "Enter an email address to send an invite."
+                  });
+                  return;
+                }
+                startInviteTransition(async () => {
+                  const result = await createParishInvite({
+                    parishId,
+                    email: inviteEmail.trim(),
+                    role: inviteRole
+                  });
+                  if (result.status === "error") {
+                    addToast({
+                      title: "Invite failed",
+                      description: result.message
+                    });
+                    return;
+                  }
+                  addToast({
+                    title: "Invite sent",
+                    description: "We let them know how to join the parish."
+                  });
+                  setInviteEmail("");
+                  setInviteRole("MEMBER");
+                  setInviteOpen(false);
+                  refresh();
+                });
+              }}
+              isLoading={isPendingInvite}
+            >
+              Send invite
+            </Button>
+          </>
+        }
+      >
+        <p className="mb-4 text-sm text-ink-500">
+          Send a simple invitation to join this parish community.
+        </p>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="invite-email-drawer">Email</Label>
+            <Input
+              id="invite-email-drawer"
+              type="email"
+              placeholder="name@example.com"
+              value={inviteEmail}
+              onChange={(event) => setInviteEmail(event.currentTarget.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="invite-role-drawer">Role</Label>
+            <SelectMenu
+              id="invite-role-drawer"
+              name="role"
+              value={inviteRole}
+              onValueChange={(value) => setInviteRole(value as ParishRole)}
+              options={inviteRoleOptions}
+            />
+          </div>
+        </div>
       </Drawer>
     </div>
   );

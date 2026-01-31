@@ -159,6 +159,7 @@ model Parish {
   emailLogs       EmailLog[]
   hoursEntries    HoursEntry[]
   heroNominations HeroNomination[]
+  parishInvites   ParishInvite[]
 }
 
 model User {
@@ -203,6 +204,7 @@ model User {
   hoursEntries             HoursEntry[]
   heroNominationsSent      HeroNomination[]         @relation("HeroNominationNominator")
   heroNominationsReceived  HeroNomination[]         @relation("HeroNominationNominee")
+  sentParishInvites        ParishInvite[]           @relation("ParishInviteActor")
 }
 
 model Membership {
@@ -286,6 +288,26 @@ model EmailVerificationToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, expiresAt])
+}
+
+model ParishInvite {
+  id               String     @id @default(cuid())
+  parishId         String
+  email            String
+  role             ParishRole @default(MEMBER)
+  tokenHash        String     @unique
+  expiresAt        DateTime
+  acceptedAt       DateTime?
+  revokedAt        DateTime?
+  invitedByUserId  String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  parish    Parish @relation(fields: [parishId], references: [id], onDelete: Cascade)
+  invitedBy User?  @relation("ParishInviteActor", fields: [invitedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([parishId, email])
+  @@index([expiresAt])
 }
 
 model Week {

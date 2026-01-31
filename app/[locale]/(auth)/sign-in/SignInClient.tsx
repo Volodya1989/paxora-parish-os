@@ -15,6 +15,7 @@ export default function SignInPage() {
   const locale = useLocale();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
@@ -22,6 +23,10 @@ export default function SignInPage() {
   const resetRequested = searchParams.get("reset") === "requested";
   const verifySent = searchParams.get("verify") === "sent";
   const verifySuccess = searchParams.get("verify") === "success";
+  const returnTo = searchParams.get("returnTo");
+
+  const safeReturnTo =
+    returnTo && returnTo.startsWith("/") && !returnTo.includes("://") ? returnTo : null;
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -40,7 +45,7 @@ export default function SignInPage() {
       return;
     }
 
-    window.location.href = buildLocalePathname(locale, "/post-login");
+    window.location.href = safeReturnTo ?? buildLocalePathname(locale, "/post-login");
   };
 
   return (
@@ -68,14 +73,51 @@ export default function SignInPage() {
             <label className="text-sm font-medium text-ink-700" htmlFor="password">
               Password
             </label>
-            <Input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                required
+                className="pr-16"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-1 text-xs font-medium text-ink-500 hover:text-ink-700"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  >
+                    <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                    <path d="M15.5 15.5 8.5 8.5" />
+                    <path d="M9.5 14.5a3.5 3.5 0 0 1 5-5" />
+                  </svg>
+                ) : (
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  >
+                    <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                    <circle cx="12" cy="12" r="3.5" />
+                  </svg>
+                )}
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
             <div className="text-right">
               <a
                 className="text-xs text-ink-600 underline"
@@ -110,7 +152,13 @@ export default function SignInPage() {
         </form>
         <p className="mt-4 text-sm text-ink-500">
           New here?{" "}
-          <a className="text-ink-900 underline" href={buildLocalePathname(locale, "/sign-up")}>
+          <a
+            className="text-ink-900 underline"
+            href={buildLocalePathname(
+              locale,
+              safeReturnTo ? `/sign-up?returnTo=${encodeURIComponent(safeReturnTo)}` : "/sign-up"
+            )}
+          >
             Create an account
           </a>
           .
