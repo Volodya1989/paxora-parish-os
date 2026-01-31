@@ -5,54 +5,38 @@ import {
   MegaphoneIcon,
   UsersIcon
 } from "@/components/icons/ParishIcons";
-import ThisWeekHeader, { type WeekOption } from "@/components/this-week/ThisWeekHeader";
+import ParishionerHeader from "@/components/this-week/parishioner/ParishionerHeader";
 import QuickBlocksRow from "@/components/this-week/parishioner/QuickBlocksRow";
-import ParishHubPreview from "@/components/this-week/parishioner/ParishHubPreview";
-import SectionAnnouncements from "@/components/this-week/parishioner/SectionAnnouncements";
-import SectionSchedule from "@/components/this-week/parishioner/SectionSchedule";
-import SectionCommunity from "@/components/this-week/parishioner/SectionCommunity";
-import SectionOpportunities from "@/components/this-week/parishioner/SectionOpportunities";
+import GroupsSection from "@/components/this-week/parishioner/GroupsSection";
 import Card from "@/components/ui/Card";
 import Link from "next/link";
 import type { ThisWeekData } from "@/lib/queries/this-week";
 import { routes } from "@/lib/navigation/routes";
 import GratitudeSpotlightCard from "@/components/gratitude/GratitudeSpotlightCard";
 import {
-  formatDateRange,
   formatDayDate,
-  formatShortDate,
-  formatUpdatedLabel
+  formatShortDate
 } from "@/lib/this-week/formatters";
 import { getLocaleFromCookies, getTranslations } from "@/lib/i18n/server";
-
-type HubItemPreview = {
-  id: string;
-  label: string;
-  icon: "BULLETIN" | "MASS_TIMES" | "CONFESSION" | "WEBSITE" | "CALENDAR" | "READINGS" | "GIVING" | "CONTACT" | "FACEBOOK" | "YOUTUBE" | "PRAYER" | "NEWS";
-  targetType: "EXTERNAL" | "INTERNAL";
-  targetUrl: string | null;
-  internalRoute: string | null;
-};
 
 type ThisWeekParishionerViewProps = {
   data: ThisWeekData;
   weekSelection: "previous" | "current" | "next";
-  weekOptions: WeekOption[];
   now: Date;
   viewToggle?: ReactNode;
-  hubItems?: HubItemPreview[];
+  /** Parish name for the header (MVP default: Mother of God Ukrainian Catholic Church) */
+  parishName?: string;
 };
 
 export default async function ThisWeekParishionerView({
   data,
-  weekSelection,
-  weekOptions,
-  now,
   viewToggle,
-  hubItems = []
+  parishName = "Mother of God Ukrainian Catholic Church"
 }: ThisWeekParishionerViewProps) {
   const locale = await getLocaleFromCookies();
   const t = getTranslations(locale);
+
+  // Filter and sort announcements
   const publishedAnnouncements = [...data.announcements]
     .filter((announcement) => announcement.publishedAt)
     .sort((a, b) => {
@@ -61,6 +45,7 @@ export default async function ThisWeekParishionerView({
       return bDate.getTime() - aDate.getTime();
     });
 
+  // Sort tasks by due date
   const sortedTasks = [...data.tasks].sort((a, b) => {
     if (a.dueBy && b.dueBy) {
       return a.dueBy.getTime() - b.dueBy.getTime();
@@ -70,77 +55,33 @@ export default async function ThisWeekParishionerView({
     return a.title.localeCompare(b.title);
   });
 
+  // Generate summaries for quick blocks
   const announcementsSummary =
     publishedAnnouncements.length > 0
       ? `Latest: ${publishedAnnouncements[0]?.title ?? "Parish update"}`
-      : "No new updates";
+      : t("empty.noAnnouncements");
   const servicesSummary =
     data.events.length > 0
       ? `Next: ${formatDayDate(data.events[0].startsAt)}`
       : t("empty.nothingScheduled");
   const communitySummary =
     data.memberGroups.length > 0
-      ? `${data.memberGroups.length} group${data.memberGroups.length === 1 ? "" : "s"}`
-      : "Find a community";
+      ? `${data.memberGroups.length} group${data.memberGroups.length === 1 ? "" : "s"} joined`
+      : "Find your community";
   const opportunitiesSummary =
     sortedTasks.length > 0 && sortedTasks[0]?.dueBy
       ? `Due by ${formatShortDate(sortedTasks[0].dueBy)}`
-      : "New opportunities";
+      : "Ways to help";
+
+  // Check if gratitude spotlight has actual content
+  const hasGratitudeItems = data.gratitudeSpotlight.enabled && data.gratitudeSpotlight.items.length > 0;
 
   return (
     <div className="space-y-6 overflow-x-hidden">
-      <ThisWeekHeader
-        title="This Week"
-        weekLabel={data.week.label}
-        dateRange={formatDateRange(data.week.startsOn, data.week.endsOn)}
-        updatedLabel={formatUpdatedLabel(now)}
-        completionLabel={`${data.stats.tasksDone}/${data.stats.tasksTotal} done`}
-        completionPct={data.stats.completionPct}
-        weekSelection={weekSelection}
-        weekOptions={weekOptions}
-        showCompletion={false}
-        showQuickAdd={false}
-        variant="compact"
-        viewToggle={viewToggle}
-      />
+      {/* Clean, welcoming header with parish name */}
+      <ParishionerHeader parishName={parishName} actions={viewToggle} />
 
-      {/* A-016: Gratitude board entry point. */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-mist-200 bg-white px-4 py-4 shadow-card transition-shadow hover:shadow-md">
-        <div className="space-y-0.5">
-          <p className="font-medium text-ink-900">Hours & Gratitude Board</p>
-          <p className="text-sm text-ink-500">See this week&apos;s gratitude and hours offered.</p>
-        </div>
-        <Link
-          href={routes.gratitudeBoard}
-          className="rounded-button bg-mist-100 px-3 py-1.5 text-sm font-medium text-ink-700 transition-colors hover:bg-mist-200"
-        >
-          View Board
-        </Link>
-      </div>
-
-      {/* Parish Hub quick access */}
-      {hubItems.length > 0 && <ParishHubPreview items={hubItems} maxVisible={6} />}
-
-      {data.pendingTaskApprovals > 0 ? (
-        <Card className="flex flex-wrap items-center justify-between gap-4 border-amber-200 bg-amber-50/70">
-          <div className="space-y-0.5">
-            <p className="font-medium text-amber-800">
-              {data.pendingTaskApprovals} approval
-              {data.pendingTaskApprovals === 1 ? "" : "s"} needed
-            </p>
-            <p className="text-sm text-amber-700">
-              Review member-submitted serve items awaiting approval.
-            </p>
-          </div>
-          <Link
-            href={`${routes.serve}?view=opportunities`}
-            className="rounded-button bg-amber-200 px-3 py-1.5 text-sm font-medium text-amber-900 transition-colors hover:bg-amber-300"
-          >
-            Review now
-          </Link>
-        </Card>
-      ) : null}
-
+      {/* Hero Section: Four Main Action Tiles */}
       <QuickBlocksRow
         blocks={[
           {
@@ -172,7 +113,7 @@ export default async function ThisWeekParishionerView({
           },
           {
             id: "opportunities",
-            label: "Opportunities to Help",
+            label: "Opportunities",
             href: `${routes.serve}?view=opportunities`,
             summary: opportunitiesSummary,
             count: sortedTasks.length,
@@ -182,23 +123,42 @@ export default async function ThisWeekParishionerView({
         ]}
       />
 
-      {/* A-016: Weekly gratitude spotlight. */}
-      <GratitudeSpotlightCard
-        enabled={data.gratitudeSpotlight.enabled}
-        limit={data.gratitudeSpotlight.limit}
-        items={data.gratitudeSpotlight.items}
+      {/* Admin approval notice (only if there are pending approvals) */}
+      {data.pendingTaskApprovals > 0 && (
+        <Card className="flex flex-wrap items-center justify-between gap-4 border-amber-200 bg-amber-50/70">
+          <div className="space-y-0.5">
+            <p className="font-medium text-amber-800">
+              {data.pendingTaskApprovals} approval
+              {data.pendingTaskApprovals === 1 ? "" : "s"} needed
+            </p>
+            <p className="text-sm text-amber-700">
+              Review member-submitted serve items awaiting approval.
+            </p>
+          </div>
+          <Link
+            href={`${routes.serve}?view=opportunities`}
+            className="rounded-button bg-amber-200 px-3 py-1.5 text-sm font-medium text-amber-900 transition-colors hover:bg-amber-300"
+          >
+            Review now
+          </Link>
+        </Card>
+      )}
+
+      {/* Your Groups Section - the belonging-focused section */}
+      <GroupsSection
+        groups={data.memberGroups}
+        hasPublicGroups={data.hasPublicGroups}
       />
 
-      <div className="space-y-5 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0">
-        <div className="space-y-5 lg:space-y-6">
-          <SectionAnnouncements announcements={publishedAnnouncements} />
-          <SectionSchedule events={data.events} />
-        </div>
-        <div className="space-y-5 lg:space-y-6">
-          <SectionCommunity groups={data.memberGroups} hasPublicGroups={data.hasPublicGroups} />
-          <SectionOpportunities tasks={sortedTasks} />
-        </div>
-      </div>
+      {/* Gratitude Spotlight - ONLY show if there are actual entries */}
+      {hasGratitudeItems && (
+        <GratitudeSpotlightCard
+          enabled={data.gratitudeSpotlight.enabled}
+          limit={data.gratitudeSpotlight.limit}
+          items={data.gratitudeSpotlight.items}
+          showCta
+        />
+      )}
     </div>
   );
 }

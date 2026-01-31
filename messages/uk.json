@@ -11,6 +11,15 @@
     "signIn": "Увійти",
     "signOut": "Вийти"
   },
+  "landing": {
+    "welcome": "Ласкаво просимо",
+    "home": "Головна",
+    "yourGroups": "Ваші групи",
+    "discoverGroups": "Знайти групи",
+    "noGroupsYet": "Ви ще не приєдналися до жодної групи",
+    "noGroupsDesc": "Групи допомагають спілкуватися з парафіянами зі схожими інтересами.",
+    "viewAll": "Переглянути всі"
+  },
   "header": {
     "appTitle": "Paxora Parish OS",
     "weekSwitcherLabel": "Перемикач тижня",

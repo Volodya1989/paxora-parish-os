@@ -11,6 +11,15 @@
     "signIn": "Sign in",
     "signOut": "Sign out"
   },
+  "landing": {
+    "welcome": "Welcome",
+    "home": "Home",
+    "yourGroups": "Your Groups",
+    "discoverGroups": "Discover groups",
+    "noGroupsYet": "You haven't joined any groups yet",
+    "noGroupsDesc": "Groups help you connect with fellow parishioners who share your interests.",
+    "viewAll": "View all"
+  },
   "header": {
     "appTitle": "Paxora Parish OS",
     "weekSwitcherLabel": "Week switcher",

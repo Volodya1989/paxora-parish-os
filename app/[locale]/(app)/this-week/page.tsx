@@ -8,7 +8,9 @@ import { getNow } from "@/lib/time/getNow";
 import { formatDateRange } from "@/lib/this-week/formatters";
 import { getThisWeekViewMode } from "@/lib/this-week/viewMode";
 import { getGratitudeAdminData } from "@/lib/queries/gratitude";
-import { listParishHubItemsForMember, ensureParishHubDefaults } from "@/server/actions/parish-hub";
+import { prisma } from "@/server/db/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/server/auth/options";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -62,30 +64,18 @@ export default async function ThisWeekPage({
       ? await getGratitudeAdminData({ parishId: data.parishId, weekId: data.week.id })
       : null;
 
-  // Fetch Parish Hub items for parishioner view
-  let hubItems: Array<{
-    id: string;
-    label: string;
-    icon: "BULLETIN" | "MASS_TIMES" | "CONFESSION" | "WEBSITE" | "CALENDAR" | "READINGS" | "GIVING" | "CONTACT" | "FACEBOOK" | "YOUTUBE" | "PRAYER" | "NEWS";
-    targetType: "EXTERNAL" | "INTERNAL";
-    targetUrl: string | null;
-    internalRoute: string | null;
-  }> = [];
-
+  // Fetch parish name for the header (parishioner view)
+  let parishName = "Mother of God Ukrainian Catholic Church"; // MVP default
   if (viewMode === "parishioner") {
-    try {
-      await ensureParishHubDefaults();
-      const items = await listParishHubItemsForMember();
-      hubItems = items.map((item) => ({
-        id: item.id,
-        label: item.label,
-        icon: item.icon as typeof hubItems[number]["icon"],
-        targetType: item.targetType,
-        targetUrl: item.targetUrl,
-        internalRoute: item.internalRoute
-      }));
-    } catch {
-      // Parish Hub not enabled or error - show nothing
+    const session = await getServerSession(authOptions);
+    if (session?.user?.activeParishId) {
+      const parish = await prisma.parish.findUnique({
+        where: { id: session.user.activeParishId },
+        select: { name: true }
+      });
+      if (parish?.name) {
+        parishName = parish.name;
+      }
     }
   }
 
@@ -103,10 +93,9 @@ export default async function ThisWeekPage({
     <ThisWeekParishionerView
       data={data}
       weekSelection={weekSelection}
-      weekOptions={weekOptions}
       now={now}
       viewToggle={viewToggle}
-      hubItems={hubItems}
+      parishName={parishName}
     />
   );
 }
