@@ -4,11 +4,21 @@
     "serve": "Служіння",
     "groups": "Групи",
     "calendar": "Календар",
+    "parish": "Парафія",
     "announcements": "Оголошення",
     "people": "Люди",
     "profile": "Профіль",
     "signIn": "Увійти",
     "signOut": "Вийти"
+  },
+  "landing": {
+    "welcome": "Ласкаво просимо",
+    "home": "Головна",
+    "yourGroups": "Ваші групи",
+    "discoverGroups": "Знайти групи",
+    "noGroupsYet": "Ви ще не приєдналися до жодної групи",
+    "noGroupsDesc": "Групи допомагають спілкуватися з парафіянами зі схожими інтересами.",
+    "viewAll": "Переглянути всі"
   },
   "header": {
     "appTitle": "Paxora Parish OS",
@@ -39,10 +49,14 @@
     "close": "Закрити"
   },
   "empty": {
-    "noTasks": "Ще немає завдань",
+    "noTasks": "Усе добре на даний момент",
+    "noTasksDesc": "Коли з'являться можливості служіння, вони будуть тут.",
     "noGroups": "Ще немає груп",
+    "noGroupsDesc": "Приєднуйтесь до групи, щоб спілкуватися з парафіянами.",
     "nothingScheduled": "Нічого не заплановано",
-    "noAnnouncements": "Ще немає оголошень"
+    "nothingScheduledDesc": "Перевірте пізніше для майбутніх подій та служб.",
+    "noAnnouncements": "Усе прочитано",
+    "noAnnouncementsDesc": "Перевірте пізніше для парафіяльних новин."
   },
   "common": {
     "private": "Приватне",

@@ -4,12 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Button from "@/components/ui/Button";
 import Select from "@/components/ui/Select";
-import {
-  Dropdown,
-  DropdownItem,
-  DropdownMenu,
-  DropdownTrigger
-} from "@/components/ui/Dropdown";
+import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@/components/ui/Dropdown";
 import {
   buildAddHref,
   buildWeekHref,
@@ -28,11 +23,31 @@ const addTargets: Array<{ labelKey: string; target: AddTarget; href: string }> =
   { labelKey: "menu.addGroup", target: "group", href: routes.groups }
 ];
 
-export function AppHeader() {
+type AppHeaderProps = {
+  // Note: parishRole prop is retained for backwards compatibility but not used for filtering.
+  // Header visibility is now controlled by the layout level (see /app/[locale]/(app)/layout.tsx).
+  parishRole?: "ADMIN" | "SHEPHERD" | "MEMBER" | null;
+};
+
+/**
+ * AppHeader component for leader/admin views.
+ *
+ * This header displays:
+ * - Page title based on current route
+ * - Week selector (current/next week)
+ * - "+ Add" dropdown (task, event, group)
+ * - Language switcher
+ *
+ * **Note**: This component is now only rendered for ADMIN/SHEPHERD roles.
+ * The layout checks the user role and conditionally renders this header.
+ * See /components/header/HEADER_STRATEGY.md for strategy documentation.
+ */
+export function AppHeader({ parishRole }: AppHeaderProps) {
   const t = useTranslations();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
+
   const weekSelection = normalizeWeekSelection(searchParams?.get("week") ?? null);
 
   const handleWeekChange = (value: string) => {
@@ -43,11 +58,10 @@ export function AppHeader() {
   return (
     <header className="flex flex-wrap items-center justify-between gap-4 border-b border-mist-200 bg-white/70 px-4 py-4 shadow-card md:px-8">
       <div className="space-y-1">
-        <p className="text-caption uppercase tracking-wide text-ink-400">
-          {t("header.appTitle")}
-        </p>
+        <p className="text-caption uppercase tracking-wide text-ink-400">{t("header.appTitle")}</p>
         <h1 className="text-h2">{t(getPageTitleKey(pathname))}</h1>
       </div>
+
       <div className="flex flex-wrap items-center gap-3">
         <label className="text-sm font-medium text-ink-700">
           <span className="sr-only">{t("header.weekSwitcherLabel")}</span>
@@ -56,6 +70,7 @@ export function AppHeader() {
             <option value="next">{t("header.nextWeek")}</option>
           </Select>
         </label>
+
         <div className="relative">
           <Dropdown>
             <DropdownTrigger asChild>
@@ -64,9 +79,7 @@ export function AppHeader() {
             <DropdownMenu ariaLabel={t("menu.addMenuLabel")}>
               {addTargets.map((item) => (
                 <DropdownItem key={item.target} asChild>
-                  <Link
-                    href={buildAddHref(item.href, searchParams?.toString() ?? "", item.target)}
-                  >
+                  <Link href={buildAddHref(item.href, searchParams?.toString() ?? "", item.target)}>
                     {t(item.labelKey)}
                   </Link>
                 </DropdownItem>
@@ -74,6 +87,7 @@ export function AppHeader() {
             </DropdownMenu>
           </Dropdown>
         </div>
+
         <LanguageSwitcher />
       </div>
     </header>

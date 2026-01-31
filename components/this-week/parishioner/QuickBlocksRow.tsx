@@ -33,31 +33,31 @@ export default function QuickBlocksRow({ blocks }: QuickBlocksRowProps) {
   };
 
   return (
-    <div className="px-1 pb-1 sm:px-0">
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
-        {blocks.map((block) => (
-          <button
-            key={block.id}
-            type="button"
-            onClick={() => handleNavigate(block.href)}
-            className={cn(
-              "group relative flex min-w-0 flex-col gap-1.5 rounded-card border px-3 py-2 text-left transition hover:shadow-card focus-ring",
-              block.accentClass
-            )}
-          >
-            <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/70 text-xs">
-                {block.icon}
-              </span>
-              <div className="text-xs font-semibold text-ink-900">{block.label}</div>
-              <span className="ml-auto rounded-full bg-white px-2 py-0.5 text-[11px] font-semibold text-ink-700 shadow-sm">
-                {block.count}
-              </span>
-            </div>
-            <p className="text-[11px] text-ink-500">{block.summary}</p>
-          </button>
-        ))}
-      </div>
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {blocks.map((block) => (
+        <button
+          key={block.id}
+          type="button"
+          onClick={() => handleNavigate(block.href)}
+          className={cn(
+            "group relative flex min-w-0 flex-col gap-2 rounded-card border px-3 py-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md focus-ring active:scale-[0.98]",
+            block.accentClass
+          )}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/80 shadow-sm">
+              {block.icon}
+            </span>
+            <span className="rounded-full bg-white/90 px-2 py-0.5 text-xs font-semibold text-ink-700 shadow-sm">
+              {block.count}
+            </span>
+          </div>
+          <div className="space-y-0.5">
+            <div className="text-sm font-semibold text-ink-900">{block.label}</div>
+            <p className="text-xs text-ink-500 line-clamp-1">{block.summary}</p>
+          </div>
+        </button>
+      ))}
     </div>
   );
 }

@@ -8,6 +8,9 @@ import { getNow } from "@/lib/time/getNow";
 import { formatDateRange } from "@/lib/this-week/formatters";
 import { getThisWeekViewMode } from "@/lib/this-week/viewMode";
 import { getGratitudeAdminData } from "@/lib/queries/gratitude";
+import { prisma } from "@/server/db/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/server/auth/options";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -61,6 +64,27 @@ export default async function ThisWeekPage({
       ? await getGratitudeAdminData({ parishId: data.parishId, weekId: data.week.id })
       : null;
 
+  // Fetch parish name and user name for the header (parishioner view)
+  let parishName = "Mother of God Ukrainian Catholic Church"; // MVP default
+  let userName: string | undefined;
+  if (viewMode === "parishioner") {
+    const session = await getServerSession(authOptions);
+    if (session?.user) {
+      // Get user's first name for personalized greeting
+      userName = session.user.name?.split(" ")[0];
+      
+      if (session.user.activeParishId) {
+        const parish = await prisma.parish.findUnique({
+          where: { id: session.user.activeParishId },
+          select: { name: true }
+        });
+        if (parish?.name) {
+          parishName = parish.name;
+        }
+      }
+    }
+  }
+
   return viewMode === "admin" ? (
     <ThisWeekAdminView
       data={data}
@@ -75,9 +99,10 @@ export default async function ThisWeekPage({
     <ThisWeekParishionerView
       data={data}
       weekSelection={weekSelection}
-      weekOptions={weekOptions}
       now={now}
       viewToggle={viewToggle}
+      parishName={parishName}
+      userName={userName}
     />
   );
 }

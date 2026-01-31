@@ -10,6 +10,12 @@ import ProfileCard from "@/components/profile/ProfileCard";
 import ProfileDates from "@/components/profile/ProfileDates";
 import ProfileSettings from "@/components/profile/ProfileSettings";
 import VolunteerHoursCard from "@/components/profile/VolunteerHoursCard";
+import { getParishMembership } from "@/server/db/groups";
+import { isParishLeader } from "@/lib/permissions";
+import { listParishHubItemsForAdmin, ensureParishHubDefaults } from "@/server/actions/parish-hub";
+import { prisma } from "@/server/db/prisma";
+import ParishHubAdminPanel from "@/components/parish-hub/ParishHubAdminPanel";
+import type { ParishHubAdminItem } from "@/components/parish-hub/ParishHubReorderList";
 
 /**
  * Findings: /profile is the existing account surface with session-gated reads and
@@ -32,6 +38,31 @@ export default async function ProfilePage() {
   });
   const currentProfile = await getCurrentUserProfile();
   const pendingRequests = await getPendingAccessRequests();
+
+  // Check if user is admin/shepherd for Parish Hub settings
+  const membership = session.user.activeParishId
+    ? await getParishMembership(session.user.activeParishId, session.user.id)
+    : null;
+  const isAdmin = membership ? isParishLeader(membership.role) : false;
+
+  // Load Parish Hub data for admins
+  let hubItems: ParishHubAdminItem[] = [];
+  let hubGridEnabled = false;
+  let hubGridPublicEnabled = false;
+
+  if (isAdmin && session.user.activeParishId) {
+    await ensureParishHubDefaults();
+    const [items, parishSettings] = await Promise.all([
+      listParishHubItemsForAdmin(),
+      prisma.parish.findUnique({
+        where: { id: session.user.activeParishId },
+        select: { hubGridEnabled: true, hubGridPublicEnabled: true }
+      })
+    ]);
+    hubItems = items as ParishHubAdminItem[];
+    hubGridEnabled = parishSettings?.hubGridEnabled ?? false;
+    hubGridPublicEnabled = parishSettings?.hubGridPublicEnabled ?? false;
+  }
 
   return (
     <div className="space-y-6">
@@ -61,6 +92,26 @@ export default async function ProfilePage() {
           volunteerHoursOptIn: profile.volunteerHoursOptIn
         }}
       />
+
+      {isAdmin && session.user.activeParishId && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Parish Hub</CardTitle>
+            <p className="text-sm text-ink-500">
+              Configure the parish hub grid for quick access to resources.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <ParishHubAdminPanel
+              parishId={session.user.activeParishId}
+              userId={session.user.id}
+              items={hubItems}
+              hubGridEnabled={hubGridEnabled}
+              hubGridPublicEnabled={hubGridPublicEnabled}
+            />
+          </CardContent>
+        </Card>
+      )}
 
       {pendingRequests.length ? (
         <Card>

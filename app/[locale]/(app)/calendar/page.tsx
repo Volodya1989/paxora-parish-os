@@ -8,6 +8,7 @@ import { authOptions } from "@/server/auth/options";
 import { ensureParishBootstrap } from "@/server/auth/bootstrap";
 import { listGroupsByParish, getParishMembership } from "@/server/db/groups";
 import { prisma } from "@/server/db/prisma";
+import PageHeader from "@/components/header/PageHeader";
 
 export default async function CalendarPage() {
   const session = await getServerSession(authOptions);
@@ -34,9 +35,13 @@ export default async function CalendarPage() {
   nextWeekNow.setDate(nextWeekNow.getDate() + 7);
   const nextWeekRange = getWeekRange({ now: nextWeekNow });
 
-  const [membership, groupMemberships, allGroupOptions, weekEvents, monthEvents, nextWeekEvents] =
+  const [membership, parish, groupMemberships, allGroupOptions, weekEvents, monthEvents, nextWeekEvents] =
     await Promise.all([
       getParishMembership(parishId, userId),
+      prisma.parish.findUnique({
+        where: { id: parishId },
+        select: { name: true }
+      }),
       prisma.groupMembership.findMany({
         where: {
           userId,
@@ -70,7 +75,17 @@ export default async function CalendarPage() {
         .filter((group): group is { id: string; name: string } => Boolean(group));
 
   return (
-    <CalendarView
+    <div className="space-y-6">
+      {/* Show welcoming header for regular members */}
+      {!isLeader && (
+        <PageHeader
+          pageTitle="Calendar"
+          parishName={parish?.name ?? "My Parish"}
+          subtitle="Upcoming events and activities"
+          gradientClass="from-teal-600 via-teal-500 to-emerald-500"
+        />
+      )}
+      <CalendarView
       weekRange={weekRange}
       monthRange={monthRange}
       nextWeekRange={nextWeekRange}
@@ -85,6 +100,7 @@ export default async function CalendarPage() {
       isEditor={isLeader || canCreateGroupEvents}
       groupOptions={groupOptions}
       viewerGroupIds={groupIds}
-    />
+      />
+    </div>
   );
 }

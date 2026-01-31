@@ -130,7 +130,7 @@ export async function createParishHubItem(input: {
   parishId: string;
   actorUserId: string;
   label: string;
-  icon: "BULLETIN" | "MASS_TIMES" | "CONFESSION" | "WEBSITE" | "CALENDAR" | "READINGS" | "GIVING" | "CONTACT";
+  icon: "BULLETIN" | "MASS_TIMES" | "CONFESSION" | "WEBSITE" | "CALENDAR" | "READINGS" | "GIVING" | "CONTACT" | "FACEBOOK" | "YOUTUBE" | "PRAYER" | "NEWS";
   targetType: "EXTERNAL" | "INTERNAL";
   targetUrl?: string | null;
   internalRoute?: string | null;
@@ -208,7 +208,7 @@ export async function updateParishHubItem(input: {
   actorUserId: string;
   itemId: string;
   label: string;
-  icon: "BULLETIN" | "MASS_TIMES" | "CONFESSION" | "WEBSITE" | "CALENDAR" | "READINGS" | "GIVING" | "CONTACT";
+  icon: "BULLETIN" | "MASS_TIMES" | "CONFESSION" | "WEBSITE" | "CALENDAR" | "READINGS" | "GIVING" | "CONTACT" | "FACEBOOK" | "YOUTUBE" | "PRAYER" | "NEWS";
   targetType: "EXTERNAL" | "INTERNAL";
   targetUrl?: string | null;
   internalRoute?: string | null;

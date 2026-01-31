@@ -8,12 +8,30 @@ type CardProps = HTMLAttributes<HTMLDivElement> & {
 
 /**
  * Card container for grouped content.
+ * Supports interactive variant with hover lift effect.
  */
 export function Card({ children, className, ...props }: CardProps) {
   return (
     <div
       className={cn(
-        "card-padding rounded-card border border-mist-200 bg-white shadow-card",
+        "card-padding rounded-card border border-mist-200 bg-white shadow-card transition-shadow duration-200",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+}
+
+/**
+ * Interactive card with hover effects for clickable items.
+ */
+export function InteractiveCard({ children, className, ...props }: CardProps) {
+  return (
+    <div
+      className={cn(
+        "card-padding rounded-card border border-mist-200 bg-white shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:border-mist-300 hover:shadow-md",
         className
       )}
       {...props}

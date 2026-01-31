@@ -4,6 +4,8 @@ import { authOptions } from "@/server/auth/options";
 import { listGroups } from "@/lib/queries/groups";
 import { getParishMembership } from "@/server/db/groups";
 import { isParishLeader } from "@/lib/permissions";
+import { prisma } from "@/server/db/prisma";
+import PageHeader from "@/components/header/PageHeader";
 
 export default async function GroupsPage() {
   const session = await getServerSession(authOptions);
@@ -15,20 +17,37 @@ export default async function GroupsPage() {
   const parishId = session.user.activeParishId;
   const actorUserId = session.user.id;
 
-  const membership = await getParishMembership(parishId, actorUserId);
+  const [membership, parish] = await Promise.all([
+    getParishMembership(parishId, actorUserId),
+    prisma.parish.findUnique({
+      where: { id: parishId },
+      select: { name: true }
+    })
+  ]);
 
   if (!membership) {
     throw new Error("Unauthorized");
   }
 
   const groups = await listGroups(parishId, actorUserId, membership.role, true);
+  const isLeader = isParishLeader(membership.role);
 
   return (
-    <GroupsView
-      groups={groups}
-      parishId={parishId}
-      actorUserId={actorUserId}
-      canManageGroups={isParishLeader(membership.role)}
-    />
+    <div className="space-y-6">
+      {/* Show welcoming header for regular members */}
+      {!isLeader && (
+        <PageHeader
+          pageTitle="Groups"
+          parishName={parish?.name ?? "My Parish"}
+          subtitle="Connect with fellow parishioners who share your interests"
+        />
+      )}
+      <GroupsView
+        groups={groups}
+        parishId={parishId}
+        actorUserId={actorUserId}
+        canManageGroups={isLeader}
+      />
+    </div>
   );
 }

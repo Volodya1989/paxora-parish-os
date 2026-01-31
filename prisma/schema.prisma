@@ -151,6 +151,10 @@ enum ParishIcon {
   READINGS
   GIVING
   CONTACT
+  FACEBOOK
+  YOUTUBE
+  PRAYER
+  NEWS
 }
 
 model Parish {

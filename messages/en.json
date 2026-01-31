@@ -4,11 +4,21 @@
     "serve": "Serve",
     "groups": "Groups",
     "calendar": "Calendar",
+    "parish": "Parish Hub",
     "announcements": "Announcements",
     "people": "People",
     "profile": "Profile",
     "signIn": "Sign in",
     "signOut": "Sign out"
+  },
+  "landing": {
+    "welcome": "Welcome",
+    "home": "Home",
+    "yourGroups": "Your Groups",
+    "discoverGroups": "Discover groups",
+    "noGroupsYet": "You haven't joined any groups yet",
+    "noGroupsDesc": "Groups help you connect with fellow parishioners who share your interests.",
+    "viewAll": "View all"
   },
   "header": {
     "appTitle": "Paxora Parish OS",
@@ -39,10 +49,14 @@
     "close": "Close"
   },
   "empty": {
-    "noTasks": "No tasks yet",
+    "noTasks": "All clear for now",
+    "noTasksDesc": "When there are opportunities to serve, they'll appear here.",
     "noGroups": "No groups yet",
+    "noGroupsDesc": "Join a community group to connect with fellow parishioners.",
     "nothingScheduled": "Nothing scheduled",
-    "noAnnouncements": "No announcements yet"
+    "nothingScheduledDesc": "Check back soon for upcoming events and services.",
+    "noAnnouncements": "All caught up",
+    "noAnnouncementsDesc": "Check back soon for parish updates and news."
   },
   "common": {
     "private": "Private",
