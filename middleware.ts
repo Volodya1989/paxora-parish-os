@@ -11,7 +11,8 @@ const publicPaths = new Set([
   "/post-login",
   "/verify-email",
   "/forgot-password",
-  "/reset-password"
+  "/reset-password",
+  "/invite/parish"
 ]);
 
 function isPublicPath(pathname: string) {

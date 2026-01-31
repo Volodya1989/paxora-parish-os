@@ -9,6 +9,17 @@ export type ParishMemberRecord = {
   role: ParishRole;
 };
 
+export type ParishInviteRecord = {
+  id: string;
+  email: string;
+  role: ParishRole;
+  createdAt: Date;
+  invitedBy: {
+    name: string | null;
+    email: string;
+  } | null;
+};
+
 export async function getPeopleList(parishId: string): Promise<ParishMemberRecord[]> {
   const memberships = await prisma.membership.findMany({
     where: { parishId },
@@ -32,5 +43,39 @@ export async function getPeopleList(parishId: string): Promise<ParishMemberRecor
     name: membership.user.name,
     email: membership.user.email,
     role: membership.role
+  }));
+}
+
+export async function getParishInvites(parishId: string): Promise<ParishInviteRecord[]> {
+  const invites = await prisma.parishInvite.findMany({
+    where: {
+      parishId,
+      acceptedAt: null,
+      revokedAt: null,
+      expiresAt: {
+        gt: new Date()
+      }
+    },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      email: true,
+      role: true,
+      createdAt: true,
+      invitedBy: {
+        select: {
+          name: true,
+          email: true
+        }
+      }
+    }
+  });
+
+  return invites.map((invite) => ({
+    id: invite.id,
+    email: invite.email,
+    role: invite.role,
+    createdAt: invite.createdAt,
+    invitedBy: invite.invitedBy
   }));
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useActionState, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Card from "@/components/ui/Card";
 import SectionTitle from "@/components/ui/SectionTitle";
 import Button from "@/components/ui/Button";
@@ -16,12 +16,21 @@ export default function SignUpPage() {
   const [state, formAction] = useActionState(createUser, initialState);
   const router = useRouter();
   const locale = useLocale();
+  const [showPassword, setShowPassword] = useState(false);
+  const searchParams = useSearchParams();
+  const returnTo = searchParams.get("returnTo");
+  const safeReturnTo =
+    returnTo && returnTo.startsWith("/") && !returnTo.includes("://") ? returnTo : null;
 
   useEffect(() => {
     if (state?.success) {
-      router.push(buildLocalePathname(locale, "/sign-in?verify=sent"));
+      const base = "/sign-in?verify=sent";
+      const nextPath = safeReturnTo
+        ? `${base}&returnTo=${encodeURIComponent(safeReturnTo)}`
+        : base;
+      router.push(buildLocalePathname(locale, nextPath));
     }
-  }, [locale, router, state?.success]);
+  }, [locale, router, safeReturnTo, state?.success]);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-mist-50/60 px-4 py-12">
@@ -47,14 +56,51 @@ export default function SignUpPage() {
             <label className="text-sm font-medium text-ink-700" htmlFor="password">
               Password
             </label>
-            <Input
-              id="password"
-              type="password"
-              name="password"
-              autoComplete="new-password"
-              minLength={8}
-              required
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                name="password"
+                autoComplete="new-password"
+                minLength={8}
+                required
+                className="pr-16"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-1 text-xs font-medium text-ink-500 hover:text-ink-700"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  >
+                    <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                    <path d="M15.5 15.5 8.5 8.5" />
+                    <path d="M9.5 14.5a3.5 3.5 0 0 1 5-5" />
+                  </svg>
+                ) : (
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  >
+                    <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                    <circle cx="12" cy="12" r="3.5" />
+                  </svg>
+                )}
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
           </div>
           {state?.error ? <p className="text-sm text-red-600">{state.error}</p> : null}
           {state?.success ? (
@@ -68,7 +114,13 @@ export default function SignUpPage() {
         </form>
         <p className="mt-4 text-sm text-ink-500">
           Already have an account?{" "}
-          <a className="text-ink-900 underline" href={buildLocalePathname(locale, "/sign-in")}>
+          <a
+            className="text-ink-900 underline"
+            href={buildLocalePathname(
+              locale,
+              safeReturnTo ? `/sign-in?returnTo=${encodeURIComponent(safeReturnTo)}` : "/sign-in"
+            )}
+          >
             Sign in
           </a>
           .
