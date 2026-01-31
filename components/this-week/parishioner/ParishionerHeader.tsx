@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { type ReactNode, useState, useEffect } from "react";
 import { useTranslations } from "@/lib/i18n/provider";
 import LanguageIconToggle from "@/components/navigation/LanguageIconToggle";
 import { SparklesIcon } from "@/components/icons/ParishIcons";
@@ -28,9 +28,15 @@ export default function ParishionerHeader({
 }: ParishionerHeaderProps) {
   const t = useTranslations();
 
-  // Get time-based greeting
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  // Use state to prevent hydration mismatch - start with generic greeting
+  // then update to time-based greeting on client
+  const [greeting, setGreeting] = useState("Welcome");
+
+  useEffect(() => {
+    const hour = new Date().getHours();
+    const timeGreeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+    setGreeting(timeGreeting);
+  }, []);
 
   return (
     <header className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-600 via-primary-500 to-emerald-500 px-5 py-6 text-white shadow-lg sm:px-6 sm:py-8">
