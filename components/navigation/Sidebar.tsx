@@ -7,6 +7,7 @@ import { getPrimaryNavItems, type NavRole } from "@/components/navigation/navIte
 import { SignOutButton } from "@/components/navigation/SignOutButton";
 import { stripLocale } from "@/lib/i18n/routing";
 import { useTranslations } from "@/lib/i18n/provider";
+import { routes } from "@/lib/navigation/routes";
 
 const STORAGE_KEY = "paxora.sidebarCollapsed";
 
@@ -59,7 +60,11 @@ export function Sidebar({
     }
   };
 
-  const items = getPrimaryNavItems(parishRole);
+  const baseItems = getPrimaryNavItems(parishRole);
+  // Add People for ADMIN/SHEPHERD on desktop only
+  const items = (parishRole === "ADMIN" || parishRole === "SHEPHERD")
+    ? [...baseItems, { labelKey: "nav.people", href: routes.adminPeople, icon: "PE", testId: "people" }]
+    : baseItems;
 
   return (
     <aside
