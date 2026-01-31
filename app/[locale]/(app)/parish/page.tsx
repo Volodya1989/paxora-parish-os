@@ -57,7 +57,7 @@ export default async function ParishHubPage() {
       {hubItems.length > 0 ? (
         <ParishHubGrid items={hubItems} />
       ) : (
-        <ParishHubEmptyState isLeader={isLeader} />
+        <ParishHubEmptyState isAdmin={isLeader} />
       )}
     </div>
   );
