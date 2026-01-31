@@ -78,11 +78,6 @@ test("Parishioner view renders quick blocks and ordered sections", () => {
         }
       },
       weekSelection: "current",
-      weekOptions: [
-        { value: "previous", label: "2024-W35", range: "Aug 26 – Sep 2" },
-        { value: "current", label: "2024-W36", range: "Sep 2 – Sep 9" },
-        { value: "next", label: "2024-W37", range: "Sep 9 – Sep 16" }
-      ],
       now: new Date("2024-09-03T12:00:00Z")
     })
     )
