@@ -34,7 +34,7 @@ export async function ensureParishBootstrap(userId: string) {
 
     const parish = await prisma.parish.create({
       data: {
-        name: "Default Parish",
+        name: "Mother of God Ukrainian Catholic Parish",
         slug: `parish-${userId.slice(0, 8)}`
       }
     });
