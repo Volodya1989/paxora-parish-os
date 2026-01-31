@@ -64,17 +64,23 @@ export default async function ThisWeekPage({
       ? await getGratitudeAdminData({ parishId: data.parishId, weekId: data.week.id })
       : null;
 
-  // Fetch parish name for the header (parishioner view)
+  // Fetch parish name and user name for the header (parishioner view)
   let parishName = "Mother of God Ukrainian Catholic Church"; // MVP default
+  let userName: string | undefined;
   if (viewMode === "parishioner") {
     const session = await getServerSession(authOptions);
-    if (session?.user?.activeParishId) {
-      const parish = await prisma.parish.findUnique({
-        where: { id: session.user.activeParishId },
-        select: { name: true }
-      });
-      if (parish?.name) {
-        parishName = parish.name;
+    if (session?.user) {
+      // Get user's first name for personalized greeting
+      userName = session.user.name?.split(" ")[0];
+      
+      if (session.user.activeParishId) {
+        const parish = await prisma.parish.findUnique({
+          where: { id: session.user.activeParishId },
+          select: { name: true }
+        });
+        if (parish?.name) {
+          parishName = parish.name;
+        }
       }
     }
   }
@@ -96,6 +102,7 @@ export default async function ThisWeekPage({
       now={now}
       viewToggle={viewToggle}
       parishName={parishName}
+      userName={userName}
     />
   );
 }

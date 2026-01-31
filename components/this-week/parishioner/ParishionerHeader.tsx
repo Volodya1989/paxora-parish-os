@@ -3,81 +3,61 @@
 import type { ReactNode } from "react";
 import { useTranslations } from "@/lib/i18n/provider";
 import LanguageIconToggle from "@/components/navigation/LanguageIconToggle";
-import { SunIcon } from "@/components/icons/ParishIcons";
+import { SparklesIcon } from "@/components/icons/ParishIcons";
 
 type ParishionerHeaderProps = {
   /** Parish name to display */
   parishName: string;
+  /** User's first name for personalized greeting */
+  userName?: string;
   /** Optional right-aligned actions (e.g., view toggle for users who can switch views) */
   actions?: ReactNode;
 };
 
 /**
- * Modern, welcoming header for the parishioner landing page.
- * Features a warm gradient background, greeting based on time of day,
- * and a friendly, personal tone.
+ * Warm, welcoming header for the parishioner landing page.
+ * Features a personalized greeting, parish name, and icon-based language toggle.
+ * Removes all admin-focused controls (week selectors, timestamps, + Add).
  * 
- * Design goal: "I am home. This is my parish. I feel welcomed."
+ * Design goal: "I am home. This is my parish."
  */
 export default function ParishionerHeader({
   parishName,
+  userName,
   actions
 }: ParishionerHeaderProps) {
   const t = useTranslations();
 
   // Get time-based greeting
   const hour = new Date().getHours();
-  let greeting = "Good morning";
-  let greetingEmoji = "sunrise";
-  if (hour >= 12 && hour < 17) {
-    greeting = "Good afternoon";
-    greetingEmoji = "sun";
-  } else if (hour >= 17) {
-    greeting = "Good evening";
-    greetingEmoji = "sunset";
-  }
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   return (
-    <header className="relative -mx-4 -mt-6 mb-2 overflow-hidden rounded-b-3xl bg-gradient-to-br from-primary-600 via-primary-500 to-emerald-500 px-5 pb-8 pt-4 text-white md:-mx-8 md:px-8">
+    <header className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-600 via-primary-500 to-emerald-500 px-5 py-6 text-white shadow-lg sm:px-6 sm:py-8">
       {/* Decorative background elements */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-white/10" />
-        <div className="absolute -bottom-8 -left-8 h-32 w-32 rounded-full bg-white/10" />
-        <div className="absolute right-1/4 top-1/3 h-20 w-20 rounded-full bg-white/5" />
-        <div className="absolute bottom-1/4 left-1/3 h-12 w-12 rounded-full bg-white/5" />
-      </div>
+      <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10" />
+      <div className="absolute -bottom-4 left-1/4 h-20 w-20 rounded-full bg-white/5" />
+      <div className="absolute right-1/3 top-1/2 h-12 w-12 rounded-full bg-white/5" />
 
-      {/* Top bar with language toggle and actions */}
-      <div className="relative mb-6 flex items-center justify-between">
-        <LanguageIconToggle />
-        {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
-      </div>
-
-      {/* Main content */}
-      <div className="relative space-y-3">
-        {/* Time-based greeting with icon */}
+      {/* Top bar with language toggle */}
+      <div className="relative mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-2 rounded-full bg-white/20 px-3 py-1.5 backdrop-blur-sm">
+          <SparklesIcon className="h-4 w-4" />
+          <span className="text-xs font-medium">{t("landing.welcome")}</span>
+        </div>
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
-            <SunIcon className="h-4 w-4" />
-          </div>
-          <p className="text-sm font-medium text-white/90">
-            {greeting}
-          </p>
+          {actions}
+          <LanguageIconToggle />
         </div>
+      </div>
 
-        {/* Welcome message */}
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            {t("landing.welcome")}
-          </h1>
-          <p className="text-base font-medium text-white/80">
-            {parishName}
-          </p>
-        </div>
-
-        {/* Subtle tagline */}
-        <p className="max-w-sm text-sm leading-relaxed text-white/70">
-          Your home for parish life, community, and faith
+      {/* Main greeting */}
+      <div className="relative space-y-1">
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+          {greeting}{userName ? `, ${userName}` : ""}!
+        </h1>
+        <p className="text-sm font-medium text-white/80 sm:text-base">
+          {parishName}
         </p>
       </div>
     </header>

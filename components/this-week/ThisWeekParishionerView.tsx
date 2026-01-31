@@ -26,12 +26,15 @@ type ThisWeekParishionerViewProps = {
   viewToggle?: ReactNode;
   /** Parish name for the header (MVP default: Mother of God Ukrainian Catholic Church) */
   parishName?: string;
+  /** User's first name for personalized greeting */
+  userName?: string;
 };
 
 export default async function ThisWeekParishionerView({
   data,
   viewToggle,
-  parishName = "Mother of God Ukrainian Catholic Church"
+  parishName = "Mother of God Ukrainian Catholic Church",
+  userName
 }: ThisWeekParishionerViewProps) {
   const locale = await getLocaleFromCookies();
   const t = getTranslations(locale);
@@ -78,8 +81,8 @@ export default async function ThisWeekParishionerView({
 
   return (
     <div className="space-y-6 overflow-x-hidden">
-      {/* Clean, welcoming header with parish name */}
-      <ParishionerHeader parishName={parishName} actions={viewToggle} />
+      {/* Clean, welcoming header with personalized greeting */}
+      <ParishionerHeader parishName={parishName} userName={userName} actions={viewToggle} />
 
       {/* Hero Section: Four Main Action Tiles */}
       <QuickBlocksRow
