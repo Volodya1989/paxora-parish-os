@@ -2,35 +2,54 @@
 
 import type { ReactNode } from "react";
 import { useTranslations } from "@/lib/i18n/provider";
+import LanguageSwitcher from "@/components/navigation/LanguageSwitcher";
 
 type ParishionerHeaderProps = {
   /** Parish name to display */
   parishName: string;
-  /** Optional right-aligned actions (e.g., view toggle for admins) */
+  /** Page title (defaults to "Home") */
+  pageTitle?: string;
+  /** Optional right-aligned actions (e.g., view toggle for users who can switch views) */
   actions?: ReactNode;
 };
 
 /**
- * Simplified header for the parishioner landing page.
- * Shows parish name prominently with a warm, welcoming design.
- * Removes admin-focused metadata (week selectors, timestamps, etc.)
+ * Warm, welcoming header for the parishioner landing page.
+ * Styled like iOS large-title navigation with parish name prominent.
+ * Removes all admin-focused controls (week selectors, timestamps, + Add).
+ * 
+ * Design goal: "I am home. This is my parish."
  */
-export default function ParishionerHeader({ parishName, actions }: ParishionerHeaderProps) {
+export default function ParishionerHeader({
+  parishName,
+  pageTitle,
+  actions
+}: ParishionerHeaderProps) {
   const t = useTranslations();
+  const displayTitle = pageTitle ?? t("landing.home");
 
   return (
-    <header className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-600 via-primary-500 to-emerald-500 px-5 py-6 text-white shadow-lg sm:px-6 sm:py-8">
-      {/* Decorative background elements */}
-      <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10" />
-      <div className="absolute -bottom-4 -left-4 h-20 w-20 rounded-full bg-white/10" />
-      <div className="absolute right-1/3 top-1/2 h-12 w-12 rounded-full bg-white/5" />
-
-      <div className="relative flex flex-wrap items-start justify-between gap-4">
-        <div className="space-y-1">
-          <p className="text-sm font-medium text-primary-100">{t("landing.welcome")}</p>
-          <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{parishName}</h1>
+    <header className="space-y-4">
+      {/* Top bar with language toggle and optional actions */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {/* Subtle language toggle */}
+          <LanguageSwitcher />
         </div>
         {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
+      </div>
+
+      {/* Main header content - iOS large title style */}
+      <div className="space-y-1">
+        {/* Parish name - subtle, orienting context */}
+        <p className="text-sm font-medium tracking-wide text-primary-600">
+          {parishName}
+        </p>
+        
+        {/* Page title - large, welcoming, iOS-style */}
+        <h1 className="text-3xl font-bold tracking-tight text-ink-900 sm:text-4xl">
+          {displayTitle}
+        </h1>
       </div>
     </header>
   );
