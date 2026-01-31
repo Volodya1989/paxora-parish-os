@@ -10,6 +10,7 @@ import { createParish } from "@/server/actions/parish";
 import { getAccessGateState } from "@/lib/queries/access";
 import { getParishMembership } from "@/server/db/groups";
 import { getLocaleFromParam, stripLocale } from "@/lib/i18n/routing";
+import { isParishLeader } from "@/lib/permissions";
 
 async function getRequestPathname() {
   const headerList = await headers();
@@ -73,9 +74,14 @@ export default async function AppLayout({
     ? await getParishMembership(resolvedParishId, session.user.id)
     : null;
 
+  // Header strategy: AppHeader (with week selector + create controls) is only shown to leaders.
+  // Parishioners see page-specific headers (PageHeader) per page.
+  // See /components/header/HEADER_STRATEGY.md for details.
+  const isLeader = membership ? isParishLeader(membership.role) : false;
+
   return (
     <AppShell parishRole={membership?.role ?? null}>
-      <AppHeader parishRole={membership?.role ?? null} />
+      {isLeader && <AppHeader parishRole={membership?.role ?? null} />}
       <main className="flex-1 bg-mist-50 px-4 py-6 pb-[calc(6rem+env(safe-area-inset-bottom))] md:px-8 md:pb-8">
         {children}
       </main>

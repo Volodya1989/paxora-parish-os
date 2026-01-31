@@ -6,6 +6,7 @@ import { getOrCreateCurrentWeek } from "@/domain/week";
 import { getNow } from "@/lib/time/getNow";
 import { listTasks } from "@/lib/queries/tasks";
 import { isParishLeader } from "@/lib/permissions";
+import PageHeader from "@/components/header/PageHeader";
 import ServeBoardView from "@/components/serve-board/ServeBoardView";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +30,9 @@ export default async function ServeBoardPage() {
   }
 
   const week = await getOrCreateCurrentWeek(parishId, getNow());
-  const [taskList, members] = await Promise.all([
+  const isLeader = isParishLeader(membership.role);
+
+  const [taskList, members, parish] = await Promise.all([
     listTasks({
       parishId,
       actorUserId: session.user.id,
@@ -48,6 +51,10 @@ export default async function ServeBoardPage() {
           }
         }
       }
+    }),
+    prisma.parish.findUnique({
+      where: { id: parishId },
+      select: { name: true }
     })
   ]);
 
@@ -61,11 +68,22 @@ export default async function ServeBoardPage() {
   });
 
   return (
-    <ServeBoardView
-      tasks={taskList.tasks}
-      memberOptions={memberOptions}
-      currentUserId={session.user.id}
-      isLeader={isParishLeader(membership.role)}
-    />
+    <div className="space-y-6">
+      {/* Show welcoming header for regular members */}
+      {!isLeader && (
+        <PageHeader
+          pageTitle="Help Needed"
+          parishName={parish?.name ?? "My Parish"}
+          subtitle="Volunteer opportunities to serve our community"
+          gradientClass="from-sky-500 via-sky-400 to-cyan-500"
+        />
+      )}
+      <ServeBoardView
+        tasks={taskList.tasks}
+        memberOptions={memberOptions}
+        currentUserId={session.user.id}
+        isLeader={isLeader}
+      />
+    </div>
   );
 }

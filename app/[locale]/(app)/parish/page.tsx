@@ -29,7 +29,7 @@ export default async function ParishHubPage() {
     })
   ]);
 
-  const isAdmin = membership ? isParishLeader(membership.role) : false;
+  const isLeader = membership ? isParishLeader(membership.role) : false;
 
   // Transform items to match ParishHubItemData type
   const hubItems: ParishHubItemData[] = items.map((item) => ({
@@ -43,28 +43,21 @@ export default async function ParishHubPage() {
 
   return (
     <div className="space-y-6">
-      {/* Consistent page header */}
-      <PageHeader
-        pageTitle="Parish Hub"
-        parishName={parish?.name ?? "My Parish"}
-        subtitle="Quick links to parish resources and information"
-        actions={
-          isAdmin ? (
-            <Link
-              href="/profile"
-              className="rounded-full bg-white/20 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-white/30"
-            >
-              Manage
-            </Link>
-          ) : undefined
-        }
-      />
+      {/* Show welcoming header for regular members */}
+      {!isLeader && (
+        <PageHeader
+          pageTitle="Parish Hub"
+          parishName={parish?.name ?? "My Parish"}
+          subtitle="Quick links to parish resources and information"
+          gradientClass="from-primary-600 via-primary-500 to-emerald-500"
+        />
+      )}
 
       {/* Parish Hub Grid */}
       {hubItems.length > 0 ? (
         <ParishHubGrid items={hubItems} />
       ) : (
-        <ParishHubEmptyState isAdmin={isAdmin} />
+        <ParishHubEmptyState isLeader={isLeader} />
       )}
     </div>
   );
