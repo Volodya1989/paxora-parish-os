@@ -3,13 +3,22 @@ import SectionTitle from "@/components/ui/SectionTitle";
 import Button from "@/components/ui/Button";
 import Card, { CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { authOptions } from "@/server/auth/options";
-import { getProfileSettings } from "@/lib/queries/profile";
+import { getCurrentUserProfile, getProfileSettings } from "@/lib/queries/profile";
 import { getPendingAccessRequests } from "@/lib/queries/access";
 import { approveParishAccess, rejectParishAccess } from "@/app/actions/access";
 import ProfileCard from "@/components/profile/ProfileCard";
+import ProfileDates from "@/components/profile/ProfileDates";
 import ProfileSettings from "@/components/profile/ProfileSettings";
 import VolunteerHoursCard from "@/components/profile/VolunteerHoursCard";
 
+/**
+ * Findings: /profile is the existing account surface with session-gated reads and
+ * server actions for profile settings; user-level data lives on User while parish
+ * preferences live on Membership. Approach: extend User with month/day dates and
+ * greetings opt-in, read via getCurrentUserProfile, and update via a dedicated
+ * server action on this page. V2: admin-managed profiles, greeting automation,
+ * and explicit leap-year behavior for Feb 29.
+ */
 export default async function ProfilePage() {
   const session = await getServerSession(authOptions);
 
@@ -21,6 +30,7 @@ export default async function ProfilePage() {
     userId: session.user.id,
     parishId: session.user.activeParishId
   });
+  const currentProfile = await getCurrentUserProfile();
   const pendingRequests = await getPendingAccessRequests();
 
   return (
@@ -28,6 +38,15 @@ export default async function ProfilePage() {
       <SectionTitle title="Profile" subtitle="Account details and preferences" />
 
       <ProfileCard name={profile.name} email={profile.email} role={profile.parishRole} />
+      <ProfileDates
+        initialDates={{
+          birthdayMonth: currentProfile.birthdayMonth,
+          birthdayDay: currentProfile.birthdayDay,
+          anniversaryMonth: currentProfile.anniversaryMonth,
+          anniversaryDay: currentProfile.anniversaryDay,
+          greetingsOptIn: currentProfile.greetingsOptIn
+        }}
+      />
       <VolunteerHoursCard
         ytdHours={profile.ytdHours}
         tier={profile.milestoneTier}

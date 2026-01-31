@@ -172,6 +172,11 @@ model User {
   notificationsEnabled Boolean   @default(true)
   weeklyDigestEnabled  Boolean   @default(true)
   volunteerHoursOptIn  Boolean   @default(false)
+  birthdayMonth        Int?
+  birthdayDay          Int?
+  anniversaryMonth     Int?
+  anniversaryDay       Int?
+  greetingsOptIn       Boolean   @default(false)
   createdAt            DateTime  @default(now())
 
   memberships              Membership[]
