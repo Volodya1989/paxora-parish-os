@@ -42,15 +42,13 @@ export function AppHeader({ parishRole }: AppHeaderProps) {
   const weekSelection = normalizeWeekSelection(searchParams?.get("week") ?? null);
   const viewMode = searchParams?.get("view") ?? "parishioner";
 
-  // Check if we're on the This Week landing page as a regular member in parishioner view
-  const strippedPath = stripLocale(pathname);
-  const isThisWeekLanding = strippedPath === "/this-week" || strippedPath === "";
+  // Check user role and view mode
   const isRegularMember = parishRole === "MEMBER" || !parishRole;
   const isParishionerView = viewMode === "parishioner";
 
-  // Hide the admin header for regular members on the This Week page in parishioner view
-  // The parishioner landing page has its own welcoming header
-  if (isThisWeekLanding && isRegularMember && isParishionerView) {
+  // Hide the admin header for regular members in parishioner view on all pages
+  // Each page now has its own welcoming header component
+  if (isRegularMember && isParishionerView) {
     return null;
   }
 

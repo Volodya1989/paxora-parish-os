@@ -11,6 +11,7 @@ import GratitudeSettingsPanel from "@/components/hours/GratitudeSettingsPanel";
 import { getParishMembership, isCoordinatorInParish } from "@/server/db/groups";
 import { isParishLeader } from "@/lib/permissions";
 import { prisma } from "@/server/db/prisma";
+import PageHeader from "@/components/header/PageHeader";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;

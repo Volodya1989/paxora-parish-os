@@ -9,6 +9,8 @@ import { getPendingAccessRequests } from "@/lib/queries/access";
 import { approveParishAccess, rejectParishAccess } from "@/app/actions/access";
 import TasksView from "@/components/tasks/TasksView";
 import { getTasksViewMode } from "@/lib/tasks/viewMode";
+import PageHeader from "@/components/header/PageHeader";
+import { isParishLeader } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -106,7 +108,7 @@ export default async function TasksPage({
   const week = await getWeekForSelection(parishId, weekSelection, getNow());
   const filters = parseTaskFilters(resolvedSearchParams, viewMode);
 
-  const [taskList, groups, members, pendingRequests, pendingTaskApprovals] = await Promise.all([
+  const [taskList, groups, members, pendingRequests, pendingTaskApprovals, parish] = await Promise.all([
     listTasks({
       parishId,
       actorUserId: session.user.id,
@@ -133,6 +135,10 @@ export default async function TasksPage({
       parishId,
       actorUserId: session.user.id,
       weekId: week.id
+    }),
+    prisma.parish.findUnique({
+      where: { id: parishId },
+      select: { name: true }
     })
   ]);
 
@@ -146,8 +152,20 @@ export default async function TasksPage({
     };
   });
 
+  const isLeader = isParishLeader(membership.role);
+
   return (
-    <TasksView
+    <div className="space-y-6">
+      {/* Show welcoming header for regular members */}
+      {!isLeader && (
+        <PageHeader
+          pageTitle="Serve"
+          parishName={parish?.name ?? "My Parish"}
+          subtitle="Opportunities to help and make a difference"
+          gradientClass="from-rose-500 via-rose-400 to-amber-400"
+        />
+      )}
+      <TasksView
       weekLabel={week.label}
       weekRange={formatDateRange(week.startsOn, week.endsOn)}
       weekId={week.id}
@@ -163,7 +181,8 @@ export default async function TasksPage({
       approveAccessAction={approveParishAccess}
       rejectAccessAction={rejectParishAccess}
       viewMode={viewMode}
-      canManageTasks={membership ? membership.role !== "MEMBER" : false}
-    />
+      canManageTasks={isLeader}
+      />
+    </div>
   );
 }
