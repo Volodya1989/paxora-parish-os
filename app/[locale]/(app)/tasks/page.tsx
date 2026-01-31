@@ -162,7 +162,9 @@ export default async function TasksPage({
           pageTitle="Serve"
           parishName={parish?.name ?? "My Parish"}
           subtitle="Opportunities to help and make a difference"
-          gradientClass="from-rose-500 via-rose-400 to-amber-400"
+          quote="Whoever is faithful in little is faithful also in much."
+          quoteSource="Luke 16:10"
+          gradientClass="from-sky-500 via-sky-400 to-cyan-500"
         />
       )}
       <TasksView

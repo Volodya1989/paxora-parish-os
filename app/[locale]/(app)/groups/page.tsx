@@ -40,6 +40,9 @@ export default async function GroupsPage() {
           pageTitle="Groups"
           parishName={parish?.name ?? "My Parish"}
           subtitle="Connect with fellow parishioners who share your interests"
+          quote="For where two or three are gathered in my name, I am there among them."
+          quoteSource="Matthew 18:20"
+          gradientClass="from-primary-600 via-primary-500 to-emerald-500"
         />
       )}
       <GroupsView

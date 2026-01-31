@@ -82,6 +82,8 @@ export default async function CalendarPage() {
           pageTitle="Calendar"
           parishName={parish?.name ?? "My Parish"}
           subtitle="Upcoming events and activities"
+          quote="Let all that you do be done in love."
+          quoteSource="1 Corinthians 16:14"
           gradientClass="from-teal-600 via-teal-500 to-emerald-500"
         />
       )}

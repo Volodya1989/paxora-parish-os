@@ -141,8 +141,10 @@ export default function TasksView({
   const headingDescription =
     description ??
     (viewMode === "opportunities"
-      ? `Browse open ways to serve and support the parish. ${weekRange}`
-      : `Keep the week grounded with the next faithful steps. ${weekRange}`);
+      ? `Discover ways to serve the parish. ${weekRange}`
+      : viewMode === "mine"
+        ? `Your commitments and next steps. ${weekRange}`
+        : `Keep the week grounded with faithful steps. ${weekRange}`);
 
   const resolvedTitle =
     viewMode === "opportunities"
@@ -216,19 +218,25 @@ export default function TasksView({
       <PageShell
         title={resolvedTitle}
         description={headingDescription}
-        summaryChips={[
-          { label: `Week ${weekLabel}`, tone: "mist" },
-          { label: statsLabel, tone: "rose" }
-        ]}
+        summaryChips={
+          canManageTasks
+            ? [
+                { label: `Week ${weekLabel}`, tone: "mist" },
+                { label: statsLabel, tone: "rose" }
+              ]
+            : []
+        }
         actions={
           <>
             {renderViewToggle("hidden md:inline-flex")}
-            <Link
-              href={routes.gratitudeBoard}
-              className="rounded-button border border-mist-200 bg-white px-3 py-2 text-xs font-semibold text-ink-700 shadow-card transition hover:bg-mist-50"
-            >
-              Hours &amp; Gratitude Board
-            </Link>
+            {canManageTasks && (
+              <Link
+                href={routes.gratitudeBoard}
+                className="rounded-button border border-mist-200 bg-white px-3 py-2 text-xs font-semibold text-ink-700 shadow-card transition hover:bg-mist-50"
+              >
+                Hours &amp; Gratitude Board
+              </Link>
+            )}
             {showCreateButton ? (
               <Button onClick={() => setIsCreateOpen(true)} className="h-9 px-3 text-sm">
                 {ctaLabel}
@@ -283,7 +291,7 @@ export default function TasksView({
                 ) : null}
               </div>
 
-              {viewMode !== "opportunities" ? (
+              {canManageTasks && viewMode !== "opportunities" ? (
                 <div className="mt-4">
                   <TaskQuickAdd weekId={weekId} />
                 </div>
@@ -315,7 +323,7 @@ export default function TasksView({
               </div>
             </Card>
 
-            {pendingAccessRequests.length ? (
+            {canManageTasks && pendingAccessRequests.length ? (
               <Card>
                 <div className="mb-3 text-sm font-semibold text-ink-900">Access approvals</div>
                 <div className="space-y-3">
@@ -381,7 +389,7 @@ export default function TasksView({
               </Card>
             ) : null}
 
-            {pendingTaskApprovals.length ? (
+            {canManageTasks && pendingTaskApprovals.length ? (
               <Card>
                 <div className="mb-3 text-sm font-semibold text-ink-900">
                   Pending task approvals

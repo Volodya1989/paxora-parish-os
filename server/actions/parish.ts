@@ -19,7 +19,7 @@ export async function createParish() {
 
   const parish = await prisma.parish.create({
     data: {
-      name: "Default Parish",
+      name: "Mother of God Ukrainian Catholic Parish",
       slug: `parish-${session.user.id.slice(0, 8)}`
     }
   });
