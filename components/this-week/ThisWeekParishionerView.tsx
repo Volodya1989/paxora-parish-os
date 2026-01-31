@@ -104,11 +104,11 @@ export default async function ThisWeekParishionerView({
         viewToggle={viewToggle}
       />
 
-{/* A-016: Gratitude board entry point. */}
+      {/* A-016: Gratitude board entry point. */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-mist-200 bg-white px-4 py-4 shadow-card transition-shadow hover:shadow-md">
         <div className="space-y-0.5">
           <p className="font-medium text-ink-900">Hours & Gratitude Board</p>
-          <p className="text-sm text-ink-500">See this week's gratitude and hours offered.</p>
+          <p className="text-sm text-ink-500">See this week&apos;s gratitude and hours offered.</p>
         </div>
         <Link
           href={routes.gratitudeBoard}
