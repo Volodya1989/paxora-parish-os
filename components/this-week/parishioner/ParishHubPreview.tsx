@@ -123,6 +123,50 @@ function HubTileCompact({ item }: { item: HubItem }) {
   );
 }
 
+/**
+ * Compact grid preview of customizable parish hub resources.
+ *
+ * Displays commonly used parish links and resources in a compact 4x6 grid format.
+ * Shows up to 6 items by default with a "+N more" indicator for additional items.
+ * Each tile includes an icon, color-coded background, and label.
+ *
+ * **Features:**
+ * - Icon-based visual identification for quick scanning
+ * - Supports external URLs (opens in new tab) and internal routes
+ * - Color-coded tiles for visual consistency (each icon type has a distinct color)
+ * - Responsive grid (4 columns on mobile, 6 on larger screens)
+ * - "View all" link to the full Parish Hub page
+ *
+ * **Supported Icons:**
+ * BULLETIN, MASS_TIMES, CONFESSION, WEBSITE, CALENDAR, READINGS, GIVING, CONTACT,
+ * FACEBOOK, YOUTUBE, PRAYER, NEWS
+ *
+ * **Color System:**
+ * Each icon type has unique foreground and background colors defined in iconColors map.
+ * Ensures visual variety while maintaining coherent design language.
+ *
+ * **Empty State:** Returns null if no items provided (hidden from view)
+ *
+ * @param props - Component props
+ * @param props.items - Array of hub items to display
+ * @param props.maxVisible - Maximum number of items to show (default: 6)
+ * @returns Grid of hub resource tiles or null if no items
+ *
+ * @example
+ * <ParishHubPreview
+ *   items={[
+ *     {
+ *       id: '1',
+ *       label: 'Sunday Mass Schedule',
+ *       icon: 'MASS_TIMES',
+ *       targetType: 'EXTERNAL',
+ *       targetUrl: 'https://example.com/mass-times',
+ *       internalRoute: null
+ *     }
+ *   ]}
+ *   maxVisible={6}
+ * />
+ */
 export default function ParishHubPreview({ items, maxVisible = 6 }: ParishHubPreviewProps) {
   const visibleItems = items.slice(0, maxVisible);
   const hasMore = items.length > maxVisible;

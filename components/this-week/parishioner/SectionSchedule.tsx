@@ -10,6 +10,26 @@ type SectionScheduleProps = {
   events: EventPreview[];
 };
 
+/**
+ * Section displaying the next upcoming parish services and events.
+ *
+ * Shows the top 3 upcoming events with date, time, and location information.
+ * Uses an emerald/success accent color for events and calendar-related content.
+ * Includes a "View calendar" link to the full calendar page.
+ *
+ * **Empty State:** Shows a message when no upcoming events are scheduled with a link to the calendar.
+ *
+ * **Color System:** Emerald accent (success/event tone)
+ *
+ * **Note:** This is an async component that uses server-side locale cookies.
+ *
+ * @param props - Component props
+ * @param props.events - Array of upcoming event previews to display
+ * @returns Rendered services section with scroll anchor
+ *
+ * @example
+ * <SectionSchedule events={upcomingEvents} />
+ */
 export default async function SectionSchedule({ events }: SectionScheduleProps) {
   const locale = await getLocaleFromCookies();
   const t = getTranslations(locale);
