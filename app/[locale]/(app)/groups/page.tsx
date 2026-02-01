@@ -5,7 +5,7 @@ import { listGroups } from "@/lib/queries/groups";
 import { getParishMembership } from "@/server/db/groups";
 import { isParishLeader } from "@/lib/permissions";
 import { prisma } from "@/server/db/prisma";
-import PageHeader from "@/components/header/PageHeader";
+import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
 
 export default async function GroupsPage() {
   const session = await getServerSession(authOptions);
@@ -33,24 +33,19 @@ export default async function GroupsPage() {
   const isLeader = isParishLeader(membership.role);
 
   return (
-    <div className="space-y-6">
-      {/* Show welcoming header for regular members */}
-      {!isLeader && (
-        <PageHeader
-          pageTitle="Groups"
-          parishName={parish?.name ?? "My Parish"}
-          subtitle="Connect with fellow parishioners who share your interests"
-          quote="For where two or three are gathered in my name, I am there among them."
-          quoteSource="Matthew 18:20"
-          gradientClass="from-primary-600 via-primary-500 to-emerald-500"
-        />
-      )}
+    <ParishionerPageLayout
+      pageTitle="Groups"
+      parishName={parish?.name ?? "My Parish"}
+      isLeader={isLeader}
+      subtitle="Connect with fellow parishioners who share your interests"
+      gradientClass="from-primary-600 via-primary-500 to-emerald-500"
+    >
       <GroupsView
         groups={groups}
         parishId={parishId}
         actorUserId={actorUserId}
         canManageGroups={isLeader}
       />
-    </div>
+    </ParishionerPageLayout>
   );
 }

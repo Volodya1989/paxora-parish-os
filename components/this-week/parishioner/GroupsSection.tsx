@@ -7,12 +7,16 @@ import Badge from "@/components/ui/Badge";
 import { routes } from "@/lib/navigation/routes";
 import { useTranslations } from "@/lib/i18n/provider";
 import { cn } from "@/lib/ui/cn";
+import { formatMessageTime } from "@/lib/time/messageTime";
 
 type GroupPreview = {
   id: string;
   name: string;
   description: string | null;
   unreadCount?: number | null;
+  lastMessage?: string | null;
+  lastMessageTime?: Date | null;
+  lastMessageAuthor?: string | null;
 };
 
 type GroupsSectionProps = {
@@ -76,9 +80,18 @@ export default function GroupsSection({ groups, hasPublicGroups, className }: Gr
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium text-ink-900">{group.name}</p>
-                {group.description && (
+                {group.lastMessage ? (
+                  <div className="flex items-baseline gap-2">
+                    <p className="truncate text-sm text-ink-500 flex-1">
+                      {group.lastMessageAuthor ? `${group.lastMessageAuthor}: ` : ""}{group.lastMessage}
+                    </p>
+                    <span className="shrink-0 text-xs text-ink-400">
+                      {formatMessageTime(group.lastMessageTime)}
+                    </span>
+                  </div>
+                ) : group.description ? (
                   <p className="truncate text-sm text-ink-500">{group.description}</p>
-                )}
+                ) : null}
               </div>
               <div className="flex items-center gap-2">
                 {group.unreadCount && group.unreadCount > 0 ? (

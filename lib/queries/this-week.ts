@@ -54,6 +54,9 @@ export type ThisWeekData = {
     name: string;
     description: string | null;
     unreadCount?: number | null;
+    lastMessage?: string | null;
+    lastMessageTime?: Date | null;
+    lastMessageAuthor?: string | null;
   }>;
   hasPublicGroups: boolean;
   stats: {
@@ -276,6 +279,39 @@ export async function getThisWeekDataForUser({
     }
   });
 
+  // Fetch last message for each group's chat channel
+  const lastMessages = await prisma.chatMessage.findMany({
+    where: {
+      channelId: {
+        in: groupChannels.map((ch) => ch.id)
+      }
+    },
+    orderBy: { createdAt: "desc" },
+    take: groupChannels.length,
+    select: {
+      channelId: true,
+      body: true,
+      createdAt: true,
+      author: {
+        select: {
+          name: true
+        }
+      }
+    }
+  });
+
+  // Create a map of channelId to last message data
+  const lastMessagesByChannel = new Map<string, { body: string; createdAt: Date; authorName: string | null }>();
+  lastMessages.forEach((msg) => {
+    if (!lastMessagesByChannel.has(msg.channelId)) {
+      lastMessagesByChannel.set(msg.channelId, {
+        body: msg.body,
+        createdAt: msg.createdAt,
+        authorName: msg.author?.name ?? null
+      });
+    }
+  });
+
   return {
     parishId,
     week: {
@@ -294,10 +330,17 @@ export async function getThisWeekDataForUser({
       publishedAt: announcement.publishedAt
     })),
     parishRole: membership?.role ?? null,
-    memberGroups: memberGroups.map((m) => ({
-      ...m.group,
-      unreadCount: unreadCountByGroupId.get(m.group.id) ?? 0
-    })),
+    memberGroups: memberGroups.map((m) => {
+      const channel = groupChannels.find((ch) => ch.groupId === m.group.id);
+      const lastMsg = channel ? lastMessagesByChannel.get(channel.id) : undefined;
+      return {
+        ...m.group,
+        unreadCount: unreadCountByGroupId.get(m.group.id) ?? 0,
+        lastMessage: lastMsg?.body ?? null,
+        lastMessageTime: lastMsg?.createdAt ?? null,
+        lastMessageAuthor: lastMsg?.authorName ?? null
+      };
+    }),
     hasPublicGroups: publicGroupCount > 0,
     stats: {
       tasksDone,

@@ -14,6 +14,26 @@ type SectionCommunityProps = {
   hasPublicGroups: boolean;
 };
 
+/**
+ * Section displaying community groups that the user is NOT yet a member of.
+ *
+ * Shows up to 3 groups available to join, encouraging community participation.
+ * Uses a sky/info accent color for community and discovery-focused content.
+ * Only shows "Discover groups" link if public groups exist in the parish.
+ *
+ * **Empty State:** Shows when user has joined all public groups or no groups exist.
+ * Encourages browsing the full community groups page.
+ *
+ * **Color System:** Sky accent (info/discovery tone)
+ *
+ * @param props - Component props
+ * @param props.groups - Array of group previews user can join (up to 3 shown)
+ * @param props.hasPublicGroups - Whether any public groups exist in the parish
+ * @returns Rendered community section with scroll anchor
+ *
+ * @example
+ * <SectionCommunity groups={availableGroups} hasPublicGroups={true} />
+ */
 export default function SectionCommunity({ groups, hasPublicGroups }: SectionCommunityProps) {
   return (
     <section id="community" className="scroll-mt-24">

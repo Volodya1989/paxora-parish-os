@@ -6,7 +6,7 @@ import { getOrCreateCurrentWeek } from "@/domain/week";
 import { getNow } from "@/lib/time/getNow";
 import { listTasks } from "@/lib/queries/tasks";
 import { isParishLeader } from "@/lib/permissions";
-import PageHeader from "@/components/header/PageHeader";
+import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
 import ServeBoardView from "@/components/serve-board/ServeBoardView";
 
 export const dynamic = "force-dynamic";
@@ -68,24 +68,19 @@ export default async function ServeBoardPage() {
   });
 
   return (
-    <div className="space-y-6">
-      {/* Show welcoming header for regular members */}
-      {!isLeader && (
-        <PageHeader
-          pageTitle="Help Needed"
-          parishName={parish?.name ?? "My Parish"}
-          subtitle="Volunteer opportunities to serve our community"
-          quote="Each of you should use whatever gift you have received to serve others."
-          quoteSource="1 Peter 4:10"
-          gradientClass="from-sky-500 via-sky-400 to-cyan-500"
-        />
-      )}
+    <ParishionerPageLayout
+      pageTitle="Help Needed"
+      parishName={parish?.name ?? "My Parish"}
+      isLeader={isLeader}
+      subtitle="Volunteer opportunities to serve our community"
+      gradientClass="from-sky-500 via-sky-400 to-cyan-500"
+    >
       <ServeBoardView
         tasks={taskList.tasks}
         memberOptions={memberOptions}
         currentUserId={session.user.id}
         isLeader={isLeader}
       />
-    </div>
+    </ParishionerPageLayout>
   );
 }

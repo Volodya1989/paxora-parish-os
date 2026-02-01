@@ -14,6 +14,25 @@ function formatDueLabel(dueBy: Date) {
   return hasTime ? `${formatShortDate(dueBy)} · ${formatTime(dueBy)}` : formatShortDate(dueBy);
 }
 
+/**
+ * Section displaying open volunteer opportunities and tasks.
+ *
+ * Shows the top 3 open tasks/opportunities with due dates.
+ * Uses a rose/action accent color to encourage participation.
+ * Includes a "View all" link to the full serve board/opportunities page.
+ *
+ * **Empty State:** Shows when no opportunities are currently available.
+ * Encourages visiting the full serve board to stay updated.
+ *
+ * **Color System:** Rose accent (action/help tone)
+ *
+ * @param props - Component props
+ * @param props.tasks - Array of open task previews to display (up to 3 shown)
+ * @returns Rendered opportunities section with scroll anchor
+ *
+ * @example
+ * <SectionOpportunities tasks={openTasks} />
+ */
 export default function SectionOpportunities({ tasks }: SectionOpportunitiesProps) {
   return (
     <section id="opportunities" className="scroll-mt-24">

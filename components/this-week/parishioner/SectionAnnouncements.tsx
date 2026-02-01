@@ -9,6 +9,24 @@ type SectionAnnouncementsProps = {
   announcements: AnnouncementPreview[];
 };
 
+/**
+ * Section displaying the latest parish announcements.
+ *
+ * Shows the top 3 most recent announcements with publication date.
+ * Uses an amber/warning accent color to signal news and updates.
+ * Includes a "View all" link to the full announcements page.
+ *
+ * **Empty State:** Shows a message when no announcements are available.
+ *
+ * **Color System:** Amber accent (warning/news tone)
+ *
+ * @param props - Component props
+ * @param props.announcements - Array of announcement previews to display
+ * @returns Rendered announcements section with scroll anchor
+ *
+ * @example
+ * <SectionAnnouncements announcements={announcements} />
+ */
 export default function SectionAnnouncements({ announcements }: SectionAnnouncementsProps) {
   return (
     <section id="announcements" className="scroll-mt-24">

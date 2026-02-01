@@ -5,7 +5,7 @@ import AnnouncementsView from "@/components/announcements/AnnouncementsView";
 import { getParishMembership } from "@/server/db/groups";
 import { isParishLeader } from "@/lib/permissions";
 import { prisma } from "@/server/db/prisma";
-import PageHeader from "@/components/header/PageHeader";
+import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
 
 export default async function AnnouncementsPage() {
   const session = await getServerSession(authOptions);
@@ -26,6 +26,7 @@ export default async function AnnouncementsPage() {
   if (!membership) {
     throw new Error("Unauthorized");
   }
+
   const canManage = isParishLeader(membership.role);
   const [drafts, published] = await Promise.all([
     canManage ? listAnnouncements({ parishId, status: "draft" }) : Promise.resolve([]),
@@ -33,17 +34,15 @@ export default async function AnnouncementsPage() {
   ]);
 
   return (
-    <div className="space-y-6">
-      {/* Show welcoming header for regular members */}
-      {!canManage && (
-        <PageHeader
-          pageTitle="Announcements"
-          parishName={parish?.name ?? "My Parish"}
-          subtitle="Stay informed with the latest parish news"
-          gradientClass="from-amber-500 via-amber-400 to-orange-400"
-        />
-      )}
+    <ParishionerPageLayout
+      pageTitle="Announcements"
+      parishName={parish?.name ?? "My Parish"}
+      isLeader={canManage}
+      subtitle="Stay informed with the latest parish news"
+      gradientClass="from-amber-500 via-amber-400 to-orange-400"
+    >
       <AnnouncementsView drafts={drafts} published={published} canManage={canManage} />
-    </div>
+    </ParishionerPageLayout>
   );
 }
+
