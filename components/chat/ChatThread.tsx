@@ -167,7 +167,7 @@ export default function ChatThread({
                     key={message.id}
                     className={cn(
                       "group relative flex items-start gap-3 rounded-card border border-slate-200 px-3 py-2 shadow-[0_1px_0_rgba(15,23,42,0.04)] focus-within:border-primary-200",
-                      isMine ? "bg-emerald-50/70" : "bg-slate-50/70",
+                      isMine ? "bg-emerald-50/70" : "border-l-4 border-l-slate-300 bg-slate-100/80",
                       isSelected && "border-primary-200 bg-white"
                     )}
                     tabIndex={0}
@@ -194,14 +194,13 @@ export default function ChatThread({
                         {initials}
                       </span>
                     </button>
-                    <div className="min-w-0 flex-1 space-y-2 pr-4 sm:pr-24">
+                    <div className="min-w-0 flex-1 space-y-2 sm:pr-24">
                       <div className="flex items-center gap-2">
                         {showAuthor ? (
-                          <span className="text-xs font-semibold text-ink-700 sm:hidden">
+                          <span className="text-xs font-semibold text-ink-700">
                             {formatDisplayName(message.author.name)}
                           </span>
                         ) : null}
-                        <span className="sr-only">{message.author.name}</span>
                         <p className="text-xs text-ink-400">
                           {formatTime(new Date(message.createdAt))}
                         </p>
@@ -298,7 +297,7 @@ export default function ChatThread({
                     {showActionRow ? (
                       <div
                         className={cn(
-                          "absolute right-3 top-2 flex items-center gap-2 transition-opacity",
+                          "flex items-center gap-2 transition-opacity sm:absolute sm:right-3 sm:top-2",
                           showControls
                             ? "opacity-100"
                             : "opacity-0 sm:group-hover:opacity-100 group-focus-within:opacity-100"
