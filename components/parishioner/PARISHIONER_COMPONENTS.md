@@ -399,41 +399,17 @@ Used in GroupsSection for WhatsApp-style timestamps. See `lib/time/messageTime.t
 - Add fetching logic to `lib/queries/this-week.ts`
 
 **2. Create the Section Component**
-```tsx
-// components/this-week/parishioner/SectionNewFeature.tsx
-import { AccentSectionCard } from '@/components/ui/';
 
-interface NewFeatureProps {
-  items: NewItemPreview[];
-  className?: string;
-}
+Start with the comprehensive template: **`components/this-week/parishioner/SECTION_TEMPLATE.md`**
 
-/**
- * Section showing [feature type].
- *
- * Displays top 3 items with [description of what's shown].
- *
- * @example
- * <SectionNewFeature items={items} />
- */
-export default function SectionNewFeature({ items, className }: NewFeatureProps) {
-  return (
-    <AccentSectionCard
-      title="New Feature"
-      icon={<Icon />}
-      accent="primary"  // Use appropriate color
-      actionText="View all"
-      onAction={() => router.push('/new-feature')}
-    >
-      {items.length === 0 ? (
-        <EmptyState />
-      ) : (
-        <ItemList items={items} />
-      )}
-    </AccentSectionCard>
-  );
-}
-```
+This template includes:
+- Complete boilerplate code
+- Props interface definition
+- JSDoc documentation structure
+- Empty state pattern
+- Color selection guidance
+- Testing checklist
+- Real-world example
 
 **3. Choose Appropriate Accent Color**
 - Groups/Community: `primary`
@@ -452,6 +428,10 @@ export default function SectionNewFeature({ items, className }: NewFeatureProps)
 - Add data fetching to `lib/queries/this-week.ts`
 - Update `ThisWeekData` type with new field
 - Ensure role-based filtering is applied
+
+**6. Update This Guide**
+- Add your new section to the "This-Week Landing Page Components" section
+- Include purpose, props interface, and features
 
 ---
 
