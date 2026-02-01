@@ -160,8 +160,6 @@ export default async function TasksPage({
       parishName={parish?.name ?? "My Parish"}
       isLeader={isLeader}
       subtitle="Opportunities to help and make a difference"
-      quote="Whoever is faithful in little is faithful also in much."
-      quoteSource="Luke 16:10"
       gradientClass="from-sky-500 via-sky-400 to-cyan-500"
     >
       <TasksView
