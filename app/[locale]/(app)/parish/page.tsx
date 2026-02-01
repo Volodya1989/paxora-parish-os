@@ -8,7 +8,7 @@ import { prisma } from "@/server/db/prisma";
 import ParishHubGrid from "@/components/parish-hub/ParishHubGrid";
 import ParishHubEmptyState from "@/components/parish-hub/ParishHubEmptyState";
 import type { ParishHubItemData } from "@/components/parish-hub/ParishHubTile";
-import PageHeader from "@/components/header/PageHeader";
+import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
 
 export default async function ParishHubPage() {
   const session = await getServerSession(authOptions);
@@ -42,25 +42,21 @@ export default async function ParishHubPage() {
   }));
 
   return (
-    <div className="space-y-6">
-      {/* Show welcoming header for regular members */}
-      {!isLeader && (
-        <PageHeader
-          pageTitle="Parish Hub"
-          parishName={parish?.name ?? "My Parish"}
-          subtitle="Quick links to parish resources and information"
-          quote="Welcome one another, therefore, as Christ has welcomed you."
-          quoteSource="Romans 15:7"
-          gradientClass="from-primary-600 via-primary-500 to-emerald-500"
-        />
-      )}
-
+    <ParishionerPageLayout
+      pageTitle="Parish Hub"
+      parishName={parish?.name ?? "My Parish"}
+      isLeader={isLeader}
+      subtitle="Quick links to parish resources and information"
+      quote="Welcome one another, therefore, as Christ has welcomed you."
+      quoteSource="Romans 15:7"
+      gradientClass="from-primary-600 via-primary-500 to-emerald-500"
+    >
       {/* Parish Hub Grid */}
       {hubItems.length > 0 ? (
         <ParishHubGrid items={hubItems} />
       ) : (
         <ParishHubEmptyState isAdmin={isLeader} />
       )}
-    </div>
+    </ParishionerPageLayout>
   );
 }

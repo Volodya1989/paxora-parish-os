@@ -8,7 +8,7 @@ import { authOptions } from "@/server/auth/options";
 import { ensureParishBootstrap } from "@/server/auth/bootstrap";
 import { listGroupsByParish, getParishMembership } from "@/server/db/groups";
 import { prisma } from "@/server/db/prisma";
-import PageHeader from "@/components/header/PageHeader";
+import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
 
 export default async function CalendarPage() {
   const session = await getServerSession(authOptions);
@@ -75,34 +75,31 @@ export default async function CalendarPage() {
         .filter((group): group is { id: string; name: string } => Boolean(group));
 
   return (
-    <div className="space-y-6">
-      {/* Show welcoming header for regular members */}
-      {!isLeader && (
-        <PageHeader
-          pageTitle="Calendar"
-          parishName={parish?.name ?? "My Parish"}
-          subtitle="Upcoming events and activities"
-          quote="Let all that you do be done in love."
-          quoteSource="1 Corinthians 16:14"
-          gradientClass="from-teal-600 via-teal-500 to-emerald-500"
-        />
-      )}
+    <ParishionerPageLayout
+      pageTitle="Calendar"
+      parishName={parish?.name ?? "My Parish"}
+      isLeader={isLeader}
+      subtitle="Upcoming events and activities"
+      quote="Let all that you do be done in love."
+      quoteSource="1 Corinthians 16:14"
+      gradientClass="from-teal-600 via-teal-500 to-emerald-500"
+    >
       <CalendarView
-      weekRange={weekRange}
-      monthRange={monthRange}
-      nextWeekRange={nextWeekRange}
-      weekEvents={weekEvents}
-      monthEvents={monthEvents}
-      nextWeekEvents={nextWeekEvents}
-      now={now}
-      canCreateEvents={canCreateEvents}
-      canCreatePublicEvents={isLeader}
-      canCreatePrivateEvents={isLeader}
-      canCreateGroupEvents={canCreateGroupEvents}
-      isEditor={isLeader || canCreateGroupEvents}
-      groupOptions={groupOptions}
-      viewerGroupIds={groupIds}
+        weekRange={weekRange}
+        monthRange={monthRange}
+        nextWeekRange={nextWeekRange}
+        weekEvents={weekEvents}
+        monthEvents={monthEvents}
+        nextWeekEvents={nextWeekEvents}
+        now={now}
+        canCreateEvents={canCreateEvents}
+        canCreatePublicEvents={isLeader}
+        canCreatePrivateEvents={isLeader}
+        canCreateGroupEvents={canCreateGroupEvents}
+        isEditor={isLeader || canCreateGroupEvents}
+        groupOptions={groupOptions}
+        viewerGroupIds={groupIds}
       />
-    </div>
+    </ParishionerPageLayout>
   );
 }

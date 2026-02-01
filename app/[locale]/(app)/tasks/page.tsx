@@ -9,7 +9,7 @@ import { getPendingAccessRequests } from "@/lib/queries/access";
 import { approveParishAccess, rejectParishAccess } from "@/app/actions/access";
 import TasksView from "@/components/tasks/TasksView";
 import { getTasksViewMode } from "@/lib/tasks/viewMode";
-import PageHeader from "@/components/header/PageHeader";
+import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
 import { isParishLeader } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
@@ -155,36 +155,33 @@ export default async function TasksPage({
   const isLeader = isParishLeader(membership.role);
 
   return (
-    <div className="space-y-6">
-      {/* Show welcoming header for regular members */}
-      {!isLeader && (
-        <PageHeader
-          pageTitle="Serve"
-          parishName={parish?.name ?? "My Parish"}
-          subtitle="Opportunities to help and make a difference"
-          quote="Whoever is faithful in little is faithful also in much."
-          quoteSource="Luke 16:10"
-          gradientClass="from-sky-500 via-sky-400 to-cyan-500"
-        />
-      )}
+    <ParishionerPageLayout
+      pageTitle="Serve"
+      parishName={parish?.name ?? "My Parish"}
+      isLeader={isLeader}
+      subtitle="Opportunities to help and make a difference"
+      quote="Whoever is faithful in little is faithful also in much."
+      quoteSource="Luke 16:10"
+      gradientClass="from-sky-500 via-sky-400 to-cyan-500"
+    >
       <TasksView
-      weekLabel={week.label}
-      weekRange={formatDateRange(week.startsOn, week.endsOn)}
-      weekId={week.id}
-      tasks={taskList.tasks}
-      summary={taskList.summary}
-      filteredCount={taskList.filteredCount}
-      filters={taskList.filters}
-      groupOptions={groups.map((group) => ({ id: group.id, name: group.name }))}
-      memberOptions={memberOptions}
-      currentUserId={session.user.id}
-      pendingAccessRequests={pendingRequests}
-      pendingTaskApprovals={pendingTaskApprovals}
-      approveAccessAction={approveParishAccess}
-      rejectAccessAction={rejectParishAccess}
-      viewMode={viewMode}
-      canManageTasks={isLeader}
+        weekLabel={week.label}
+        weekRange={formatDateRange(week.startsOn, week.endsOn)}
+        weekId={week.id}
+        tasks={taskList.tasks}
+        summary={taskList.summary}
+        filteredCount={taskList.filteredCount}
+        filters={taskList.filters}
+        groupOptions={groups.map((group) => ({ id: group.id, name: group.name }))}
+        memberOptions={memberOptions}
+        currentUserId={session.user.id}
+        pendingAccessRequests={pendingRequests}
+        pendingTaskApprovals={pendingTaskApprovals}
+        approveAccessAction={approveParishAccess}
+        rejectAccessAction={rejectParishAccess}
+        viewMode={viewMode}
+        canManageTasks={isLeader}
       />
-    </div>
+    </ParishionerPageLayout>
   );
 }
