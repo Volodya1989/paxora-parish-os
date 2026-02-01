@@ -8,9 +8,6 @@ import {
 import ParishionerHeader from "@/components/this-week/parishioner/ParishionerHeader";
 import QuickBlocksRow from "@/components/this-week/parishioner/QuickBlocksRow";
 import GroupsSection from "@/components/this-week/parishioner/GroupsSection";
-import SectionAnnouncements from "@/components/this-week/parishioner/SectionAnnouncements";
-import SectionSchedule from "@/components/this-week/parishioner/SectionSchedule";
-import SectionOpportunities from "@/components/this-week/parishioner/SectionOpportunities";
 import Card from "@/components/ui/Card";
 import Link from "next/link";
 import type { ThisWeekData } from "@/lib/queries/this-week";
@@ -74,9 +71,14 @@ export default async function ThisWeekParishionerView({
     data.memberGroups.length > 0
       ? `${data.memberGroups.length} group${data.memberGroups.length === 1 ? "" : "s"} joined`
       : "Find your community";
+
+  // Opportunities: count by status
+  const tasksDone = sortedTasks.filter((t) => t.status === "DONE").length;
+  const tasksInProgress = sortedTasks.filter((t) => t.status === "IN_PROGRESS").length;
+  const tasksOpen = sortedTasks.filter((t) => t.status === "OPEN").length;
   const opportunitiesSummary =
-    sortedTasks.length > 0 && sortedTasks[0]?.dueBy
-      ? `Due by ${formatShortDate(sortedTasks[0].dueBy)}`
+    sortedTasks.length > 0
+      ? `🟢 ${tasksDone}  ·  🟡 ${tasksInProgress}  ·  🔵 ${tasksOpen}`
       : "Ways to help";
 
   // Check if gratitude spotlight has actual content
@@ -156,18 +158,11 @@ export default async function ThisWeekParishionerView({
         </Card>
       )}
 
-      {/* Your Groups Section - the belonging-focused section */}
+      {/* Your Groups / Chats — the only main content section */}
       <GroupsSection
         groups={data.memberGroups}
         hasPublicGroups={data.hasPublicGroups}
       />
-
-      {/* Detailed Sections - Latest announcements, services, and opportunities */}
-      <SectionAnnouncements announcements={data.announcements} />
-
-      <SectionSchedule events={data.events} />
-
-      <SectionOpportunities tasks={data.tasks} />
 
       {/* Gratitude Spotlight - ONLY show if there are actual entries */}
       {hasGratitudeItems && (
