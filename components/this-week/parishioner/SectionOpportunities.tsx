@@ -48,9 +48,9 @@ export default function SectionOpportunities({ tasks }: SectionOpportunitiesProp
         borderClass="border-rose-200"
         iconClass="bg-rose-100 text-rose-700"
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             {/* Status badges */}
-            <div className="flex gap-1.5">
+            <div className="flex flex-wrap gap-1.5">
               {openCount > 0 && (
                 <Badge tone="neutral">
                   {openCount} Open
