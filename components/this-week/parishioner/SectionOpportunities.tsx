@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ClockIcon, HandHeartIcon } from "@/components/icons/ParishIcons";
+import Badge from "@/components/ui/Badge";
 import AccentSectionCard from "@/components/layout/AccentSectionCard";
 import { routes } from "@/lib/navigation/routes";
 import type { TaskPreview } from "@/lib/queries/this-week";
@@ -19,6 +20,7 @@ function formatDueLabel(dueBy: Date) {
  *
  * Shows the top 3 open tasks/opportunities with due dates.
  * Uses a rose/action accent color to encourage participation.
+ * Includes status breakdown badges (Open, In Progress, Done) for quick overview.
  * Includes a "View all" link to the full serve board/opportunities page.
  *
  * **Empty State:** Shows when no opportunities are currently available.
@@ -34,6 +36,10 @@ function formatDueLabel(dueBy: Date) {
  * <SectionOpportunities tasks={openTasks} />
  */
 export default function SectionOpportunities({ tasks }: SectionOpportunitiesProps) {
+  // Calculate task status breakdown
+  const openCount = tasks.filter((t) => t.status === "OPEN").length;
+  const inProgressCount = tasks.filter((t) => t.status === "IN_PROGRESS").length;
+  const doneCount = tasks.filter((t) => t.status === "DONE").length;
   return (
     <section id="opportunities" className="scroll-mt-24">
       <AccentSectionCard
@@ -42,12 +48,33 @@ export default function SectionOpportunities({ tasks }: SectionOpportunitiesProp
         borderClass="border-rose-200"
         iconClass="bg-rose-100 text-rose-700"
         action={
-          <Link
-            className="whitespace-nowrap text-sm font-medium text-ink-700 underline"
-            href={`${routes.serve}?view=opportunities`}
-          >
-            View all
-          </Link>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            {/* Status badges */}
+            <div className="flex flex-wrap gap-1.5">
+              {openCount > 0 && (
+                <Badge tone="neutral">
+                  {openCount} Open
+                </Badge>
+              )}
+              {inProgressCount > 0 && (
+                <Badge tone="warning">
+                  {inProgressCount} In Progress
+                </Badge>
+              )}
+              {doneCount > 0 && (
+                <Badge tone="success">
+                  {doneCount} Done
+                </Badge>
+              )}
+            </div>
+            {/* View all link */}
+            <Link
+              className="whitespace-nowrap text-sm font-medium text-ink-700 underline"
+              href={`${routes.serve}?view=opportunities`}
+            >
+              View all
+            </Link>
+          </div>
         }
       >
         <div className="space-y-3">

@@ -8,6 +8,9 @@ import {
 import ParishionerHeader from "@/components/this-week/parishioner/ParishionerHeader";
 import QuickBlocksRow from "@/components/this-week/parishioner/QuickBlocksRow";
 import GroupsSection from "@/components/this-week/parishioner/GroupsSection";
+import SectionAnnouncements from "@/components/this-week/parishioner/SectionAnnouncements";
+import SectionSchedule from "@/components/this-week/parishioner/SectionSchedule";
+import SectionOpportunities from "@/components/this-week/parishioner/SectionOpportunities";
 import Card from "@/components/ui/Card";
 import Link from "next/link";
 import type { ThisWeekData } from "@/lib/queries/this-week";
@@ -158,6 +161,13 @@ export default async function ThisWeekParishionerView({
         groups={data.memberGroups}
         hasPublicGroups={data.hasPublicGroups}
       />
+
+      {/* Detailed Sections - Latest announcements, services, and opportunities */}
+      <SectionAnnouncements announcements={data.announcements} />
+
+      <SectionSchedule events={data.events} />
+
+      <SectionOpportunities tasks={data.tasks} />
 
       {/* Gratitude Spotlight - ONLY show if there are actual entries */}
       {hasGratitudeItems && (

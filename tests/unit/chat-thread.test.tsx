@@ -143,7 +143,7 @@ test("ChatThread wraps long message text", () => {
     })
   );
 
-  assert.ok(markup.includes("break-words"));
+  assert.ok(markup.includes("break-word"));
 });
 
 test("ChatThread renders fixed emoji menu when opened", () => {
