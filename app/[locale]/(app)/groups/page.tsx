@@ -37,7 +37,9 @@ export default async function GroupsPage() {
       pageTitle="Groups"
       parishName={parish?.name ?? "My Parish"}
       isLeader={isLeader}
-      subtitle="Connect with fellow parishioners who share your interests"
+      subtitle="Find your people and grow together"
+      quote="For where two or three gather in my name, there am I with them."
+      quoteSource="Matthew 18:20"
       gradientClass="from-primary-600 via-primary-500 to-emerald-500"
     >
       <GroupsView

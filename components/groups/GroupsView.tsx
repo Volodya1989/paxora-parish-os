@@ -19,9 +19,9 @@ import Card from "@/components/ui/Card";
 import ListEmptyState from "@/components/app/list-empty-state";
 import { useTranslations } from "@/lib/i18n/provider";
 
-const EMPTY_GROUPS_MESSAGE = "Create a group to organize the people and ministries you lead.";
-const REQUEST_GROUP_MESSAGE = "Request a new group to gather people around a shared mission.";
-const NO_ARCHIVED_MESSAGE = "No archived groups yet. Everything is active.";
+const EMPTY_GROUPS_MESSAGE = "Start a group to bring people together around shared interests and faith.";
+const REQUEST_GROUP_MESSAGE = "Have an idea for a group? Request one and start connecting with fellow parishioners.";
+const NO_ARCHIVED_MESSAGE = "No archived groups — all groups are active and welcoming.";
 const LIMITED_ACCESS_MESSAGE = "Only parish leaders can manage groups.";
 
 type GroupsViewProps = {
@@ -202,9 +202,10 @@ export default function GroupsView({
           description={canManageGroups ? EMPTY_GROUPS_MESSAGE : REQUEST_GROUP_MESSAGE}
           action={
             <Button onClick={openCreateDialog}>
-              {canManageGroups ? "Create group" : "Request a new group"}
+              {canManageGroups ? "Start a group" : "Suggest a group"}
             </Button>
           }
+          variant="friendly"
         />
       );
     }
@@ -215,8 +216,8 @@ export default function GroupsView({
 
     return (
       <ListEmptyState
-        title="No matches"
-        description="We couldn't find a group that matches this search."
+        title="No groups found"
+        description="Try a different search or browse all groups."
       />
     );
   };
@@ -224,8 +225,8 @@ export default function GroupsView({
   return (
     <div className="section-gap">
       <PageShell
-        title="Groups"
-        description="Keep parish teams organized, aligned, and ready for the week ahead."
+        title="Your Community"
+        description="Connect with fellow parishioners in groups that match your interests and calling."
         summaryChips={[
           { label: `${counts.active} active`, tone: "emerald" },
           { label: `${counts.archived} archived`, tone: "mist" }
@@ -233,7 +234,7 @@ export default function GroupsView({
         actions={
           <>
             <Button onClick={openCreateDialog} className="h-9 px-3 text-sm">
-              {canManageGroups ? "Create group" : "Request a new group"}
+              {canManageGroups ? "Start a group" : "Suggest a group"}
             </Button>
             <div className="md:hidden">
               <FiltersDrawer title="Filters">
@@ -272,10 +273,13 @@ export default function GroupsView({
             <Card>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <p className="text-sm font-semibold text-ink-900">Group list</p>
-                  <p className="text-xs text-ink-400">{filteredGroups.length} groups shown</p>
+                  <p className="text-sm font-semibold text-ink-900">
+                    {activeTab === "active" ? "Active groups" : "Archived groups"}
+                  </p>
+                  <p className="text-xs text-ink-400">
+                    {filteredGroups.length} {filteredGroups.length === 1 ? "group" : "groups"}
+                  </p>
                 </div>
-                <p className="text-xs text-ink-400">Total: {groups.length}</p>
               </div>
 
               <div className="mt-4">

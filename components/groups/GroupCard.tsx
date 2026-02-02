@@ -150,22 +150,37 @@ export default function GroupCard({
       tabIndex={canOpenChat ? 0 : undefined}
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 space-y-1">
+        <div className="min-w-0 space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-base font-semibold text-ink-900 break-words">{group.name}</h3>
             {isArchived ? <Badge tone="warning">Archived</Badge> : null}
-            {isPending ? <Badge tone="warning">Pending approval</Badge> : null}
+            {isPending ? <Badge tone="warning">Pending</Badge> : null}
             {isRejected ? <Badge tone="neutral">Not approved</Badge> : null}
-            <Badge tone={group.visibility === "PUBLIC" ? "success" : "neutral"}>
-              {group.visibility === "PUBLIC" ? t("common.public") : t("common.private")}
-            </Badge>
             {group.unreadCount && group.unreadCount > 0 ? (
-              <Badge tone="warning">{group.unreadCount}</Badge>
+              <Badge tone="warning">{group.unreadCount} new</Badge>
             ) : null}
           </div>
-          {detailsOpen && group.description?.trim() ? (
-            <p className="text-xs text-ink-500 break-words">{group.description}</p>
+          {group.description?.trim() ? (
+            <p className="text-xs leading-relaxed text-ink-500 break-words line-clamp-2">{group.description}</p>
           ) : null}
+          <div className="flex items-center gap-3 text-xs text-ink-400">
+            <div className="flex items-center gap-1.5">
+              <div className="flex -space-x-1.5">
+                {avatarInitials.slice(0, 3).map((initials, index) => (
+                  <span
+                    key={`${initials}-${index}`}
+                    className="flex h-5 w-5 items-center justify-center rounded-full border border-white bg-emerald-100 text-[8px] font-semibold text-emerald-800"
+                  >
+                    {initials}
+                  </span>
+                ))}
+              </div>
+              <span>{memberCountLabel === "—" ? "—" : `${memberCountLabel} ${memberSuffix}`}</span>
+            </div>
+            {isMember ? (
+              <span className="font-medium text-primary-600">Joined</span>
+            ) : null}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -218,32 +233,13 @@ export default function GroupCard({
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone="neutral">
               {group.joinPolicy === "OPEN"
-                ? "Join instantly"
+                ? "Open — join anytime"
                 : group.joinPolicy === "REQUEST_TO_JOIN"
-                ? "Request approval"
+                ? "Request to join"
                 : "Invite only"}
             </Badge>
-            {isMember ? <Badge tone="neutral">Member</Badge> : null}
-            {isInvited ? <Badge tone="warning">Invited</Badge> : null}
+            {isInvited ? <Badge tone="warning">You're invited</Badge> : null}
             {isRequested ? <Badge tone="warning">Request pending</Badge> : null}
-          </div>
-          <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-ink-500">
-            <div className="flex items-center gap-2">
-              <div className="flex -space-x-2">
-                {avatarInitials.map((initials, index) => (
-                  <span
-                    key={`${initials}-${index}`}
-                    className="flex h-7 w-7 items-center justify-center rounded-full border border-white bg-emerald-100 text-[10px] font-semibold text-emerald-800"
-                  >
-                    {initials}
-                  </span>
-                ))}
-              </div>
-              <span className="font-medium text-ink-700">
-                {memberCountLabel === "—" ? "—" : `${memberCountLabel} ${memberSuffix}`}
-              </span>
-            </div>
-            <span>Last updated {formatDate(group.createdAt)}</span>
           </div>
         </div>
       ) : null}
