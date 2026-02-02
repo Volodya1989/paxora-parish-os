@@ -1,8 +1,6 @@
 "use client";
 
-import { type ReactNode
-
- } from "react";
+import { type ReactNode } from "react";
 import LanguageIconToggle from "@/components/navigation/LanguageIconToggle";
 import { cn } from "@/lib/ui/cn";
 
@@ -21,6 +19,8 @@ type PageHeaderProps = {
   quote?: string;
   /** Optional attribution for the quote */
   quoteSource?: string;
+  /** Optional icon to display next to the title */
+  icon?: ReactNode;
 };
 
 /**
@@ -41,7 +41,8 @@ export default function PageHeader({
   actions,
   gradientClass = "from-primary-600 via-primary-500 to-emerald-500",
   quote,
-  quoteSource
+  quoteSource,
+  icon
 }: PageHeaderProps) {
   return (
     <header
@@ -67,9 +68,12 @@ export default function PageHeader({
 
       {/* Page title */}
       <div className="relative">
-        <h1 className="text-xl font-bold tracking-tight md:text-2xl">
-          {pageTitle}
-        </h1>
+        <div className="flex items-center gap-2">
+          {icon ? <span className="flex-shrink-0">{icon}</span> : null}
+          <h1 className="text-xl font-bold tracking-tight md:text-2xl">
+            {pageTitle}
+          </h1>
+        </div>
         {subtitle && (
           <p className="mt-0.5 text-xs text-white/80">{subtitle}</p>
         )}

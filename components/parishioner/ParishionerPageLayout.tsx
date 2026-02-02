@@ -18,6 +18,8 @@ type ParishionerPageLayoutProps = {
   gradientClass?: string;
   /** Optional actions to show in header (e.g., view toggles) */
   actions?: ReactNode;
+  /** Optional icon to display next to the title */
+  icon?: ReactNode;
   /** Page content */
   children: ReactNode;
 };
@@ -28,21 +30,6 @@ type ParishionerPageLayoutProps = {
  *
  * The PageHeader is only shown for parishioners (non-leaders).
  * Leaders see the AppHeader at the layout level instead.
- *
- * Usage:
- * ```tsx
- * <ParishionerPageLayout
- *   pageTitle="Groups"
- *   parishName={parish.name}
- *   isLeader={canManage}
- *   subtitle="Connect with your community"
- *   quote="For where two or three are gathered..."
- *   quoteSource="Matthew 18:20"
- *   gradientClass="from-primary-600 via-primary-500 to-emerald-500"
- * >
- *   <YourPageContent />
- * </ParishionerPageLayout>
- * ```
  */
 export default function ParishionerPageLayout({
   pageTitle,
@@ -53,6 +40,7 @@ export default function ParishionerPageLayout({
   quoteSource,
   gradientClass = "from-primary-600 via-primary-500 to-emerald-500",
   actions,
+  icon,
   children,
 }: ParishionerPageLayoutProps) {
   return (
@@ -67,6 +55,7 @@ export default function ParishionerPageLayout({
           quoteSource={quoteSource}
           gradientClass={gradientClass}
           actions={actions}
+          icon={icon}
         />
       )}
       {children}
