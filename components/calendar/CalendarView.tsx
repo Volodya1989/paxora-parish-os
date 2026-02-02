@@ -10,6 +10,7 @@ import CalendarGridMonth from "@/components/calendar/CalendarGridMonth";
 import CalendarDayList from "@/components/calendar/CalendarDayList";
 import EventDetailPanel from "@/components/calendar/EventDetailPanel";
 import EventCreateDialog from "@/components/calendar/EventCreateDialog";
+import EventRequestDialog from "@/components/calendar/EventRequestDialog";
 import ScheduleView from "@/components/calendar/ScheduleView";
 import PageShell from "@/components/app/page-shell";
 import FiltersDrawer from "@/components/app/filters-drawer";
@@ -87,6 +88,7 @@ export default function CalendarView({
   const [groupFilter, setGroupFilter] = useState<GroupFilter>("all");
   const [createOpen, setCreateOpen] = useState(false);
   const [createType, setCreateType] = useState<"SERVICE" | "EVENT">("SERVICE");
+  const [requestOpen, setRequestOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
   const weekDays = useMemo(() => getWeekDays(weekRange.start), [weekRange.start]);
@@ -171,19 +173,11 @@ export default function CalendarView({
     }
   };
 
-  const addButtonLabel = canCreateEvents ? "+ Add" : "+ Add (restricted)";
-  const addButtonTooltip = canCreateEvents
-    ? undefined
-    : "Only parish leaders or group coordinators can add events.";
   const calendarSectionTitle = view === "week" ? "This week" : "This month";
-  const calendarSectionDescription =
-    view === "week"
-      ? "Here's what's happening in parish life this week."
-      : "A look at the full month ahead.";
 
-  const renderEmptyActions = () =>
-    canCreateEvents ? (
-      <div className="flex flex-wrap justify-center gap-3">
+  const renderEmptyActions = () => (
+    <div className="flex flex-wrap justify-center gap-3">
+      {canCreateEvents ? (
         <Button
           onClick={() => {
             setCreateType("SERVICE");
@@ -192,17 +186,15 @@ export default function CalendarView({
         >
           Add a service
         </Button>
-        <Button
-          variant="secondary"
-          onClick={() => {
-            setCreateType("EVENT");
-            setCreateOpen(true);
-          }}
-        >
-          Add an event
-        </Button>
-      </div>
-    ) : null;
+      ) : null}
+      <Button
+        variant={canCreateEvents ? "secondary" : "primary"}
+        onClick={() => setRequestOpen(true)}
+      >
+        Request an event
+      </Button>
+    </div>
+  );
 
   const scheduleFilters = (
     <div className="space-y-3">
@@ -239,19 +231,11 @@ export default function CalendarView({
       <div className="section-gap">
         <PageShell
           title="Upcoming Events"
-          description="See what's coming up in parish life — services, gatherings, and community moments."
           summaryChips={[
-            { label: surface === "schedule" ? "List view" : "Calendar", tone: "emerald" },
             { label: view === "week" ? "This week" : "This month", tone: "mist" }
           ]}
           actions={
             <>
-              <Tabs value={surface} onValueChange={(value) => setSurface(value)}>
-                <TabsList aria-label="View style" className="flex-wrap">
-                  <TabsTrigger value="calendar">Calendar</TabsTrigger>
-                  <TabsTrigger value="schedule">List</TabsTrigger>
-                </TabsList>
-              </Tabs>
               <TabsList aria-label="Time range" className="flex-wrap">
                 <TabsTrigger value="week">Week</TabsTrigger>
                 <TabsTrigger value="month">Month</TabsTrigger>
@@ -263,17 +247,24 @@ export default function CalendarView({
               ) : null}
               <Button
                 type="button"
-                variant="secondary"
-                disabled={!canCreateEvents}
-                title={addButtonTooltip}
-                onClick={() => {
-                  setCreateType("SERVICE");
-                  setCreateOpen(true);
-                }}
+                onClick={() => setRequestOpen(true)}
                 className="h-9 px-3 text-sm"
               >
-                {addButtonLabel}
+                Request an event
               </Button>
+              {canCreateEvents ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setCreateType("SERVICE");
+                    setCreateOpen(true);
+                  }}
+                  className="h-9 px-3 text-sm"
+                >
+                  + Add
+                </Button>
+              ) : null}
             </>
           }
         >
@@ -310,6 +301,7 @@ export default function CalendarView({
                       <ListEmptyState
                         title="Nothing scheduled yet"
                         description="New services and events will show up here as they're added."
+                        icon={<CalendarIcon className="h-6 w-6" />}
                         action={renderEmptyActions()}
                         variant="friendly"
                       />
@@ -333,12 +325,12 @@ export default function CalendarView({
                   <CalendarIcon className="h-4 w-4" />
                   {calendarSectionTitle}
                 </div>
-                <p className="mt-2 text-xs text-ink-400">{calendarSectionDescription}</p>
                 <TabsPanel value="week" className="mt-4">
                   {weekEvents.length === 0 ? (
                     <ListEmptyState
                       title="A quiet week ahead"
                       description="No services or events are scheduled this week. Check back soon!"
+                      icon={<CalendarIcon className="h-6 w-6" />}
                       action={renderEmptyActions()}
                       variant="friendly"
                     />
@@ -369,6 +361,7 @@ export default function CalendarView({
                     <ListEmptyState
                       title="Nothing on the calendar this month"
                       description="Events and services will appear here once they're scheduled."
+                      icon={<CalendarIcon className="h-6 w-6" />}
                       action={renderEmptyActions()}
                       variant="friendly"
                     />
@@ -414,6 +407,10 @@ export default function CalendarView({
         canCreatePrivateEvents={canCreatePrivateEvents}
         canCreateGroupEvents={canCreateGroupEvents}
         defaultType={createType}
+      />
+      <EventRequestDialog
+        open={requestOpen}
+        onOpenChange={setRequestOpen}
       />
     </Tabs>
   );
