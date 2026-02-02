@@ -74,18 +74,10 @@ export default function PageHeader({
           <p className="mt-0.5 text-xs text-white/80">{subtitle}</p>
         )}
         {quote && (
-          <blockquote className="mt-3 border-l-4 border-white/40 pl-3 text-xs italic text-white/90">
+          <blockquote className="mt-3 border-l-4 border-white/40 pl-3 text-sm italic text-white/90">
             <p>{quote}</p>
             {quoteSource && (
               <footer className="mt-1 text-xs text-white/70">— {quoteSource}</footer>
-            )}
-          </blockquote>
-        )}
-        {quote && (
-          <blockquote className="mt-4 border-l-4 border-white/40 pl-4 text-sm italic text-white/90">
-            <p>{quote}</p>
-            {quoteSource && (
-              <footer className="mt-2 text-xs text-white/70">— {quoteSource}</footer>
             )}
           </blockquote>
         )}

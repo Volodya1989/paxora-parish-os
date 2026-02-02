@@ -22,9 +22,9 @@ import type { TaskListItem } from "@/lib/queries/tasks";
 import { cn } from "@/lib/ui/cn";
 
 const statusColumns = [
-  { id: "OPEN", label: "To do", tone: "bg-sky-50 text-sky-700" },
+  { id: "OPEN", label: "Help needed", tone: "bg-sky-50 text-sky-700" },
   { id: "IN_PROGRESS", label: "In progress", tone: "bg-amber-50 text-amber-700" },
-  { id: "DONE", label: "Done", tone: "bg-emerald-50 text-emerald-700" }
+  { id: "DONE", label: "Completed", tone: "bg-emerald-50 text-emerald-700" }
 ] as const;
 
 type TaskStatus = (typeof statusColumns)[number]["id"];
@@ -320,27 +320,12 @@ export default function ServeBoardView({
   return (
     <div className="section-gap">
       <PageShell
-        title="Serve Board"
-        description="Track tasks across the week and keep volunteers aligned."
+        title="Opportunities to Help"
+        description="Find ways to use your gifts for the good of our parish community."
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {renderFilterButton("All", ownershipFilter === "all", () => setOwnershipFilter("all"))}
-            {renderFilterButton("My tasks", ownershipFilter === "mine", () => setOwnershipFilter("mine"))}
-            {renderFilterButton(
-              "Public",
-              visibilityFilter === "public",
-              () => setVisibilityFilter("public")
-            )}
-            {renderFilterButton(
-              "Private",
-              visibilityFilter === "private",
-              () => setVisibilityFilter("private")
-            )}
-            {renderFilterButton(
-              "All visibility",
-              visibilityFilter === "all",
-              () => setVisibilityFilter("all")
-            )}
+            {renderFilterButton("Mine", ownershipFilter === "mine", () => setOwnershipFilter("mine"))}
           </div>
         }
       />
@@ -418,52 +403,31 @@ export default function ServeBoardView({
                         <div className="space-y-1">
                           <div className="text-sm font-semibold text-ink-900">{task.title}</div>
                           <div className="flex flex-wrap items-center gap-2 text-xs text-ink-500">
-                            <Badge
-                              tone={task.visibility === "PUBLIC" ? "neutral" : "warning"}
-                              className={
-                                task.visibility === "PUBLIC"
-                                  ? "bg-sky-50 text-sky-700"
-                                  : "bg-slate-100 text-slate-700"
-                              }
-                            >
-                              {task.visibility === "PUBLIC" ? "Public" : "Private"}
-                            </Badge>
-                            {task.visibility === "PUBLIC" ? (
+                            {task.visibility === "PUBLIC" && task.openToVolunteers ? (
                               <Badge
-                                tone={task.openToVolunteers ? "success" : "neutral"}
-                                className={
-                                  task.openToVolunteers
-                                    ? "bg-emerald-50 text-emerald-700"
-                                    : "bg-mist-50 text-ink-500"
-                                }
+                                tone="success"
+                                className="bg-emerald-50 text-emerald-700"
                               >
-                                {task.openToVolunteers ? "Open to volunteers" : "Closed"}
+                                Volunteers welcome
                               </Badge>
                             ) : null}
                           </div>
                         </div>
                       </button>
 
-                      <div className="space-y-2 text-xs text-ink-500">
-                        <div>
-                          Assignee:{" "}
-                          <span
-                            className="font-medium text-ink-700"
-                            title={task.owner?.name ?? "Unassigned"}
-                          >
-                            {ownerCompactName ?? "Unassigned"}
-                          </span>
-                        </div>
-                        <div>
-                          Coordinator:{" "}
-                          <span
-                            className="font-medium text-ink-700"
-                            title={task.coordinator?.name ?? "None"}
-                          >
-                            {coordinatorCompactName ?? "None"}
-                          </span>
-                        </div>
-                        <div>{updatedLabel}</div>
+                      <div className="space-y-1.5 text-xs text-ink-500">
+                        {hasOwner ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary-100 text-[9px] font-semibold text-primary-800">
+                              {ownerCompactName}
+                            </span>
+                            <span className="font-medium text-ink-700" title={task.owner?.name}>
+                              {task.owner?.name ?? "Volunteer"}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="text-ink-400">No one yet — be the first!</div>
+                        )}
                       </div>
 
                       <div className="space-y-2 text-xs">
@@ -484,13 +448,13 @@ export default function ServeBoardView({
 
                         <div className="flex flex-wrap gap-2">
                           {canClaim && !hasOwner ? (
-                            <Button type="button" variant="secondary" size="sm" onClick={() => handleClaim(task.id)}>
-                              Claim
+                            <Button type="button" size="sm" onClick={() => handleClaim(task.id)}>
+                              Volunteer
                             </Button>
                           ) : null}
                           {canUnclaim ? (
                             <Button type="button" variant="secondary" size="sm" onClick={() => handleUnclaim(task.id)}>
-                              Unclaim
+                              Step back
                             </Button>
                           ) : null}
                         </div>

@@ -178,35 +178,31 @@ export default function CalendarView({
   const calendarSectionTitle = view === "week" ? "This week" : "This month";
   const calendarSectionDescription =
     view === "week"
-      ? "Review the week at a glance and tap into specific services."
-      : "See the full month and spot busy weekends early.";
+      ? "Here's what's happening in parish life this week."
+      : "A look at the full month ahead.";
 
-  const renderEmptyActions = () => (
-    <div className="flex flex-wrap justify-center gap-3">
-      <Button
-        variant="secondary"
-        disabled={!canCreateEvents}
-        title={addButtonTooltip}
-        onClick={() => {
-          setCreateType("SERVICE");
-          setCreateOpen(true);
-        }}
-      >
-        Add first service
-      </Button>
-      <Button
-        variant="secondary"
-        disabled={!canCreateEvents}
-        title={addButtonTooltip}
-        onClick={() => {
-          setCreateType("EVENT");
-          setCreateOpen(true);
-        }}
-      >
-        Add event
-      </Button>
-    </div>
-  );
+  const renderEmptyActions = () =>
+    canCreateEvents ? (
+      <div className="flex flex-wrap justify-center gap-3">
+        <Button
+          onClick={() => {
+            setCreateType("SERVICE");
+            setCreateOpen(true);
+          }}
+        >
+          Add a service
+        </Button>
+        <Button
+          variant="secondary"
+          onClick={() => {
+            setCreateType("EVENT");
+            setCreateOpen(true);
+          }}
+        >
+          Add an event
+        </Button>
+      </div>
+    ) : null;
 
   const scheduleFilters = (
     <div className="space-y-3">
@@ -242,21 +238,21 @@ export default function CalendarView({
     <Tabs value={view} onValueChange={(value) => setView(value)}>
       <div className="section-gap">
         <PageShell
-          title="Calendar"
-          description="Plan services, rehearsals, and gatherings across the parish."
+          title="Upcoming Events"
+          description="See what's coming up in parish life — services, gatherings, and community moments."
           summaryChips={[
-            { label: surface === "schedule" ? "Schedule" : "Calendar", tone: "emerald" },
-            { label: view === "week" ? "Week view" : "Month view", tone: "mist" }
+            { label: surface === "schedule" ? "List view" : "Calendar", tone: "emerald" },
+            { label: view === "week" ? "This week" : "This month", tone: "mist" }
           ]}
           actions={
             <>
               <Tabs value={surface} onValueChange={(value) => setSurface(value)}>
-                <TabsList aria-label="Calendar surface" className="flex-wrap">
+                <TabsList aria-label="View style" className="flex-wrap">
                   <TabsTrigger value="calendar">Calendar</TabsTrigger>
-                  <TabsTrigger value="schedule">Schedule</TabsTrigger>
+                  <TabsTrigger value="schedule">List</TabsTrigger>
                 </TabsList>
               </Tabs>
-              <TabsList aria-label="Calendar view" className="flex-wrap">
+              <TabsList aria-label="Time range" className="flex-wrap">
                 <TabsTrigger value="week">Week</TabsTrigger>
                 <TabsTrigger value="month">Month</TabsTrigger>
               </TabsList>
@@ -297,24 +293,25 @@ export default function CalendarView({
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <p className="text-sm font-semibold text-ink-900">
-                        Services & events schedule
+                        Coming up
                       </p>
                       <p className="text-xs text-ink-400">
-                        See upcoming services in a calm, day-by-day flow.
+                        Services and events, day by day.
                       </p>
                     </div>
                   </div>
                   {!isEditor && viewerGroupIds.length === 0 ? (
                     <div className="mt-3 rounded-card border border-mist-100 bg-mist-50 px-4 py-3 text-xs text-ink-500">
-                      Showing public events only. Join a ministry group to see their schedules.
+                      Showing public events. Join a group to see their schedules too.
                     </div>
                   ) : null}
                   <div className="mt-4">
                     {scheduleEvents.length === 0 ? (
                       <ListEmptyState
-                        title="No upcoming services yet"
-                        description="When you schedule services or events, they will appear here for the parish."
+                        title="Nothing scheduled yet"
+                        description="New services and events will show up here as they're added."
                         action={renderEmptyActions()}
+                        variant="friendly"
                       />
                     ) : (
                       <ScheduleView
@@ -340,9 +337,10 @@ export default function CalendarView({
                 <TabsPanel value="week" className="mt-4">
                   {weekEvents.length === 0 ? (
                     <ListEmptyState
-                      title="No events this week"
-                      description="Add a new event to keep the calendar up to date."
+                      title="A quiet week ahead"
+                      description="No services or events are scheduled this week. Check back soon!"
                       action={renderEmptyActions()}
+                      variant="friendly"
                     />
                   ) : (
                     <>
@@ -369,9 +367,10 @@ export default function CalendarView({
                 <TabsPanel value="month" className="mt-4">
                   {monthEvents.length === 0 ? (
                     <ListEmptyState
-                      title="No events this month"
-                      description="Schedule something for the parish calendar."
+                      title="Nothing on the calendar this month"
+                      description="Events and services will appear here once they're scheduled."
                       action={renderEmptyActions()}
+                      variant="friendly"
                     />
                   ) : (
                     <>

@@ -69,10 +69,12 @@ export default async function ServeBoardPage() {
 
   return (
     <ParishionerPageLayout
-      pageTitle="Help Needed"
+      pageTitle="Serve"
       parishName={parish?.name ?? "My Parish"}
       isLeader={isLeader}
-      subtitle="Volunteer opportunities to serve our community"
+      subtitle="Opportunities to help and make a difference"
+      quote="Each of you should use whatever gift you have received to serve others."
+      quoteSource="1 Peter 4:10"
       gradientClass="from-sky-500 via-sky-400 to-cyan-500"
     >
       <ServeBoardView
