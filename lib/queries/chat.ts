@@ -178,6 +178,14 @@ async function listReactionsForMessages(messageIds: string[], userId?: string) {
   return buildReactionSummary(messageIds, normalizedCounts, reacted);
 }
 
+export async function getLastReadAt(channelId: string, userId: string): Promise<Date | null> {
+  const state = await prisma.chatRoomReadState.findUnique({
+    where: { roomId_userId: { roomId: channelId, userId } },
+    select: { lastReadAt: true }
+  });
+  return state?.lastReadAt ?? null;
+}
+
 export async function listUnreadCountsForRooms(roomIds: string[], userId: string) {
   if (roomIds.length === 0) {
     return new Map<string, number>();

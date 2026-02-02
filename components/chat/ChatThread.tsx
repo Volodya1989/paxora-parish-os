@@ -73,7 +73,8 @@ export default function ChatThread({
   onToggleReaction,
   onViewThread,
   initialReactionMenuMessageId,
-  isLoading
+  isLoading,
+  firstUnreadMessageId
 }: {
   messages: ChatMessage[];
   pinnedMessage: ChatPinnedMessage | null;
@@ -88,6 +89,7 @@ export default function ChatThread({
   onViewThread?: (message: ChatMessage) => void;
   initialReactionMenuMessageId?: string | null;
   isLoading?: boolean;
+  firstUnreadMessageId?: string | null;
 }) {
   const [openReactionMessageId, setOpenReactionMessageId] = useState<string | null>(
     initialReactionMenuMessageId ?? null
@@ -118,6 +120,8 @@ export default function ChatThread({
 
     return groups;
   }, [messages]);
+
+  let unreadRendered = false;
 
   return (
     <div
@@ -174,237 +178,260 @@ export default function ChatThread({
                 const isGrouped = isSameGroup(previousMessage, message);
                 const showAuthorBlock = !isGrouped;
 
+                // Unread separator: render once before the first unread message
+                let showUnreadSeparator = false;
+                if (firstUnreadMessageId && !unreadRendered && message.id === firstUnreadMessageId) {
+                  showUnreadSeparator = true;
+                  unreadRendered = true;
+                }
+
                 return (
-                  <div
-                    key={message.id}
-                    className={cn(
-                      "group relative flex",
-                      isMine ? "justify-end" : "justify-start",
-                      isGrouped ? "mt-0.5" : "mt-3 first:mt-0"
-                    )}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setSelectedMessageId((prev) => (prev === message.id ? null : message.id));
-                    }}
-                  >
-                    {/* Left-side avatar for other users */}
-                    {!isMine ? (
-                      <div className="mr-2 w-9 shrink-0">
-                        {showAuthorBlock ? (
-                          <button
-                            type="button"
-                            className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-xs font-semibold text-emerald-800"
-                            title={message.author.name}
-                            aria-label={`View profile for ${message.author.name}`}
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            <span aria-hidden="true">{initials}</span>
-                          </button>
-                        ) : null}
+                  <div key={message.id}>
+                    {/* Unread messages separator */}
+                    {showUnreadSeparator ? (
+                      <div className="flex items-center gap-3 py-2">
+                        <div className="h-px flex-1 bg-rose-300" />
+                        <span className="shrink-0 rounded-full bg-rose-50 px-3 py-0.5 text-[11px] font-semibold text-rose-500">
+                          New messages
+                        </span>
+                        <div className="h-px flex-1 bg-rose-300" />
                       </div>
                     ) : null}
 
-                    {/* Bubble */}
                     <div
                       className={cn(
-                        "relative w-fit min-w-[60px] max-w-[75%] px-3 py-1.5",
-                        isMine
-                          ? "rounded-2xl rounded-br-sm bg-emerald-100"
-                          : "rounded-2xl rounded-bl-sm bg-white border border-mist-100",
-                        isSelected && "ring-1 ring-primary-200"
+                        "group relative flex",
+                        isMine ? "justify-end" : "justify-start",
+                        isGrouped ? "mt-0.5" : "mt-3 first:mt-0"
                       )}
-                      tabIndex={0}
-                      onFocus={() => setSelectedMessageId(message.id)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          setSelectedMessageId((prev) => (prev === message.id ? null : message.id));
-                        }
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setSelectedMessageId((prev) => (prev === message.id ? null : message.id));
                       }}
                     >
-                      {/* Author + time header (first in group only) */}
-                      {showAuthorBlock ? (
-                        <div className="mb-0.5 flex items-center gap-2">
-                          {!isMine ? (
-                            <span className="text-xs font-semibold text-ink-700">
-                              {formatDisplayName(message.author.name)}
-                            </span>
-                          ) : null}
-                          <span className="sr-only">{message.author.name}</span>
-                          <span className="text-xs text-gray-400">
-                            {formatTime(new Date(message.createdAt))}
-                          </span>
-                        </div>
-                      ) : null}
-
-                      {/* Reply preview */}
-                      {message.parentMessage ? (
-                        <div className="mb-1 rounded-md border border-mist-100 border-l-4 border-l-emerald-500/60 bg-emerald-50/50 px-2 py-1.5 text-xs text-ink-500">
-                          <p className="font-semibold text-ink-600">
-                            {message.parentMessage.author.name}
-                          </p>
-                          <p className="mt-0.5 break-words text-ink-500">
-                            {parentPreview ? getSnippet(parentPreview, 140) : "Message unavailable"}
-                          </p>
-                        </div>
-                      ) : null}
-
-                      {/* Message body */}
-                      <p
-                        className={cn(
-                          "whitespace-pre-wrap text-sm [overflow-wrap:anywhere] [word-break:break-word]",
-                          isDeleted ? "italic text-ink-400" : "text-ink-700"
-                        )}
-                      >
-                        {isDeleted ? "This message was deleted." : message.body}
-                      </p>
-
-                      {/* Thread link as pill */}
-                      {showThreadLink ? (
-                        <button
-                          type="button"
-                          className="mt-1 inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-600 hover:bg-emerald-100"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            onViewThread?.(message);
-                          }}
-                        >
-                          View thread ({message.replyCount})
-                        </button>
-                      ) : null}
-
-                      {/* Reactions as inline badges */}
-                      {hasReactions || canReact ? (
-                        <div className="mt-1 flex flex-wrap items-center gap-1">
-                          {reactions.map((reaction) => (
+                      {/* Left-side avatar for other users */}
+                      {!isMine ? (
+                        <div className="mr-2 w-9 shrink-0">
+                          {showAuthorBlock ? (
                             <button
-                              key={`${message.id}-${reaction.emoji}`}
                               type="button"
-                              className={cn(
-                                "inline-flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-xs shadow-sm",
-                                reaction.reactedByMe
-                                  ? "border-emerald-200 bg-emerald-50 font-semibold text-emerald-800"
-                                  : "border-mist-200 bg-white font-medium text-ink-600"
-                              )}
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                onToggleReaction?.(message.id, reaction.emoji);
-                              }}
+                              className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-xs font-semibold text-emerald-800"
+                              title={message.author.name}
+                              aria-label={`View profile for ${message.author.name}`}
+                              onClick={(event) => event.stopPropagation()}
                             >
-                              <span aria-hidden="true">{reaction.emoji}</span>
-                              <span>{reaction.count}</span>
+                              <span aria-hidden="true">{initials}</span>
                             </button>
-                          ))}
-                          {canReact ? (
-                            <div className="relative">
+                          ) : null}
+                        </div>
+                      ) : null}
+
+                      {/* Bubble */}
+                      <div
+                        className={cn(
+                          "relative w-fit min-w-[60px] max-w-[75%] px-3 py-1.5",
+                          isMine
+                            ? "rounded-2xl rounded-br-sm bg-emerald-100"
+                            : "rounded-2xl rounded-bl-sm bg-gray-50 border border-gray-200",
+                          isSelected && "ring-1 ring-primary-200"
+                        )}
+                        tabIndex={0}
+                        onFocus={() => setSelectedMessageId(message.id)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            setSelectedMessageId((prev) => (prev === message.id ? null : message.id));
+                          }
+                        }}
+                      >
+                        {/* Author + time header (first in group only) */}
+                        {showAuthorBlock ? (
+                          <div className="mb-0.5 flex items-center gap-2">
+                            {!isMine ? (
+                              <span className="text-xs font-bold text-ink-900">
+                                {formatDisplayName(message.author.name)}
+                              </span>
+                            ) : null}
+                            <span className="sr-only">{message.author.name}</span>
+                            <span className="text-xs text-gray-400">
+                              {formatTime(new Date(message.createdAt))}
+                            </span>
+                          </div>
+                        ) : null}
+
+                        {/* Reply preview */}
+                        {message.parentMessage ? (
+                          <div className="mb-1 rounded-md border border-mist-100 border-l-4 border-l-emerald-500/60 bg-emerald-50/50 px-2 py-1.5 text-xs text-ink-500">
+                            <p className="font-semibold text-ink-600">
+                              {message.parentMessage.author.name}
+                            </p>
+                            <p className="mt-0.5 break-words text-ink-500">
+                              {parentPreview ? getSnippet(parentPreview, 140) : "Message unavailable"}
+                            </p>
+                          </div>
+                        ) : null}
+
+                        {/* Message body */}
+                        <p
+                          className={cn(
+                            "whitespace-pre-wrap text-sm [overflow-wrap:anywhere] [word-break:break-word]",
+                            isDeleted
+                              ? "italic text-ink-400"
+                              : isMine
+                                ? "text-ink-700"
+                                : "text-ink-800"
+                          )}
+                        >
+                          {isDeleted ? "This message was deleted." : message.body}
+                        </p>
+
+                        {/* Thread link as pill */}
+                        {showThreadLink ? (
+                          <button
+                            type="button"
+                            className="mt-1 inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-600 hover:bg-emerald-100"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              onViewThread?.(message);
+                            }}
+                          >
+                            View thread ({message.replyCount})
+                          </button>
+                        ) : null}
+
+                        {/* Reactions as inline badges */}
+                        {hasReactions || canReact ? (
+                          <div className="mt-1 flex flex-wrap items-center gap-1">
+                            {reactions.map((reaction) => (
                               <button
+                                key={`${message.id}-${reaction.emoji}`}
                                 type="button"
                                 className={cn(
-                                  "inline-flex h-6 w-6 items-center justify-center rounded-full border border-mist-200 bg-white text-xs text-ink-500 transition-opacity hover:text-ink-900",
-                                  showControls
-                                    ? "opacity-100"
-                                    : "opacity-0 sm:group-hover:opacity-100 group-focus-within:opacity-100"
+                                  "inline-flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-xs shadow-sm",
+                                  reaction.reactedByMe
+                                    ? "border-emerald-200 bg-emerald-50 font-semibold text-emerald-800"
+                                    : "border-mist-200 bg-white font-medium text-ink-600"
                                 )}
-                                aria-label="Add reaction"
-                                aria-expanded={isMenuOpen}
                                 onClick={(event) => {
                                   event.stopPropagation();
-                                  setOpenReactionMessageId(isMenuOpen ? null : message.id);
+                                  onToggleReaction?.(message.id, reaction.emoji);
                                 }}
                               >
-                                +
+                                <span aria-hidden="true">{reaction.emoji}</span>
+                                <span>{reaction.count}</span>
                               </button>
-                              {isMenuOpen ? (
-                                <div
+                            ))}
+                            {canReact ? (
+                              <div className="relative">
+                                <button
+                                  type="button"
                                   className={cn(
-                                    "absolute top-full z-10 mt-2 grid w-[280px] grid-cols-6 gap-2 rounded-card border border-mist-200 bg-white p-2 shadow-lg",
-                                    isMine ? "right-0" : "left-0"
+                                    "inline-flex h-6 w-6 items-center justify-center rounded-full border border-mist-200 bg-white text-xs text-ink-500 transition-opacity hover:text-ink-900",
+                                    showControls
+                                      ? "opacity-100"
+                                      : "opacity-0 sm:group-hover:opacity-100 group-focus-within:opacity-100"
                                   )}
-                                  onClick={(event) => event.stopPropagation()}
+                                  aria-label="Add reaction"
+                                  aria-expanded={isMenuOpen}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    setOpenReactionMessageId(isMenuOpen ? null : message.id);
+                                  }}
                                 >
-                                  {REACTION_EMOJIS.map((emoji) => (
-                                    <button
-                                      key={`${message.id}-${emoji}`}
-                                      type="button"
-                                      className="flex h-11 w-11 items-center justify-center rounded-full border border-transparent text-lg transition hover:border-mist-200 hover:bg-mist-50"
-                                      onClick={(event) => {
-                                        event.stopPropagation();
-                                        onToggleReaction?.(message.id, emoji);
-                                        setOpenReactionMessageId(null);
-                                      }}
-                                    >
-                                      {emoji}
-                                    </button>
-                                  ))}
-                                </div>
-                              ) : null}
-                            </div>
-                          ) : null}
-                        </div>
-                      ) : null}
+                                  +
+                                </button>
+                                {isMenuOpen ? (
+                                  <div
+                                    className={cn(
+                                      "absolute bottom-full z-10 mb-2 flex items-center gap-1 rounded-full border border-mist-200 bg-white px-1 py-1 shadow-lg",
+                                      isMine ? "right-0" : "left-0"
+                                    )}
+                                    onClick={(event) => event.stopPropagation()}
+                                  >
+                                    {REACTION_EMOJIS.map((emoji) => (
+                                      <button
+                                        key={`${message.id}-${emoji}`}
+                                        type="button"
+                                        className="flex h-8 w-8 items-center justify-center rounded-full text-base transition hover:bg-mist-50 hover:scale-125"
+                                        onClick={(event) => {
+                                          event.stopPropagation();
+                                          onToggleReaction?.(message.id, emoji);
+                                          setOpenReactionMessageId(null);
+                                        }}
+                                      >
+                                        {emoji}
+                                      </button>
+                                    ))}
+                                  </div>
+                                ) : null}
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : null}
 
-                      {/* Action row (reply / edit / pin / delete) */}
-                      {showActionRow ? (
-                        <div
-                          className={cn(
-                            "absolute -top-3 z-10 flex items-center gap-1 rounded-full border border-mist-200 bg-white px-1.5 py-0.5 shadow-sm transition-opacity",
-                            isMine ? "left-0" : "right-0",
-                            showControls
-                              ? "opacity-100"
-                              : "opacity-0 sm:group-hover:opacity-100 group-focus-within:opacity-100"
-                          )}
-                          onClick={(event) => event.stopPropagation()}
-                        >
-                          {canReply ? (
-                            <button
-                              type="button"
-                              className="px-1.5 py-0.5 text-xs font-medium text-ink-500 hover:text-ink-900"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                onReply(message);
-                              }}
-                            >
-                              Reply
-                            </button>
-                          ) : null}
-                          {canModify ? (
-                            <button
-                              type="button"
-                              className="px-1.5 py-0.5 text-xs font-medium text-ink-500 hover:text-ink-900"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                onEdit(message);
-                              }}
-                            >
-                              Edit
-                            </button>
-                          ) : null}
-                          {canModerate && !isDeleted ? (
-                            <button
-                              type="button"
-                              className="px-1.5 py-0.5 text-xs font-medium text-ink-500 hover:text-ink-900"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                onPin(message.id);
-                              }}
-                            >
-                              Pin
-                            </button>
-                          ) : null}
-                          {canModify ? (
-                            <button
-                              type="button"
-                              className="px-1.5 py-0.5 text-xs font-medium text-rose-600 hover:text-rose-700"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                onDelete(message.id);
-                              }}
-                            >
-                              Delete
-                            </button>
-                          ) : null}
-                        </div>
-                      ) : null}
+                        {/* Action row (reply / edit / pin / delete) — positioned below the bubble */}
+                        {showActionRow ? (
+                          <div
+                            className={cn(
+                              "absolute -bottom-3 z-10 flex items-center gap-1 rounded-full border border-mist-200 bg-white px-1.5 py-0.5 shadow-sm transition-opacity",
+                              isMine ? "left-0" : "right-0",
+                              showControls
+                                ? "opacity-100"
+                                : "opacity-0 sm:group-hover:opacity-100 group-focus-within:opacity-100"
+                            )}
+                            onClick={(event) => event.stopPropagation()}
+                          >
+                            {canReply ? (
+                              <button
+                                type="button"
+                                className="px-1.5 py-0.5 text-xs font-medium text-ink-500 hover:text-ink-900"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  onReply(message);
+                                }}
+                              >
+                                Reply
+                              </button>
+                            ) : null}
+                            {canModify ? (
+                              <button
+                                type="button"
+                                className="px-1.5 py-0.5 text-xs font-medium text-ink-500 hover:text-ink-900"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  onEdit(message);
+                                }}
+                              >
+                                Edit
+                              </button>
+                            ) : null}
+                            {canModerate && !isDeleted ? (
+                              <button
+                                type="button"
+                                className="px-1.5 py-0.5 text-xs font-medium text-ink-500 hover:text-ink-900"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  onPin(message.id);
+                                }}
+                              >
+                                Pin
+                              </button>
+                            ) : null}
+                            {canModify ? (
+                              <button
+                                type="button"
+                                className="px-1.5 py-0.5 text-xs font-medium text-rose-600 hover:text-rose-700"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  onDelete(message.id);
+                                }}
+                              >
+                                Delete
+                              </button>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
                 );

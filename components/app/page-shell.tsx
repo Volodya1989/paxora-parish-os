@@ -64,20 +64,26 @@ export default function PageShell({
   className,
   spacing = "default"
 }: PageShellProps) {
+  const showHeader = Boolean(title || description || summaryChips?.length || actions);
+
   return (
     <div className={cn(spacingStyles[spacing], className)}>
-      <header className="space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-xl font-semibold text-ink-900 md:text-2xl">{title}</h1>
-            {summaryChips?.length ? <SummaryChips chips={summaryChips} /> : null}
+      {showHeader ? (
+        <header className="space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              {title ? (
+                <h1 className="text-xl font-semibold text-ink-900 md:text-2xl">{title}</h1>
+              ) : null}
+              {summaryChips?.length ? <SummaryChips chips={summaryChips} /> : null}
+            </div>
+            {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
           </div>
-          {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
-        </div>
-        {description ? (
-          <p className="max-w-2xl text-sm leading-relaxed text-ink-500">{description}</p>
-        ) : null}
-      </header>
+          {description ? (
+            <p className="max-w-2xl text-sm leading-relaxed text-ink-500">{description}</p>
+          ) : null}
+        </header>
+      ) : null}
       {children}
     </div>
   );

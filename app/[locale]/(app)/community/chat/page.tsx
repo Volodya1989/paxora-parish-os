@@ -4,7 +4,7 @@ import ChatView from "@/components/chat/ChatView";
 import { authOptions } from "@/server/auth/options";
 import { getParishMembership, isCoordinatorInParish } from "@/server/db/groups";
 import { canModerateChatChannel, canPostAnnouncementChannel, isParishLeader } from "@/lib/permissions";
-import { listChannelsForUser, listMessages, getPinnedMessage, listChannelMembers } from "@/lib/queries/chat";
+import { listChannelsForUser, listMessages, getPinnedMessage, listChannelMembers, getLastReadAt } from "@/lib/queries/chat";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -53,19 +53,17 @@ export default async function CommunityChatPage({ searchParams }: CommunityChatP
     canPost = isLeader || selectedChannel.isMember;
   }
 
-  const [messages, pinnedMessage, channelMembers] = await Promise.all([
+  const [messages, pinnedMessage, channelMembers, lastReadAt] = await Promise.all([
     listMessages({ channelId: selectedChannel.id, userId }),
     getPinnedMessage(selectedChannel.id, userId),
     selectedChannel.type !== "GROUP"
       ? listChannelMembers(parishId, selectedChannel.id)
-      : Promise.resolve(undefined)
+      : Promise.resolve(undefined),
+    getLastReadAt(selectedChannel.id, userId)
   ]);
 
   return (
-    <PageShell
-      title="Community chat"
-      description="Stay connected across parish announcements and discussions."
-    >
+    <PageShell title="" spacing="compact">
       <ChatView
         channels={channels}
         channel={selectedChannel}
@@ -76,6 +74,7 @@ export default async function CommunityChatPage({ searchParams }: CommunityChatP
         currentUserId={userId}
         channelMembers={channelMembers}
         mentionableUsers={channelMembers?.map((member) => ({ id: member.userId, name: member.name }))}
+        lastReadAt={lastReadAt}
       />
     </PageShell>
   );
