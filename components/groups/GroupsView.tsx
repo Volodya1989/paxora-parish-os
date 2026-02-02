@@ -223,11 +223,11 @@ export default function GroupsView({
   return (
     <div className="section-gap">
       {/* Scripture quote card */}
-      <div className="rounded-card border-l-4 border-l-primary-400 border border-mist-200 bg-white px-4 py-3 shadow-card">
-        <p className="text-sm italic leading-relaxed text-ink-600">
+      <div className="rounded-card border-l-4 border-l-primary-400 border border-primary-100 bg-gradient-to-br from-primary-50 to-emerald-50/60 px-5 py-4 shadow-card">
+        <p className="text-sm italic leading-relaxed text-ink-700">
           &ldquo;For where two or three gather in my name, there am I with them.&rdquo;
         </p>
-        <footer className="mt-1 text-xs text-ink-400">— Matthew 18:20</footer>
+        <footer className="mt-1.5 text-xs font-medium text-primary-600/70">— Matthew 18:20</footer>
       </div>
 
       {/* Action bar */}
