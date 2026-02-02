@@ -6,7 +6,7 @@ import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
 import { getGroupMembership, getParishMembership, isCoordinatorForGroup } from "@/server/db/groups";
 import { canModerateChatChannel, canPostGroupChannel, isParishLeader } from "@/lib/permissions";
-import { listChannelsForUser, listMessages, getPinnedMessage } from "@/lib/queries/chat";
+import { listChannelsForUser, listMessages, getPinnedMessage, getLastReadAt } from "@/lib/queries/chat";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -94,7 +94,7 @@ export default async function GroupChatPage({ params }: GroupChatPageProps) {
   const canModerate = canModerateChatChannel(parishMembership.role, isCoordinator);
   const canPost = canPostGroupChannel(parishMembership.role, isMember);
 
-  const [messages, pinnedMessage, groupMembers] = await Promise.all([
+  const [messages, pinnedMessage, groupMembers, lastReadAt] = await Promise.all([
     listMessages({ channelId: selectedChannel.id, userId }),
     getPinnedMessage(selectedChannel.id, userId),
     prisma.groupMembership.findMany({
@@ -111,14 +111,12 @@ export default async function GroupChatPage({ params }: GroupChatPageProps) {
           }
         }
       }
-    })
+    }),
+    getLastReadAt(selectedChannel.id, userId)
   ]);
 
   return (
-    <PageShell
-      title={`${selectedChannel.group?.name ?? "Group"} chat`}
-      description="Coordinate within your group in a dedicated room."
-    >
+    <PageShell title="" spacing="compact">
       <ChatView
         channels={channels}
         channel={selectedChannel}
@@ -131,6 +129,7 @@ export default async function GroupChatPage({ params }: GroupChatPageProps) {
           id: member.user.id,
           name: member.user.name ?? member.user.email ?? "Parish member"
         }))}
+        lastReadAt={lastReadAt}
       />
     </PageShell>
   );

@@ -77,7 +77,8 @@ export default function ChatView({
   canModerate,
   currentUserId,
   mentionableUsers,
-  channelMembers
+  channelMembers,
+  lastReadAt
 }: {
   channels: ChatChannelSummary[];
   channel: ChatChannelSummary;
@@ -88,6 +89,7 @@ export default function ChatView({
   currentUserId: string;
   mentionableUsers?: { id: string; name: string }[];
   channelMembers?: ChatChannelMember[];
+  lastReadAt?: Date | null;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>(() =>
     sortMessages(initialMessages.map(parseMessage))
@@ -350,6 +352,17 @@ export default function ChatView({
     [messages]
   );
 
+  const firstUnreadMessageId = useMemo(() => {
+    if (!lastReadAt) return null;
+    const threshold = new Date(lastReadAt).getTime();
+    const unread = channelMessages.find(
+      (message) =>
+        message.author.id !== currentUserId &&
+        new Date(message.createdAt).getTime() > threshold
+    );
+    return unread?.id ?? null;
+  }, [channelMessages, lastReadAt, currentUserId]);
+
   const threadMessages = useMemo(() => {
     if (!threadRoot) return [];
     const root = messages.find((message) => message.id === threadRoot.id) ?? threadRoot;
@@ -398,6 +411,7 @@ export default function ChatView({
           onToggleReaction={handleToggleReaction}
           onViewThread={(message) => setThreadRoot(message)}
           isLoading={!isPollingReady}
+          firstUnreadMessageId={firstUnreadMessageId}
         />
         <Composer
           disabled={!canPost || Boolean(lockedAt)}
