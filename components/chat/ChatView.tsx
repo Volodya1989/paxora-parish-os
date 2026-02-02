@@ -112,6 +112,7 @@ export default function ChatView({
   const bottomRef = useRef<HTMLDivElement>(null);
   const isNearBottomRef = useRef(true);
   const prevMessageCountRef = useRef(messages.length);
+  const justSentRef = useRef(false);
 
   useEffect(() => {
     messagesRef.current = messages;
@@ -142,10 +143,15 @@ export default function ChatView({
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Auto-scroll when new messages arrive (only if user is near bottom)
+  // Auto-scroll when new messages arrive:
+  // - Always scroll after the user sends a message (justSentRef)
+  // - For incoming messages (poll), only scroll if user is already near bottom
   useEffect(() => {
-    if (messages.length > prevMessageCountRef.current && isNearBottomRef.current) {
-      scrollToBottom();
+    if (messages.length > prevMessageCountRef.current) {
+      if (justSentRef.current || isNearBottomRef.current) {
+        scrollToBottom();
+      }
+      justSentRef.current = false;
     }
     prevMessageCountRef.current = messages.length;
   }, [messages.length, scrollToBottom]);
@@ -251,11 +257,11 @@ export default function ChatView({
     }
 
     const created = await postMessage(channel.id, body);
+    justSentRef.current = true;
     setMessages((prev) => {
       const next = [...prev, parseMessage(created)];
       return sortMessages(next);
     });
-    scrollToBottom();
   };
 
   const handleSendThread = async (body: string) => {
