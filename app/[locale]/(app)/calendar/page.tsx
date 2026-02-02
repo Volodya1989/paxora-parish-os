@@ -9,6 +9,7 @@ import { ensureParishBootstrap } from "@/server/auth/bootstrap";
 import { listGroupsByParish, getParishMembership } from "@/server/db/groups";
 import { prisma } from "@/server/db/prisma";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
+import { CalendarIcon } from "@/components/icons/ParishIcons";
 
 export default async function CalendarPage() {
   const session = await getServerSession(authOptions);
@@ -79,10 +80,11 @@ export default async function CalendarPage() {
       pageTitle="Calendar"
       parishName={parish?.name ?? "My Parish"}
       isLeader={isLeader}
-      subtitle="Stay connected to what's happening in our parish"
+      subtitle="Stay connected to parish life"
       quote="For everything there is a season, and a time for every matter under heaven."
       quoteSource="Ecclesiastes 3:1"
       gradientClass="from-teal-600 via-teal-500 to-emerald-500"
+      icon={<CalendarIcon className="h-6 w-6 text-white" />}
     >
       <CalendarView
         weekRange={weekRange}

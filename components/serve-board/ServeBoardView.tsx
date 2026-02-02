@@ -9,6 +9,9 @@ import PageShell from "@/components/app/page-shell";
 import Card from "@/components/ui/Card";
 import TaskDetailDialog from "@/components/tasks/TaskDetailDialog";
 import TaskCompletionDialog from "@/components/tasks/TaskCompletionDialog";
+import OpportunityRequestDialog from "@/components/serve-board/OpportunityRequestDialog";
+import ListEmptyState from "@/components/app/list-empty-state";
+import { HeartIcon } from "@/components/icons/ParishIcons";
 import { useToast } from "@/components/ui/Toast";
 import {
   claimTask,
@@ -95,6 +98,7 @@ export default function ServeBoardView({
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
   const [completeTaskId, setCompleteTaskId] = useState<string | null>(null);
+  const [requestOpen, setRequestOpen] = useState(false);
   const [, startTransition] = useTransition();
 
   const orderStorageKey = `serve-board-order-${currentUserId}`;
@@ -317,18 +321,40 @@ export default function ServeBoardView({
     </button>
   );
 
+  const totalOpportunities = filteredTasks.length;
+
   return (
     <div className="section-gap">
       <PageShell
         title="Opportunities to Help"
-        description="Find ways to use your gifts for the good of our parish community."
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              onClick={() => setRequestOpen(true)}
+              className="h-9 px-3 text-sm"
+            >
+              Request an opportunity
+            </Button>
             {renderFilterButton("All", ownershipFilter === "all", () => setOwnershipFilter("all"))}
             {renderFilterButton("Mine", ownershipFilter === "mine", () => setOwnershipFilter("mine"))}
           </div>
         }
       />
+
+      {totalOpportunities === 0 ? (
+        <ListEmptyState
+          title="New opportunities coming soon"
+          description="Check back to find ways you can contribute your time and talents to our parish community."
+          icon={<HeartIcon className="h-6 w-6" />}
+          variant="friendly"
+          action={
+            <Button onClick={() => setRequestOpen(true)}>
+              Request an opportunity
+            </Button>
+          }
+        />
+      ) : null}
 
       <div className="flex gap-4 overflow-x-auto pb-4 md:grid md:grid-cols-3 md:overflow-visible">
         {statusColumns.map((column) => {
@@ -543,6 +569,10 @@ export default function ServeBoardView({
           }
         }}
         onConfirm={handleConfirmComplete}
+      />
+      <OpportunityRequestDialog
+        open={requestOpen}
+        onOpenChange={setRequestOpen}
       />
     </div>
   );
