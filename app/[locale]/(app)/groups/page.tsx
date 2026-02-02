@@ -37,7 +37,7 @@ export default async function GroupsPage() {
       pageTitle="Groups"
       parishName={parish?.name ?? "My Parish"}
       isLeader={isLeader}
-      subtitle="Connect with fellow parishioners who share your interests"
+      subtitle="Find your people"
       gradientClass="from-primary-600 via-primary-500 to-emerald-500"
     >
       <GroupsView

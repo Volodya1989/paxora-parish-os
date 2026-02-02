@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import ChannelList from "@/components/chat/ChannelList";
 import ChatHeader from "@/components/chat/ChatHeader";
@@ -109,10 +109,52 @@ export default function ChatView({
   const router = useRouter();
 
   const messagesRef = useRef(messages);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const isNearBottomRef = useRef(true);
+  const prevMessageCountRef = useRef(messages.length);
+  const justSentRef = useRef(false);
 
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
+
+  const scrollToBottom = useCallback((instant?: boolean) => {
+    requestAnimationFrame(() => {
+      bottomRef.current?.scrollIntoView({
+        behavior: instant ? "instant" : "smooth",
+        block: "end"
+      });
+    });
+  }, []);
+
+  // Instant scroll to bottom on mount and channel change
+  useLayoutEffect(() => {
+    bottomRef.current?.scrollIntoView({ block: "end" });
+  }, [channel.id]);
+
+  // Track whether user is near the bottom of the page
+  useEffect(() => {
+    const handleScroll = () => {
+      const el = document.documentElement;
+      isNearBottomRef.current =
+        el.scrollHeight - (el.scrollTop + el.clientHeight) < 150;
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Auto-scroll when new messages arrive:
+  // - Always scroll after the user sends a message (justSentRef)
+  // - For incoming messages (poll), only scroll if user is already near bottom
+  useEffect(() => {
+    if (messages.length > prevMessageCountRef.current) {
+      if (justSentRef.current || isNearBottomRef.current) {
+        scrollToBottom();
+      }
+      justSentRef.current = false;
+    }
+    prevMessageCountRef.current = messages.length;
+  }, [messages.length, scrollToBottom]);
 
   const poll = useCallback(async () => {
     const lastMessage = messagesRef.current[messagesRef.current.length - 1];
@@ -215,6 +257,7 @@ export default function ChatView({
     }
 
     const created = await postMessage(channel.id, body);
+    justSentRef.current = true;
     setMessages((prev) => {
       const next = [...prev, parseMessage(created)];
       return sortMessages(next);
@@ -427,6 +470,7 @@ export default function ChatView({
           onCancelEdit={() => setEditingMessage(null)}
           mentionableUsers={mentionableUsers}
         />
+        <div ref={bottomRef} aria-hidden="true" />
       </section>
 
       {threadRoot ? (
