@@ -46,14 +46,6 @@ function buildAvatarInitials(name: string, memberCount: number | null) {
   return initials;
 }
 
-function formatDate(date: Date) {
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric"
-  }).format(date);
-}
-
 type GroupCardProps = {
   group: GroupListItem;
   canManageGroup: boolean;
@@ -85,7 +77,6 @@ export default function GroupCard({
 }: GroupCardProps) {
   const t = useTranslations();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [detailsOpen, setDetailsOpen] = useState(false);
   const router = useRouter();
   const isArchived = Boolean(group.archivedAt);
   const isPending = group.status === "PENDING_APPROVAL";
@@ -105,7 +96,7 @@ export default function GroupCard({
   const isInvited = group.viewerMembershipStatus === "INVITED";
   const isRequested = group.viewerMembershipStatus === "REQUESTED";
   const showJoinActions = !isMember && !isInvited && !isRequested && !isArchived && !isPending;
-  const showMenu = canManageGroup || canManageMembers;
+  const showMenu = canManageGroup || canManageMembers || isMember;
 
   const joinAction = () => {
     if (group.joinPolicy === "OPEN") {
@@ -180,23 +171,33 @@ export default function GroupCard({
             {isMember ? (
               <span className="font-medium text-primary-600">Joined</span>
             ) : null}
+            {isInvited ? (
+              <span className="font-medium text-amber-600">Invited</span>
+            ) : null}
+            {isRequested ? (
+              <span className="font-medium text-amber-600">Request pending</span>
+            ) : null}
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-mist-200 text-ink-500 transition hover:bg-mist-50 focus-ring"
-            onClick={(event) => {
-              event.stopPropagation();
-              setDetailsOpen((prev) => !prev);
-            }}
-            aria-label={detailsOpen ? "Hide details" : "Show details"}
-          >
-            <span className={cn("text-lg transition", detailsOpen ? "rotate-180" : "rotate-0")}>
-              ▾
-            </span>
-          </button>
-          {showMenu ? (
+
+        <div className="flex shrink-0 items-center gap-1">
+          {/* Join/Request button — kept visible for discoverability */}
+          {showJoinActions ? (
+            group.joinPolicy === "INVITE_ONLY" ? (
+              <span className="text-xs font-medium text-ink-400">Invite only</span>
+            ) : (
+              <Button
+                type="button"
+                size="sm"
+                onClick={(e) => { e.stopPropagation(); joinAction(); }}
+              >
+                {group.joinPolicy === "OPEN" ? "Join" : "Request to join"}
+              </Button>
+            )
+          ) : null}
+
+          {/* Three-dot menu with all secondary actions */}
+          {showMenu || !showJoinActions ? (
             <Dropdown
               open={open}
               onOpenChange={(nextOpen) => {
@@ -205,12 +206,24 @@ export default function GroupCard({
                 }
               }}
             >
-              <DropdownTrigger asChild iconOnly aria-label="Group options">
-                <Button type="button" variant="ghost" size="sm" className="text-ink-500">
+              <DropdownTrigger asChild iconOnly aria-label={`Options for ${group.name}`}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-ink-500"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   ⋯
                 </Button>
               </DropdownTrigger>
-              <DropdownMenu ariaLabel="Group menu">
+              <DropdownMenu ariaLabel={`${group.name} menu`}>
+                <DropdownItem asChild>
+                  <Link href={`/groups/${group.id}`}>View details</Link>
+                </DropdownItem>
+                {canManageMembers ? (
+                  <DropdownItem onClick={onManageMembers}>View members</DropdownItem>
+                ) : null}
                 {canManageGroup ? <DropdownItem onClick={onEdit}>Edit</DropdownItem> : null}
                 {canManageGroup ? (
                   isArchived ? (
@@ -219,61 +232,17 @@ export default function GroupCard({
                     <DropdownItem onClick={onArchive}>Archive</DropdownItem>
                   )
                 ) : null}
-                {canManageMembers ? (
-                  <DropdownItem onClick={onManageMembers}>Manage members</DropdownItem>
+                {isMember && !isArchived ? (
+                  <DropdownItem
+                    onClick={onLeave}
+                    className="text-rose-600 hover:bg-rose-50 focus-visible:bg-rose-50"
+                  >
+                    Leave group
+                  </DropdownItem>
                 ) : null}
               </DropdownMenu>
             </Dropdown>
           ) : null}
-        </div>
-      </div>
-
-      {detailsOpen ? (
-        <div className="space-y-2 rounded-card border border-mist-100 bg-mist-50/60 px-3 py-2 text-xs text-ink-600">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge tone="neutral">
-              {group.joinPolicy === "OPEN"
-                ? "Open — join anytime"
-                : group.joinPolicy === "REQUEST_TO_JOIN"
-                ? "Request to join"
-                : "Invite only"}
-            </Badge>
-            {isInvited ? <Badge tone="warning">You're invited</Badge> : null}
-            {isRequested ? <Badge tone="warning">Request pending</Badge> : null}
-          </div>
-        </div>
-      ) : null}
-
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-          {isMember && !isArchived ? (
-            <Button type="button" variant="ghost" size="sm" onClick={onLeave}>
-              Leave group
-            </Button>
-          ) : null}
-          {showJoinActions ? (
-            group.joinPolicy === "INVITE_ONLY" ? (
-              <span className="text-xs font-medium text-ink-400">Invite only</span>
-            ) : (
-              <Button type="button" size="sm" onClick={joinAction}>
-                {group.joinPolicy === "OPEN" ? "Join" : "Request to join"}
-              </Button>
-            )
-          ) : null}
-          {canManageMembers ? (
-            <Link
-              className="text-xs font-medium text-ink-700 underline"
-              href={`/groups/${group.id}/members`}
-            >
-              Members
-            </Link>
-          ) : null}
-          <Link
-            className="text-xs font-medium text-ink-700 underline"
-            href={`/groups/${group.id}`}
-          >
-            View details
-          </Link>
         </div>
       </div>
     </Card>
