@@ -13,6 +13,7 @@ import PageShell from "@/components/app/page-shell";
 import FiltersDrawer from "@/components/app/filters-drawer";
 import Card from "@/components/ui/Card";
 import ListEmptyState from "@/components/app/list-empty-state";
+import QuoteCard from "@/components/app/QuoteCard";
 import type { TaskFilters as TaskFiltersState, TaskListItem, TaskListSummary } from "@/lib/queries/tasks";
 import type { PendingAccessRequest } from "@/lib/queries/access";
 import type { PendingTaskApproval } from "@/lib/queries/tasks";
@@ -68,6 +69,7 @@ export default function TasksView({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [createVisibility, setCreateVisibility] = useState<"private" | "public">("private");
   const [accessRoles, setAccessRoles] = useState<Record<string, string>>({});
   const [isApproving, startApprovalTransition] = useTransition();
   const [isAccessPending, startAccessTransition] = useTransition();
@@ -153,6 +155,54 @@ export default function TasksView({
         ? "My commitments"
         : title;
   const showCreateButton = canManageTasks || viewMode === "mine";
+  const isParishionerView = !canManageTasks;
+
+  const filtersContent = (
+    <TaskFilters
+      filters={filters}
+      groupOptions={groupOptions}
+      showOwnership={viewMode !== "opportunities"}
+      layout="inline"
+      searchPlaceholder={viewMode === "opportunities" ? "Search opportunities" : undefined}
+    />
+  );
+
+  const renderTasksContent = () => {
+    if (!hasTasks) {
+      if (viewMode === "opportunities") {
+        return (
+          <ListEmptyState
+            title="No opportunities right now"
+            description="Check back soon for new ways to serve."
+          />
+        );
+      }
+      return (
+        <TasksEmptyState
+          variant="no-tasks"
+          onCreate={showCreateButton ? () => setIsCreateOpen(true) : undefined}
+        />
+      );
+    }
+
+    if (!hasMatches) {
+      return <TasksEmptyState variant="no-matches" onClearFilters={clearFilters} />;
+    }
+
+    return (
+      <TasksList
+        tasks={tasks}
+        groupOptions={groupOptions}
+        memberOptions={memberOptions}
+        currentUserId={currentUserId}
+      />
+    );
+  };
+
+  const openCreateDialogWithVisibility = (visibility: "private" | "public") => {
+    setCreateVisibility(visibility);
+    setIsCreateOpen(true);
+  };
 
   const renderViewToggle = (className?: string) => {
     if (viewMode === "all") {
@@ -212,6 +262,73 @@ export default function TasksView({
     }
     router.replace(`?${params.toString()}`, { scroll: false });
   };
+
+  if (isParishionerView) {
+    return (
+      <div className="section-gap">
+        <QuoteCard
+          quote="Each of you should use whatever gift you have received to serve others."
+          source="1 Peter 4:10"
+          tone="sky"
+        />
+
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {renderViewToggle("flex-1 min-w-[220px] sm:flex-none")}
+            <div className="md:hidden">
+              <FiltersDrawer title="Filters" className="shrink-0">
+                <div className="space-y-4">
+                  {renderViewToggle()}
+                  <TaskFilters
+                    filters={filters}
+                    groupOptions={groupOptions}
+                    showOwnership={viewMode !== "opportunities"}
+                    layout="stacked"
+                    searchPlaceholder={
+                      viewMode === "opportunities" ? "Search opportunities" : undefined
+                    }
+                  />
+                </div>
+              </FiltersDrawer>
+            </div>
+          </div>
+          {viewMode === "mine" ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                onClick={() => openCreateDialogWithVisibility("private")}
+                className="h-10 px-4 text-sm"
+              >
+                Add a private task
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => openCreateDialogWithVisibility("public")}
+                className="h-10 px-4 text-sm"
+              >
+                Request a public task
+              </Button>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="hidden md:block">{filtersContent}</div>
+
+        <div className="space-y-5">{renderTasksContent()}</div>
+
+        <TaskCreateDialog
+          open={isCreateOpen}
+          onOpenChange={(open) => (open ? setIsCreateOpen(true) : closeCreateDialog())}
+          weekId={weekId}
+          groupOptions={groupOptions}
+          memberOptions={memberOptions}
+          currentUserId={currentUserId}
+          initialVisibility={createVisibility}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="section-gap">
@@ -297,30 +414,7 @@ export default function TasksView({
                 </div>
               ) : null}
 
-              <div className="mt-4">
-                {!hasTasks ? (
-                  viewMode === "opportunities" ? (
-                    <ListEmptyState
-                      title="No opportunities right now"
-                      description="Check back soon for new ways to serve."
-                    />
-                  ) : (
-                    <TasksEmptyState
-                      variant="no-tasks"
-                      onCreate={showCreateButton ? () => setIsCreateOpen(true) : undefined}
-                    />
-                  )
-                ) : !hasMatches ? (
-                  <TasksEmptyState variant="no-matches" onClearFilters={clearFilters} />
-                ) : (
-                  <TasksList
-                    tasks={tasks}
-                    groupOptions={groupOptions}
-                    memberOptions={memberOptions}
-                    currentUserId={currentUserId}
-                  />
-                )}
-              </div>
+              <div className="mt-4">{renderTasksContent()}</div>
             </Card>
 
             {canManageTasks && pendingAccessRequests.length ? (
@@ -446,6 +540,7 @@ export default function TasksView({
         groupOptions={groupOptions}
         memberOptions={memberOptions}
         currentUserId={currentUserId}
+        initialVisibility={createVisibility}
       />
     </div>
   );

@@ -5,14 +5,14 @@ import { useRouter } from "next/navigation";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import SelectMenu from "@/components/ui/SelectMenu";
-import PageShell from "@/components/app/page-shell";
 import Card from "@/components/ui/Card";
 import TaskDetailDialog from "@/components/tasks/TaskDetailDialog";
 import TaskCompletionDialog from "@/components/tasks/TaskCompletionDialog";
 import OpportunityRequestDialog from "@/components/serve-board/OpportunityRequestDialog";
 import ListEmptyState from "@/components/app/list-empty-state";
-import { HeartIcon } from "@/components/icons/ParishIcons";
+import { HeartIcon, ListChecksIcon } from "@/components/icons/ParishIcons";
 import { useToast } from "@/components/ui/Toast";
+import QuoteCard from "@/components/app/QuoteCard";
 import {
   claimTask,
   deleteTask,
@@ -38,34 +38,6 @@ type ServeBoardViewProps = {
   currentUserId: string;
   isLeader: boolean;
 };
-
-function formatRelativeTime(value: string) {
-  const timestamp = new Date(value).getTime();
-  const diffMs = Date.now() - timestamp;
-  const minute = 1000 * 60;
-  const hour = minute * 60;
-  const day = hour * 24;
-
-  if (diffMs < minute) {
-    return "just now";
-  }
-  if (diffMs < hour) {
-    const minutes = Math.max(1, Math.round(diffMs / minute));
-    return `${minutes}m ago`;
-  }
-  if (diffMs < day) {
-    const hours = Math.max(1, Math.round(diffMs / hour));
-    return `${hours}h ago`;
-  }
-  const days = Math.round(diffMs / day);
-  if (days < 7) {
-    return `${days}d ago`;
-  }
-  return new Date(value).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric"
-  });
-}
 
 function formatCompactName(name: string) {
   const trimmed = name.trim();
@@ -325,22 +297,23 @@ export default function ServeBoardView({
 
   return (
     <div className="section-gap">
-      <PageShell
-        title="Opportunities to Help"
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              onClick={() => setRequestOpen(true)}
-              className="h-9 px-3 text-sm"
-            >
-              Request an opportunity
-            </Button>
-            {renderFilterButton("All", ownershipFilter === "all", () => setOwnershipFilter("all"))}
-            {renderFilterButton("Mine", ownershipFilter === "mine", () => setOwnershipFilter("mine"))}
-          </div>
-        }
+      <QuoteCard
+        quote="Each of you should use whatever gift you have received to serve others."
+        source="1 Peter 4:10"
+        tone="sky"
       />
+
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          onClick={() => setRequestOpen(true)}
+          className="h-10 px-4 text-sm"
+        >
+          Request an opportunity
+        </Button>
+        {renderFilterButton("All", ownershipFilter === "all", () => setOwnershipFilter("all"))}
+        {renderFilterButton("Mine", ownershipFilter === "mine", () => setOwnershipFilter("mine"))}
+      </div>
 
       {totalOpportunities === 0 ? (
         <ListEmptyState
@@ -383,17 +356,10 @@ export default function ServeBoardView({
                     task.owner &&
                     (task.owner.id === currentUserId || canAssignOthers);
                   const canManageStatus = task.canManageStatus && !isBusy;
-                  const updatedBy = task.updatedBy?.name;
                   const ownerCompactName = task.owner ? formatCompactName(task.owner.name) : null;
-                  const coordinatorCompactName = task.coordinator
-                    ? formatCompactName(task.coordinator.name)
-                    : null;
-                  const updatedLabel = updatedBy
-                    ? `Updated ${formatRelativeTime(task.updatedAt)} by ${updatedBy}`
-                    : `Updated ${formatRelativeTime(task.updatedAt)}`;
 
                   return (
-                    <div
+                    <Card
                       key={task.id}
                       draggable
                       onDragStart={(event) => {
@@ -414,20 +380,24 @@ export default function ServeBoardView({
                         handleDropOnTask(column.id, task.id);
                       }}
                       className={cn(
-                        "rounded-card",
+                        "space-y-3 p-3 sm:p-4",
                         dragOverTaskId === task.id && draggedTaskId !== task.id
                           ? "ring-2 ring-emerald-200"
                           : ""
                       )}
                     >
-                      <Card className="space-y-3">
                       <button
                         type="button"
                         onClick={() => setDetailTaskId(task.id)}
                         className="text-left"
                       >
                         <div className="space-y-1">
-                          <div className="text-sm font-semibold text-ink-900">{task.title}</div>
+                          <div className="flex items-center gap-2">
+                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-mist-100">
+                              <ListChecksIcon className="h-3.5 w-3.5 text-ink-400" />
+                            </span>
+                            <div className="text-sm font-semibold text-ink-900">{task.title}</div>
+                          </div>
                           <div className="flex flex-wrap items-center gap-2 text-xs text-ink-500">
                             {task.visibility === "PUBLIC" && task.openToVolunteers ? (
                               <Badge
@@ -539,8 +509,7 @@ export default function ServeBoardView({
                           </Button>
                         ) : null}
                       </div>
-                      </Card>
-                    </div>
+                    </Card>
                   );
                 })}
               </div>

@@ -6,6 +6,7 @@ import { getParishMembership } from "@/server/db/groups";
 import { isParishLeader } from "@/lib/permissions";
 import { prisma } from "@/server/db/prisma";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
+import { UsersIcon } from "@/components/icons/ParishIcons";
 
 export default async function GroupsPage() {
   const session = await getServerSession(authOptions);
@@ -39,6 +40,7 @@ export default async function GroupsPage() {
       isLeader={isLeader}
       subtitle="Find your people"
       gradientClass="from-primary-600 via-primary-500 to-emerald-500"
+      icon={<UsersIcon className="h-6 w-6 text-white" />}
     >
       <GroupsView
         groups={groups}

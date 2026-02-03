@@ -6,6 +6,7 @@ import type { TaskPreview } from "@/lib/queries/this-week";
 import { routes } from "@/lib/navigation/routes";
 import { formatShortDate } from "@/lib/this-week/formatters";
 import { cn } from "@/lib/ui/cn";
+import { ListChecksIcon } from "@/components/icons/ParishIcons";
 import { getLocaleFromCookies, getTranslations } from "@/lib/i18n/server";
 
 const statusTone = (status: TaskPreview["status"]) => {
@@ -18,28 +19,6 @@ const statusTone = (status: TaskPreview["status"]) => {
       return "neutral";
   }
 };
-
-function ChecklistIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M9 7h11" />
-      <path d="M9 12h11" />
-      <path d="M9 17h11" />
-      <path d="M4 7l1.5 1.5L7 6" />
-      <path d="M4 12l1.5 1.5L7 11" />
-      <path d="M4 17l1.5 1.5L7 16" />
-    </svg>
-  );
-}
 
 function RefreshIcon({ className }: { className?: string }) {
   return (
@@ -126,7 +105,7 @@ export default async function ServePreviewCard({ items }: ServePreviewCardProps)
           <div className="flex flex-col gap-3 rounded-card border border-mist-200 bg-mist-50/60 px-3 py-3 text-left sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-mist-100">
-                <ChecklistIcon className="h-4 w-4 text-ink-400" />
+                <ListChecksIcon className="h-4 w-4 text-ink-400" />
               </div>
               <div className="space-y-1">
                 <h3 className="text-sm font-semibold text-ink-900">

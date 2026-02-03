@@ -5,6 +5,7 @@ import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@/components/ui/Dropdown";
 import { cn } from "@/lib/ui/cn";
+import { ListChecksIcon } from "@/components/icons/ParishIcons";
 import type { TaskListItem } from "@/lib/queries/tasks";
 import { useTranslations } from "@/lib/i18n/provider";
 
@@ -141,7 +142,12 @@ export default function TaskRow({
       <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex items-start justify-between gap-2">
-            <p className="text-sm font-semibold text-ink-900 break-words">{task.title}</p>
+            <div className="flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-mist-100">
+                <ListChecksIcon className="h-3.5 w-3.5 text-ink-400" />
+              </span>
+              <p className="text-sm font-semibold text-ink-900 break-words">{task.title}</p>
+            </div>
             <div className="flex items-center gap-2">
               <button
                 type="button"

@@ -8,7 +8,7 @@ import { listTasks } from "@/lib/queries/tasks";
 import { isParishLeader } from "@/lib/permissions";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
 import ServeBoardView from "@/components/serve-board/ServeBoardView";
-import { HeartIcon } from "@/components/icons/ParishIcons";
+import { HandHeartIcon, HeartIcon } from "@/components/icons/ParishIcons";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -74,10 +74,8 @@ export default async function ServeBoardPage() {
       parishName={parish?.name ?? "My Parish"}
       isLeader={isLeader}
       subtitle="Find opportunities to live your faith in action"
-      quote="Each of you should use whatever gift you have received to serve others."
-      quoteSource="1 Peter 4:10"
       gradientClass="from-sky-500 via-sky-400 to-cyan-500"
-      icon={<HeartIcon className="h-6 w-6 text-white" />}
+      icon={<HandHeartIcon className="h-6 w-6 text-white" />}
     >
       <ServeBoardView
         tasks={taskList.tasks}
