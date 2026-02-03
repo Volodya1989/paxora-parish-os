@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type KeyboardEvent } from "react";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@/components/ui/Dropdown";
@@ -127,6 +127,13 @@ export default function TaskRow({
       ? () => onMarkDone(task.id)
       : () => onStartWork(task.id);
   const dueDateLabel = formatDueDateLabel(task.dueAt);
+  const handleViewDetails = () => onViewDetails(task.id);
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      handleViewDetails();
+    }
+  };
 
   return (
     <div
@@ -138,6 +145,10 @@ export default function TaskRow({
             ? "border-l-4 border-l-amber-400"
             : "border-l-4 border-l-sky-400"
       )}
+      role="button"
+      tabIndex={0}
+      onClick={handleViewDetails}
+      onKeyDown={handleKeyDown}
     >
       <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1 space-y-2">
@@ -152,7 +163,10 @@ export default function TaskRow({
               <button
                 type="button"
                 className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-mist-200 text-ink-500 transition hover:bg-mist-50 focus-ring"
-                onClick={() => setDetailsOpen((prev) => !prev)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setDetailsOpen((prev) => !prev);
+                }}
                 aria-label={detailsOpen ? "Hide details" : "Show details"}
               >
                 <span className={cn("text-lg transition", detailsOpen ? "rotate-180" : "rotate-0")}>
@@ -168,13 +182,27 @@ export default function TaskRow({
                     !canOpenMenu && "cursor-not-allowed opacity-50"
                   )}
                   disabled={!canOpenMenu}
+                  onClick={(event) => event.stopPropagation()}
                 >
                   ⋯
                 </DropdownTrigger>
                 <DropdownMenu ariaLabel="Task actions">
-                  <DropdownItem onClick={() => onViewDetails(task.id)}>View details</DropdownItem>
+                  <DropdownItem
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onViewDetails(task.id);
+                    }}
+                  >
+                    View details
+                  </DropdownItem>
                   {showAssignToMe ? (
-                    <DropdownItem onClick={() => onAssignToMe(task.id)} disabled={isBusy}>
+                    <DropdownItem
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onAssignToMe(task.id);
+                      }}
+                      disabled={isBusy}
+                    >
                       Assign to me
                     </DropdownItem>
                   ) : null}
@@ -182,7 +210,10 @@ export default function TaskRow({
                   task.owner &&
                   (task.owner.id === currentUserId || canManage) ? (
                     <DropdownItem
-                      onClick={() => onUnassign(task.id)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onUnassign(task.id);
+                      }}
                       disabled={!canManage}
                       className={cn(!canManage && "pointer-events-none opacity-50")}
                     >
@@ -190,14 +221,20 @@ export default function TaskRow({
                     </DropdownItem>
                   ) : null}
                   <DropdownItem
-                    onClick={() => onEdit(task)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onEdit(task);
+                    }}
                     disabled={!canManage}
                     className={cn(!canManage && "pointer-events-none opacity-50")}
                   >
                     {t("buttons.edit")}
                   </DropdownItem>
                   <DropdownItem
-                    onClick={() => onArchive(task.id)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onArchive(task.id);
+                    }}
                     disabled={!canManage}
                     className={cn(!canManage && "pointer-events-none opacity-50 text-ink-300")}
                   >
@@ -205,7 +242,10 @@ export default function TaskRow({
                   </DropdownItem>
                   {task.canDelete ? (
                     <DropdownItem
-                      onClick={() => onDelete(task.id)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onDelete(task.id);
+                      }}
                       disabled={!task.canDelete}
                       className={cn(
                         "text-rose-600 hover:bg-rose-50 focus-visible:bg-rose-50",
@@ -296,9 +336,14 @@ export default function TaskRow({
             <Button
               type="button"
               variant={task.hasVolunteered ? "secondary" : "primary"}
-              onClick={() =>
-                task.hasVolunteered ? onLeaveVolunteer(task.id) : onVolunteer(task.id)
-              }
+              onClick={(event) => {
+                event.stopPropagation();
+                if (task.hasVolunteered) {
+                  onLeaveVolunteer(task.id);
+                  return;
+                }
+                onVolunteer(task.id);
+              }}
               disabled={
                 isBusy ||
                 (!task.hasVolunteered && (isVolunteerFull || !task.canVolunteer))
@@ -315,7 +360,14 @@ export default function TaskRow({
           ) : null}
 
           {canManageStatus ? (
-            <Button type="button" onClick={statusActionHandler} disabled={isBusy}>
+            <Button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                statusActionHandler();
+              }}
+              disabled={isBusy}
+            >
               {statusActionLabel}
             </Button>
           ) : null}
