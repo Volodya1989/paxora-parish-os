@@ -247,7 +247,10 @@ export async function listTasks({
     andFilters.push({ status: "DONE" });
   }
 
-  if (viewMode === "opportunities") {
+  if (
+    viewMode === "opportunities" &&
+    (normalizedFilters.status === "open" || normalizedFilters.status === "in-progress")
+  ) {
     andFilters.push({ status: { in: ["OPEN", "IN_PROGRESS"] } });
   }
 

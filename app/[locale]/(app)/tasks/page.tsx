@@ -43,8 +43,7 @@ function parseTaskFilters(
     status === "open" || status === "done" || status === "in-progress" ? status : "all";
 
   return {
-    status:
-      viewMode === "opportunities" && normalizedStatus === "done" ? "all" : normalizedStatus,
+    status: normalizedStatus,
     ownership:
       viewMode === "mine"
         ? "mine"

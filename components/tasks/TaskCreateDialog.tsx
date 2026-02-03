@@ -58,6 +58,8 @@ export default function TaskCreateDialog({
     initialTaskActionState
   );
   const handledSuccess = useRef(false);
+  const prevStatus = useRef(state.status);
+  const prevOpen = useRef(false);
   const [formResetKey, setFormResetKey] = useState(0);
   const [volunteersNeeded, setVolunteersNeeded] = useState("1");
   const [visibility, setVisibility] = useState<"public" | "private">("private");
@@ -76,20 +78,32 @@ export default function TaskCreateDialog({
   const visibilityId = useId();
 
   useEffect(() => {
-    if (open) {
-      handledSuccess.current = false;
+    if (open && !prevOpen.current) {
+      handledSuccess.current = state.status === "success";
+      prevStatus.current = state.status;
       setVolunteersNeeded(initialVisibility === "public" ? "2" : "1");
       setVisibility(initialVisibility);
     }
-  }, [initialVisibility, open]);
+    prevOpen.current = open;
+  }, [initialVisibility, open, state.status]);
 
   useEffect(() => {
-    if (state.status !== "success") {
+    const wasSuccess = prevStatus.current === "success";
+    const isSuccess = state.status === "success";
+
+    if (!isSuccess) {
       handledSuccess.current = false;
+      prevStatus.current = state.status;
+      return;
+    }
+
+    if (wasSuccess) {
+      prevStatus.current = state.status;
       return;
     }
 
     if (!shouldCloseTaskDialog(state, handledSuccess.current)) {
+      prevStatus.current = state.status;
       return;
     }
 
@@ -105,6 +119,7 @@ export default function TaskCreateDialog({
     startTransition(() => {
       router.refresh();
     });
+    prevStatus.current = state.status;
   }, [addToast, onOpenChange, router, startTransition, state]);
 
   const renderForm = (formId: string, ref: RefObject<HTMLFormElement>) => (
@@ -114,6 +129,10 @@ export default function TaskCreateDialog({
       id={formId}
       className="space-y-4"
       action={formAction}
+      onSubmit={() => {
+        handledSuccess.current = false;
+        prevStatus.current = "idle";
+      }}
     >
       <input type="hidden" name="weekId" value={weekId} />
       <div className="space-y-2">
