@@ -11,6 +11,7 @@ import TasksView from "@/components/tasks/TasksView";
 import { getTasksViewMode } from "@/lib/tasks/viewMode";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
 import { isParishLeader } from "@/lib/permissions";
+import { HandHeartIcon } from "@/components/icons/ParishIcons";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -161,6 +162,7 @@ export default async function TasksPage({
       isLeader={isLeader}
       subtitle="Opportunities to help and make a difference"
       gradientClass="from-sky-500 via-sky-400 to-cyan-500"
+      icon={<HandHeartIcon className="h-6 w-6 text-white" />}
     >
       <TasksView
         weekLabel={week.label}

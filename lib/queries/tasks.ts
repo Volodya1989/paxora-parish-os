@@ -196,6 +196,7 @@ export async function listTasks({
       role: true
     }
   });
+  const memberGroupIds = groupMemberships.map((membership) => membership.groupId);
 
   const baseWhere = {
     parishId,
@@ -203,16 +204,31 @@ export async function listTasks({
     archivedAt: null
   };
 
+  const publicVisibilityFilter: Prisma.TaskWhereInput = memberGroupIds.length
+    ? {
+        visibility: TaskVisibility.PUBLIC,
+        approvalStatus: TaskApprovalStatus.APPROVED,
+        OR: [{ groupId: null }, { groupId: { in: memberGroupIds } }]
+      }
+    : { visibility: TaskVisibility.PUBLIC, approvalStatus: TaskApprovalStatus.APPROVED, groupId: null };
+
   const visibilityWhere: Prisma.TaskWhereInput =
     viewMode === "opportunities"
-      ? { visibility: TaskVisibility.PUBLIC, approvalStatus: TaskApprovalStatus.APPROVED }
+      ? publicVisibilityFilter
       : isLeader
-        ? {}
+        ? {
+            OR: [
+              { visibility: TaskVisibility.PUBLIC },
+              { createdById: actorUserId },
+              { visibility: TaskVisibility.PRIVATE, ownerId: actorUserId }
+            ]
+          }
         : {
             OR: [
-              { visibility: TaskVisibility.PUBLIC, approvalStatus: TaskApprovalStatus.APPROVED },
+              publicVisibilityFilter,
               { createdById: actorUserId },
-              { visibility: TaskVisibility.PUBLIC, ownerId: actorUserId }
+              { visibility: TaskVisibility.PUBLIC, ownerId: actorUserId },
+              { visibility: TaskVisibility.PRIVATE, ownerId: actorUserId }
             ]
           };
 

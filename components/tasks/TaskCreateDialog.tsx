@@ -39,6 +39,7 @@ type TaskCreateDialogProps = {
   groupOptions: Array<{ id: string; name: string }>;
   memberOptions: Array<{ id: string; name: string; label?: string }>;
   currentUserId: string;
+  initialVisibility?: "private" | "public";
 };
 
 export default function TaskCreateDialog({
@@ -47,7 +48,8 @@ export default function TaskCreateDialog({
   weekId,
   groupOptions,
   memberOptions,
-  currentUserId
+  currentUserId,
+  initialVisibility = "private"
 }: TaskCreateDialogProps) {
   const router = useRouter();
   const { addToast } = useToast();
@@ -76,10 +78,10 @@ export default function TaskCreateDialog({
   useEffect(() => {
     if (open) {
       handledSuccess.current = false;
-      setVolunteersNeeded("1");
-      setVisibility("private");
+      setVolunteersNeeded(initialVisibility === "public" ? "2" : "1");
+      setVisibility(initialVisibility);
     }
-  }, [open]);
+  }, [initialVisibility, open]);
 
   useEffect(() => {
     if (state.status !== "success") {

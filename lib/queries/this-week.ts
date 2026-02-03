@@ -127,15 +127,8 @@ export async function getThisWeekDataForUser({
         parishId,
         weekId: week.id,
         archivedAt: null,
-        AND: [
-          {
-            OR: [
-              { visibility: "PUBLIC", approvalStatus: "APPROVED" },
-              { ownerId: userId },
-              { createdById: userId }
-            ]
-          }
-        ]
+        visibility: "PUBLIC",
+        approvalStatus: "APPROVED"
       },
       orderBy: { createdAt: "asc" },
       select: {
