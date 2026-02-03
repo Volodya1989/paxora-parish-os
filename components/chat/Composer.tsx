@@ -92,7 +92,7 @@ export default function Composer({
   };
 
   return (
-    <div className="sticky bottom-0 border-t border-mist-100 bg-white px-3 py-3">
+    <div className="border-t border-mist-100 bg-white px-3 py-3">
       {/* Editing / reply context banners */}
       {isEditing ? (
         <div className="mb-2 flex items-center justify-between gap-3 rounded-xl border border-mist-100 bg-mist-50 px-3 py-2 text-xs text-ink-500">
@@ -185,7 +185,7 @@ export default function Composer({
           maxLength={MAX_LENGTH}
           disabled={isDisabled}
           rows={1}
-          className="max-h-40 min-h-[36px] flex-1 resize-none border-0 bg-transparent py-1.5 text-sm text-ink-700 placeholder:text-ink-400 focus:outline-none focus:ring-0"
+          className="max-h-40 min-h-[36px] flex-1 resize-none border-0 bg-transparent py-1.5 text-base text-ink-700 placeholder:text-ink-400 focus:outline-none focus:ring-0"
           aria-label="Message input"
         />
 

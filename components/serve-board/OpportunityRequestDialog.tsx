@@ -41,7 +41,7 @@ export default function OpportunityRequestDialog({
             <h3 className="text-lg font-semibold text-ink-900">Request submitted</h3>
             <p className="max-w-sm text-sm leading-relaxed text-ink-500">
               Thank you! Your opportunity request has been submitted to parish leadership.
-              We'll review it and create the opportunity if it aligns with our parish needs.
+              We&apos;ll review it and create the opportunity if it aligns with our parish needs.
             </p>
           </div>
           <Button onClick={handleClose} className="mt-2">

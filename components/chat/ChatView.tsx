@@ -110,6 +110,7 @@ export default function ChatView({
 
   const messagesRef = useRef(messages);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isNearBottomRef = useRef(true);
   const prevMessageCountRef = useRef(messages.length);
   const justSentRef = useRef(false);
@@ -120,27 +121,34 @@ export default function ChatView({
 
   const scrollToBottom = useCallback((instant?: boolean) => {
     requestAnimationFrame(() => {
-      bottomRef.current?.scrollIntoView({
-        behavior: instant ? "instant" : "smooth",
-        block: "end"
-      });
+      const el = scrollContainerRef.current;
+      if (el) {
+        el.scrollTo({
+          top: el.scrollHeight,
+          behavior: instant ? "instant" : "smooth"
+        });
+      }
     });
   }, []);
 
   // Instant scroll to bottom on mount and channel change
   useLayoutEffect(() => {
-    bottomRef.current?.scrollIntoView({ block: "end" });
+    const el = scrollContainerRef.current;
+    if (el) {
+      el.scrollTop = el.scrollHeight;
+    }
   }, [channel.id]);
 
-  // Track whether user is near the bottom of the page
+  // Track whether user is near the bottom of the message list
   useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
     const handleScroll = () => {
-      const el = document.documentElement;
       isNearBottomRef.current =
-        el.scrollHeight - (el.scrollTop + el.clientHeight) < 150;
+        container.scrollHeight - (container.scrollTop + container.clientHeight) < 150;
     };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    return () => container.removeEventListener("scroll", handleScroll);
   }, []);
 
   // Auto-scroll when new messages arrive:
@@ -418,59 +426,65 @@ export default function ChatView({
       <aside className="hidden space-y-4 lg:block">
         <ChannelList channels={channels} activeChannelId={channel.id} />
       </aside>
-      <section className="space-y-4">
-        <ChatHeader
-          channel={{ ...channel, lockedAt }}
-          channels={channels}
-          canModerate={canModerate}
-          onToggleLock={handleToggleLock}
-          onManageMembers={showMemberManagement ? () => setMembersOpen(true) : undefined}
-          onChannelChange={(channelId) => {
-            const selected = channels.find((item) => item.id === channelId);
-            if (selected?.type === "GROUP" && selected.group) {
-              router.push(`/groups/${selected.group.id}/chat`);
-              return;
+      <section className="flex flex-col fixed inset-0 z-40 bg-mist-50 md:static md:z-auto md:h-[calc(100dvh-6rem)] md:max-h-[calc(100dvh-6rem)] md:rounded-card">
+        <div className="shrink-0">
+          <ChatHeader
+            channel={{ ...channel, lockedAt }}
+            channels={channels}
+            canModerate={canModerate}
+            onToggleLock={handleToggleLock}
+            onManageMembers={showMemberManagement ? () => setMembersOpen(true) : undefined}
+            onChannelChange={(channelId) => {
+              const selected = channels.find((item) => item.id === channelId);
+              if (selected?.type === "GROUP" && selected.group) {
+                router.push(`/groups/${selected.group.id}/chat`);
+                return;
+              }
+              router.push(`/community/chat?channel=${channelId}`);
+            }}
+          />
+        </div>
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overscroll-contain py-2">
+          <ChatThread
+            messages={channelMessages}
+            pinnedMessage={pinnedMessageState}
+            canModerate={canModerate}
+            currentUserId={currentUserId}
+            onReply={(message) => {
+              if (message.deletedAt) return;
+              setEditingMessage(null);
+              setThreadRoot(message);
+            }}
+            onEdit={(message) => {
+              if (message.deletedAt) return;
+              setEditingMessage(message);
+            }}
+            onPin={handlePin}
+            onUnpin={handleUnpin}
+            onDelete={handleDelete}
+            onToggleReaction={handleToggleReaction}
+            onViewThread={(message) => setThreadRoot(message)}
+            isLoading={!isPollingReady}
+            firstUnreadMessageId={firstUnreadMessageId}
+          />
+          <div ref={bottomRef} aria-hidden="true" />
+        </div>
+        <div className="shrink-0">
+          <Composer
+            disabled={!canPost || Boolean(lockedAt)}
+            onSend={handleSend}
+            editingMessage={
+              editingMessage
+                ? {
+                    id: editingMessage.id,
+                    body: editingMessage.body
+                  }
+                : null
             }
-            router.push(`/community/chat?channel=${channelId}`);
-          }}
-        />
-        <ChatThread
-          messages={channelMessages}
-          pinnedMessage={pinnedMessageState}
-          canModerate={canModerate}
-          currentUserId={currentUserId}
-          onReply={(message) => {
-            if (message.deletedAt) return;
-            setEditingMessage(null);
-            setThreadRoot(message);
-          }}
-          onEdit={(message) => {
-            if (message.deletedAt) return;
-            setEditingMessage(message);
-          }}
-          onPin={handlePin}
-          onUnpin={handleUnpin}
-          onDelete={handleDelete}
-          onToggleReaction={handleToggleReaction}
-          onViewThread={(message) => setThreadRoot(message)}
-          isLoading={!isPollingReady}
-          firstUnreadMessageId={firstUnreadMessageId}
-        />
-        <Composer
-          disabled={!canPost || Boolean(lockedAt)}
-          onSend={handleSend}
-          editingMessage={
-            editingMessage
-              ? {
-                  id: editingMessage.id,
-                  body: editingMessage.body
-                }
-              : null
-          }
-          onCancelEdit={() => setEditingMessage(null)}
-          mentionableUsers={mentionableUsers}
-        />
-        <div ref={bottomRef} aria-hidden="true" />
+            onCancelEdit={() => setEditingMessage(null)}
+            mentionableUsers={mentionableUsers}
+          />
+        </div>
       </section>
 
       {threadRoot ? (
