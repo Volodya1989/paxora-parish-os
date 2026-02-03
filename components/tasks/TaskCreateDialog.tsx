@@ -59,6 +59,7 @@ export default function TaskCreateDialog({
   );
   const handledSuccess = useRef(false);
   const prevStatus = useRef(state.status);
+  const prevOpen = useRef(false);
   const [formResetKey, setFormResetKey] = useState(0);
   const [volunteersNeeded, setVolunteersNeeded] = useState("1");
   const [visibility, setVisibility] = useState<"public" | "private">("private");
@@ -77,12 +78,14 @@ export default function TaskCreateDialog({
   const visibilityId = useId();
 
   useEffect(() => {
-    if (open) {
-      handledSuccess.current = false;
+    if (open && !prevOpen.current) {
+      handledSuccess.current = state.status === "success";
+      prevStatus.current = state.status;
       setVolunteersNeeded(initialVisibility === "public" ? "2" : "1");
       setVisibility(initialVisibility);
     }
-  }, [initialVisibility, open]);
+    prevOpen.current = open;
+  }, [initialVisibility, open, state.status]);
 
   useEffect(() => {
     const wasSuccess = prevStatus.current === "success";
@@ -126,6 +129,10 @@ export default function TaskCreateDialog({
       id={formId}
       className="space-y-4"
       action={formAction}
+      onSubmit={() => {
+        handledSuccess.current = false;
+        prevStatus.current = "idle";
+      }}
     >
       <input type="hidden" name="weekId" value={weekId} />
       <div className="space-y-2">
