@@ -71,7 +71,8 @@ export default function AnnouncementForm({ parishId, announcement }: Announcemen
           });
           addToast({
             title: "Announcement updated",
-            description: "Your announcement is saved."
+            description: "Your announcement is saved.",
+            status: "success"
           });
         } else {
           await createAnnouncement({
@@ -84,7 +85,8 @@ export default function AnnouncementForm({ parishId, announcement }: Announcemen
             title: publishNow ? "Announcement published" : "Draft saved",
             description: publishNow
               ? "Your announcement is live for parishioners."
-              : "You can publish this announcement whenever you're ready."
+              : "You can publish this announcement whenever you're ready.",
+            status: "success"
           });
         }
         router.push("/announcements");
@@ -97,7 +99,8 @@ export default function AnnouncementForm({ parishId, announcement }: Announcemen
         setError(message);
         addToast({
           title: "Save failed",
-          description: message
+          description: message,
+          status: "error"
         });
       }
     });

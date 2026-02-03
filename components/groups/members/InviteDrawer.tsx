@@ -35,7 +35,8 @@ export default function InviteDrawer({ open, onClose, onInvite }: InviteDrawerPr
     if (!email.trim()) {
       addToast({
         title: "Email required",
-        description: "Enter an email address to send an invite."
+        description: "Enter an email address to send an invite.",
+        status: "warning"
       });
       return;
     }
@@ -45,14 +46,16 @@ export default function InviteDrawer({ open, onClose, onInvite }: InviteDrawerPr
       if (result.status === "error") {
         addToast({
           title: "Invite failed",
-          description: result.message
+          description: result.message,
+          status: "error"
         });
         return;
       }
 
       addToast({
         title: "Invite sent",
-        description: "We let them know how to join the group."
+        description: "We let them know how to join the group.",
+        status: "success"
       });
       setEmail("");
       setRole("PARISHIONER");

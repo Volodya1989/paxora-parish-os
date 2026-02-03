@@ -42,7 +42,8 @@ const handleResult = (
   if (result.status === "error") {
     addToast({
       title: "Update failed",
-      description: result.message || fallback
+      description: result.message || fallback,
+      status: "error"
     });
     return false;
   }
@@ -82,7 +83,8 @@ export default function PeopleView({ members, invites, viewerId, parishId }: Peo
     if (handleResult(result, addToast, "Please try again.")) {
       addToast({
         title: successTitle,
-        description: result.message
+        description: result.message,
+        status: "success"
       });
       refresh();
     }
@@ -349,7 +351,8 @@ export default function PeopleView({ members, invites, viewerId, parishId }: Peo
                 if (!inviteEmail.trim()) {
                   addToast({
                     title: "Email required",
-                    description: "Enter an email address to send an invite."
+                    description: "Enter an email address to send an invite.",
+                    status: "warning"
                   });
                   return;
                 }
@@ -362,13 +365,15 @@ export default function PeopleView({ members, invites, viewerId, parishId }: Peo
                   if (result.status === "error") {
                     addToast({
                       title: "Invite failed",
-                      description: result.message
+                      description: result.message,
+                      status: "error"
                     });
                     return;
                   }
                   addToast({
                     title: "Invite sent",
-                    description: "We let them know how to join the parish."
+                    description: "We let them know how to join the parish.",
+                    status: "success"
                   });
                   setInviteEmail("");
                   setInviteRole("MEMBER");
@@ -425,7 +430,8 @@ export default function PeopleView({ members, invites, viewerId, parishId }: Peo
                 if (!inviteEmail.trim()) {
                   addToast({
                     title: "Email required",
-                    description: "Enter an email address to send an invite."
+                    description: "Enter an email address to send an invite.",
+                    status: "warning"
                   });
                   return;
                 }
@@ -438,13 +444,15 @@ export default function PeopleView({ members, invites, viewerId, parishId }: Peo
                   if (result.status === "error") {
                     addToast({
                       title: "Invite failed",
-                      description: result.message
+                      description: result.message,
+                      status: "error"
                     });
                     return;
                   }
                   addToast({
                     title: "Invite sent",
-                    description: "We let them know how to join the parish."
+                    description: "We let them know how to join the parish.",
+                    status: "success"
                   });
                   setInviteEmail("");
                   setInviteRole("MEMBER");

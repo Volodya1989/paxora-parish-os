@@ -71,11 +71,16 @@ export function ProfileSettings({ initialSettings }: ProfileSettingsProps) {
       try {
         const updated = await updateProfileSettings(nextSettings);
         setSettings(updated);
-        addToast({ title: "Settings saved", description: "Your notification preferences were updated." });
+        addToast({
+          title: "Settings saved",
+          description: "Your notification preferences were updated.",
+          status: "success"
+        });
       } catch (error) {
         addToast({
           title: "Unable to save settings",
-          description: "Please try again in a moment."
+          description: "Please try again in a moment.",
+          status: "error"
         });
       }
     });

@@ -110,7 +110,8 @@ export default function GroupCreateDialog({
           title: isRequest ? "Request submitted" : "Group created",
           description: isRequest
             ? "Your request is pending approval from parish leadership."
-            : "Your new group is ready for members and opportunities to help."
+            : "Your new group is ready for members and opportunities to help.",
+          status: "success"
         });
         resetForm();
         onOpenChange(false);
@@ -125,7 +126,8 @@ export default function GroupCreateDialog({
         setError(message);
         addToast({
           title: isRequest ? "Unable to submit request" : "Unable to create group",
-          description: message
+          description: message,
+          status: "error"
         });
       }
     });

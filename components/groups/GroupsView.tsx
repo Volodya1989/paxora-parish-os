@@ -92,7 +92,8 @@ export default function GroupsView({
     } catch (error) {
       addToast({
         title: "Update failed",
-        description: "We couldn't update that group. Please try again."
+        description: "We couldn't update that group. Please try again.",
+        status: "error"
       });
     } finally {
       setPendingGroupId(null);
@@ -104,7 +105,8 @@ export default function GroupsView({
     if (!canManageGroups) {
       addToast({
         title: "Not enough access",
-        description: LIMITED_ACCESS_MESSAGE
+        description: LIMITED_ACCESS_MESSAGE,
+        status: "warning"
       });
       return;
     }
@@ -114,6 +116,7 @@ export default function GroupsView({
       addToast({
         title: "Group archived",
         description: "This group is tucked away but can be restored.",
+        status: "success",
         actionLabel: "Undo",
         onAction: () => {
           void runGroupAction(groupId, async () => {
@@ -128,7 +131,8 @@ export default function GroupsView({
     if (!canManageGroups) {
       addToast({
         title: "Not enough access",
-        description: LIMITED_ACCESS_MESSAGE
+        description: LIMITED_ACCESS_MESSAGE,
+        status: "warning"
       });
       return;
     }
@@ -137,7 +141,8 @@ export default function GroupsView({
       await restoreGroup({ parishId, actorUserId, groupId });
       addToast({
         title: "Group restored",
-        description: "This group is back in the active list."
+        description: "This group is back in the active list.",
+        status: "success"
       });
     });
   };
@@ -146,7 +151,8 @@ export default function GroupsView({
     if (!canManageGroups) {
       addToast({
         title: "Not enough access",
-        description: LIMITED_ACCESS_MESSAGE
+        description: LIMITED_ACCESS_MESSAGE,
+        status: "warning"
       });
       return;
     }
@@ -163,14 +169,16 @@ export default function GroupsView({
     if (result.status === "error") {
       addToast({
         title: "Update failed",
-        description: result.message || "Please try again."
+        description: result.message || "Please try again.",
+        status: "error"
       });
       setPendingGroupId(null);
       return;
     }
     addToast({
       title: successTitle,
-      description: result.message
+      description: result.message,
+      status: "success"
     });
     setPendingGroupId(null);
     refreshList();

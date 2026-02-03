@@ -32,7 +32,8 @@ export default function TaskQuickAdd({ weekId }: TaskQuickAddProps) {
       lastSubmittedTitle.current = "";
       addToast({
         title: "Task added",
-        description: state.message ?? "Your task is ready."
+        description: state.message ?? "Your task is ready.",
+        status: "success"
       });
       router.refresh();
     }

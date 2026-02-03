@@ -11,6 +11,7 @@ export type ToastData = {
   actionLabel?: string;
   onAction?: () => void;
   duration?: number;
+  status?: "success" | "error" | "warning" | "info";
 };
 
 type ToastContextValue = {
@@ -118,9 +119,40 @@ export function createToastHandlers(toast: ToastData, onDismiss: (id: string) =>
 
 function ToastItem({ toast, onDismiss }: { toast: ToastData; onDismiss: (id: string) => void }) {
   const { handleAction, handleDismiss } = createToastHandlers(toast, onDismiss);
+  const status = toast.status ?? "neutral";
+  const statusStyles: Record<
+    "neutral" | NonNullable<ToastData["status"]>,
+    { container: string; action: string }
+  > = {
+    neutral: {
+      container: "border-mist-200 bg-white",
+      action: "text-primary-700 hover:text-primary-600"
+    },
+    success: {
+      container: "border-emerald-200 bg-emerald-50 border-l-4 border-l-emerald-500",
+      action: "text-emerald-700 hover:text-emerald-600"
+    },
+    error: {
+      container: "border-rose-200 bg-rose-50 border-l-4 border-l-rose-500",
+      action: "text-rose-700 hover:text-rose-600"
+    },
+    warning: {
+      container: "border-amber-200 bg-amber-50 border-l-4 border-l-amber-500",
+      action: "text-amber-700 hover:text-amber-600"
+    },
+    info: {
+      container: "border-sky-200 bg-sky-50 border-l-4 border-l-sky-500",
+      action: "text-sky-700 hover:text-sky-600"
+    }
+  };
 
   return (
-    <div className="rounded-card border border-mist-200 bg-white p-4 shadow-overlay">
+    <div
+      className={cn(
+        "rounded-card border p-4 shadow-overlay",
+        statusStyles[status].container
+      )}
+    >
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <p className="text-sm font-semibold text-ink-900">{toast.title}</p>
@@ -141,7 +173,7 @@ function ToastItem({ toast, onDismiss }: { toast: ToastData; onDismiss: (id: str
         <button
           type="button"
           onClick={handleAction}
-          className="mt-3 text-xs font-semibold text-primary-700 hover:text-primary-600 focus-ring"
+          className={cn("mt-3 text-xs font-semibold focus-ring", statusStyles[status].action)}
         >
           {toast.actionLabel}
         </button>

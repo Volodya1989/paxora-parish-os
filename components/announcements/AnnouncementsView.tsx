@@ -52,7 +52,8 @@ export default function AnnouncementsView({
     } catch (error) {
       addToast({
         title: "Update failed",
-        description: "We couldn't update that announcement. Please try again."
+        description: "We couldn't update that announcement. Please try again.",
+        status: "error"
       });
     } finally {
       setPendingId(null);
@@ -71,6 +72,7 @@ export default function AnnouncementsView({
         addToast({
           title: "Announcement published",
           description: "This announcement is now live.",
+          status: "success",
           actionLabel: "Undo",
           onAction: () => {
             void runAnnouncementAction(announcementId, async () => {
@@ -82,6 +84,7 @@ export default function AnnouncementsView({
         addToast({
           title: "Announcement unpublished",
           description: "This announcement is back in drafts.",
+          status: "success",
           actionLabel: "Undo",
           onAction: () => {
             void runAnnouncementAction(announcementId, async () => {
@@ -103,6 +106,7 @@ export default function AnnouncementsView({
       addToast({
         title: "Announcement archived",
         description: "This announcement is tucked away but can be restored.",
+        status: "success",
         actionLabel: "Undo",
         onAction: () => {
           void runAnnouncementAction(announcementId, async () => {
@@ -119,7 +123,8 @@ export default function AnnouncementsView({
       await deleteAnnouncement({ id: deleteTarget.id });
       addToast({
         title: "Announcement deleted",
-        description: "That announcement has been removed."
+        description: "That announcement has been removed.",
+        status: "success"
       });
     });
     setDeleteTarget(null);

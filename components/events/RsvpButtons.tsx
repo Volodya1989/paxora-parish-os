@@ -39,7 +39,8 @@ export default function RsvpButtons({ eventId, initialResponse, className }: Rsv
         setCurrentResponse(result.response);
         addToast({
           title: "RSVP saved",
-          description: "Your response has been recorded."
+          description: "Your response has been recorded.",
+          status: "success"
         });
       })();
     });
