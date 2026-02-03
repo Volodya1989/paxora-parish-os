@@ -179,6 +179,7 @@ export async function createTask(
 
   revalidatePath("/tasks");
   revalidatePath("/this-week");
+  revalidatePath("/serve-board");
 
   return {
     status: "success",

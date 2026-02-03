@@ -111,6 +111,17 @@ export async function getThisWeekDataForUser({
     select: { role: true }
   });
 
+  // Pre-fetch user's active group IDs for visibility filtering
+  const userGroupMemberships = await prisma.groupMembership.findMany({
+    where: {
+      userId,
+      status: "ACTIVE",
+      group: { parishId, archivedAt: null }
+    },
+    select: { group: { select: { id: true } } }
+  });
+  const userGroupIds = userGroupMemberships.map((m) => m.group.id);
+
   const [
     tasks,
     events,
@@ -130,9 +141,16 @@ export async function getThisWeekDataForUser({
         AND: [
           {
             OR: [
-              { visibility: "PUBLIC", approvalStatus: "APPROVED" },
-              { ownerId: userId },
-              { createdById: userId }
+              // Public + no group → visible to all parishioners
+              { visibility: "PUBLIC", approvalStatus: "APPROVED", groupId: null },
+              // Public + group → visible only to group members
+              ...(userGroupIds.length > 0
+                ? [{ visibility: "PUBLIC" as const, approvalStatus: "APPROVED" as const, groupId: { in: userGroupIds } }]
+                : []),
+              // Creator always sees their own tasks
+              { createdById: userId },
+              // Assigned person always sees their tasks
+              { ownerId: userId }
             ]
           }
         ]

@@ -16,7 +16,6 @@ import {
   initialTaskActionState,
   type TaskActionState
 } from "@/server/actions/taskState";
-import { shouldCloseTaskDialog } from "@/components/tasks/taskDialogSuccess";
 import { useTranslations } from "@/lib/i18n/provider";
 
 function formatDateInput(date: Date) {
@@ -55,7 +54,7 @@ export default function TaskCreateDialog({
     createTask,
     initialTaskActionState
   );
-  const handledSuccess = useRef(false);
+  const lastHandledState = useRef<TaskActionState>(initialTaskActionState);
   const [formResetKey, setFormResetKey] = useState(0);
   const [volunteersNeeded, setVolunteersNeeded] = useState("1");
   const [visibility, setVisibility] = useState<"public" | "private">("private");
@@ -75,7 +74,6 @@ export default function TaskCreateDialog({
 
   useEffect(() => {
     if (open) {
-      handledSuccess.current = false;
       setVolunteersNeeded("1");
       setVisibility("private");
     }
@@ -83,15 +81,16 @@ export default function TaskCreateDialog({
 
   useEffect(() => {
     if (state.status !== "success") {
-      handledSuccess.current = false;
       return;
     }
 
-    if (!shouldCloseTaskDialog(state, handledSuccess.current)) {
+    // Skip if this exact state object was already handled (prevents re-firing
+    // when unstable callback deps like onOpenChange cause effect re-runs).
+    if (state === lastHandledState.current) {
       return;
     }
 
-    handledSuccess.current = true;
+    lastHandledState.current = state;
     modalFormRef.current?.reset();
     drawerFormRef.current?.reset();
     setFormResetKey((prev) => prev + 1);

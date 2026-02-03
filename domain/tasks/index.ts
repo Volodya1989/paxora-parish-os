@@ -2,6 +2,7 @@ import { canManageGroupMembership, isParishLeader } from "@/lib/permissions";
 import { calculateEstimatedHoursPerParticipant } from "@/lib/hours/allocations";
 import { getGroupMembership, getParishMembership } from "@/server/db/groups";
 import { prisma } from "@/server/db/prisma";
+import { sendTaskCompletedNotification } from "@/lib/email/taskCompleted";
 
 type CreateTaskInput = {
   parishId: string;
@@ -435,6 +436,55 @@ export async function markTaskDone({
 
     return updatedTask;
   });
+
+  // Notify the task creator when the task is completed
+  {
+    const fullTask = await prisma.task.findUnique({
+      where: { id: taskId },
+      select: {
+        title: true,
+        createdById: true,
+        parish: { select: { name: true } },
+        createdBy: {
+          select: {
+            id: true,
+            email: true,
+            memberships: {
+              where: { parishId },
+              select: { notifyEmailEnabled: true }
+            }
+          }
+        }
+      }
+    });
+
+    if (
+      fullTask &&
+      fullTask.createdById !== actorUserId &&
+      fullTask.createdBy.email
+    ) {
+      const actor = await prisma.user.findUnique({
+        where: { id: actorUserId },
+        select: { name: true, email: true }
+      });
+      const actorName = actor?.name ?? actor?.email?.split("@")[0] ?? "Someone";
+      const notifyEnabled = fullTask.createdBy.memberships[0]?.notifyEmailEnabled ?? true;
+
+      // Fire-and-forget: don't block the response on email delivery
+      void sendTaskCompletedNotification({
+        parishId,
+        parishName: fullTask.parish.name,
+        taskId,
+        taskTitle: fullTask.title,
+        completedByName: actorName,
+        creator: {
+          userId: fullTask.createdById,
+          email: fullTask.createdBy.email,
+          notifyEmailEnabled: notifyEnabled
+        }
+      });
+    }
+  }
 
   return updated;
 }

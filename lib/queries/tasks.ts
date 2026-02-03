@@ -203,6 +203,8 @@ export async function listTasks({
     archivedAt: null
   };
 
+  const userGroupIds = groupMemberships.map((m) => m.groupId);
+
   const visibilityWhere: Prisma.TaskWhereInput =
     viewMode === "opportunities"
       ? { visibility: TaskVisibility.PUBLIC, approvalStatus: TaskApprovalStatus.APPROVED }
@@ -210,9 +212,16 @@ export async function listTasks({
         ? {}
         : {
             OR: [
-              { visibility: TaskVisibility.PUBLIC, approvalStatus: TaskApprovalStatus.APPROVED },
+              // Public + no group → visible to all parishioners
+              { visibility: TaskVisibility.PUBLIC, approvalStatus: TaskApprovalStatus.APPROVED, groupId: null },
+              // Public + group → visible only to group members
+              ...(userGroupIds.length > 0
+                ? [{ visibility: TaskVisibility.PUBLIC, approvalStatus: TaskApprovalStatus.APPROVED, groupId: { in: userGroupIds } }]
+                : []),
+              // Creator always sees their own tasks
               { createdById: actorUserId },
-              { visibility: TaskVisibility.PUBLIC, ownerId: actorUserId }
+              // Assigned person always sees their tasks
+              { ownerId: actorUserId }
             ]
           };
 
@@ -221,6 +230,13 @@ export async function listTasks({
 
   if (viewMode === "opportunities" && !isLeader) {
     andFilters.push({ openToVolunteers: true });
+    // Opportunities: only show tasks with no group or in user's groups
+    andFilters.push({
+      OR: [
+        { groupId: null },
+        ...(userGroupIds.length > 0 ? [{ groupId: { in: userGroupIds } }] : [])
+      ]
+    });
   }
 
   if (normalizedFilters.status === "open") {
