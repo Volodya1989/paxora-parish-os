@@ -112,7 +112,8 @@ export default function GroupEditDialog({
         });
         addToast({
           title: "Group updated",
-          description: "Your changes are live."
+          description: "Your changes are live.",
+          status: "success"
         });
         onOpenChange(false);
         onUpdated?.();
@@ -120,7 +121,8 @@ export default function GroupEditDialog({
         setError("We couldn't update that group. Please try again.");
         addToast({
           title: "Unable to save",
-          description: "Please check the details and try again."
+          description: "Please check the details and try again.",
+          status: "error"
         });
       }
     });

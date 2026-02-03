@@ -40,7 +40,8 @@ const handleResult = (
   if (result.status === "error") {
     addToast({
       title: "Update failed",
-      description: result.message || fallback
+      description: result.message || fallback,
+      status: "error"
     });
     return false;
   }
@@ -94,7 +95,8 @@ export default function GroupMembersView({
     if (handleResult(result, addToast, "Please try again.")) {
       addToast({
         title: successTitle,
-        description: result.message
+        description: result.message,
+        status: "success"
       });
       refresh();
     }

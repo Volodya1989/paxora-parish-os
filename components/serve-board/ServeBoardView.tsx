@@ -178,12 +178,13 @@ export default function ServeBoardView({
     try {
       await action();
       if (success) {
-        addToast({ title: success });
+        addToast({ title: success, status: "success" });
       }
     } catch (error) {
       addToast({
         title: "Update failed",
-        description: "We couldn't update that task. Please try again."
+        description: "We couldn't update that task. Please try again.",
+        status: "error"
       });
     } finally {
       setPendingTaskId(null);

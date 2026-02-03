@@ -42,7 +42,8 @@ function InviteToastListener() {
     if (inviteStatus === "accepted" && !inviteToastShown.current) {
       addToast({
         title: "Invite accepted",
-        description: "Welcome to your parish community."
+        description: "Welcome to your parish community.",
+        status: "success"
       });
       inviteToastShown.current = true;
       router.replace(pathname);

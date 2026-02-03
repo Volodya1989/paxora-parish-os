@@ -76,7 +76,8 @@ export default function ParishHubAdminPanel({
     if (!hubGridEnabled && !canEnableGrid) {
       addToast({
         title: "Cannot enable hub grid",
-        description: `At least ${MIN_ENABLED_TILES} enabled tiles are required.`
+        description: `At least ${MIN_ENABLED_TILES} enabled tiles are required.`,
+        status: "warning"
       });
       return;
     }
@@ -91,12 +92,16 @@ export default function ParishHubAdminPanel({
           actorUserId: userId,
           hubGridEnabled: newValue
         });
-        addToast({ title: newValue ? "Parish Hub enabled" : "Parish Hub disabled" });
+        addToast({
+          title: newValue ? "Parish Hub enabled" : "Parish Hub disabled",
+          status: "info"
+        });
       } catch (error) {
         setHubGridEnabled(!newValue); // Revert
         addToast({
           title: "Failed to update settings",
-          description: error instanceof Error ? error.message : "Please try again."
+          description: error instanceof Error ? error.message : "Please try again.",
+          status: "error"
         });
       }
     });
@@ -114,13 +119,15 @@ export default function ParishHubAdminPanel({
           hubGridPublicEnabled: newValue
         });
         addToast({
-          title: newValue ? "Hub visible to public" : "Hub visible to members only"
+          title: newValue ? "Hub visible to public" : "Hub visible to members only",
+          status: "info"
         });
       } catch (error) {
         setHubGridPublicEnabled(!newValue); // Revert
         addToast({
           title: "Failed to update settings",
-          description: error instanceof Error ? error.message : "Please try again."
+          description: error instanceof Error ? error.message : "Please try again.",
+          status: "error"
         });
       }
     });
@@ -130,7 +137,8 @@ export default function ParishHubAdminPanel({
     if (!canAddMore) {
       addToast({
         title: "Cannot add tile",
-        description: `Maximum of ${MAX_TOTAL_TILES} tiles reached.`
+        description: `Maximum of ${MAX_TOTAL_TILES} tiles reached.`,
+        status: "warning"
       });
       return;
     }
@@ -173,7 +181,7 @@ export default function ParishHubAdminPanel({
               internalRoute: newItem.internalRoute ?? null
             } as ParishHubAdminItem
           ]);
-          addToast({ title: "Tile added successfully" });
+          addToast({ title: "Tile added successfully", status: "success" });
         } else if (editingItem) {
           const updatedItem = await updateParishHubItem({
             parishId,
@@ -198,13 +206,14 @@ export default function ParishHubAdminPanel({
                 : item
             )
           );
-          addToast({ title: "Tile updated successfully" });
+          addToast({ title: "Tile updated successfully", status: "success" });
         }
         setFormOpen(false);
       } catch (error) {
         addToast({
           title: formMode === "create" ? "Failed to add tile" : "Failed to update tile",
-          description: error instanceof Error ? error.message : "Please try again."
+          description: error instanceof Error ? error.message : "Please try again.",
+          status: "error"
         });
       }
     });
@@ -221,13 +230,14 @@ export default function ParishHubAdminPanel({
           itemId: itemToDelete.id
         });
         setItems((prev) => prev.filter((item) => item.id !== itemToDelete.id));
-        addToast({ title: "Tile deleted" });
+        addToast({ title: "Tile deleted", status: "success" });
         setDeleteConfirmOpen(false);
         setItemToDelete(null);
       } catch (error) {
         addToast({
           title: "Failed to delete tile",
-          description: error instanceof Error ? error.message : "Please try again."
+          description: error instanceof Error ? error.message : "Please try again.",
+          status: "error"
         });
       }
     });
@@ -250,13 +260,14 @@ export default function ParishHubAdminPanel({
           actorUserId: userId,
           items: newOrder
         });
-        addToast({ title: "Tiles reordered" });
+        addToast({ title: "Tiles reordered", status: "success" });
       } catch (error) {
         // Revert on error
         setItems(initialItems);
         addToast({
           title: "Failed to reorder tiles",
-          description: error instanceof Error ? error.message : "Please try again."
+          description: error instanceof Error ? error.message : "Please try again.",
+          status: "error"
         });
       }
     });

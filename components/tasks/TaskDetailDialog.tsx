@@ -95,7 +95,8 @@ export default function TaskDetailDialog({
     } catch (error) {
       addToast({
         title: "Unable to load details",
-        description: "Please try again."
+        description: "Please try again.",
+        status: "error"
       });
     } finally {
       setIsLoading(false);
@@ -121,7 +122,8 @@ export default function TaskDetailDialog({
     try {
       await action();
       addToast({
-        title: successMessage
+        title: successMessage,
+        status: "success"
       });
       startTransition(() => {
         router.refresh();
@@ -130,7 +132,8 @@ export default function TaskDetailDialog({
     } catch (error) {
       addToast({
         title: "Update failed",
-        description: "Please try again."
+        description: "Please try again.",
+        status: "error"
       });
     }
   };

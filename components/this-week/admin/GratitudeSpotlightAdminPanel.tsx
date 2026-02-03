@@ -69,10 +69,10 @@ export default function GratitudeSpotlightAdminPanel({
       try {
         if (editingId) {
           await updateHeroNominationReason({ nominationId: editingId, reason });
-          addToast({ title: "Nomination updated" });
+          addToast({ title: "Nomination updated", status: "success" });
         } else {
           await createHeroNomination({ weekId, nomineeUserId: nomineeId, reason });
-          addToast({ title: "Nomination saved" });
+          addToast({ title: "Nomination saved", status: "success" });
         }
         resetForm();
       } catch (error) {
@@ -96,7 +96,7 @@ export default function GratitudeSpotlightAdminPanel({
     startTransition(async () => {
       try {
         await publishHeroNomination({ nominationId });
-        addToast({ title: "Spotlight published" });
+        addToast({ title: "Spotlight published", status: "success" });
       } catch (error) {
         setErrorMessage(error instanceof Error ? error.message : "Unable to publish nomination.");
       }
@@ -108,7 +108,7 @@ export default function GratitudeSpotlightAdminPanel({
     startTransition(async () => {
       try {
         await unpublishHeroNomination({ nominationId });
-        addToast({ title: "Spotlight unpublished" });
+        addToast({ title: "Spotlight unpublished", status: "success" });
       } catch (error) {
         setErrorMessage(error instanceof Error ? error.message : "Unable to update nomination.");
       }
@@ -123,7 +123,7 @@ export default function GratitudeSpotlightAdminPanel({
     startTransition(async () => {
       try {
         await deleteHeroNomination({ nominationId });
-        addToast({ title: "Nomination deleted" });
+        addToast({ title: "Nomination deleted", status: "success" });
         if (editingId === nominationId) {
           resetForm();
         }

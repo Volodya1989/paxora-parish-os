@@ -36,18 +36,19 @@ export default function GratitudeSettingsPanel({
   const handleSpotlightSave = () => {
     const parsedLimit = Number(spotlightLimit);
     if (Number.isNaN(parsedLimit)) {
-      addToast({ title: "Enter a valid spotlight limit." });
+      addToast({ title: "Enter a valid spotlight limit.", status: "warning" });
       return;
     }
     startTransition(async () => {
       try {
         await updateGratitudeSettings({ enabled: spotlightEnabled, limit: parsedLimit });
-        addToast({ title: "Spotlight settings saved" });
+        addToast({ title: "Spotlight settings saved", status: "success" });
         setIsEditingSpotlight(false);
       } catch (error) {
         addToast({
           title: "Unable to save settings",
-          description: error instanceof Error ? error.message : "Please try again."
+          description: error instanceof Error ? error.message : "Please try again.",
+          status: "error"
         });
       }
     });
@@ -58,7 +59,7 @@ export default function GratitudeSettingsPanel({
     const parsedSilver = Number(silver);
     const parsedGold = Number(gold);
     if ([parsedBronze, parsedSilver, parsedGold].some((value) => Number.isNaN(value))) {
-      addToast({ title: "Enter valid milestone values." });
+      addToast({ title: "Enter valid milestone values.", status: "warning" });
       return;
     }
     startTransition(async () => {
@@ -68,12 +69,13 @@ export default function GratitudeSettingsPanel({
           silverHours: parsedSilver,
           goldHours: parsedGold
         });
-        addToast({ title: "Milestones saved" });
+        addToast({ title: "Milestones saved", status: "success" });
         setIsEditingMilestones(false);
       } catch (error) {
         addToast({
           title: "Unable to save milestones",
-          description: error instanceof Error ? error.message : "Please try again."
+          description: error instanceof Error ? error.message : "Please try again.",
+          status: "error"
         });
       }
     });

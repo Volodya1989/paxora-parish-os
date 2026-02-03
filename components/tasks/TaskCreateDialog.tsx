@@ -113,7 +113,8 @@ export default function TaskCreateDialog({
     setFormResetKey((prev) => prev + 1);
     addToast({
       title: "Task saved",
-      description: state.message ?? "Your task is ready for the team."
+      description: state.message ?? "Your task is ready for the team.",
+      status: "success"
     });
     onOpenChange(false);
     startTransition(() => {

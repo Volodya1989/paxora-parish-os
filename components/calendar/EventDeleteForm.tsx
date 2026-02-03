@@ -38,7 +38,8 @@ export default function EventDeleteForm({ event }: EventDeleteFormProps) {
     handledSuccess.current = true;
     addToast({
       title: copy.title,
-      description: copy.description
+      description: copy.description,
+      status: "success"
     });
     startTransition(() => {
       router.push("/calendar");

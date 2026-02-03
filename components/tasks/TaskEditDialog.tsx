@@ -89,7 +89,8 @@ export default function TaskEditDialog({
     drawerFormRef.current?.reset();
     addToast({
       title: "Task updated",
-      description: "Your changes are saved."
+      description: "Your changes are saved.",
+      status: "success"
     });
     onOpenChange(false);
     startTransition(() => {

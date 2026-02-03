@@ -110,7 +110,7 @@ export default function ProfileDates({ initialDates }: ProfileDatesProps) {
 
         if (result.status === "error") {
           setErrors(result.fieldErrors ?? {});
-          addToast({ title: result.message });
+          addToast({ title: result.message, status: "error" });
           return;
         }
 
@@ -125,11 +125,16 @@ export default function ProfileDates({ initialDates }: ProfileDatesProps) {
         setSavedState(nextState);
         setFormState(nextState);
         setIsEditing(false);
-        addToast({ title: "Profile updated", description: "Your important dates were saved." });
+        addToast({
+          title: "Profile updated",
+          description: "Your important dates were saved.",
+          status: "success"
+        });
       } catch (error) {
         addToast({
           title: "Unable to save profile",
-          description: error instanceof Error ? error.message : "Please try again."
+          description: error instanceof Error ? error.message : "Please try again.",
+          status: "error"
         });
       }
     });

@@ -79,7 +79,8 @@ export default function TasksList({
     } catch (error) {
       addToast({
         title: "Update failed",
-        description: "We couldn't update that task. Please try again."
+        description: "We couldn't update that task. Please try again.",
+        status: "error"
       });
     } finally {
       setPendingTaskId(null);
@@ -92,7 +93,8 @@ export default function TasksList({
       await assignTaskToSelf({ taskId });
       addToast({
         title: "Assigned to you",
-        description: "You are now the primary volunteer for this task."
+        description: "You are now the primary volunteer for this task.",
+        status: "success"
       });
     });
   };
@@ -102,7 +104,8 @@ export default function TasksList({
       await unassignTask({ taskId });
       addToast({
         title: "Unassigned",
-        description: "This task is now unassigned."
+        description: "This task is now unassigned.",
+        status: "success"
       });
     });
   };
@@ -113,6 +116,7 @@ export default function TasksList({
       addToast({
         title: "Archived",
         description: "This task is tucked away but can be restored.",
+        status: "success",
         actionLabel: "Undo",
         onAction: () => {
           void runTaskAction(taskId, async () => {
@@ -142,7 +146,8 @@ export default function TasksList({
       await deleteTask({ taskId });
       addToast({
         title: "Task deleted",
-        description: "The task has been removed."
+        description: "The task has been removed.",
+        status: "success"
       });
     });
   };
@@ -152,7 +157,8 @@ export default function TasksList({
       await markTaskInProgress({ taskId });
       addToast({
         title: "Work started",
-        description: "This opportunity is now marked as in progress."
+        description: "This opportunity is now marked as in progress.",
+        status: "success"
       });
     });
   };
@@ -174,7 +180,8 @@ export default function TasksList({
       await markTaskDone({ taskId, hoursMode, manualHours });
       addToast({
         title: "Completed",
-        description: "This task is now marked as complete."
+        description: "This task is now marked as complete.",
+        status: "success"
       });
     });
     setCompleteTaskId(null);
@@ -191,7 +198,8 @@ export default function TasksList({
       await volunteerForTask({ taskId });
       addToast({
         title: "You're in",
-        description: "Thanks for volunteering."
+        description: "Thanks for volunteering.",
+        status: "success"
       });
     });
   };
@@ -201,7 +209,8 @@ export default function TasksList({
       await leaveTaskVolunteer({ taskId });
       addToast({
         title: "Removed",
-        description: "You have left this volunteer list."
+        description: "You have left this volunteer list.",
+        status: "success"
       });
     });
   };

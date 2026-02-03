@@ -217,7 +217,8 @@ export default function EventForm({
     handledSuccess.current = true;
     addToast({
       title: successTitle,
-      description: successDescription
+      description: successDescription,
+      status: "success"
     });
     formRef.current?.reset();
     onSuccess?.();
