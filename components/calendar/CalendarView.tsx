@@ -16,6 +16,7 @@ import PageShell from "@/components/app/page-shell";
 import FiltersDrawer from "@/components/app/filters-drawer";
 import Card from "@/components/ui/Card";
 import ListEmptyState from "@/components/app/list-empty-state";
+import QuoteCard from "@/components/app/QuoteCard";
 import { CalendarIcon } from "@/components/icons/ParishIcons";
 import {
   getDateKey,
@@ -229,6 +230,11 @@ export default function CalendarView({
   return (
     <Tabs value={view} onValueChange={(value) => setView(value)}>
       <div className="section-gap">
+        <QuoteCard
+          quote="For everything there is a season, and a time for every matter under heaven."
+          source="Ecclesiastes 3:1"
+          tone="primary"
+        />
         <PageShell
           title="Upcoming Events"
           summaryChips={[

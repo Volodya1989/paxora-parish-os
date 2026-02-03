@@ -68,7 +68,7 @@ export default async function CalendarPage() {
   const isLeader = membership ? isParishLeader(membership.role) : false;
   const groupIds = groupMemberships.map((membershipRecord) => membershipRecord.groupId);
   const canCreateGroupEvents = isLeader || groupIds.length > 0;
-  const canCreateEvents = isLeader || canCreateGroupEvents;
+  const canCreateEvents = isLeader;
   const groupOptions = isLeader
     ? allGroupOptions
     : groupMemberships
@@ -81,8 +81,6 @@ export default async function CalendarPage() {
       parishName={parish?.name ?? "My Parish"}
       isLeader={isLeader}
       subtitle="Stay connected to parish life"
-      quote="For everything there is a season, and a time for every matter under heaven."
-      quoteSource="Ecclesiastes 3:1"
       gradientClass="from-teal-600 via-teal-500 to-emerald-500"
       icon={<CalendarIcon className="h-6 w-6 text-white" />}
     >
