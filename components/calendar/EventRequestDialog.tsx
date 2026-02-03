@@ -41,7 +41,7 @@ export default function EventRequestDialog({
             <h3 className="text-lg font-semibold text-ink-900">Request submitted</h3>
             <p className="max-w-sm text-sm leading-relaxed text-ink-500">
               Thank you! Your event request has been submitted to parish leadership.
-              We'll review it and add it to the calendar if it fits our schedule.
+              We&apos;ll review it and add it to the calendar if it fits our schedule.
             </p>
           </div>
           <Button onClick={handleClose} className="mt-2">
