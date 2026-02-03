@@ -68,7 +68,7 @@ export default async function CalendarPage() {
   const isLeader = membership ? isParishLeader(membership.role) : false;
   const groupIds = groupMemberships.map((membershipRecord) => membershipRecord.groupId);
   const canCreateGroupEvents = isLeader || groupIds.length > 0;
-  const canCreateEvents = isLeader || canCreateGroupEvents;
+  const canCreateEvents = isLeader;
   const groupOptions = isLeader
     ? allGroupOptions
     : groupMemberships
