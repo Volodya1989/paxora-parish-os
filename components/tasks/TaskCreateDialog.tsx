@@ -58,6 +58,7 @@ export default function TaskCreateDialog({
     initialTaskActionState
   );
   const handledSuccess = useRef(false);
+  const prevStatus = useRef(state.status);
   const [formResetKey, setFormResetKey] = useState(0);
   const [volunteersNeeded, setVolunteersNeeded] = useState("1");
   const [visibility, setVisibility] = useState<"public" | "private">("private");
@@ -84,12 +85,22 @@ export default function TaskCreateDialog({
   }, [initialVisibility, open]);
 
   useEffect(() => {
-    if (state.status !== "success") {
+    const wasSuccess = prevStatus.current === "success";
+    const isSuccess = state.status === "success";
+
+    if (!isSuccess) {
       handledSuccess.current = false;
+      prevStatus.current = state.status;
+      return;
+    }
+
+    if (wasSuccess) {
+      prevStatus.current = state.status;
       return;
     }
 
     if (!shouldCloseTaskDialog(state, handledSuccess.current)) {
+      prevStatus.current = state.status;
       return;
     }
 
@@ -105,6 +116,7 @@ export default function TaskCreateDialog({
     startTransition(() => {
       router.refresh();
     });
+    prevStatus.current = state.status;
   }, [addToast, onOpenChange, router, startTransition, state]);
 
   const renderForm = (formId: string, ref: RefObject<HTMLFormElement>) => (
