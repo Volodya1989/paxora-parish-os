@@ -1,4 +1,5 @@
 import { canManageGroupMembership, isParishLeader } from "@/lib/permissions";
+import { sendTaskCompletionEmail } from "@/lib/email/taskCompletion";
 import { calculateEstimatedHoursPerParticipant } from "@/lib/hours/allocations";
 import { getGroupMembership, getParishMembership } from "@/server/db/groups";
 import { prisma } from "@/server/db/prisma";
@@ -337,6 +338,10 @@ export async function markTaskDone({
       weekId: true,
       groupId: true,
       ownerId: true,
+      createdById: true,
+      completedById: true,
+      visibility: true,
+      title: true,
       estimatedHours: true,
       volunteersNeeded: true,
       volunteers: {
@@ -435,6 +440,66 @@ export async function markTaskDone({
 
     return updatedTask;
   });
+
+  const completedById = updated.completedById ?? actorUserId;
+  if (taskDetails.visibility === "PUBLIC" && completedById) {
+    if (taskDetails.createdById && completedById !== taskDetails.createdById) {
+      const recipientIds = new Set<string>();
+      if (taskDetails.createdById !== completedById) {
+        recipientIds.add(taskDetails.createdById);
+      }
+      if (taskDetails.ownerId && taskDetails.ownerId !== completedById) {
+        recipientIds.add(taskDetails.ownerId);
+      }
+
+      if (recipientIds.size > 0) {
+        const [recipients, memberships, completer, parish] = await Promise.all([
+          prisma.user.findMany({
+            where: { id: { in: [...recipientIds] } },
+            select: { id: true, email: true, name: true }
+          }),
+          prisma.membership.findMany({
+            where: { parishId, userId: { in: [...recipientIds] } },
+            select: { userId: true, notifyEmailEnabled: true }
+          }),
+          prisma.user.findUnique({
+            where: { id: completedById },
+            select: { name: true }
+          }),
+          prisma.parish.findUnique({
+            where: { id: parishId },
+            select: { name: true }
+          })
+        ]);
+
+        const membershipByUserId = new Map(
+          memberships.map((membership) => [membership.userId, membership])
+        );
+        const completedByName = completer?.name ?? "Someone";
+        const linkTarget = `/tasks?taskId=${taskDetails.id}`;
+
+        await Promise.all(
+          recipients.map((recipient) => {
+            const membership = membershipByUserId.get(recipient.id);
+            if (!membership?.notifyEmailEnabled || !recipient.email) {
+              return null;
+            }
+            return sendTaskCompletionEmail({
+              parishId,
+              parishName: parish?.name ?? "",
+              taskId: taskDetails.id,
+              taskTitle: taskDetails.title,
+              completedByName,
+              recipientUserId: recipient.id,
+              recipientEmail: recipient.email,
+              notifyEmailEnabled: membership.notifyEmailEnabled,
+              linkTarget
+            });
+          })
+        );
+      }
+    }
+  }
 
   return updated;
 }
