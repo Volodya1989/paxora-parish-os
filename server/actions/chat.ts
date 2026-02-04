@@ -1,6 +1,7 @@
 "use server";
 
 import { getServerSession, type Session } from "next-auth";
+import { revalidatePath } from "next/cache";
 import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
 import {
@@ -720,6 +721,11 @@ export async function markRoomRead(channelId: string, getNow?: () => Date) {
       lastReadAt: now
     }
   });
+
+  // Revalidate pages that display unread badge counts so they reflect
+  // the updated read state when the user navigates back.
+  revalidatePath("/groups", "page");
+  revalidatePath("/community/chat", "page");
 
   return {
     roomId: state.roomId,

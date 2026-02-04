@@ -426,7 +426,7 @@ export default function ChatView({
       <aside className="hidden space-y-4 lg:block">
         <ChannelList channels={channels} activeChannelId={channel.id} />
       </aside>
-      <section className="flex flex-col fixed inset-0 z-40 bg-mist-50 md:static md:z-auto md:h-[calc(100dvh-6rem)] md:max-h-[calc(100dvh-6rem)] md:rounded-card">
+      <section className="flex flex-col fixed inset-0 z-40 bg-mist-50 touch-manipulation md:static md:z-auto md:h-[calc(100dvh-6rem)] md:max-h-[calc(100dvh-6rem)] md:rounded-card">
         <div className="shrink-0">
           <ChatHeader
             channel={{ ...channel, lockedAt }}

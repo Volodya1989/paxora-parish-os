@@ -169,8 +169,12 @@ export default function ChatThread({
 
   return (
     <div
-      className="rounded-card border border-mist-100 bg-gradient-to-b from-mist-50/70 via-white to-mist-50/40 p-3 shadow-sm"
-      onClick={() => setContextMenuMessageId(null)}
+      className="rounded-card border border-mist-100 bg-gradient-to-b from-mist-50/70 via-white to-mist-50/40 p-3 shadow-sm touch-manipulation"
+      onClick={() => {
+        if (contextMenuMessageId !== null) {
+          setContextMenuMessageId(null);
+        }
+      }}
     >
       <div className="space-y-4">
         {pinnedMessage ? (

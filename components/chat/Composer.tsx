@@ -92,7 +92,7 @@ export default function Composer({
   };
 
   return (
-    <div className="border-t border-mist-100 bg-white px-3 py-3">
+    <div className="border-t border-mist-100 bg-white px-3 py-3 touch-manipulation">
       {/* Editing / reply context banners */}
       {isEditing ? (
         <div className="mb-2 flex items-center justify-between gap-3 rounded-xl border border-mist-100 bg-mist-50 px-3 py-2 text-xs text-ink-500">
