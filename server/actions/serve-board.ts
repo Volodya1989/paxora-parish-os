@@ -7,12 +7,14 @@ import {
   assignTaskToSelf,
   assignTaskToUser,
   deleteTask as deleteTaskDomain,
+  leaveTaskVolunteer as leaveTaskVolunteerDomain,
   markTaskDone,
   markTaskInProgress,
   markTaskOpen,
   setTaskCoordinator,
   toggleTaskOpenToVolunteers,
-  unassignTask
+  unassignTask,
+  volunteerForTask as volunteerForTaskDomain
 } from "@/domain/tasks";
 
 function assertSession(session: Session | null) {
@@ -135,6 +137,28 @@ export async function deleteTask({ taskId }: { taskId: string }) {
   const { userId, parishId } = assertSession(session);
 
   await deleteTaskDomain({ taskId, parishId, actorUserId: userId });
+
+  revalidatePath("/serve-board");
+  revalidatePath("/tasks");
+  revalidatePath("/this-week");
+}
+
+export async function volunteerForTask({ taskId }: { taskId: string }) {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  await volunteerForTaskDomain({ taskId, parishId, actorUserId: userId });
+
+  revalidatePath("/serve-board");
+  revalidatePath("/tasks");
+  revalidatePath("/this-week");
+}
+
+export async function leaveTaskVolunteer({ taskId }: { taskId: string }) {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  await leaveTaskVolunteerDomain({ taskId, parishId, actorUserId: userId });
 
   revalidatePath("/serve-board");
   revalidatePath("/tasks");
