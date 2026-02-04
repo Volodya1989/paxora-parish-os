@@ -13,6 +13,7 @@ import {
   updateAnnouncementSchema,
   updateAnnouncementStatusSchema
 } from "@/lib/validation/announcements";
+import { notifyAnnouncementPublished } from "@/lib/push/notify";
 
 function assertSession(session: Session | null) {
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -131,6 +132,22 @@ export async function setAnnouncementPublished(input: {
     throw new Error("Not found");
   }
 
+  // Fire-and-forget push notification when publishing
+  if (parsed.data.published) {
+    const announcement = await prisma.announcement.findUnique({
+      where: { id: parsed.data.id },
+      select: { title: true }
+    });
+    if (announcement) {
+      notifyAnnouncementPublished({
+        announcementId: parsed.data.id,
+        title: announcement.title,
+        parishId,
+        publisherId: userId
+      }).catch(() => {});
+    }
+  }
+
   revalidatePath("/announcements");
 }
 
@@ -223,6 +240,16 @@ export async function createAnnouncement(input: {
       updatedAt: now
     }
   });
+
+  // Fire-and-forget push notification when created as published
+  if (parsed.data.published) {
+    notifyAnnouncementPublished({
+      announcementId: announcement.id,
+      title: parsed.data.title,
+      parishId,
+      publisherId: userId
+    }).catch(() => {});
+  }
 
   revalidatePath("/announcements");
 

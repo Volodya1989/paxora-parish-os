@@ -14,6 +14,7 @@ import {
 import { getGroupMembership, getParishMembership } from "@/server/db/groups";
 import { prisma } from "@/server/db/prisma";
 import type { EventActionState } from "@/server/actions/eventState";
+import { notifyEventCreated } from "@/lib/push/notify";
 
 function assertSession(session: Session | null) {
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -240,7 +241,7 @@ export async function createEvent(
 
   const week = await getOrCreateWeekForDate(parishId, startsAt);
 
-  await createEventRecord({
+  const createdEvent = await createEventRecord({
     parishId,
     weekId: week.id,
     title: parsed.data.title,
@@ -256,6 +257,16 @@ export async function createEvent(
     recurrenceByWeekday: recurrence.recurrenceByWeekday,
     recurrenceUntil: recurrence.recurrenceUntil
   });
+
+  // Fire-and-forget push notification
+  notifyEventCreated({
+    eventId: createdEvent.id,
+    eventTitle: parsed.data.title,
+    parishId,
+    creatorId: userId,
+    visibility: parsed.data.visibility,
+    groupId: parsed.data.visibility === "GROUP" ? group?.id : null
+  }).catch(() => {});
 
   revalidatePath("/calendar");
   revalidatePath("/this-week");
