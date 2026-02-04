@@ -243,6 +243,7 @@ model User {
   greetingsOptIn           Boolean   @default(false)
   lastSeenAnnouncementsAt  DateTime?
   lastSeenEventsAt         DateTime?
+  lastSeenTasksAt          DateTime?
   createdAt                DateTime  @default(now())
 
   pushSubscriptions        PushSubscription[]

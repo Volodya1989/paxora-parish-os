@@ -69,6 +69,18 @@
     "loading": "Завантаження",
     "error": "Помилка"
   },
+  "notifications": {
+    "title": "Сповіщення",
+    "markAllRead": "Прочитати все",
+    "allCaughtUp": "Усе переглянуто",
+    "allCaughtUpDesc": "Наразі немає нових оновлень.",
+    "clear": {
+      "message": "Очистити повідомлення",
+      "task": "Очистити завдання",
+      "announcement": "Очистити оголошення",
+      "event": "Очистити події"
+    }
+  },
   "auth": {
     "signingOut": "Вихід..."
   }
