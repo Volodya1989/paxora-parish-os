@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import ListSkeleton from "@/components/app/list-skeleton";
+import ChatPollCard from "@/components/chat/ChatPollCard";
 import PinnedBanner from "@/components/chat/PinnedBanner";
 import type { ChatMessage, ChatPinnedMessage } from "@/components/chat/types";
 import { REACTION_EMOJIS } from "@/lib/chat/reactions";
@@ -10,6 +11,9 @@ import { cn } from "@/lib/ui/cn";
 const EDIT_WINDOW_MS = 15 * 60 * 1000;
 const GROUP_WINDOW_MS = 2 * 60 * 1000;
 const LONG_PRESS_MS = 500;
+const SWIPE_THRESHOLD = 60;
+const SWIPE_MAX = 80;
+const DIRECTION_LOCK_DELTA = 10;
 
 function getInitials(name: string) {
   return name
@@ -104,6 +108,72 @@ function useLongPress(onLongPress: () => void, onTap?: () => void) {
   };
 }
 
+/** Hook for swipe-right-to-reply gesture (Telegram/WhatsApp pattern) */
+function useSwipeToReply(onReply: () => void, enabled: boolean) {
+  const startXRef = useRef(0);
+  const startYRef = useRef(0);
+  const currentXRef = useRef(0);
+  const directionRef = useRef<"horizontal" | "vertical" | null>(null);
+  const [offsetX, setOffsetX] = useState(0);
+
+  const onTouchStart = useCallback(
+    (event: React.TouchEvent) => {
+      if (!enabled) return;
+      const touch = event.touches[0];
+      startXRef.current = touch.clientX;
+      startYRef.current = touch.clientY;
+      currentXRef.current = touch.clientX;
+      directionRef.current = null;
+    },
+    [enabled]
+  );
+
+  const onTouchMove = useCallback(
+    (event: React.TouchEvent) => {
+      if (!enabled) return;
+      const touch = event.touches[0];
+      const deltaX = touch.clientX - startXRef.current;
+      const deltaY = touch.clientY - startYRef.current;
+
+      // Lock direction after a small movement threshold
+      if (directionRef.current === null) {
+        if (Math.abs(deltaX) > DIRECTION_LOCK_DELTA || Math.abs(deltaY) > DIRECTION_LOCK_DELTA) {
+          directionRef.current =
+            Math.abs(deltaX) > Math.abs(deltaY) ? "horizontal" : "vertical";
+        }
+        return;
+      }
+
+      if (directionRef.current === "vertical") return;
+
+      // Only allow rightward swipe, clamped to max
+      const clamped = Math.max(0, Math.min(deltaX, SWIPE_MAX));
+      currentXRef.current = touch.clientX;
+      setOffsetX(clamped);
+    },
+    [enabled]
+  );
+
+  const onTouchEnd = useCallback(() => {
+    if (!enabled) return;
+    if (directionRef.current === "horizontal" && offsetX >= SWIPE_THRESHOLD) {
+      onReply();
+    }
+    directionRef.current = null;
+    setOffsetX(0);
+  }, [enabled, offsetX, onReply]);
+
+  return {
+    offsetX,
+    isActive: directionRef.current === "horizontal" && offsetX > 0,
+    handlers: {
+      onTouchStart,
+      onTouchMove,
+      onTouchEnd
+    }
+  };
+}
+
 export default function ChatThread({
   messages,
   pinnedMessage,
@@ -116,6 +186,7 @@ export default function ChatThread({
   onEdit,
   onToggleReaction,
   onViewThread,
+  onVotePoll,
   initialReactionMenuMessageId,
   isLoading,
   firstUnreadMessageId
@@ -131,6 +202,7 @@ export default function ChatThread({
   onEdit: (message: ChatMessage) => void;
   onToggleReaction?: (messageId: string, emoji: string) => void;
   onViewThread?: (message: ChatMessage) => void;
+  onVotePoll?: (pollId: string, optionId: string) => Promise<void> | void;
   initialReactionMenuMessageId?: string | null;
   isLoading?: boolean;
   firstUnreadMessageId?: string | null;
@@ -169,8 +241,12 @@ export default function ChatThread({
 
   return (
     <div
-      className="rounded-card border border-mist-100 bg-gradient-to-b from-mist-50/70 via-white to-mist-50/40 p-3 shadow-sm"
-      onClick={() => setContextMenuMessageId(null)}
+      className="rounded-card border border-mist-100 bg-gradient-to-b from-mist-50/70 via-white to-mist-50/40 p-3 shadow-sm touch-manipulation"
+      onClick={() => {
+        if (contextMenuMessageId !== null) {
+          setContextMenuMessageId(null);
+        }
+      }}
     >
       <div className="space-y-4">
         {pinnedMessage ? (
@@ -207,6 +283,7 @@ export default function ChatThread({
                   onDelete={onDelete}
                   onToggleReaction={onToggleReaction}
                   onViewThread={onViewThread}
+                  onVotePoll={onVotePoll}
                   firstUnreadMessageId={firstUnreadMessageId}
                   showUnreadSeparator={(() => {
                     if (firstUnreadMessageId && !unreadRendered && message.id === firstUnreadMessageId) {
@@ -241,6 +318,7 @@ function MessageRow({
   onDelete,
   onToggleReaction,
   onViewThread,
+  onVotePoll,
   firstUnreadMessageId,
   showUnreadSeparator
 }: {
@@ -258,6 +336,7 @@ function MessageRow({
   onDelete: (messageId: string) => void;
   onToggleReaction?: (messageId: string, emoji: string) => void;
   onViewThread?: (message: ChatMessage) => void;
+  onVotePoll?: (pollId: string, optionId: string) => Promise<void> | void;
   firstUnreadMessageId?: string | null;
   showUnreadSeparator: boolean;
 }) {
@@ -298,6 +377,31 @@ function MessageRow({
     }
   );
 
+  const swipe = useSwipeToReply(
+    () => {
+      if (canReply) onReply(message);
+    },
+    canReply && !isDeleted
+  );
+
+  // Merge touch handlers: swipe takes precedence for movement tracking,
+  // long-press fires on stationary hold
+  const mergedTouchStart = (event: React.TouchEvent) => {
+    swipe.handlers.onTouchStart(event);
+    longPressHandlers.onTouchStart();
+  };
+  const mergedTouchMove = (event: React.TouchEvent) => {
+    swipe.handlers.onTouchMove(event);
+    longPressHandlers.onTouchMove();
+  };
+  const mergedTouchEnd = () => {
+    swipe.handlers.onTouchEnd();
+    longPressHandlers.onTouchEnd();
+  };
+
+  // Normalised swipe progress 0..1 for animations
+  const swipeProgress = Math.min(swipe.offsetX / SWIPE_THRESHOLD, 1);
+
   return (
     <div>
       {/* Unread messages separator */}
@@ -318,9 +422,36 @@ function MessageRow({
           isGrouped ? "mt-0.5" : "mt-3 first:mt-0"
         )}
       >
+        {/* Swipe-to-reply indicator — appears behind the message as user swipes right */}
+        {swipe.offsetX > 0 ? (
+          <div
+            className="absolute left-0 top-1/2 flex -translate-y-1/2 items-center justify-center"
+            style={{
+              opacity: swipeProgress,
+              transform: `translateY(-50%) scale(${0.5 + swipeProgress * 0.5})`
+            }}
+            aria-hidden="true"
+          >
+            <div
+              className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-full",
+                swipeProgress >= 1
+                  ? "bg-emerald-600 text-white"
+                  : "bg-mist-200 text-ink-500"
+              )}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                <path fillRule="evenodd" d="M7.793 2.232a.75.75 0 01-.025 1.06L3.622 7.25h10.003a5.375 5.375 0 010 10.75H10.75a.75.75 0 010-1.5h2.875a3.875 3.875 0 000-7.75H3.622l4.146 3.957a.75.75 0 01-1.036 1.085l-5.5-5.25a.75.75 0 010-1.085l5.5-5.25a.75.75 0 011.06.025z" clipRule="evenodd" />
+              </svg>
+            </div>
+          </div>
+        ) : null}
         {/* Left-side avatar for other users */}
         {!isMine ? (
-          <div className="mr-2 w-9 shrink-0">
+          <div
+            className="mr-2 w-9 shrink-0"
+            style={swipe.offsetX > 0 ? { transform: `translateX(${swipe.offsetX}px)` } : undefined}
+          >
             {showAuthorBlock ? (
               <button
                 type="button"
@@ -341,8 +472,10 @@ function MessageRow({
             isMine
               ? "rounded-2xl rounded-br-sm bg-emerald-100"
               : "rounded-2xl rounded-bl-sm bg-gray-50 border border-gray-200",
-            contextMenuOpen && "ring-1 ring-primary-200"
+            contextMenuOpen && "ring-1 ring-primary-200",
+            swipe.offsetX > 0 && "transition-none"
           )}
+          style={swipe.offsetX > 0 ? { transform: `translateX(${swipe.offsetX}px)` } : undefined}
           tabIndex={0}
           role="button"
           aria-label={`Message from ${message.author.name}`}
@@ -359,7 +492,12 @@ function MessageRow({
               onCloseContextMenu();
             }
           }}
-          {...longPressHandlers}
+          onTouchStart={mergedTouchStart}
+          onTouchMove={mergedTouchMove}
+          onTouchEnd={mergedTouchEnd}
+          onMouseDown={longPressHandlers.onMouseDown}
+          onMouseUp={longPressHandlers.onMouseUp}
+          onMouseLeave={longPressHandlers.onMouseLeave}
           onClick={(event) => {
             event.stopPropagation();
           }}
@@ -410,6 +548,11 @@ function MessageRow({
           >
             {isDeleted ? "This message was deleted." : message.body}
           </p>
+
+          {/* Poll card (rendered inside the bubble for poll messages) */}
+          {!isDeleted && message.poll && onVotePoll ? (
+            <ChatPollCard poll={message.poll} onVote={onVotePoll} />
+          ) : null}
 
           {/* Thread link as pill */}
           {showThreadLink ? (

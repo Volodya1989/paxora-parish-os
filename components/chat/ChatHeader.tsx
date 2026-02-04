@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ChatChannelSummary } from "@/components/chat/types";
 import { cn } from "@/lib/ui/cn";
@@ -22,8 +22,53 @@ export default function ChatHeader({
 }) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
   const [channelSearchOpen, setChannelSearchOpen] = useState(false);
   const [channelSearch, setChannelSearch] = useState("");
+
+  const handleBack = useCallback(() => {
+    // Reliable back navigation: check if we have meaningful history,
+    // otherwise fall back to the groups/community page.
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/community/chat");
+    }
+  }, [router]);
+
+  const openMenu = useCallback(() => {
+    const btn = menuBtnRef.current;
+    if (btn) {
+      const rect = btn.getBoundingClientRect();
+      setMenuPos({
+        top: rect.bottom + 4,
+        right: window.innerWidth - rect.right
+      });
+    }
+    setMenuOpen(true);
+  }, []);
+
+  // Recalculate menu position on scroll/resize while open
+  useEffect(() => {
+    if (!menuOpen) return;
+    const update = () => {
+      const btn = menuBtnRef.current;
+      if (btn) {
+        const rect = btn.getBoundingClientRect();
+        setMenuPos({
+          top: rect.bottom + 4,
+          right: window.innerWidth - rect.right
+        });
+      }
+    };
+    window.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
+    };
+  }, [menuOpen]);
 
   const channelOptions = useMemo(() => {
     const items = channels ?? [];
@@ -55,14 +100,14 @@ export default function ChatHeader({
   const hasModerateItems = canModerate;
 
   return (
-    <div className="overflow-hidden rounded-t-card">
+    <div className="rounded-t-card">
       {/* Emerald themed header bar */}
-      <div className="flex items-center gap-3 bg-emerald-600 px-4 py-3">
+      <div className="flex items-center gap-3 bg-emerald-600 px-3 py-3 touch-manipulation">
         <button
           type="button"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white/80 transition hover:bg-white/10 hover:text-white"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white/80 transition hover:bg-white/10 hover:text-white active:bg-white/20"
           aria-label="Go back"
-          onClick={() => router.back()}
+          onClick={handleBack}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -127,13 +172,20 @@ export default function ChatHeader({
 
           {/* Moderation overflow menu */}
           {hasModerateItems ? (
-            <div className="relative">
+            <div>
               <button
+                ref={menuBtnRef}
                 type="button"
-                className="flex h-8 w-8 items-center justify-center rounded-full text-white/80 transition hover:bg-white/10 hover:text-white"
+                className="flex h-11 w-11 items-center justify-center rounded-full text-white/80 transition hover:bg-white/10 hover:text-white active:bg-white/20"
                 aria-label="Chat options"
                 aria-expanded={menuOpen}
-                onClick={() => setMenuOpen((prev) => !prev)}
+                onClick={() => {
+                  if (menuOpen) {
+                    setMenuOpen(false);
+                  } else {
+                    openMenu();
+                  }
+                }}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -145,16 +197,19 @@ export default function ChatHeader({
                   <path d="M10 3a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM10 8.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM11.5 15.5a1.5 1.5 0 10-3 0 1.5 1.5 0 003 0z" />
                 </svg>
               </button>
-              {menuOpen ? (
+              {menuOpen && menuPos ? (
                 <>
                   <div
-                    className="fixed inset-0 z-10"
+                    className="fixed inset-0 z-[60]"
                     onClick={() => setMenuOpen(false)}
                   />
-                  <div className="absolute right-0 top-full z-20 mt-1 w-52 rounded-card border border-mist-200 bg-white py-1 shadow-lg">
+                  <div
+                    className="fixed z-[70] w-52 rounded-card border border-mist-200 bg-white py-1 shadow-lg"
+                    style={{ top: menuPos.top, right: menuPos.right }}
+                  >
                     <button
                       type="button"
-                      className="flex w-full items-center px-3 py-2 text-left text-sm text-ink-700 hover:bg-mist-50"
+                      className="flex w-full items-center px-3 py-2.5 text-left text-sm text-ink-700 hover:bg-mist-50 active:bg-mist-100"
                       onClick={() => {
                         onToggleLock();
                         setMenuOpen(false);
@@ -165,7 +220,7 @@ export default function ChatHeader({
                     {onManageMembers ? (
                       <button
                         type="button"
-                        className="flex w-full items-center px-3 py-2 text-left text-sm text-ink-700 hover:bg-mist-50"
+                        className="flex w-full items-center px-3 py-2.5 text-left text-sm text-ink-700 hover:bg-mist-50 active:bg-mist-100"
                         onClick={() => {
                           onManageMembers();
                           setMenuOpen(false);
@@ -186,10 +241,10 @@ export default function ChatHeader({
       {channelSearchOpen ? (
         <>
           <div
-            className="fixed inset-0 z-10"
+            className="fixed inset-0 z-[45]"
             onClick={() => setChannelSearchOpen(false)}
           />
-          <div className="relative z-20 border-b border-mist-100 bg-white px-4 py-2">
+          <div className="relative z-[50] border-b border-mist-100 bg-white px-4 py-2">
             <input
               type="text"
               value={channelSearch}

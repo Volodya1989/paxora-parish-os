@@ -20,6 +20,14 @@ function serializeMessage(message: Awaited<ReturnType<typeof listMessages>>[numb
             ? message.parentMessage.deletedAt.toISOString()
             : null
         }
+      : null,
+    poll: message.poll
+      ? {
+          ...message.poll,
+          expiresAt: message.poll.expiresAt
+            ? new Date(message.poll.expiresAt).toISOString()
+            : null
+        }
       : null
   };
 }

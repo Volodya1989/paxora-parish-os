@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import PollComposer from "@/components/chat/PollComposer";
 
 const MAX_LENGTH = 1000;
 
@@ -11,7 +12,8 @@ export default function Composer({
   onCancelReply,
   editingMessage,
   onCancelEdit,
-  mentionableUsers
+  mentionableUsers,
+  onCreatePoll
 }: {
   disabled: boolean;
   onSend: (body: string) => Promise<void> | void;
@@ -20,10 +22,13 @@ export default function Composer({
   editingMessage?: { id: string; body: string } | null;
   onCancelEdit?: () => void;
   mentionableUsers?: { id: string; name: string }[];
+  onCreatePoll?: (question: string, options: string[]) => Promise<void> | void;
 }) {
   const [message, setMessage] = useState("");
   const [isPending, startTransition] = useTransition();
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [showPollComposer, setShowPollComposer] = useState(false);
+  const [plusMenuOpen, setPlusMenuOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -92,7 +97,20 @@ export default function Composer({
   };
 
   return (
-    <div className="border-t border-mist-100 bg-white px-3 py-3">
+    <div className="border-t border-mist-100 bg-white px-3 py-3 touch-manipulation">
+      {/* Poll composer (shown above the input row when active) */}
+      {showPollComposer && onCreatePoll ? (
+        <div className="mb-3">
+          <PollComposer
+            onSubmit={async (question, options) => {
+              await onCreatePoll(question, options);
+              setShowPollComposer(false);
+            }}
+            onCancel={() => setShowPollComposer(false)}
+          />
+        </div>
+      ) : null}
+
       {/* Editing / reply context banners */}
       {isEditing ? (
         <div className="mb-2 flex items-center justify-between gap-3 rounded-xl border border-mist-100 bg-mist-50 px-3 py-2 text-xs text-ink-500">
@@ -151,23 +169,52 @@ export default function Composer({
 
       {/* Input row */}
       <div className="flex items-end gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2">
-        {/* Attachment / plus button */}
-        <button
-          type="button"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink-400 transition hover:bg-mist-50 hover:text-ink-700"
-          aria-label="Attach file"
-          disabled={isDisabled}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            className="h-5 w-5"
-            aria-hidden="true"
+        {/* Plus button with menu */}
+        <div className="relative">
+          <button
+            type="button"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink-400 transition hover:bg-mist-50 hover:text-ink-700"
+            aria-label="Attachments & more"
+            aria-expanded={plusMenuOpen}
+            disabled={isDisabled}
+            onClick={() => setPlusMenuOpen((prev) => !prev)}
           >
-            <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
-          </svg>
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              className="h-5 w-5"
+              aria-hidden="true"
+            >
+              <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+            </svg>
+          </button>
+          {plusMenuOpen ? (
+            <>
+              <div
+                className="fixed inset-0 z-[45]"
+                onClick={() => setPlusMenuOpen(false)}
+              />
+              <div className="absolute bottom-full left-0 z-[50] mb-2 w-44 rounded-xl border border-mist-200 bg-white py-1 shadow-lg">
+                {onCreatePoll ? (
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-ink-700 hover:bg-mist-50 active:bg-mist-100"
+                    onClick={() => {
+                      setShowPollComposer(true);
+                      setPlusMenuOpen(false);
+                    }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-ink-400" aria-hidden="true">
+                      <path d="M15.5 2A1.5 1.5 0 0014 3.5v13a1.5 1.5 0 001.5 1.5h1a1.5 1.5 0 001.5-1.5v-13A1.5 1.5 0 0016.5 2h-1zM9.5 6A1.5 1.5 0 008 7.5v9A1.5 1.5 0 009.5 18h1a1.5 1.5 0 001.5-1.5v-9A1.5 1.5 0 0010.5 6h-1zM3.5 10A1.5 1.5 0 002 11.5v5A1.5 1.5 0 003.5 18h1A1.5 1.5 0 006 16.5v-5A1.5 1.5 0 004.5 10h-1z" />
+                    </svg>
+                    Create poll
+                  </button>
+                ) : null}
+              </div>
+            </>
+          ) : null}
+        </div>
 
         {/* Auto-expanding textarea */}
         <textarea
