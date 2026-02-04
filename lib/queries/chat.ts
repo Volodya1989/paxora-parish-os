@@ -23,6 +23,22 @@ export type ChatChannelListItem = {
   isMember: boolean;
 };
 
+export type ChatPollOptionItem = {
+  id: string;
+  label: string;
+  votes: number;
+  votedByMe: boolean;
+};
+
+export type ChatPollItem = {
+  id: string;
+  question: string;
+  expiresAt: Date | null;
+  totalVotes: number;
+  options: ChatPollOptionItem[];
+  myVoteOptionId: string | null;
+};
+
 export type ChatMessageItem = {
   id: string;
   body: string;
@@ -49,6 +65,7 @@ export type ChatMessageItem = {
       name: string;
     };
   } | null;
+  poll?: ChatPollItem | null;
 };
 
 export type ChatPinnedMessageItem = {
@@ -433,6 +450,27 @@ export async function listMessages({
           name: true,
           email: true
         }
+      },
+      poll: {
+        select: {
+          id: true,
+          question: true,
+          expiresAt: true,
+          options: {
+            orderBy: { order: "asc" as const },
+            select: {
+              id: true,
+              label: true,
+              _count: { select: { votes: true } },
+              votes: userId
+                ? {
+                    where: { userId },
+                    select: { id: true }
+                  }
+                : false
+            }
+          }
+        }
       }
     }
   });
@@ -440,34 +478,63 @@ export async function listMessages({
   const messageIds = messages.map((message) => message.id);
   const reactionMap = await listReactionsForMessages(messageIds, userId);
 
-  return messages.map((message) => ({
-    id: message.id,
-    body: message.body,
-    createdAt: message.createdAt,
-    editedAt: message.editedAt,
-    deletedAt: message.deletedAt,
-    replyCount: message._count.replies ?? 0,
-    reactions: reactionMap.get(message.id) ?? [],
-    author: {
-      id: message.author.id,
-      name: message.author.name ?? message.author.email ?? "Parish member"
-    },
-    parentMessage: message.parentMessage
-      ? {
-          id: message.parentMessage.id,
-          body: message.parentMessage.body,
-          createdAt: message.parentMessage.createdAt,
-          deletedAt: message.parentMessage.deletedAt,
-          author: {
-            id: message.parentMessage.author.id,
-            name:
-              message.parentMessage.author.name ??
-              message.parentMessage.author.email ??
-              "Parish member"
+  return messages.map((message) => {
+    let poll: ChatPollItem | null = null;
+
+    if (message.poll) {
+      const totalVotes = message.poll.options.reduce(
+        (sum, opt) => sum + (opt._count?.votes ?? 0),
+        0
+      );
+      const myVoteOption = message.poll.options.find(
+        (opt) => Array.isArray(opt.votes) && opt.votes.length > 0
+      );
+
+      poll = {
+        id: message.poll.id,
+        question: message.poll.question,
+        expiresAt: message.poll.expiresAt,
+        totalVotes,
+        options: message.poll.options.map((opt) => ({
+          id: opt.id,
+          label: opt.label,
+          votes: opt._count?.votes ?? 0,
+          votedByMe: Array.isArray(opt.votes) && opt.votes.length > 0
+        })),
+        myVoteOptionId: myVoteOption?.id ?? null
+      };
+    }
+
+    return {
+      id: message.id,
+      body: message.body,
+      createdAt: message.createdAt,
+      editedAt: message.editedAt,
+      deletedAt: message.deletedAt,
+      replyCount: message._count.replies ?? 0,
+      reactions: reactionMap.get(message.id) ?? [],
+      author: {
+        id: message.author.id,
+        name: message.author.name ?? message.author.email ?? "Parish member"
+      },
+      parentMessage: message.parentMessage
+        ? {
+            id: message.parentMessage.id,
+            body: message.parentMessage.body,
+            createdAt: message.parentMessage.createdAt,
+            deletedAt: message.parentMessage.deletedAt,
+            author: {
+              id: message.parentMessage.author.id,
+              name:
+                message.parentMessage.author.name ??
+                message.parentMessage.author.email ??
+                "Parish member"
+            }
           }
-        }
-      : null
-  })) as ChatMessageItem[];
+        : null,
+      poll
+    };
+  }) as ChatMessageItem[];
 }
 
 export async function getPinnedMessage(channelId: string, userId?: string) {

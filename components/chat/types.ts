@@ -12,6 +12,22 @@ export type ChatChannelSummary = {
   isMember: boolean;
 };
 
+export type ChatPollOption = {
+  id: string;
+  label: string;
+  votes: number;
+  votedByMe: boolean;
+};
+
+export type ChatPollData = {
+  id: string;
+  question: string;
+  expiresAt: Date | string | null;
+  totalVotes: number;
+  options: ChatPollOption[];
+  myVoteOptionId: string | null;
+};
+
 export type ChatMessage = {
   id: string;
   body: string;
@@ -38,6 +54,7 @@ export type ChatMessage = {
       name: string;
     };
   } | null;
+  poll?: ChatPollData | null;
 };
 
 export type ChatPinnedMessage = {

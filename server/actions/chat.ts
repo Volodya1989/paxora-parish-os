@@ -697,6 +697,246 @@ export async function toggleReaction(messageId: string, emoji: string) {
   };
 }
 
+export async function createPoll(
+  channelId: string,
+  question: string,
+  options: string[],
+  expiresAt?: string | null
+) {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  const { channel, parishMembership, groupMembership } = await requireChannelAccess(
+    userId,
+    parishId,
+    channelId
+  );
+
+  if (channel.lockedAt) {
+    throw new Error("Channel is locked");
+  }
+
+  const trimmedQuestion = question.trim();
+  if (!trimmedQuestion) {
+    throw new Error("Poll question cannot be empty");
+  }
+  if (trimmedQuestion.length > 300) {
+    throw new Error("Poll question is too long");
+  }
+
+  const validOptions = options.map((o) => o.trim()).filter(Boolean);
+  if (validOptions.length < 2) {
+    throw new Error("Poll must have at least 2 options");
+  }
+  if (validOptions.length > 10) {
+    throw new Error("Poll cannot have more than 10 options");
+  }
+
+  if (channel.type === "ANNOUNCEMENT") {
+    const isCoordinator = await isCoordinatorInParish(parishId, userId);
+    if (!canPostAnnouncementChannel(parishMembership.role, isCoordinator)) {
+      throw new Error("Forbidden");
+    }
+  }
+
+  if (channel.type === "GROUP") {
+    const isMember = Boolean(groupMembership && groupMembership.status === "ACTIVE");
+    if (!canPostGroupChannel(parishMembership.role, isMember)) {
+      throw new Error("Forbidden");
+    }
+  }
+
+  const now = defaultGetNow();
+
+  // Create the message and poll atomically
+  const message = await prisma.chatMessage.create({
+    data: {
+      channelId: channel.id,
+      authorId: userId,
+      body: `📊 ${trimmedQuestion}`,
+      createdAt: now,
+      poll: {
+        create: {
+          question: trimmedQuestion,
+          expiresAt: expiresAt ? new Date(expiresAt) : null,
+          createdAt: now,
+          options: {
+            create: validOptions.map((label, index) => ({
+              label,
+              order: index
+            }))
+          }
+        }
+      }
+    },
+    select: {
+      id: true,
+      body: true,
+      createdAt: true,
+      editedAt: true,
+      deletedAt: true,
+      _count: {
+        select: {
+          replies: true
+        }
+      },
+      author: {
+        select: {
+          id: true,
+          name: true,
+          email: true
+        }
+      },
+      poll: {
+        select: {
+          id: true,
+          question: true,
+          expiresAt: true,
+          createdAt: true,
+          options: {
+            orderBy: { order: "asc" },
+            select: {
+              id: true,
+              label: true,
+              order: true,
+              _count: {
+                select: { votes: true }
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+
+  return {
+    id: message.id,
+    body: message.body,
+    createdAt: message.createdAt,
+    editedAt: message.editedAt,
+    deletedAt: message.deletedAt,
+    replyCount: message._count.replies ?? 0,
+    reactions: [],
+    author: {
+      id: message.author.id,
+      name: message.author.name ?? message.author.email ?? "Parish member"
+    },
+    parentMessage: null,
+    poll: message.poll
+      ? {
+          id: message.poll.id,
+          question: message.poll.question,
+          expiresAt: message.poll.expiresAt,
+          totalVotes: 0,
+          options: message.poll.options.map((opt) => ({
+            id: opt.id,
+            label: opt.label,
+            votes: 0,
+            votedByMe: false
+          })),
+          myVoteOptionId: null
+        }
+      : null
+  };
+}
+
+export async function votePoll(pollId: string, optionId: string) {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  const poll = await prisma.chatPoll.findUnique({
+    where: { id: pollId },
+    select: {
+      id: true,
+      expiresAt: true,
+      message: {
+        select: { channelId: true }
+      },
+      options: {
+        select: { id: true }
+      }
+    }
+  });
+
+  if (!poll) {
+    throw new Error("Not found");
+  }
+
+  await requireChannelAccess(userId, parishId, poll.message.channelId);
+
+  if (poll.expiresAt && poll.expiresAt < new Date()) {
+    throw new Error("Poll has expired");
+  }
+
+  const validOptionIds = new Set(poll.options.map((o) => o.id));
+  if (!validOptionIds.has(optionId)) {
+    throw new Error("Invalid option");
+  }
+
+  // Remove any existing vote for this poll by this user, then add new vote.
+  // This ensures single-vote-per-user semantics.
+  await prisma.$transaction(async (tx) => {
+    await tx.chatPollVote.deleteMany({
+      where: {
+        userId,
+        option: {
+          pollId: poll.id
+        }
+      }
+    });
+
+    await tx.chatPollVote.create({
+      data: {
+        optionId,
+        userId
+      }
+    });
+  });
+
+  // Return updated poll data
+  const updated = await prisma.chatPoll.findUnique({
+    where: { id: pollId },
+    select: {
+      id: true,
+      question: true,
+      expiresAt: true,
+      options: {
+        orderBy: { order: "asc" },
+        select: {
+          id: true,
+          label: true,
+          _count: { select: { votes: true } },
+          votes: {
+            where: { userId },
+            select: { id: true }
+          }
+        }
+      }
+    }
+  });
+
+  if (!updated) {
+    throw new Error("Not found");
+  }
+
+  const totalVotes = updated.options.reduce((sum, opt) => sum + opt._count.votes, 0);
+  const myVoteOption = updated.options.find((opt) => opt.votes.length > 0);
+
+  return {
+    id: updated.id,
+    question: updated.question,
+    expiresAt: updated.expiresAt,
+    totalVotes,
+    options: updated.options.map((opt) => ({
+      id: opt.id,
+      label: opt.label,
+      votes: opt._count.votes,
+      votedByMe: opt.votes.length > 0
+    })),
+    myVoteOptionId: myVoteOption?.id ?? null
+  };
+}
+
 export async function markRoomRead(channelId: string, getNow?: () => Date) {
   const session = await getServerSession(authOptions);
   const { userId, parishId } = assertSession(session);

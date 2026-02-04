@@ -17,6 +17,7 @@ import type {
 } from "@/components/chat/types";
 import {
   addMember,
+  createPoll,
   deleteMessage,
   editMessage,
   lockChannel,
@@ -26,7 +27,8 @@ import {
   removeMember,
   toggleReaction,
   unlockChannel,
-  unpinMessage
+  unpinMessage,
+  votePoll
 } from "@/server/actions/chat";
 import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 
@@ -398,6 +400,29 @@ export default function ChatView({
     }
   };
 
+  const handleCreatePoll = async (question: string, options: string[]) => {
+    const created = await createPoll(channel.id, question, options);
+    justSentRef.current = true;
+    setMessages((prev) => {
+      const next = [...prev, parseMessage(created)];
+      return sortMessages(next);
+    });
+  };
+
+  const handleVotePoll = async (pollId: string, optionId: string) => {
+    const updated = await votePoll(pollId, optionId);
+    // Update the poll data on the corresponding message
+    setMessages((prev) =>
+      prev.map((message) => {
+        if (message.poll?.id !== pollId) return message;
+        return {
+          ...message,
+          poll: updated
+        };
+      })
+    );
+  };
+
   const channelMessages = useMemo(
     () => messages.filter((message) => !message.parentMessage),
     [messages]
@@ -464,6 +489,7 @@ export default function ChatView({
             onDelete={handleDelete}
             onToggleReaction={handleToggleReaction}
             onViewThread={(message) => setThreadRoot(message)}
+            onVotePoll={handleVotePoll}
             isLoading={!isPollingReady}
             firstUnreadMessageId={firstUnreadMessageId}
           />
@@ -483,6 +509,7 @@ export default function ChatView({
             }
             onCancelEdit={() => setEditingMessage(null)}
             mentionableUsers={mentionableUsers}
+            onCreatePoll={canPost && !lockedAt ? handleCreatePoll : undefined}
           />
         </div>
       </section>
