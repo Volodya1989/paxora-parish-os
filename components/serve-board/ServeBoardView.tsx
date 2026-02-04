@@ -16,10 +16,12 @@ import QuoteCard from "@/components/app/QuoteCard";
 import {
   claimTask,
   deleteTask,
+  leaveTaskVolunteer,
   unclaimTask,
   updateCoordinator,
   updateOpenToVolunteers,
-  updateTaskStatus
+  updateTaskStatus,
+  volunteerForTask
 } from "@/server/actions/serve-board";
 import type { TaskListItem } from "@/lib/queries/tasks";
 import { cn } from "@/lib/ui/cn";
@@ -38,6 +40,15 @@ type ServeBoardViewProps = {
   currentUserId: string;
   isLeader: boolean;
 };
+
+function formatDueDate(value: string) {
+  const date = new Date(value);
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC"
+  });
+}
 
 function formatCompactName(name: string) {
   const trimmed = name.trim();
@@ -67,8 +78,10 @@ export default function ServeBoardView({
     IN_PROGRESS: [],
     DONE: []
   });
+  const [searchQuery, setSearchQuery] = useState("");
   const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null);
   const [completeTaskId, setCompleteTaskId] = useState<string | null>(null);
   const [requestOpen, setRequestOpen] = useState(false);
   const [, startTransition] = useTransition();
@@ -103,12 +116,14 @@ export default function ServeBoardView({
   };
 
   const filteredTasks = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
     return tasks.filter((task) => {
       if (ownershipFilter === "mine") {
         const isMine =
           task.owner?.id === currentUserId ||
           task.coordinator?.id === currentUserId ||
-          task.createdById === currentUserId;
+          task.createdById === currentUserId ||
+          task.hasVolunteered;
         if (!isMine) {
           return false;
         }
@@ -119,9 +134,18 @@ export default function ServeBoardView({
       if (visibilityFilter === "private" && task.visibility !== "PRIVATE") {
         return false;
       }
+      if (query) {
+        const matchesTitle = task.title.toLowerCase().includes(query);
+        const matchesNotes = task.notes?.toLowerCase().includes(query);
+        const matchesOwner = task.owner?.name.toLowerCase().includes(query);
+        const matchesGroup = task.group?.name.toLowerCase().includes(query);
+        if (!matchesTitle && !matchesNotes && !matchesOwner && !matchesGroup) {
+          return false;
+        }
+      }
       return true;
     });
-  }, [currentUserId, ownershipFilter, tasks, visibilityFilter]);
+  }, [currentUserId, ownershipFilter, searchQuery, tasks, visibilityFilter]);
 
   const tasksById = useMemo(() => {
     return new Map(tasks.map((task) => [task.id, task]));
@@ -240,6 +264,12 @@ export default function ServeBoardView({
       openToVolunteers ? "Open to volunteers" : "Closed to volunteers"
     );
 
+  const handleVolunteer = (taskId: string) =>
+    runTaskAction(taskId, () => volunteerForTask({ taskId }), "Added to volunteers");
+
+  const handleLeaveVolunteer = (taskId: string) =>
+    runTaskAction(taskId, () => leaveTaskVolunteer({ taskId }), "Left volunteer list");
+
   const handleDelete = (taskId: string) =>
     runTaskAction(taskId, () => deleteTask({ taskId }), "Task deleted");
 
@@ -251,18 +281,32 @@ export default function ServeBoardView({
     });
   };
 
-  const handleDropOnTask = (status: TaskStatus, targetTaskId?: string) => {
+  const handleDropOnTask = (targetStatus: TaskStatus, targetTaskId?: string) => {
     if (!draggedTaskId) {
       return;
     }
     const draggedTask = tasksById.get(draggedTaskId);
-    if (!draggedTask || draggedTask.status !== status) {
+    if (!draggedTask) {
       setDraggedTaskId(null);
+      setDragOverColumn(null);
       return;
     }
-    const currentTasks = orderedTasksByStatus[status] ?? [];
+
+    // Cross-column drop: change the task's status
+    if (draggedTask.status !== targetStatus) {
+      if (draggedTask.canManageStatus) {
+        void handleStatusChange(draggedTask.id, targetStatus);
+      }
+      setDraggedTaskId(null);
+      setDragOverTaskId(null);
+      setDragOverColumn(null);
+      return;
+    }
+
+    // Same-column drop: reorder within column
+    const currentTasks = orderedTasksByStatus[targetStatus] ?? [];
     const baseOrder =
-      taskOrderByStatus[status]?.length ? [...taskOrderByStatus[status]] : currentTasks.map((task) => task.id);
+      taskOrderByStatus[targetStatus]?.length ? [...taskOrderByStatus[targetStatus]] : currentTasks.map((task) => task.id);
     const filteredOrder = baseOrder.filter((id) => id !== draggedTaskId);
     if (targetTaskId && filteredOrder.includes(targetTaskId)) {
       const targetIndex = filteredOrder.indexOf(targetTaskId);
@@ -270,9 +314,10 @@ export default function ServeBoardView({
     } else {
       filteredOrder.push(draggedTaskId);
     }
-    updateOrderForStatus(status, filteredOrder);
+    updateOrderForStatus(targetStatus, filteredOrder);
     setDraggedTaskId(null);
     setDragOverTaskId(null);
+    setDragOverColumn(null);
   };
 
   const renderFilterButton = (
@@ -314,6 +359,13 @@ export default function ServeBoardView({
         </Button>
         {renderFilterButton("All", ownershipFilter === "all", () => setOwnershipFilter("all"))}
         {renderFilterButton("Mine", ownershipFilter === "mine", () => setOwnershipFilter("mine"))}
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Search tasks..."
+          className="h-8 w-40 rounded-full border border-mist-200 bg-white px-3 text-xs text-ink-700 placeholder:text-ink-400 focus:border-primary-300 focus:outline-none focus:ring-1 focus:ring-primary-300 sm:w-52"
+        />
       </div>
 
       {totalOpportunities === 0 ? (
@@ -336,10 +388,17 @@ export default function ServeBoardView({
           return (
             <div
               key={column.id}
-              className="min-w-[280px] flex-1 md:min-w-0"
+              className={cn(
+                "min-w-[280px] flex-1 rounded-lg p-1 transition md:min-w-0",
+                dragOverColumn === column.id && draggedTaskId
+                  ? "bg-mist-100/60 ring-2 ring-primary-200"
+                  : ""
+              )}
               onDragOver={(event) => {
                 event.preventDefault();
+                setDragOverColumn(column.id);
               }}
+              onDragLeave={() => setDragOverColumn(null)}
               onDrop={() => handleDropOnTask(column.id)}
             >
               <div className="mb-3 flex items-center justify-between text-xs font-semibold text-ink-500">
@@ -350,14 +409,21 @@ export default function ServeBoardView({
                 {columnTasks.map((task) => {
                   const isBusy = pendingTaskId === task.id;
                   const hasOwner = Boolean(task.owner);
+                  const isMultiVolunteer = task.volunteersNeeded > 1;
                   const canAssignOthers = task.canAssignOthers && !isBusy;
                   const canClaim = task.canAssignToSelf && !isBusy;
                   const canUnclaim =
                     !isBusy &&
                     task.owner &&
                     (task.owner.id === currentUserId || canAssignOthers);
+                  const canJoinVolunteer =
+                    !isBusy && isMultiVolunteer && task.canVolunteer && !task.hasVolunteered;
+                  const canLeaveVolunteer =
+                    !isBusy && isMultiVolunteer && task.hasVolunteered;
                   const canManageStatus = task.canManageStatus && !isBusy;
                   const ownerCompactName = task.owner ? formatCompactName(task.owner.name) : null;
+                  const volunteersFull =
+                    isMultiVolunteer && task.volunteerCount >= task.volunteersNeeded;
 
                   return (
                     <Card
@@ -371,6 +437,7 @@ export default function ServeBoardView({
                       onDragEnd={() => {
                         setDraggedTaskId(null);
                         setDragOverTaskId(null);
+                        setDragOverColumn(null);
                       }}
                       onDragOver={(event) => {
                         event.preventDefault();
@@ -378,10 +445,11 @@ export default function ServeBoardView({
                       }}
                       onDrop={(event) => {
                         event.preventDefault();
+                        event.stopPropagation();
                         handleDropOnTask(column.id, task.id);
                       }}
                       className={cn(
-                        "space-y-3 p-3 sm:p-4",
+                        "space-y-2.5 p-3 sm:p-4",
                         dragOverTaskId === task.id && draggedTaskId !== task.id
                           ? "ring-2 ring-emerald-200"
                           : ""
@@ -390,16 +458,16 @@ export default function ServeBoardView({
                       <button
                         type="button"
                         onClick={() => setDetailTaskId(task.id)}
-                        className="text-left"
+                        className="text-left w-full"
                       >
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-mist-100">
+                        <div className="space-y-1.5">
+                          <div className="flex items-start gap-2">
+                            <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-mist-100">
                               <ListChecksIcon className="h-3.5 w-3.5 text-ink-400" />
                             </span>
-                            <div className="text-sm font-semibold text-ink-900">{task.title}</div>
+                            <div className="text-sm font-semibold text-ink-900 leading-snug">{task.title}</div>
                           </div>
-                          <div className="flex flex-wrap items-center gap-2 text-xs text-ink-500">
+                          <div className="flex flex-wrap items-center gap-1.5 text-xs">
                             {task.visibility === "PUBLIC" && task.openToVolunteers ? (
                               <Badge
                                 tone="success"
@@ -408,6 +476,19 @@ export default function ServeBoardView({
                                 Volunteers welcome
                               </Badge>
                             ) : null}
+                            {task.group ? (
+                              <Badge tone="neutral" className="bg-indigo-50 text-indigo-700">
+                                {task.group.name}
+                              </Badge>
+                            ) : null}
+                            {task.estimatedHours ? (
+                              <span className="rounded-full bg-mist-100 px-1.5 py-0.5 text-ink-500">
+                                {task.estimatedHours}h
+                              </span>
+                            ) : null}
+                            <span className="rounded-full bg-mist-100 px-1.5 py-0.5 text-ink-500">
+                              {formatDueDate(task.dueAt)}
+                            </span>
                           </div>
                         </div>
                       </button>
@@ -425,6 +506,27 @@ export default function ServeBoardView({
                         ) : (
                           <div className="text-ink-400">No one yet — be the first!</div>
                         )}
+                        {isMultiVolunteer ? (
+                          <div className="flex items-center gap-1.5">
+                            <div className="h-1.5 flex-1 rounded-full bg-mist-200">
+                              <div
+                                className={cn(
+                                  "h-1.5 rounded-full transition-all",
+                                  volunteersFull ? "bg-emerald-500" : "bg-primary-400"
+                                )}
+                                style={{
+                                  width: `${Math.min(100, (task.volunteerCount / task.volunteersNeeded) * 100)}%`
+                                }}
+                              />
+                            </div>
+                            <span className={cn(
+                              "shrink-0 font-medium",
+                              volunteersFull ? "text-emerald-600" : "text-ink-500"
+                            )}>
+                              {task.volunteerCount}/{task.volunteersNeeded}
+                            </span>
+                          </div>
+                        ) : null}
                       </div>
 
                       <div className="space-y-2 text-xs">
@@ -444,12 +546,27 @@ export default function ServeBoardView({
                         ) : null}
 
                         <div className="flex flex-wrap gap-2">
-                          {canClaim && !hasOwner ? (
+                          {canClaim && !hasOwner && !isMultiVolunteer ? (
                             <Button type="button" size="sm" onClick={() => handleClaim(task.id)}>
                               Volunteer
                             </Button>
                           ) : null}
-                          {canUnclaim ? (
+                          {canJoinVolunteer ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => handleVolunteer(task.id)}
+                              disabled={volunteersFull}
+                            >
+                              {volunteersFull ? "Full" : "Join"}
+                            </Button>
+                          ) : null}
+                          {canLeaveVolunteer ? (
+                            <Button type="button" variant="secondary" size="sm" onClick={() => handleLeaveVolunteer(task.id)}>
+                              Leave
+                            </Button>
+                          ) : null}
+                          {canUnclaim && !isMultiVolunteer ? (
                             <Button type="button" variant="secondary" size="sm" onClick={() => handleUnclaim(task.id)}>
                               Step back
                             </Button>
