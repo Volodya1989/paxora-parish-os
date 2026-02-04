@@ -47,8 +47,8 @@ function formatTimeRange(event: CalendarEvent) {
 }
 
 const typeAccent: Record<CalendarEvent["type"], string> = {
-  SERVICE: "border-l-emerald-300",
-  EVENT: "border-l-sky-300"
+  SERVICE: "border-t-emerald-300",
+  EVENT: "border-t-sky-300"
 };
 
 type ScheduleEvent = CalendarEvent & {
@@ -111,7 +111,7 @@ export default function ScheduleView({ events, now, isEditor, onSelectEvent }: S
                   <button
                     key={event.instanceId}
                     type="button"
-                    className={`w-full rounded-card border border-mist-200 bg-white p-3 shadow-card text-left transition hover:border-primary-200 hover:bg-primary-50/40 sm:p-4 border-l-4 ${typeAccent[event.type] ?? "border-l-sky-300"}`}
+                    className={`w-full rounded-card border border-mist-200 bg-white p-3 shadow-card text-left transition hover:border-primary-200 hover:bg-primary-50/40 sm:p-4 border-t-2 ${typeAccent[event.type] ?? "border-t-sky-300"}`}
                     onClick={() => onSelectEvent(event)}
                   >
                     <div className="space-y-1.5">

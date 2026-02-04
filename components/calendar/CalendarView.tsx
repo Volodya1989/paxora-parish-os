@@ -180,8 +180,6 @@ export default function CalendarView({
     }
   };
 
-  const calendarSectionTitle = view === "week" ? "This week" : "This month";
-
   const renderEmptyActions = () => (
     <div className="flex flex-wrap justify-center gap-3">
       {canCreateEvents ? (
@@ -334,10 +332,6 @@ export default function CalendarView({
           ) : (
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
               <div className="section-gap">
-                <div className="flex items-center gap-2 text-xs font-semibold text-ink-500">
-                  <CalendarIcon className="h-4 w-4" />
-                  {calendarSectionTitle}
-                </div>
                 <TabsPanel value="week">
                   {weekEvents.length === 0 ? (
                     <ListEmptyState
