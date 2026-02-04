@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
@@ -36,7 +36,17 @@ function formatTime(event: CalendarEvent) {
   return `${startTime} – ${endTime}`;
 }
 
-function EventDetailContent({ event, t }: { event: CalendarEvent; t: (key: string) => string }) {
+function EventDetailContent({
+  event,
+  t,
+  rsvpTotalCount,
+  onRsvpUpdated
+}: {
+  event: CalendarEvent;
+  t: (key: string) => string;
+  rsvpTotalCount: number;
+  onRsvpUpdated: (count: number) => void;
+}) {
   return (
     <div className="space-y-4 text-sm text-ink-700">
       <div className="space-y-1">
@@ -73,7 +83,12 @@ function EventDetailContent({ event, t }: { event: CalendarEvent; t: (key: strin
       </div>
       <div className="space-y-3 border-t border-mist-100 pt-4">
         <p className="text-xs uppercase tracking-wide text-ink-400">RSVP</p>
-        <RsvpButtons eventId={event.id} initialResponse={event.rsvpResponse} />
+        <p className="text-sm text-ink-600">Total RSVPs: {rsvpTotalCount}</p>
+        <RsvpButtons
+          eventId={event.id}
+          initialResponse={event.rsvpResponse}
+          onRsvpUpdated={onRsvpUpdated}
+        />
       </div>
       <div className="flex flex-wrap gap-2">
         <Link href={`/events/${event.id}`} className="flex-1">
@@ -102,12 +117,23 @@ function EventDetailContent({ event, t }: { event: CalendarEvent; t: (key: strin
 
 export default function EventDetailPanel({ event, onClose }: EventDetailPanelProps) {
   const t = useTranslations();
+  const [rsvpTotalCount, setRsvpTotalCount] = useState(event?.rsvpTotalCount ?? 0);
+
+  useEffect(() => {
+    setRsvpTotalCount(event?.rsvpTotalCount ?? 0);
+  }, [event]);
+
   return (
     <>
       <div className="hidden lg:block">
         <Card>
           {event ? (
-            <EventDetailContent event={event} t={t} />
+            <EventDetailContent
+              event={event}
+              t={t}
+              rsvpTotalCount={rsvpTotalCount}
+              onRsvpUpdated={setRsvpTotalCount}
+            />
           ) : (
             <div className="space-y-2 text-sm text-ink-500">
               <h3 className="text-lg font-semibold text-ink-900">Event details</h3>
@@ -117,7 +143,14 @@ export default function EventDetailPanel({ event, onClose }: EventDetailPanelPro
         </Card>
       </div>
       <Drawer open={Boolean(event)} onClose={onClose} title="Event details">
-        {event ? <EventDetailContent event={event} t={t} /> : null}
+        {event ? (
+          <EventDetailContent
+            event={event}
+            t={t}
+            rsvpTotalCount={rsvpTotalCount}
+            onRsvpUpdated={setRsvpTotalCount}
+          />
+        ) : null}
       </Drawer>
     </>
   );

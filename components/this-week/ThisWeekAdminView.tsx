@@ -70,6 +70,19 @@ export default function ThisWeekAdminView({
           tone: "info" as const,
           icon: <UserPlusIcon className="h-4 w-4" />
         }
+      : null,
+    data.pendingEventRequests > 0
+      ? {
+          id: "event-requests",
+          title: `${data.pendingEventRequests} event request${
+            data.pendingEventRequests === 1 ? "" : "s"
+          } pending`,
+          description: "Review calendar event requests awaiting approval.",
+          actionHref: routes.calendar,
+          actionLabel: "Review now",
+          tone: "accent" as const,
+          icon: <AlertCircleIcon className="h-4 w-4" />
+        }
       : null
   ].filter((alert): alert is NonNullable<typeof alert> => Boolean(alert));
 

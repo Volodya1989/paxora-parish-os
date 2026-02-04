@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import type { EventRsvpResponse } from "@prisma/client";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
@@ -11,6 +12,7 @@ type RsvpButtonsProps = {
   eventId: string;
   initialResponse?: EventRsvpResponse | null;
   className?: string;
+  onRsvpUpdated?: (count: number) => void;
 };
 
 const options: Array<{ response: EventRsvpResponse; label: string }> = [
@@ -19,12 +21,18 @@ const options: Array<{ response: EventRsvpResponse; label: string }> = [
   { response: "NO", label: "RSVP No" }
 ];
 
-export default function RsvpButtons({ eventId, initialResponse, className }: RsvpButtonsProps) {
+export default function RsvpButtons({
+  eventId,
+  initialResponse,
+  className,
+  onRsvpUpdated
+}: RsvpButtonsProps) {
   const [currentResponse, setCurrentResponse] = useState<EventRsvpResponse | null>(
     initialResponse ?? null
   );
   const [isPending, startTransition] = useTransition();
   const { addToast } = useToast();
+  const router = useRouter();
 
   useEffect(() => {
     setCurrentResponse(initialResponse ?? null);
@@ -33,10 +41,24 @@ export default function RsvpButtons({ eventId, initialResponse, className }: Rsv
   const selectedClasses = "border-primary-200 bg-primary-50 text-primary-700";
 
   const handleSelect = (response: EventRsvpResponse) => {
+    if (isPending) {
+      return;
+    }
+    if (currentResponse === response) {
+      addToast({
+        title: "RSVP already saved",
+        description: "Your choice was already saved.",
+        status: "info"
+      });
+      return;
+    }
+
     startTransition(() => {
       void (async () => {
         const result = await setRsvp({ eventId, response });
         setCurrentResponse(result.response);
+        onRsvpUpdated?.(result.rsvpTotalCount);
+        router.refresh();
         addToast({
           title: "RSVP saved",
           description: "Your response has been recorded.",

@@ -24,7 +24,7 @@ const event = {
   recurrenceByWeekday: [],
   recurrenceUntil: null,
   rsvpResponse: null,
-  rsvpYesCount: 3,
+  rsvpTotalCount: 3,
   canManage: true
 };
 
@@ -76,8 +76,10 @@ test("CalendarView disables add button when user lacks permissions", () => {
         canCreatePrivateEvents: false,
         canCreateGroupEvents: false,
         isEditor: false,
+        canManageEventRequests: false,
         groupOptions: [],
-        viewerGroupIds: []
+        viewerGroupIds: [],
+        pendingEventRequests: []
       })
     )
   );

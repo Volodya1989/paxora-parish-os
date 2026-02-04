@@ -4,17 +4,7 @@ CREATE TYPE "ParishHubTargetType" AS ENUM ('EXTERNAL', 'INTERNAL');
 -- CreateEnum
 CREATE TYPE "ParishHubVisibility" AS ENUM ('PUBLIC', 'LOGGED_IN');
 
--- CreateEnum
-CREATE TYPE "ParishIcon" AS ENUM (
-  'BULLETIN',
-  'MASS_TIMES',
-  'CONFESSION',
-  'WEBSITE',
-  'CALENDAR',
-  'READINGS',
-  'GIVING',
-  'CONTACT'
-);
+-- ParishIcon enum already exists (created in 20260204043334_parish_icon_social)
 
 -- AlterTable
 ALTER TABLE "Parish" ADD COLUMN "hubGridEnabled" BOOLEAN NOT NULL DEFAULT true;

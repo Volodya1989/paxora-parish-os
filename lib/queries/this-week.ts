@@ -66,6 +66,7 @@ export type ThisWeekData = {
   };
   pendingTaskApprovals: number;
   pendingAccessRequests: number;
+  pendingEventRequests: number;
   canManageSpotlight: boolean;
   gratitudeSpotlight: {
     enabled: boolean;
@@ -119,6 +120,7 @@ export async function getThisWeekDataForUser({
     publicGroupCount,
     pendingApprovals,
     pendingAccessRequests,
+    pendingEventRequests,
     gratitudeSpotlight,
     coordinatorStatus
   ] = await Promise.all([
@@ -213,6 +215,14 @@ export async function getThisWeekDataForUser({
     }),
     membership?.role && ["ADMIN", "SHEPHERD"].includes(membership.role)
       ? prisma.accessRequest.count({
+          where: {
+            parishId,
+            status: "PENDING"
+          }
+        })
+      : Promise.resolve(0),
+    membership?.role && ["ADMIN", "SHEPHERD"].includes(membership.role)
+      ? prisma.eventRequest.count({
           where: {
             parishId,
             status: "PENDING"
@@ -345,6 +355,7 @@ export async function getThisWeekDataForUser({
         ? pendingApprovals
         : 0,
     pendingAccessRequests,
+    pendingEventRequests,
     canManageSpotlight:
       Boolean(membership?.role && ["ADMIN", "SHEPHERD"].includes(membership.role)) ||
       coordinatorStatus,

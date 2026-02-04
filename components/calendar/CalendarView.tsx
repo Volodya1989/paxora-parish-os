@@ -10,8 +10,9 @@ import CalendarGridMonth from "@/components/calendar/CalendarGridMonth";
 import CalendarDayList from "@/components/calendar/CalendarDayList";
 import EventDetailPanel from "@/components/calendar/EventDetailPanel";
 import EventCreateDialog from "@/components/calendar/EventCreateDialog";
-import EventRequestDialog from "@/components/calendar/EventRequestDialog";
+import EventRequestDialog from "@/components/shared/EventRequestDialog";
 import ScheduleView from "@/components/calendar/ScheduleView";
+import EventRequestApprovals from "@/components/calendar/EventRequestApprovals";
 import PageShell from "@/components/app/page-shell";
 import FiltersDrawer from "@/components/app/filters-drawer";
 import Card from "@/components/ui/Card";
@@ -26,6 +27,7 @@ import {
 } from "@/lib/date/calendar";
 import type { CalendarEvent } from "@/lib/queries/events";
 import { useTranslations } from "@/lib/i18n/provider";
+import type { PendingEventRequest } from "@/lib/queries/eventRequests";
 
 type CalendarViewProps = {
   weekRange: CalendarRange;
@@ -41,8 +43,10 @@ type CalendarViewProps = {
   canCreatePrivateEvents: boolean;
   canCreateGroupEvents: boolean;
   isEditor: boolean;
+  canManageEventRequests: boolean;
   groupOptions: Array<{ id: string; name: string }>;
   viewerGroupIds: string[];
+  pendingEventRequests: PendingEventRequest[];
 };
 
 type CalendarViewValue = "week" | "month";
@@ -76,8 +80,10 @@ export default function CalendarView({
   canCreatePrivateEvents,
   canCreateGroupEvents,
   isEditor,
+  canManageEventRequests,
   groupOptions,
-  viewerGroupIds
+  viewerGroupIds,
+  pendingEventRequests
 }: CalendarViewProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -285,53 +291,54 @@ export default function CalendarView({
                   {scheduleFilters}
                 </Card>
               </aside>
-              <div className="space-y-4">
-                <Card>
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-semibold text-ink-900">
-                        Coming up
-                      </p>
-                      <p className="text-xs text-ink-400">
-                        Services and events, day by day.
-                      </p>
-                    </div>
+              <div className="section-gap">
+                <div>
+                  <p className="text-sm font-semibold text-ink-900">
+                    Coming up
+                  </p>
+                  <p className="text-xs text-ink-400">
+                    Services and events, day by day.
+                  </p>
+                </div>
+                {!isEditor && viewerGroupIds.length === 0 ? (
+                  <div className="rounded-card border border-mist-100 bg-mist-50 px-4 py-3 text-xs text-ink-500">
+                    Showing public events. Join a group to see their schedules too.
                   </div>
-                  {!isEditor && viewerGroupIds.length === 0 ? (
-                    <div className="mt-3 rounded-card border border-mist-100 bg-mist-50 px-4 py-3 text-xs text-ink-500">
-                      Showing public events. Join a group to see their schedules too.
-                    </div>
-                  ) : null}
-                  <div className="mt-4">
-                    {scheduleEvents.length === 0 ? (
-                      <ListEmptyState
-                        title="Nothing scheduled yet"
-                        description="New services and events will show up here as they're added."
-                        icon={<CalendarIcon className="h-6 w-6" />}
-                        action={renderEmptyActions()}
-                        variant="friendly"
-                      />
-                    ) : (
-                      <ScheduleView
-                        events={scheduleEvents}
-                        now={now}
-                        isEditor={isEditor}
-                        onSelectEvent={setSelectedEvent}
-                      />
-                    )}
-                  </div>
-                </Card>
+                ) : null}
+                <div>
+                  {scheduleEvents.length === 0 ? (
+                    <ListEmptyState
+                      title="Nothing scheduled yet"
+                      description="New services and events will show up here as they're added."
+                      icon={<CalendarIcon className="h-6 w-6" />}
+                      action={renderEmptyActions()}
+                      variant="friendly"
+                    />
+                  ) : (
+                    <ScheduleView
+                      events={scheduleEvents}
+                      now={now}
+                      isEditor={isEditor}
+                      onSelectEvent={setSelectedEvent}
+                    />
+                  )}
+                </div>
               </div>
-              <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+              <div className="space-y-4">
+                <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+                {canManageEventRequests ? (
+                  <EventRequestApprovals requests={pendingEventRequests} />
+                ) : null}
+              </div>
             </div>
           ) : (
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-              <Card>
+              <div className="section-gap">
                 <div className="flex items-center gap-2 text-xs font-semibold text-ink-500">
                   <CalendarIcon className="h-4 w-4" />
                   {calendarSectionTitle}
                 </div>
-                <TabsPanel value="week" className="mt-4">
+                <TabsPanel value="week">
                   {weekEvents.length === 0 ? (
                     <ListEmptyState
                       title="A quiet week ahead"
@@ -362,7 +369,7 @@ export default function CalendarView({
                     </>
                   )}
                 </TabsPanel>
-                <TabsPanel value="month" className="mt-4">
+                <TabsPanel value="month">
                   {monthEvents.length === 0 ? (
                     <ListEmptyState
                       title="Nothing on the calendar this month"
@@ -397,9 +404,14 @@ export default function CalendarView({
                     </>
                   )}
                 </TabsPanel>
-              </Card>
+              </div>
 
-              <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+              <div className="space-y-4">
+                <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+                {canManageEventRequests ? (
+                  <EventRequestApprovals requests={pendingEventRequests} />
+                ) : null}
+              </div>
             </div>
           )}
         </PageShell>

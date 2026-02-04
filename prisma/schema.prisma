@@ -96,6 +96,19 @@ enum EventRecurrenceFrequency {
   WEEKLY
 }
 
+enum EventRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum EventRequestCategory {
+  SERVICE
+  REHEARSAL
+  GATHERING
+  OTHER
+}
+
 enum ChatChannelType {
   ANNOUNCEMENT
   GROUP
@@ -180,6 +193,7 @@ model Parish {
   weeks           Week[]
   tasks           Task[]
   events          Event[]
+  eventRequests   EventRequest[]
   digests         Digest[]
   announcements   Announcement[]
   chatChannels    ChatChannel[]
@@ -259,6 +273,8 @@ model User {
   heroNominationsSent      HeroNomination[]         @relation("HeroNominationNominator")
   heroNominationsReceived  HeroNomination[]         @relation("HeroNominationNominee")
   sentParishInvites        ParishInvite[]           @relation("ParishInviteActor")
+  eventRequests            EventRequest[]
+  decidedEventRequests     EventRequest[]           @relation("EventRequestDecisionBy")
 }
 
 model Membership {
@@ -289,6 +305,34 @@ model AccessRequest {
 
   @@unique([parishId, userId])
   @@index([parishId, status])
+}
+
+model EventRequest {
+  id              String              @id @default(cuid())
+  parishId        String
+  requesterId     String
+  contactName     String
+  title           String
+  category        EventRequestCategory
+  startsAt        DateTime
+  endsAt          DateTime
+  location        String?
+  description     String?
+  participants    Int?
+  status          EventRequestStatus  @default(PENDING)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  decidedAt       DateTime?
+  decidedByUserId String?
+  eventId         String?             @unique
+
+  parish    Parish @relation(fields: [parishId], references: [id], onDelete: Cascade)
+  requester User   @relation(fields: [requesterId], references: [id], onDelete: Cascade)
+  decidedBy User?  @relation("EventRequestDecisionBy", fields: [decidedByUserId], references: [id], onDelete: SetNull)
+  event     Event? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@index([parishId, status])
+  @@index([requesterId])
 }
 
 model EmailLog {
@@ -678,6 +722,7 @@ model Event {
   week   Week        @relation(fields: [weekId], references: [id], onDelete: Cascade)
   group  Group?      @relation(fields: [groupId], references: [id])
   rsvps  EventRsvp[]
+  eventRequest EventRequest?
 
   @@index([weekId])
   @@index([parishId, startsAt])

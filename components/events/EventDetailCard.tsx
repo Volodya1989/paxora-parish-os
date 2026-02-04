@@ -103,6 +103,7 @@ export default async function EventDetailCard({ event }: EventDetailCardProps) {
       <CardFooter className="border-t border-mist-100 pt-4">
         <div className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">RSVP</p>
+          <p className="text-sm text-ink-600">Total RSVPs: {event.rsvpTotalCount}</p>
           <RsvpButtons eventId={event.id} initialResponse={event.rsvpResponse} />
         </div>
       </CardFooter>
