@@ -5,6 +5,7 @@ import Card, { CardDescription, CardHeader, CardTitle } from "@/components/ui/Ca
 import { useToast } from "@/components/ui/Toast";
 import { updateProfileSettings } from "@/app/actions/profile";
 import { cn } from "@/lib/ui/cn";
+import PushNotificationToggle from "@/components/push/PushNotificationToggle";
 
 type ProfileSettingsProps = {
   initialSettings: {
@@ -94,6 +95,9 @@ export function ProfileSettings({ initialSettings }: ProfileSettingsProps) {
           <CardDescription>Choose how we should keep you informed.</CardDescription>
         </CardHeader>
         <div className="space-y-3">
+          <div className="rounded-card border border-mist-200 bg-mist-50/60 p-4">
+            <PushNotificationToggle />
+          </div>
           <ToggleRow
             label="Notification emails"
             description="Receive important parish updates via email."

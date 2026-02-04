@@ -187,8 +187,9 @@ model Parish {
   hubGridEnabled            Boolean                 @default(true)
   hubGridPublicEnabled      Boolean                 @default(false)
 
-  memberships     Membership[]
-  accessRequests  AccessRequest[]
+  pushSubscriptions PushSubscription[]
+  memberships       Membership[]
+  accessRequests    AccessRequest[]
   groups          Group[]
   weeks           Week[]
   tasks           Task[]
@@ -239,9 +240,12 @@ model User {
   birthdayDay          Int?
   anniversaryMonth     Int?
   anniversaryDay       Int?
-  greetingsOptIn       Boolean   @default(false)
-  createdAt            DateTime  @default(now())
+  greetingsOptIn           Boolean   @default(false)
+  lastSeenAnnouncementsAt  DateTime?
+  lastSeenEventsAt         DateTime?
+  createdAt                DateTime  @default(now())
 
+  pushSubscriptions        PushSubscription[]
   memberships              Membership[]
   accessRequests           AccessRequest[]
   groupMemberships         GroupMembership[]
@@ -813,4 +817,22 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  parishId  String
+  endpoint  String
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parish Parish @relation(fields: [parishId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, endpoint])
+  @@index([userId, parishId])
+  @@index([parishId])
 }

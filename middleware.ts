@@ -40,5 +40,5 @@ const authMiddleware = withAuth(
 export default authMiddleware;
 
 export const config = {
-  matcher: ["/((?!api|_next|favicon.ico|robots.txt|sitemap.xml).*)"]
+  matcher: ["/((?!api|_next|favicon\\.ico|robots\\.txt|sitemap\\.xml|sw\\.js|manifest\\.webmanifest|.*\\.png$|.*\\.jpg$|.*\\.svg$|.*\\.ico$).*)"]
 };

@@ -27,6 +27,7 @@
     "next-auth": "^4.24.13",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
+    "web-push": "^3.6.7",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -34,6 +35,7 @@
     "@types/node": "^20.19.27",
     "@types/react": "^18.2.68",
     "@types/react-dom": "^18.2.22",
+    "@types/web-push": "^3.6.4",
     "autoprefixer": "^10.4.19",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.35",
