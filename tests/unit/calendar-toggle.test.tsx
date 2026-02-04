@@ -35,6 +35,7 @@ const sampleEvent = {
   recurrenceByWeekday: [],
   recurrenceUntil: null,
   rsvpResponse: null,
+  rsvpTotalCount: 0,
   canManage: true
 };
 

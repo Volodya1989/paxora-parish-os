@@ -51,7 +51,7 @@ function formatTimeRange(event: CalendarEvent) {
 }
 
 type ScheduleEvent = CalendarEvent & {
-  rsvpYesCount?: number;
+  rsvpTotalCount?: number;
 };
 
 function formatRecurrence(event: ScheduleEvent) {
@@ -148,7 +148,7 @@ export default function ScheduleView({ events, now, isEditor, onSelectEvent }: S
                     {event.group?.name ? <p>Group: {event.group.name}</p> : null}
                     <p className="text-ink-600">{event.summary}</p>
                     <p className="text-ink-500">{formatRecurrence(event)}</p>
-                    <p className="text-ink-500">RSVPs: {event.rsvpYesCount ?? 0}</p>
+                    <p className="text-ink-500">RSVPs: {event.rsvpTotalCount ?? 0}</p>
                   </div>
                 </button>
               ))}

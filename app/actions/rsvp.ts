@@ -6,6 +6,7 @@ import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
 
 const rsvpResponses = ["YES", "MAYBE", "NO"] as const;
+const rsvpAttendingResponses: RsvpResponse[] = ["YES", "MAYBE"];
 export type RsvpResponse = (typeof rsvpResponses)[number];
 
 type SetRsvpInput = {
@@ -36,27 +37,36 @@ export async function setRsvp({ eventId, response }: SetRsvpInput) {
     throw new Error("Event not found");
   }
 
-  const updated = await prisma.eventRsvp.upsert({
-    where: {
-      eventId_userId: {
+  const [updated, rsvpTotalCount] = await prisma.$transaction([
+    prisma.eventRsvp.upsert({
+      where: {
+        eventId_userId: {
+          eventId,
+          userId: session.user.id
+        }
+      },
+      update: {
+        response
+      },
+      create: {
         eventId,
-        userId: session.user.id
+        userId: session.user.id,
+        response
+      },
+      select: {
+        response: true
       }
-    },
-    update: {
-      response
-    },
-    create: {
-      eventId,
-      userId: session.user.id,
-      response
-    },
-    select: {
-      response: true
-    }
-  });
+    }),
+    prisma.eventRsvp.count({
+      where: {
+        eventId,
+        response: { in: rsvpAttendingResponses }
+      }
+    })
+  ]);
 
   revalidatePath(`/events/${eventId}`);
+  revalidatePath("/calendar");
 
-  return updated;
+  return { ...updated, rsvpTotalCount };
 }

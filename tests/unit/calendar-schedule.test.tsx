@@ -24,7 +24,7 @@ const event = {
   recurrenceByWeekday: [],
   recurrenceUntil: null,
   rsvpResponse: null,
-  rsvpYesCount: 3,
+  rsvpTotalCount: 3,
   canManage: true
 };
 

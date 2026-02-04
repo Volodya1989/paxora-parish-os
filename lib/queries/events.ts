@@ -32,6 +32,7 @@ export type CalendarEvent = {
   recurrenceByWeekday: number[];
   recurrenceUntil: Date | null;
   rsvpResponse: EventRsvpResponse | null;
+  rsvpTotalCount: number;
   canManage: boolean;
 };
 
@@ -51,6 +52,7 @@ export type EventDetail = {
   recurrenceByWeekday: number[];
   recurrenceUntil: Date | null;
   rsvpResponse: EventRsvpResponse | null;
+  rsvpTotalCount: number;
   canManage: boolean;
 };
 
@@ -172,6 +174,8 @@ type EventRecord = {
   recurrenceUntil: Date | null;
   rsvps?: Array<{ response: EventRsvpResponse }>;
 };
+
+const RSVP_ATTENDING_RESPONSES: EventRsvpResponse[] = ["YES", "MAYBE"];
 
 function expandRecurringEvent(
   event: EventRecord,
@@ -312,8 +316,27 @@ export async function listEventsByRange({
     }
   })) as EventRecord[];
 
+  const eventIds = events.map((event) => event.id);
+  const rsvpCounts =
+    eventIds.length > 0
+      ? await prisma.eventRsvp.groupBy({
+          by: ["eventId"],
+          where: {
+            eventId: { in: eventIds },
+            response: { in: RSVP_ATTENDING_RESPONSES }
+          },
+          _count: {
+            _all: true
+          }
+        })
+      : [];
+  const rsvpCountByEventId = new Map(
+    rsvpCounts.map((item) => [item.eventId, item._count._all])
+  );
+
   const expanded = events.flatMap((event) => {
     const rsvpResponse = "rsvps" in event ? event.rsvps?.[0]?.response ?? null : null;
+    const rsvpTotalCount = rsvpCountByEventId.get(event.id) ?? 0;
     const instances = expandRecurringEvent(event, start, end);
     return instances.map((instance) => ({
       id: event.id,
@@ -332,6 +355,7 @@ export async function listEventsByRange({
       recurrenceByWeekday: event.recurrenceByWeekday,
       recurrenceUntil: event.recurrenceUntil,
       rsvpResponse,
+      rsvpTotalCount,
       canManage:
         context.isLeader ||
         (event.group?.id ? context.groupIds.includes(event.group.id) : false)
@@ -418,6 +442,12 @@ export async function getEventById({
   }
 
   const rsvpResponse = "rsvps" in event ? event.rsvps?.[0]?.response ?? null : null;
+  const rsvpTotalCount = await prisma.eventRsvp.count({
+    where: {
+      eventId: event.id,
+      response: { in: RSVP_ATTENDING_RESPONSES }
+    }
+  });
 
   return {
     id: event.id,
@@ -435,6 +465,7 @@ export async function getEventById({
     recurrenceByWeekday: event.recurrenceByWeekday,
     recurrenceUntil: event.recurrenceUntil,
     rsvpResponse,
+    rsvpTotalCount,
     canManage:
       context.isLeader || (event.group?.id ? context.groupIds.includes(event.group.id) : false)
   };
