@@ -1,7 +1,6 @@
 "use client";
 
 import Badge from "@/components/ui/Badge";
-import Card from "@/components/ui/Card";
 import { getDateKey } from "@/lib/date/calendar";
 import { formatRecurrenceSummary } from "@/lib/events/recurrence";
 import type { CalendarEvent } from "@/lib/queries/events";
@@ -86,16 +85,11 @@ export default function ScheduleView({ events, now, isEditor, onSelectEvent }: S
         const dayDate = dayEvents[0]?.startsAt ?? new Date(key);
 
         return (
-          <Card key={key} className="space-y-4">
+          <div key={key} className="space-y-4 rounded-card border border-mist-100/80 bg-white px-4 py-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
-                  {formatDayHeading(dayDate, now)}
-                </p>
-                <h3 className="text-lg font-semibold text-ink-900">
-                  {formatDaySubtitle(dayDate)}
-                </h3>
-              </div>
+              <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-ink-400">
+                {formatDayHeading(dayDate, now)} · {formatDaySubtitle(dayDate)}
+              </p>
               <span className="text-xs text-ink-400">{dayEvents.length} scheduled</span>
             </div>
 
@@ -104,13 +98,15 @@ export default function ScheduleView({ events, now, isEditor, onSelectEvent }: S
                 <button
                   key={event.instanceId}
                   type="button"
-                  className="w-full rounded-card border border-mist-200 bg-white px-4 py-3 text-left shadow-card transition hover:border-primary-200 hover:bg-primary-50/50"
+                  className="w-full rounded-card border border-mist-100 bg-white px-4 py-3 text-left transition hover:border-primary-200 hover:bg-primary-50/40"
                   onClick={() => onSelectEvent(event)}
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className="text-sm font-semibold text-ink-900">{event.title}</p>
-                      <p className="text-xs text-ink-500">{formatTimeRange(event)}</p>
+                      <p className="text-base font-semibold text-ink-900">
+                        {formatTimeRange(event)}
+                      </p>
+                      <p className="text-sm font-medium text-ink-700">{event.title}</p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge tone={event.type === "SERVICE" ? "success" : "neutral"}>
@@ -157,7 +153,7 @@ export default function ScheduleView({ events, now, isEditor, onSelectEvent }: S
                 </button>
               ))}
             </div>
-          </Card>
+          </div>
         );
       })}
     </div>

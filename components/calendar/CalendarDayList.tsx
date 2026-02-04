@@ -1,6 +1,5 @@
 "use client";
 
-import Card from "@/components/ui/Card";
 import { getDateKey } from "@/lib/date/calendar";
 import type { CalendarEvent } from "@/lib/queries/events";
 
@@ -59,20 +58,16 @@ export default function CalendarDayList({
         const isToday = key === todayKey;
 
         return (
-          <Card key={key} className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
-                  {isToday ? "Today" : formatDayTitle(day)}
-                </p>
-                <p className="text-sm font-semibold text-ink-900">
-                  {day.toLocaleDateString("en-US", {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric"
-                  })}
-                </p>
-              </div>
+          <div key={key} className="space-y-3 rounded-card border border-mist-100/80 bg-white px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-ink-400">
+                {isToday ? "Today" : formatDayTitle(day)} ·{" "}
+                {day.toLocaleDateString("en-US", {
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric"
+                })}
+              </p>
               <span className="text-xs text-ink-400">{events.length} scheduled</span>
             </div>
 
@@ -86,16 +81,18 @@ export default function CalendarDayList({
                   <button
                     key={event.instanceId}
                     type="button"
-                    className="w-full rounded-card border border-mist-200 bg-white px-3 py-3 text-left shadow-card transition hover:border-primary-200 hover:bg-primary-50/50"
+                    className="w-full rounded-card border border-mist-100 bg-white px-3 py-2.5 text-left transition hover:border-primary-200 hover:bg-primary-50/40"
                     onClick={() => onSelectEvent(event)}
                   >
-                    <p className="text-sm font-semibold text-ink-900">{event.title}</p>
-                    <p className="text-xs text-ink-500">{formatTimeRange(event)}</p>
+                    <p className="text-sm font-semibold text-ink-900">
+                      {formatTimeRange(event)}
+                    </p>
+                    <p className="text-xs font-medium text-ink-600">{event.title}</p>
                   </button>
                 ))}
               </div>
             )}
-          </Card>
+          </div>
         );
       })}
     </div>
