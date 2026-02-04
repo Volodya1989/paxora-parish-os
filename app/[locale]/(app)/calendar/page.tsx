@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import CalendarView from "@/components/calendar/CalendarView";
 import { getMonthRange, getWeekRange } from "@/lib/date/calendar";
 import { listEventsByRange } from "@/lib/queries/events";
+import { listPendingEventRequests } from "@/lib/queries/eventRequests";
 import { getNow } from "@/lib/time/getNow";
 import { isParishLeader } from "@/lib/permissions";
 import { authOptions } from "@/server/auth/options";
@@ -36,34 +37,43 @@ export default async function CalendarPage() {
   nextWeekNow.setDate(nextWeekNow.getDate() + 7);
   const nextWeekRange = getWeekRange({ now: nextWeekNow });
 
-  const [membership, parish, groupMemberships, allGroupOptions, weekEvents, monthEvents, nextWeekEvents] =
-    await Promise.all([
-      getParishMembership(parishId, userId),
-      prisma.parish.findUnique({
-        where: { id: parishId },
-        select: { name: true }
-      }),
-      prisma.groupMembership.findMany({
-        where: {
-          userId,
-          status: "ACTIVE",
-          group: { parishId }
-        },
-        select: {
-          groupId: true,
-          group: {
-            select: {
-              id: true,
-              name: true
-            }
+  const [
+    membership,
+    parish,
+    groupMemberships,
+    allGroupOptions,
+    weekEvents,
+    monthEvents,
+    nextWeekEvents,
+    pendingEventRequests
+  ] = await Promise.all([
+    getParishMembership(parishId, userId),
+    prisma.parish.findUnique({
+      where: { id: parishId },
+      select: { name: true }
+    }),
+    prisma.groupMembership.findMany({
+      where: {
+        userId,
+        status: "ACTIVE",
+        group: { parishId }
+      },
+      select: {
+        groupId: true,
+        group: {
+          select: {
+            id: true,
+            name: true
           }
         }
-      }),
-      listGroupsByParish(parishId),
-      listEventsByRange({ parishId, start: weekRange.start, end: weekRange.end, userId }),
-      listEventsByRange({ parishId, start: monthRange.start, end: monthRange.end, userId }),
-      listEventsByRange({ parishId, start: nextWeekRange.start, end: nextWeekRange.end, userId })
-    ]);
+      }
+    }),
+    listGroupsByParish(parishId),
+    listEventsByRange({ parishId, start: weekRange.start, end: weekRange.end, userId }),
+    listEventsByRange({ parishId, start: monthRange.start, end: monthRange.end, userId }),
+    listEventsByRange({ parishId, start: nextWeekRange.start, end: nextWeekRange.end, userId }),
+    listPendingEventRequests({ parishId, actorUserId: userId })
+  ]);
 
   const isLeader = membership ? isParishLeader(membership.role) : false;
   const groupIds = groupMemberships.map((membershipRecord) => membershipRecord.groupId);
@@ -97,8 +107,10 @@ export default async function CalendarPage() {
         canCreatePrivateEvents={isLeader}
         canCreateGroupEvents={canCreateGroupEvents}
         isEditor={isLeader || canCreateGroupEvents}
+        canManageEventRequests={isLeader}
         groupOptions={groupOptions}
         viewerGroupIds={groupIds}
+        pendingEventRequests={pendingEventRequests}
       />
     </ParishionerPageLayout>
   );

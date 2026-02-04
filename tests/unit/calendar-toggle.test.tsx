@@ -55,8 +55,10 @@ test("Calendar view toggle renders week layout by default", () => {
         canCreatePrivateEvents: true,
         canCreateGroupEvents: true,
         isEditor: true,
+        canManageEventRequests: false,
         groupOptions: [],
-        viewerGroupIds: []
+        viewerGroupIds: [],
+        pendingEventRequests: []
       })
     )
   );
@@ -83,8 +85,10 @@ test("Calendar view toggle can render month layout", () => {
         canCreatePrivateEvents: true,
         canCreateGroupEvents: true,
         isEditor: true,
+        canManageEventRequests: false,
         groupOptions: [],
-        viewerGroupIds: []
+        viewerGroupIds: [],
+        pendingEventRequests: []
       })
     )
   );

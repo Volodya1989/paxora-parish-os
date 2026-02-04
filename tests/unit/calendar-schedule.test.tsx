@@ -76,8 +76,10 @@ test("CalendarView disables add button when user lacks permissions", () => {
         canCreatePrivateEvents: false,
         canCreateGroupEvents: false,
         isEditor: false,
+        canManageEventRequests: false,
         groupOptions: [],
-        viewerGroupIds: []
+        viewerGroupIds: [],
+        pendingEventRequests: []
       })
     )
   );

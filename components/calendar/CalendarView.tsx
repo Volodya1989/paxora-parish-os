@@ -10,8 +10,9 @@ import CalendarGridMonth from "@/components/calendar/CalendarGridMonth";
 import CalendarDayList from "@/components/calendar/CalendarDayList";
 import EventDetailPanel from "@/components/calendar/EventDetailPanel";
 import EventCreateDialog from "@/components/calendar/EventCreateDialog";
-import EventRequestDialog from "@/components/calendar/EventRequestDialog";
+import EventRequestDialog from "@/components/shared/EventRequestDialog";
 import ScheduleView from "@/components/calendar/ScheduleView";
+import EventRequestApprovals from "@/components/calendar/EventRequestApprovals";
 import PageShell from "@/components/app/page-shell";
 import FiltersDrawer from "@/components/app/filters-drawer";
 import Card from "@/components/ui/Card";
@@ -26,6 +27,7 @@ import {
 } from "@/lib/date/calendar";
 import type { CalendarEvent } from "@/lib/queries/events";
 import { useTranslations } from "@/lib/i18n/provider";
+import type { PendingEventRequest } from "@/lib/queries/eventRequests";
 
 type CalendarViewProps = {
   weekRange: CalendarRange;
@@ -41,8 +43,10 @@ type CalendarViewProps = {
   canCreatePrivateEvents: boolean;
   canCreateGroupEvents: boolean;
   isEditor: boolean;
+  canManageEventRequests: boolean;
   groupOptions: Array<{ id: string; name: string }>;
   viewerGroupIds: string[];
+  pendingEventRequests: PendingEventRequest[];
 };
 
 type CalendarViewValue = "week" | "month";
@@ -76,8 +80,10 @@ export default function CalendarView({
   canCreatePrivateEvents,
   canCreateGroupEvents,
   isEditor,
+  canManageEventRequests,
   groupOptions,
-  viewerGroupIds
+  viewerGroupIds,
+  pendingEventRequests
 }: CalendarViewProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -322,7 +328,12 @@ export default function CalendarView({
                   </div>
                 </Card>
               </div>
-              <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+              <div className="space-y-4">
+                <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+                {canManageEventRequests ? (
+                  <EventRequestApprovals requests={pendingEventRequests} />
+                ) : null}
+              </div>
             </div>
           ) : (
             <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -399,7 +410,12 @@ export default function CalendarView({
                 </TabsPanel>
               </Card>
 
-              <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+              <div className="space-y-4">
+                <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+                {canManageEventRequests ? (
+                  <EventRequestApprovals requests={pendingEventRequests} />
+                ) : null}
+              </div>
             </div>
           )}
         </PageShell>

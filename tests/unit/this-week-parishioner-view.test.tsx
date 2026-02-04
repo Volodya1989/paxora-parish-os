@@ -70,6 +70,7 @@ test("Parishioner view renders quick blocks and ordered sections", () => {
         },
         pendingTaskApprovals: 0,
         pendingAccessRequests: 0,
+        pendingEventRequests: 0,
         canManageSpotlight: false,
         gratitudeSpotlight: {
           enabled: true,
