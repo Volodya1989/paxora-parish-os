@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import MobileTabs from "@/components/navigation/MobileTabs";
 import Sidebar from "@/components/navigation/Sidebar";
 import { ToastProvider, ToastViewport, useToast } from "@/components/ui/Toast";
+import PushRegistration from "@/components/push/PushRegistration";
 
 type AppShellProps = {
   children: ReactNode;
@@ -17,6 +18,7 @@ export function AppShell({ children, parishRole }: AppShellProps) {
 
   return (
     <ToastProvider>
+      <PushRegistration />
       <InviteToastListener />
       <div className="flex min-h-screen w-full">
         <Sidebar currentPath={pathname} parishRole={parishRole} />

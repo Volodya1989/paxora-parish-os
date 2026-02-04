@@ -17,6 +17,7 @@ import {
 } from "@/lib/permissions";
 import { getNow as defaultGetNow } from "@/lib/time/getNow";
 import { REACTION_EMOJIS } from "@/lib/chat/reactions";
+import { notifyChatMessage } from "@/lib/push/notify";
 
 const MESSAGE_EDIT_WINDOW_MS = 15 * 60 * 1000;
 const REACTION_SET = new Set(REACTION_EMOJIS);
@@ -277,7 +278,7 @@ export async function postMessage(
     }
   });
 
-  return {
+  const result = {
     id: message.id,
     body: message.body,
     createdAt: message.createdAt,
@@ -305,6 +306,18 @@ export async function postMessage(
         }
       : null
   };
+
+  // Fire-and-forget push notification
+  notifyChatMessage({
+    channelId,
+    authorId: userId,
+    authorName: message.author.name ?? message.author.email ?? "Parish member",
+    channelName: channel.type === "GROUP" ? "Group Chat" : "Parish Chat",
+    parishId,
+    messageBody: trimmed
+  }).catch(() => {});
+
+  return result;
 }
 
 export async function deleteMessage(messageId: string, getNow?: () => Date) {

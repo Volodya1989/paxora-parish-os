@@ -3,6 +3,7 @@ import { sendTaskCompletionEmail } from "@/lib/email/taskCompletion";
 import { calculateEstimatedHoursPerParticipant } from "@/lib/hours/allocations";
 import { getGroupMembership, getParishMembership } from "@/server/db/groups";
 import { prisma } from "@/server/db/prisma";
+import { notifyTaskCreated, notifyTaskAssigned } from "@/lib/push/notify";
 
 type CreateTaskInput = {
   parishId: string;
@@ -96,6 +97,22 @@ export async function createTask({
     actorUserId: createdById,
     description: "Created the task."
   });
+
+  // Fire-and-forget push notification for task assignment
+  if (ownerId && ownerId !== createdById) {
+    const creator = await prisma.user.findUnique({
+      where: { id: createdById },
+      select: { name: true, email: true }
+    });
+    notifyTaskCreated({
+      taskId: task.id,
+      taskTitle: title,
+      parishId,
+      createdById,
+      creatorName: creator?.name ?? creator?.email ?? "Someone",
+      ownerId
+    }).catch(() => {});
+  }
 
   return task;
 }
@@ -1006,6 +1023,22 @@ export async function assignTaskToUser({
     actorUserId,
     description: `Assigned the task to ${nextName}.`
   });
+
+  // Fire-and-forget push notification
+  if (ownerId !== actorUserId) {
+    const actor = await prisma.user.findUnique({
+      where: { id: actorUserId },
+      select: { name: true, email: true }
+    });
+    notifyTaskAssigned({
+      taskId,
+      taskTitle: updated.title,
+      parishId,
+      actorId: actorUserId,
+      actorName: actor?.name ?? actor?.email ?? "Someone",
+      ownerId
+    }).catch(() => {});
+  }
 
   return updated;
 }
