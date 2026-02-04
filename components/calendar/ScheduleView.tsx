@@ -12,17 +12,13 @@ const visibilityTone: Record<CalendarEvent["visibility"], "neutral" | "warning">
   PRIVATE: "warning"
 };
 
-function formatDayHeading(date: Date, now: Date) {
+function formatDayLabel(date: Date, now: Date) {
   const todayKey = getDateKey(now);
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
   const dateKey = getDateKey(date);
-  if (dateKey === todayKey) {
-    return "Today";
-  }
-  if (dateKey === getDateKey(tomorrow)) {
-    return "Tomorrow";
-  }
+  if (dateKey === todayKey) return "Today";
+  if (dateKey === getDateKey(tomorrow)) return "Tomorrow";
   return date.toLocaleDateString("en-US", {
     weekday: "long",
     month: "short",
@@ -49,6 +45,11 @@ function formatTimeRange(event: CalendarEvent) {
   });
   return `${startTime} – ${endTime}`;
 }
+
+const typeAccent: Record<CalendarEvent["type"], string> = {
+  SERVICE: "border-t-emerald-300",
+  EVENT: "border-t-sky-300"
+};
 
 type ScheduleEvent = CalendarEvent & {
   rsvpTotalCount?: number;
@@ -79,81 +80,123 @@ export default function ScheduleView({ events, now, isEditor, onSelectEvent }: S
   const dayKeys = Object.keys(grouped).sort();
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {dayKeys.map((key) => {
         const dayEvents = grouped[key] ?? [];
         const dayDate = dayEvents[0]?.startsAt ?? new Date(key);
 
         return (
-          <div key={key} className="space-y-4 rounded-card border border-mist-100/80 bg-white px-4 py-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-[0.7rem] font-semibold uppercase tracking-wide text-ink-400">
-                {formatDayHeading(dayDate, now)} · {formatDaySubtitle(dayDate)}
-              </p>
-              <span className="text-xs text-ink-400">{dayEvents.length} scheduled</span>
+          <section key={key} className="space-y-3">
+            {/* Day header */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="rounded-full bg-mist-100 px-2.5 py-1 text-[0.7rem] font-semibold uppercase tracking-wide text-ink-700">
+                  {formatDayLabel(dayDate, now)}
+                </span>
+                <span className="text-xs text-ink-400">
+                  {formatDaySubtitle(dayDate)}
+                </span>
+              </div>
+              <span className="text-xs text-ink-400">
+                {dayEvents.length} scheduled
+              </span>
             </div>
 
+            {/* Event cards */}
             <div className="space-y-3">
-              {dayEvents.map((event) => (
-                <button
-                  key={event.instanceId}
-                  type="button"
-                  className="w-full rounded-card border border-mist-100 bg-white px-4 py-3 text-left transition hover:border-primary-200 hover:bg-primary-50/40"
-                  onClick={() => onSelectEvent(event)}
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="text-base font-semibold text-ink-900">
-                        {formatTimeRange(event)}
-                      </p>
-                      <p className="text-sm font-medium text-ink-700">{event.title}</p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge tone={event.type === "SERVICE" ? "success" : "neutral"}>
-                        {event.type === "SERVICE" ? "Service" : "Event"}
-                      </Badge>
-                      {event.recurrenceFreq !== "NONE" ? (
-                        <Badge tone="neutral">Repeats</Badge>
-                      ) : null}
-                      {isEditor ? (
-                        <Badge tone={visibilityTone[event.visibility]}>
-                          {event.visibility === "PUBLIC"
-                            ? t("common.public")
-                            : event.visibility === "GROUP"
-                              ? "Group"
-                              : t("common.private")}
-                        </Badge>
-                      ) : event.visibility !== "PUBLIC" ? (
-                        <span
-                          className="text-xs text-ink-400"
-                          title={
-                            event.visibility === "GROUP"
-                              ? "Group-only"
-                              : "Private to leaders"
-                          }
-                          aria-label={
-                            event.visibility === "GROUP"
-                              ? "Group-only"
-                              : "Private to leaders"
-                          }
-                        >
-                          ●
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
+              {dayEvents.map((event) => {
+                const recurrenceLabel = formatRecurrence(event);
 
-                  <div className="mt-2 space-y-1 text-xs text-ink-500">
-                    <p>{event.location ?? "Location TBA"}</p>
-                    {event.group?.name ? <p>Group: {event.group.name}</p> : null}
-                    <p className="text-ink-600">{event.summary}</p>
-                    <p className="text-ink-500">{formatRecurrence(event)}</p>
-                    <p className="text-ink-500">RSVPs: {event.rsvpTotalCount ?? 0}</p>
-                  </div>
-                </button>
-              ))}
+                return (
+                  <button
+                    key={event.instanceId}
+                    type="button"
+                    className={`w-full rounded-card border border-mist-200 bg-white p-3 shadow-card text-left transition hover:border-primary-200 hover:bg-primary-50/40 sm:p-4 border-t-2 ${typeAccent[event.type] ?? "border-t-sky-300"}`}
+                    onClick={() => onSelectEvent(event)}
+                  >
+                    <div className="space-y-1.5">
+                      {/* Time + badges row */}
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-xs font-medium text-ink-500">
+                          {formatTimeRange(event)}
+                        </span>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <Badge
+                            tone={event.type === "SERVICE" ? "success" : "neutral"}
+                            className={
+                              event.type === "SERVICE"
+                                ? "bg-emerald-50 text-emerald-700"
+                                : "bg-sky-50 text-sky-700"
+                            }
+                          >
+                            {event.type === "SERVICE" ? "Service" : "Event"}
+                          </Badge>
+                          {event.recurrenceFreq !== "NONE" ? (
+                            <Badge tone="neutral">Repeats</Badge>
+                          ) : null}
+                          {isEditor ? (
+                            <Badge tone={visibilityTone[event.visibility]}>
+                              {event.visibility === "PUBLIC"
+                                ? t("common.public")
+                                : event.visibility === "GROUP"
+                                  ? "Group"
+                                  : t("common.private")}
+                            </Badge>
+                          ) : event.visibility !== "PUBLIC" ? (
+                            <span
+                              className="text-xs text-ink-400"
+                              title={
+                                event.visibility === "GROUP"
+                                  ? "Group-only"
+                                  : "Private to leaders"
+                              }
+                              aria-label={
+                                event.visibility === "GROUP"
+                                  ? "Group-only"
+                                  : "Private to leaders"
+                              }
+                            >
+                              ●
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      {/* Title */}
+                      <p className="text-sm font-semibold text-ink-900">
+                        {event.title}
+                      </p>
+
+                      {/* Summary (if available) */}
+                      {event.summary ? (
+                        <p className="text-xs leading-relaxed text-ink-500 line-clamp-2">
+                          {event.summary}
+                        </p>
+                      ) : null}
+
+                      {/* Metadata row */}
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-400">
+                        {event.location ? (
+                          <span>{event.location}</span>
+                        ) : null}
+                        {event.group?.name ? (
+                          <span>{event.group.name}</span>
+                        ) : null}
+                        {recurrenceLabel ? (
+                          <span>{recurrenceLabel}</span>
+                        ) : null}
+                        {(event.rsvpTotalCount ?? 0) > 0 ? (
+                          <span>
+                            {event.rsvpTotalCount} {event.rsvpTotalCount === 1 ? "RSVP" : "RSVPs"}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
-          </div>
+          </section>
         );
       })}
     </div>
