@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import PageShell from "@/components/app/page-shell";
 import ChatView from "@/components/chat/ChatView";
+import Card, { CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { authOptions } from "@/server/auth/options";
 import { getParishMembership, isCoordinatorInParish } from "@/server/db/groups";
 import { canModerateChatChannel, canPostAnnouncementChannel, isParishLeader } from "@/lib/permissions";
@@ -27,12 +28,24 @@ export default async function CommunityChatPage({ searchParams }: CommunityChatP
   const channels = await listChannelsForUser(parishId, userId);
   const parishChannels = channels.filter((channel) => channel.type !== "GROUP");
 
-  if (parishChannels.length === 0) {
-    throw new Error("No channels available");
+  if (channels.length === 0) {
+    return (
+      <PageShell title="" spacing="compact">
+        <Card>
+          <CardHeader>
+            <CardTitle>No channels available</CardTitle>
+            <CardDescription>
+              There are no parish chat channels yet. Check back once a channel is created.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </PageShell>
+    );
   }
 
+  const availableChannels = parishChannels.length > 0 ? parishChannels : channels;
   const selectedChannel =
-    parishChannels.find((channel) => channel.id === channelIdParam) ?? parishChannels[0];
+    availableChannels.find((channel) => channel.id === channelIdParam) ?? availableChannels[0];
 
   const parishMembership = await getParishMembership(parishId, userId);
 

@@ -44,15 +44,22 @@ function formatTimestamp(iso: string): string {
 
 function NotificationRow({
   item,
-  onClose
+  onClose,
+  onMarkCategoryRead
 }: {
   item: NotificationItem;
   onClose: () => void;
+  onMarkCategoryRead: (category: NotificationCategory) => void;
 }) {
+  const handleClick = () => {
+    onMarkCategoryRead(item.type);
+    onClose();
+  };
+
   return (
     <Link
       href={item.href}
-      onClick={onClose}
+      onClick={handleClick}
       className="flex items-start gap-3 rounded-card px-3 py-3 transition hover:bg-mist-50 focus-ring"
     >
       <span
@@ -164,7 +171,12 @@ export function NotificationPanel({
         ) : (
           <div className="divide-y divide-mist-100 px-1 py-1">
             {items.map((item) => (
-              <NotificationRow key={item.id} item={item} onClose={onClose} />
+              <NotificationRow
+                key={item.id}
+                item={item}
+                onClose={onClose}
+                onMarkCategoryRead={onMarkCategoryRead}
+              />
             ))}
           </div>
         )}
