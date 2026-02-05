@@ -269,6 +269,17 @@ export function NewsIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function ReflectionsIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M2 4.5c0-1.1.9-2 2-2h5a2 2 0 0 1 2 2V18a2 2 0 0 0-2-2H2.5a.5.5 0 0 1-.5-.5v-11Z" />
+      <path d="M22 4.5c0-1.1-.9-2-2-2h-5a2 2 0 0 0-2 2V18a2 2 0 0 1 2-2h5.5a.5.5 0 0 0 .5-.5v-11Z" />
+      <path d="M16 20l1.2 2.4" />
+      <path d="M19.5 19l1.5 1" />
+    </svg>
+  );
+}
+
 export function HeartIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...props}>

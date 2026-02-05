@@ -48,7 +48,8 @@ export const parishHubItemSchema = z.object({
     "FACEBOOK",
     "YOUTUBE",
     "PRAYER",
-    "NEWS"
+    "NEWS",
+    "REFLECTIONS"
   ]),
   targetType: z.enum(["EXTERNAL", "INTERNAL"]),
   targetUrl: optionalUrl,

@@ -15,6 +15,7 @@ import {
   YouTubeIcon,
   PrayerIcon,
   NewsIcon,
+  ReflectionsIcon,
   LayoutGridIcon
 } from "@/components/icons/ParishIcons";
 import type { SVGProps, JSX } from "react";
@@ -31,7 +32,8 @@ type ParishHubIcon =
   | "FACEBOOK"
   | "YOUTUBE"
   | "PRAYER"
-  | "NEWS";
+  | "NEWS"
+  | "REFLECTIONS";
 
 type HubItem = {
   id: string;
@@ -59,7 +61,8 @@ const iconMap: Record<ParishHubIcon, (props: SVGProps<SVGSVGElement>) => JSX.Ele
   FACEBOOK: FacebookIcon,
   YOUTUBE: YouTubeIcon,
   PRAYER: PrayerIcon,
-  NEWS: NewsIcon
+  NEWS: NewsIcon,
+  REFLECTIONS: ReflectionsIcon
 };
 
 const iconColors: Record<ParishHubIcon, { bg: string; text: string; hover: string }> = {
@@ -74,7 +77,8 @@ const iconColors: Record<ParishHubIcon, { bg: string; text: string; hover: strin
   FACEBOOK: { bg: "bg-blue-50", text: "text-[#1877F2]", hover: "hover:bg-blue-100" },
   YOUTUBE: { bg: "bg-red-50", text: "text-[#FF0000]", hover: "hover:bg-red-100" },
   PRAYER: { bg: "bg-purple-50", text: "text-purple-600", hover: "hover:bg-purple-100" },
-  NEWS: { bg: "bg-slate-50", text: "text-slate-600", hover: "hover:bg-slate-100" }
+  NEWS: { bg: "bg-slate-50", text: "text-slate-600", hover: "hover:bg-slate-100" },
+  REFLECTIONS: { bg: "bg-cyan-50", text: "text-cyan-600", hover: "hover:bg-cyan-100" }
 };
 
 function HubTileCompact({ item }: { item: HubItem }) {
