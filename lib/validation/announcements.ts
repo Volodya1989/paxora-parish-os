@@ -25,6 +25,9 @@ export const createAnnouncementSchema = z.object({
   parishId: z.string().min(1),
   title: requiredTrimmedText,
   body: requiredTrimmedText,
+  bodyHtml: optionalTrimmedText,
+  bodyText: optionalTrimmedText,
+  audienceUserIds: z.array(z.string().min(1)).optional().default([]),
   published: z.preprocess((value) => value === "true" || value === true, z.boolean())
 });
 
@@ -32,6 +35,9 @@ export const updateAnnouncementSchema = z.object({
   id: z.string().min(1),
   title: requiredTrimmedText,
   body: requiredTrimmedText,
+  bodyHtml: optionalTrimmedText,
+  bodyText: optionalTrimmedText,
+  audienceUserIds: z.array(z.string().min(1)).optional().default([]),
   published: z.preprocess((value) => value === "true" || value === true, z.boolean())
 });
 
@@ -43,4 +49,12 @@ export const updateAnnouncementStatusSchema = z.object({
   id: z.string().min(1),
   published: z.preprocess((value) => value === "true" || value === true, z.boolean()),
   publishedAt: optionalTrimmedText
+});
+
+export const sendAnnouncementEmailSchema = z.object({
+  announcementId: z.string().min(1)
+});
+
+export const sendTestAnnouncementEmailSchema = z.object({
+  announcementId: z.string().min(1)
 });

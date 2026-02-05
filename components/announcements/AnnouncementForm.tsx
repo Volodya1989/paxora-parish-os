@@ -1,14 +1,32 @@
 "use client";
 
-import { useId, useState, useTransition, type FormEvent } from "react";
+import { useId, useState, useTransition, useEffect, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Label from "@/components/ui/Label";
-import Textarea from "@/components/ui/Textarea";
 import { useToast } from "@/components/ui/Toast";
+import AudiencePicker from "@/components/announcements/AudiencePicker";
 import type { AnnouncementDetail } from "@/lib/queries/announcements";
-import { createAnnouncement, updateAnnouncement } from "@/server/actions/announcements";
+import {
+  createAnnouncement,
+  updateAnnouncement,
+  getAnnouncementPeople,
+  sendTestAnnouncementEmail,
+  sendAnnouncementEmail
+} from "@/server/actions/announcements";
+
+const RichTextEditor = dynamic(
+  () => import("@/components/announcements/RichTextEditor"),
+  { ssr: false, loading: () => <div className="h-[200px] animate-pulse rounded-card border border-mist-200 bg-mist-50" /> }
+);
+
+type Person = {
+  userId: string;
+  name: string | null;
+  email: string;
+};
 
 type AnnouncementFormProps = {
   parishId: string;
@@ -16,44 +34,57 @@ type AnnouncementFormProps = {
 };
 
 const TITLE_LIMIT = 120;
-const BODY_LIMIT = 1200;
 
 export default function AnnouncementForm({ parishId, announcement }: AnnouncementFormProps) {
   const router = useRouter();
   const { addToast } = useToast();
   const [title, setTitle] = useState(announcement?.title ?? "");
-  const [body, setBody] = useState(announcement?.body ?? "");
+  const [bodyHtml, setBodyHtml] = useState(announcement?.bodyHtml ?? announcement?.body ?? "");
+  const [bodyText, setBodyText] = useState(announcement?.bodyText ?? announcement?.body ?? "");
   const [publishNow, setPublishNow] = useState(
     announcement ? Boolean(announcement.publishedAt) : true
   );
+  const [audienceUserIds, setAudienceUserIds] = useState<string[]>(
+    announcement?.audienceUserIds ?? []
+  );
+  const [people, setPeople] = useState<Person[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-
-  const handleInsertNumberedList = () => {
-    const template = ["1. ", "2. ", "3. "].join("\n");
-    setBody((prev) => {
-      const trimmed = prev.trim();
-      if (!trimmed) {
-        return template;
-      }
-      return `${trimmed}\n\n${template}`;
-    });
-  };
+  const [isSending, setIsSending] = useState(false);
+  const [isSendingTest, setIsSendingTest] = useState(false);
+  const [deliverySummary, setDeliverySummary] = useState<{
+    sentCount: number;
+    failedCount: number;
+    totalCount: number;
+  } | null>(null);
 
   const titleId = useId();
-  const bodyId = useId();
+
+  // Fetch people list for audience picker
+  useEffect(() => {
+    let cancelled = false;
+    getAnnouncementPeople({ parishId }).then((result) => {
+      if (!cancelled) setPeople(result);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [parishId]);
+
+  const handleEditorChange = (html: string, text: string) => {
+    setBodyHtml(html);
+    setBodyText(text);
+  };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmedTitle = title.trim();
-    const trimmedBody = body.trim();
+    const trimmedText = bodyText.trim();
 
     if (!trimmedTitle) {
       setError("Title is required.");
       return;
     }
 
-    if (!trimmedBody) {
+    if (!trimmedText) {
       setError("Message is required.");
       return;
     }
@@ -66,7 +97,10 @@ export default function AnnouncementForm({ parishId, announcement }: Announcemen
           await updateAnnouncement({
             id: announcement.id,
             title: trimmedTitle,
-            body: trimmedBody,
+            body: trimmedText,
+            bodyHtml,
+            bodyText: trimmedText,
+            audienceUserIds,
             published: publishNow
           });
           addToast({
@@ -78,7 +112,10 @@ export default function AnnouncementForm({ parishId, announcement }: Announcemen
           await createAnnouncement({
             parishId,
             title: trimmedTitle,
-            body: trimmedBody,
+            body: trimmedText,
+            bodyHtml,
+            bodyText: trimmedText,
+            audienceUserIds,
             published: publishNow
           });
           addToast({
@@ -106,6 +143,78 @@ export default function AnnouncementForm({ parishId, announcement }: Announcemen
     });
   };
 
+  const handleSendTest = async () => {
+    if (!announcement) {
+      addToast({
+        title: "Save first",
+        description: "Please save the announcement before sending a test email.",
+        status: "error"
+      });
+      return;
+    }
+    setIsSendingTest(true);
+    try {
+      const result = await sendTestAnnouncementEmail({
+        announcementId: announcement.id
+      });
+      addToast({
+        title: "Test email sent",
+        description: `A test email was sent to ${result.email}.`,
+        status: "success"
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to send test email.";
+      addToast({
+        title: "Test email failed",
+        description: message,
+        status: "error"
+      });
+    } finally {
+      setIsSendingTest(false);
+    }
+  };
+
+  const handleSendToAudience = async () => {
+    if (!announcement) {
+      addToast({
+        title: "Save first",
+        description: "Please save the announcement before sending emails.",
+        status: "error"
+      });
+      return;
+    }
+    if (audienceUserIds.length === 0) {
+      addToast({
+        title: "No recipients",
+        description: "Please select at least one recipient.",
+        status: "error"
+      });
+      return;
+    }
+    setIsSending(true);
+    setDeliverySummary(null);
+    try {
+      const result = await sendAnnouncementEmail({
+        announcementId: announcement.id
+      });
+      setDeliverySummary(result);
+      addToast({
+        title: "Emails sent",
+        description: `Sent ${result.sentCount} of ${result.totalCount} emails.${result.failedCount > 0 ? ` ${result.failedCount} failed.` : ""}`,
+        status: result.failedCount > 0 ? "error" : "success"
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to send emails.";
+      addToast({
+        title: "Send failed",
+        description: message,
+        status: "error"
+      });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
       <div className="space-y-2">
@@ -122,23 +231,21 @@ export default function AnnouncementForm({ parishId, announcement }: Announcemen
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor={bodyId}>Message</Label>
-        <Textarea
-          id={bodyId}
-          name="body"
-          value={body}
-          onChange={(event) => setBody(event.currentTarget.value)}
-          maxLength={BODY_LIMIT}
-          rows={6}
+        <Label>Message</Label>
+        <RichTextEditor
+          content={bodyHtml}
+          onChange={handleEditorChange}
           placeholder="Share the details parishioners need to know."
-          required
         />
-        <div className="flex flex-wrap items-center gap-2 text-xs text-ink-500">
-          <span>Need a weekly list?</span>
-          <Button type="button" size="sm" variant="ghost" onClick={handleInsertNumberedList}>
-            Insert numbered list
-          </Button>
-        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Recipients</Label>
+        <AudiencePicker
+          people={people}
+          selected={audienceUserIds}
+          onChange={setAudienceUserIds}
+        />
       </div>
 
       <label className="flex items-center gap-3 rounded-card border border-mist-100 bg-mist-50 px-3 py-2 text-sm text-ink-700">
@@ -165,6 +272,43 @@ export default function AnnouncementForm({ parishId, announcement }: Announcemen
           Cancel
         </Button>
       </div>
+
+      {announcement ? (
+        <div className="space-y-3 border-t border-mist-100 pt-4">
+          <p className="text-sm font-medium text-ink-700">Email actions</p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              isLoading={isSendingTest}
+              onClick={handleSendTest}
+            >
+              Send test email to me
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              isLoading={isSending}
+              onClick={handleSendToAudience}
+              disabled={audienceUserIds.length === 0}
+            >
+              Send to {audienceUserIds.length} recipient{audienceUserIds.length !== 1 ? "s" : ""}
+            </Button>
+          </div>
+          {deliverySummary ? (
+            <div className="rounded-card border border-mist-100 bg-mist-50 px-3 py-2 text-sm text-ink-600">
+              <span className="font-medium">Delivery summary:</span>{" "}
+              {deliverySummary.sentCount} sent
+              {deliverySummary.failedCount > 0
+                ? `, ${deliverySummary.failedCount} failed`
+                : ""}
+              {" "}of {deliverySummary.totalCount} total.
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </form>
   );
 }
