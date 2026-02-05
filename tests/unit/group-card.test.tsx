@@ -37,6 +37,8 @@ test("GroupCard renders name, member count, and archive menu items", () => {
         onJoin: () => undefined,
         onRequestJoin: () => undefined,
         onLeave: () => undefined,
+        onAcceptInvite: () => undefined,
+        onDeclineInvite: () => undefined,
         forceMenuOpen: true
       })
     )
@@ -62,6 +64,8 @@ test("GroupCard shows restore option for archived groups", () => {
         onJoin: () => undefined,
         onRequestJoin: () => undefined,
         onLeave: () => undefined,
+        onAcceptInvite: () => undefined,
+        onDeclineInvite: () => undefined,
         forceMenuOpen: true
       })
     )
@@ -83,7 +87,9 @@ test("GroupCard shows unread badge when available", () => {
         onManageMembers: () => undefined,
         onJoin: () => undefined,
         onRequestJoin: () => undefined,
-        onLeave: () => undefined
+        onLeave: () => undefined,
+        onAcceptInvite: () => undefined,
+        onDeclineInvite: () => undefined
       })
     )
   );
@@ -105,7 +111,9 @@ test("GroupCard hides chat CTA for non-members", () => {
         onManageMembers: () => undefined,
         onJoin: () => undefined,
         onRequestJoin: () => undefined,
-        onLeave: () => undefined
+        onLeave: () => undefined,
+        onAcceptInvite: () => undefined,
+        onDeclineInvite: () => undefined
       })
     )
   );

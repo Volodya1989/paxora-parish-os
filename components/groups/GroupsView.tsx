@@ -9,7 +9,7 @@ import GroupCreateDialog from "@/components/groups/GroupCreateDialog";
 import GroupEditDialog from "@/components/groups/GroupEditDialog";
 import GroupFilters, { type GroupFilterTab } from "@/components/groups/GroupFilters";
 import { archiveGroup, approveGroupRequest, rejectGroupRequest, restoreGroup } from "@/server/actions/groups";
-import { joinGroup, leaveGroup, requestToJoin } from "@/app/actions/members";
+import { acceptInvite, declineInvite, joinGroup, leaveGroup, requestToJoin } from "@/app/actions/members";
 import type { MemberActionState } from "@/lib/types/members";
 import type { GroupListItem } from "@/lib/queries/groups";
 import FiltersDrawer from "@/components/app/filters-drawer";
@@ -57,6 +57,11 @@ export default function GroupsView({
 
   const pendingGroups = useMemo(
     () => groups.filter((group) => group.status === "PENDING_APPROVAL"),
+    [groups]
+  );
+
+  const myInvites = useMemo(
+    () => groups.filter((group) => group.viewerMembershipStatus === "INVITED" && group.status === "ACTIVE"),
     [groups]
   );
 
@@ -266,6 +271,61 @@ export default function GroupsView({
         </div>
       </div>
 
+      {/* Pending invites for the current user */}
+      {myInvites.length > 0 ? (
+        <Card className="border-primary-200 bg-primary-50/40">
+          <div className="mb-3 text-sm font-semibold text-ink-900">
+            Group invites ({myInvites.length})
+          </div>
+          <div className="space-y-3">
+            {myInvites.map((group) => (
+              <div
+                key={group.id}
+                className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-primary-200 bg-white px-3 py-3"
+              >
+                <div className="space-y-1">
+                  <div className="text-sm font-medium text-ink-800">{group.name}</div>
+                  {group.description ? (
+                    <div className="text-xs text-ink-500 line-clamp-1">{group.description}</div>
+                  ) : null}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() =>
+                      void handleMemberResult(
+                        group.id,
+                        () => acceptInvite({ groupId: group.id }),
+                        "Invite accepted"
+                      )
+                    }
+                    disabled={pendingGroupId === group.id}
+                  >
+                    Accept
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() =>
+                      void handleMemberResult(
+                        group.id,
+                        () => declineInvite({ groupId: group.id }),
+                        "Invite declined"
+                      )
+                    }
+                    disabled={pendingGroupId === group.id}
+                  >
+                    Decline
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      ) : null}
+
       {/* Group cards — flat list, no wrapper */}
       <div className="space-y-5">
         {filteredGroups.length === 0 ? (
@@ -304,6 +364,20 @@ export default function GroupsView({
                     group.id,
                     () => leaveGroup({ groupId: group.id }),
                     "Left group"
+                  )
+                }
+                onAcceptInvite={() =>
+                  void handleMemberResult(
+                    group.id,
+                    () => acceptInvite({ groupId: group.id }),
+                    "Invite accepted"
+                  )
+                }
+                onDeclineInvite={() =>
+                  void handleMemberResult(
+                    group.id,
+                    () => declineInvite({ groupId: group.id }),
+                    "Invite declined"
                   )
                 }
                 isBusy={pendingGroupId === group.id}

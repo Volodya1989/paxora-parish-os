@@ -57,6 +57,8 @@ type GroupCardProps = {
   onJoin: () => void;
   onRequestJoin: () => void;
   onLeave: () => void;
+  onAcceptInvite: () => void;
+  onDeclineInvite: () => void;
   isBusy?: boolean;
   forceMenuOpen?: boolean;
 };
@@ -72,6 +74,8 @@ export default function GroupCard({
   onJoin,
   onRequestJoin,
   onLeave,
+  onAcceptInvite,
+  onDeclineInvite,
   isBusy = false,
   forceMenuOpen
 }: GroupCardProps) {
@@ -181,6 +185,29 @@ export default function GroupCard({
         </div>
 
         <div className="flex shrink-0 items-center gap-1">
+          {/* Accept / Decline for invited users */}
+          {isInvited ? (
+            <div className="flex items-center gap-1">
+              <Button
+                type="button"
+                size="sm"
+                onClick={(e) => { e.stopPropagation(); onAcceptInvite(); }}
+                disabled={isBusy}
+              >
+                Accept
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={(e) => { e.stopPropagation(); onDeclineInvite(); }}
+                disabled={isBusy}
+              >
+                Decline
+              </Button>
+            </div>
+          ) : null}
+
           {/* Join/Request button — kept visible for discoverability */}
           {showJoinActions ? (
             group.joinPolicy === "INVITE_ONLY" ? (

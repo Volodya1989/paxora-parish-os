@@ -8,6 +8,7 @@ import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
 import { getOrCreateCurrentWeek } from "@/domain/week";
 import { isAdminClergy } from "@/lib/authz/membership";
+import GroupInviteActions from "@/components/groups/GroupInviteActions";
 
 type GroupDetailPageProps = {
   params: Promise<{
@@ -87,10 +88,13 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
   ]);
 
   const isLeader = parishMembership && isAdminClergy(parishMembership.role);
+  const viewerStatus = groupMembership?.status ?? null;
   const canView =
     (group.status === "ACTIVE" &&
       ((group.visibility === "PUBLIC" && Boolean(parishMembership)) ||
-        groupMembership?.status === "ACTIVE" ||
+        viewerStatus === "ACTIVE" ||
+        viewerStatus === "INVITED" ||
+        viewerStatus === "REQUESTED" ||
         isLeader)) ||
     (group.status !== "ACTIVE" && (isLeader || group.createdById === actorUserId));
 
@@ -98,8 +102,8 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
     throw new Error("Unauthorized");
   }
 
-  const canAccessChat = groupMembership?.status === "ACTIVE";
-  const canViewMembers = groupMembership?.status === "ACTIVE" || isLeader;
+  const canAccessChat = viewerStatus === "ACTIVE";
+  const canViewMembers = viewerStatus === "ACTIVE" || viewerStatus === "INVITED" || viewerStatus === "REQUESTED" || isLeader;
 
   const tasks = await prisma.task.findMany({
     where: {
@@ -159,6 +163,19 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
           </Link>
         </div>
       </div>
+
+      {viewerStatus === "INVITED" ? (
+        <GroupInviteActions groupId={group.id} />
+      ) : null}
+
+      {viewerStatus === "REQUESTED" ? (
+        <Card className="border-amber-200 bg-amber-50/40">
+          <h2 className="text-lg font-semibold text-ink-900">Request pending</h2>
+          <p className="mt-1 text-sm text-ink-500">
+            Your request to join this group is being reviewed by a coordinator.
+          </p>
+        </Card>
+      ) : null}
 
       <Card>
         <div className="flex items-center justify-between">
