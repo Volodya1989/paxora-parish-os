@@ -761,6 +761,8 @@ model Event {
   recurrenceInterval  Int                      @default(1)
   recurrenceByWeekday Int[]                    @default([])
   recurrenceUntil     DateTime?
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
 
   parish Parish      @relation(fields: [parishId], references: [id])
   week   Week        @relation(fields: [weekId], references: [id], onDelete: Cascade)
