@@ -4,6 +4,8 @@ import { type ReactNode, useState, useEffect } from "react";
 import { useTranslations } from "@/lib/i18n/provider";
 import LanguageIconToggle from "@/components/navigation/LanguageIconToggle";
 import { SparklesIcon } from "@/components/icons/ParishIcons";
+import NotificationCenter from "@/components/notifications/NotificationCenter";
+import { useNotificationContext } from "@/components/notifications/NotificationProvider";
 
 type ParishionerHeaderProps = {
   /** Parish name to display */
@@ -33,6 +35,7 @@ export default function ParishionerHeader({
   quoteSource
 }: ParishionerHeaderProps) {
   const t = useTranslations();
+  const { count } = useNotificationContext();
 
   // Use state to prevent hydration mismatch - start with generic greeting
   // then update to time-based greeting on client
@@ -45,7 +48,7 @@ export default function ParishionerHeader({
   }, []);
 
   return (
-    <header className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-600 via-primary-500 to-emerald-500 px-4 py-4 text-white shadow-lg sm:px-5 sm:py-5">
+    <header className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-600 via-primary-500 to-emerald-500 px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] text-white shadow-lg sm:px-5 sm:pb-5 sm:pt-[calc(1.25rem+env(safe-area-inset-top))]">
       {/* Decorative background elements */}
       <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-white/10" />
       <div className="absolute -bottom-2 left-1/4 h-12 w-12 rounded-full bg-white/5" />
@@ -59,6 +62,9 @@ export default function ParishionerHeader({
         </div>
         <div className="flex items-center gap-2">
           {actions}
+          {count > 0 && (
+            <NotificationCenter bellClassName="h-11 w-11 md:hidden" />
+          )}
           <LanguageIconToggle />
         </div>
       </div>

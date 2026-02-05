@@ -2,6 +2,8 @@
 
 import { type ReactNode } from "react";
 import LanguageIconToggle from "@/components/navigation/LanguageIconToggle";
+import NotificationCenter from "@/components/notifications/NotificationCenter";
+import { useNotificationContext } from "@/components/notifications/NotificationProvider";
 import { cn } from "@/lib/ui/cn";
 
 type PageHeaderProps = {
@@ -44,6 +46,8 @@ export default function PageHeader({
   quoteSource,
   icon
 }: PageHeaderProps) {
+  const { count } = useNotificationContext();
+
   return (
     <header
       className={cn(
@@ -62,6 +66,9 @@ export default function PageHeader({
         </div>
         <div className="flex items-center gap-2">
           {actions}
+          {count > 0 && (
+            <NotificationCenter bellClassName="h-11 w-11 md:hidden" />
+          )}
           <LanguageIconToggle />
         </div>
       </div>
