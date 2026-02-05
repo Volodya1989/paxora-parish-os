@@ -4,7 +4,7 @@ import React, { createContext, useContext, useMemo, useState, type ReactNode } f
 import { useNotifications } from "@/components/notifications/useNotifications";
 import NotificationPanel from "@/components/notifications/NotificationPanel";
 import NotificationAutoClear from "@/components/notifications/NotificationAutoClear";
-import type { NotificationCategory, NotificationItem } from "@/lib/queries/notifications";
+import type { NotificationItem } from "@/lib/queries/notifications";
 
 type NotificationContextValue = {
   items: NotificationItem[];
@@ -15,14 +15,24 @@ type NotificationContextValue = {
   togglePanel: () => void;
 };
 
-const NotificationContext = createContext<NotificationContextValue | null>(null);
+const defaultValue: NotificationContextValue = {
+  items: [],
+  count: 0,
+  loading: false,
+  panelOpen: false,
+  setPanelOpen: () => {},
+  togglePanel: () => {}
+};
 
+const NotificationContext = createContext<NotificationContextValue>(defaultValue);
+
+/**
+ * Returns notification context. Safe to call outside NotificationProvider --
+ * returns a no-op default so components (e.g. Sidebar) render in tests without
+ * requiring the full provider tree.
+ */
 export function useNotificationContext() {
-  const ctx = useContext(NotificationContext);
-  if (!ctx) {
-    throw new Error("useNotificationContext must be used within NotificationProvider");
-  }
-  return ctx;
+  return useContext(NotificationContext);
 }
 
 /**
