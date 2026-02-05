@@ -15,7 +15,8 @@ import {
   FacebookIcon,
   YouTubeIcon,
   PrayerIcon,
-  NewsIcon
+  NewsIcon,
+  ReflectionsIcon
 } from "@/components/icons/ParishIcons";
 
 export type ParishHubIcon =
@@ -30,7 +31,8 @@ export type ParishHubIcon =
   | "FACEBOOK"
   | "YOUTUBE"
   | "PRAYER"
-  | "NEWS";
+  | "NEWS"
+  | "REFLECTIONS";
 
 export type ParishHubItemData = {
   id: string;
@@ -137,6 +139,13 @@ const iconConfigMap: Record<ParishHubIcon, IconConfig> = {
     iconColor: "text-slate-600",
     hoverBg: "group-hover:bg-slate-100",
     borderColor: "border-slate-200"
+  },
+  REFLECTIONS: {
+    Icon: ReflectionsIcon,
+    bgColor: "bg-cyan-50",
+    iconColor: "text-cyan-600",
+    hoverBg: "group-hover:bg-cyan-100",
+    borderColor: "border-cyan-200"
   }
 };
 

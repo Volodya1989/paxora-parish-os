@@ -130,7 +130,7 @@ export async function createParishHubItem(input: {
   parishId: string;
   actorUserId: string;
   label: string;
-  icon: "BULLETIN" | "MASS_TIMES" | "CONFESSION" | "WEBSITE" | "CALENDAR" | "READINGS" | "GIVING" | "CONTACT" | "FACEBOOK" | "YOUTUBE" | "PRAYER" | "NEWS";
+  icon: "BULLETIN" | "MASS_TIMES" | "CONFESSION" | "WEBSITE" | "CALENDAR" | "READINGS" | "GIVING" | "CONTACT" | "FACEBOOK" | "YOUTUBE" | "PRAYER" | "NEWS" | "REFLECTIONS";
   targetType: "EXTERNAL" | "INTERNAL";
   targetUrl?: string | null;
   internalRoute?: string | null;
@@ -208,7 +208,7 @@ export async function updateParishHubItem(input: {
   actorUserId: string;
   itemId: string;
   label: string;
-  icon: "BULLETIN" | "MASS_TIMES" | "CONFESSION" | "WEBSITE" | "CALENDAR" | "READINGS" | "GIVING" | "CONTACT" | "FACEBOOK" | "YOUTUBE" | "PRAYER" | "NEWS";
+  icon: "BULLETIN" | "MASS_TIMES" | "CONFESSION" | "WEBSITE" | "CALENDAR" | "READINGS" | "GIVING" | "CONTACT" | "FACEBOOK" | "YOUTUBE" | "PRAYER" | "NEWS" | "REFLECTIONS";
   targetType: "EXTERNAL" | "INTERNAL";
   targetUrl?: string | null;
   internalRoute?: string | null;
@@ -367,14 +367,23 @@ export async function reorderParishHubItems(input: {
     throw new Error("Invalid parish hub items.");
   }
 
-  await prisma.$transaction(
-    parsed.data.items.map((item) =>
+  // Two-phase reorder to avoid unique constraint violations on (parishId, order).
+  // Phase 1: move all affected items to temporary negative orders.
+  // Phase 2: set the final positive orders.
+  await prisma.$transaction([
+    ...parsed.data.items.map((item, i) =>
+      prisma.parishHubItem.update({
+        where: { id: item.itemId },
+        data: { order: -(i + 1) }
+      })
+    ),
+    ...parsed.data.items.map((item) =>
       prisma.parishHubItem.update({
         where: { id: item.itemId },
         data: { order: item.order }
       })
     )
-  );
+  ]);
 
   revalidatePath("/parish");
 

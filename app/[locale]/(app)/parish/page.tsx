@@ -7,8 +7,21 @@ import { listParishHubItemsForMember, ensureParishHubDefaults } from "@/server/a
 import { prisma } from "@/server/db/prisma";
 import ParishHubGrid from "@/components/parish-hub/ParishHubGrid";
 import ParishHubEmptyState from "@/components/parish-hub/ParishHubEmptyState";
+import FeaturedPanel from "@/components/parish-hub/FeaturedPanel";
+import type { FeaturedPanelConfig } from "@/components/parish-hub/FeaturedPanel";
 import type { ParishHubItemData } from "@/components/parish-hub/ParishHubTile";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
+
+/* ── Static featured-panel configuration ─────────────────────────── */
+const featuredConfig: FeaturedPanelConfig = {
+  title: "This Week's Bulletin Is Ready",
+  meta: "Featured",
+  description:
+    "Stay informed with parish updates, Mass intentions, and upcoming events. Read the latest bulletin to see what's happening this week.",
+  ctaLabel: "Read Bulletin",
+  ctaHref: "/parish/bulletin",
+  ctaExternal: false,
+};
 
 export default async function ParishHubPage() {
   const session = await getServerSession(authOptions);
@@ -49,6 +62,9 @@ export default async function ParishHubPage() {
       subtitle="Quick links to parish resources and information"
       gradientClass="from-primary-600 via-primary-500 to-emerald-500"
     >
+      {/* Featured Panel */}
+      <FeaturedPanel config={featuredConfig} />
+
       {/* Parish Hub Grid */}
       {hubItems.length > 0 ? (
         <ParishHubGrid items={hubItems} />

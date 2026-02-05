@@ -95,6 +95,46 @@ export const DEFAULT_PARISH_HUB_ITEMS: Array<{
     visibility: "PUBLIC",
     order: 8,
     enabled: false
+  },
+  {
+    label: "Facebook",
+    icon: "FACEBOOK",
+    targetType: "EXTERNAL",
+    targetUrl: null,
+    internalRoute: null,
+    visibility: "PUBLIC",
+    order: 9,
+    enabled: false
+  },
+  {
+    label: "YouTube",
+    icon: "YOUTUBE",
+    targetType: "EXTERNAL",
+    targetUrl: null,
+    internalRoute: null,
+    visibility: "PUBLIC",
+    order: 10,
+    enabled: false
+  },
+  {
+    label: "Prayer",
+    icon: "PRAYER",
+    targetType: "EXTERNAL",
+    targetUrl: null,
+    internalRoute: null,
+    visibility: "LOGGED_IN",
+    order: 11,
+    enabled: false
+  },
+  {
+    label: "Reflections",
+    icon: "REFLECTIONS",
+    targetType: "EXTERNAL",
+    targetUrl: null,
+    internalRoute: null,
+    visibility: "LOGGED_IN",
+    order: 12,
+    enabled: false
   }
 ];
 

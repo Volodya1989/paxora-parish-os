@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "ParishIcon" ADD VALUE 'REFLECTIONS';

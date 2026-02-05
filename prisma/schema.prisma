@@ -169,6 +169,7 @@ enum ParishIcon {
   YOUTUBE
   PRAYER
   NEWS
+  REFLECTIONS
 }
 
 model Parish {

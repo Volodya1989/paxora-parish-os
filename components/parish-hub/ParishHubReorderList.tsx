@@ -17,7 +17,8 @@ import {
   FacebookIcon,
   YouTubeIcon,
   PrayerIcon,
-  NewsIcon
+  NewsIcon,
+  ReflectionsIcon
 } from "@/components/icons/ParishIcons";
 import type { ParishHubIcon } from "./ParishHubTile";
 import type { SVGProps } from "react";
@@ -54,7 +55,8 @@ const iconMap: Record<ParishHubIcon, (props: SVGProps<SVGSVGElement>) => JSX.Ele
   FACEBOOK: FacebookIcon,
   YOUTUBE: YouTubeIcon,
   PRAYER: PrayerIcon,
-  NEWS: NewsIcon
+  NEWS: NewsIcon,
+  REFLECTIONS: ReflectionsIcon
 };
 
 export default function ParishHubReorderList({
