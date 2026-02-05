@@ -63,7 +63,7 @@ export default async function ParishHubPage() {
       gradientClass="from-primary-600 via-primary-500 to-emerald-500"
     >
       {/* Featured Panel */}
-      <FeaturedPanel config={featuredConfig} />
+      {/* <FeaturedPanel config={featuredConfig} /> */}
 
       {/* Parish Hub Grid */}
       {hubItems.length > 0 ? (
