@@ -19,6 +19,7 @@ type EmailMetadata = {
   parishId?: string | null;
   weekId?: string | null;
   joinRequestId?: string | null;
+  announcementId?: string | null;
 };
 
 type EmailSendInput = EmailMetadata &
@@ -100,6 +101,7 @@ export async function sendEmail(input: EmailSendInput): Promise<EmailSendResult>
         parishId: input.parishId ?? null,
         weekId: input.weekId ?? null,
         joinRequestId: input.joinRequestId ?? null,
+        announcementId: input.announcementId ?? null,
         status: "FAILED",
         sentAt: null,
         error: getDefaultSenderError()
@@ -128,6 +130,7 @@ export async function sendEmail(input: EmailSendInput): Promise<EmailSendResult>
         parishId: input.parishId ?? null,
         weekId: input.weekId ?? null,
         joinRequestId: input.joinRequestId ?? null,
+        announcementId: input.announcementId ?? null,
         status: "SENT",
         sentAt: new Date(),
         error: null
@@ -147,6 +150,7 @@ export async function sendEmail(input: EmailSendInput): Promise<EmailSendResult>
         parishId: input.parishId ?? null,
         weekId: input.weekId ?? null,
         joinRequestId: input.joinRequestId ?? null,
+        announcementId: input.announcementId ?? null,
         status: "FAILED",
         sentAt: null,
         error: message

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@/components/ui/Dropdown";
@@ -48,6 +49,10 @@ export default function AnnouncementRow({
     ? `Published ${formatDate(announcement.publishedAt as Date)}`
     : `Updated ${formatDate(announcement.updatedAt ?? announcement.createdAt)}`;
 
+  const [expanded, setExpanded] = useState(false);
+  const hasRichContent = Boolean(announcement.bodyHtml);
+  const excerptText = buildExcerpt(announcement.bodyText ?? announcement.body);
+
   return (
     <Card
       className={cn(
@@ -55,7 +60,7 @@ export default function AnnouncementRow({
         isBusy && "opacity-70"
       )}
     >
-      <div className="space-y-2">
+      <div className="min-w-0 flex-1 space-y-2">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="text-base font-semibold text-ink-900">{announcement.title}</h3>
           {isReadOnly ? null : (
@@ -64,7 +69,26 @@ export default function AnnouncementRow({
             </Badge>
           )}
         </div>
-        <p className="text-sm text-ink-500">{buildExcerpt(announcement.body)}</p>
+
+        {hasRichContent && expanded ? (
+          <div
+            className="prose prose-sm max-w-none text-ink-700 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:mt-4 [&_h2]:mb-2 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:mt-3 [&_h3]:mb-1 [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-0.5 [&_a]:text-primary-600 [&_a]:underline"
+            dangerouslySetInnerHTML={{ __html: announcement.bodyHtml! }}
+          />
+        ) : (
+          <p className="text-sm text-ink-500">{excerptText}</p>
+        )}
+
+        {hasRichContent ? (
+          <button
+            type="button"
+            onClick={() => setExpanded(!expanded)}
+            className="text-xs font-medium text-primary-600 hover:text-primary-700 transition"
+          >
+            {expanded ? "Show less" : "Read more"}
+          </button>
+        ) : null}
+
         <p className="text-xs text-ink-400">
           {announcement.createdBy?.name ?? "Parish staff"} · {timestamp}
         </p>

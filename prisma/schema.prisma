@@ -130,6 +130,7 @@ enum EmailType {
   TRANSACTIONAL
   NOTIFICATION
   DIGEST
+  ANNOUNCEMENT
 }
 
 enum EmailStatus {
@@ -342,23 +343,25 @@ model EventRequest {
 }
 
 model EmailLog {
-  id            String      @id @default(cuid())
-  type          EmailType
-  template      String
-  toEmail       String
-  userId        String?
-  parishId      String?
-  weekId        String?
-  joinRequestId String?
-  status        EmailStatus
-  error         String?
-  sentAt        DateTime?
-  createdAt     DateTime    @default(now())
+  id             String      @id @default(cuid())
+  type           EmailType
+  template       String
+  toEmail        String
+  userId         String?
+  parishId       String?
+  weekId         String?
+  joinRequestId  String?
+  announcementId String?
+  status         EmailStatus
+  error          String?
+  sentAt         DateTime?
+  createdAt      DateTime    @default(now())
 
-  user        User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
-  parish      Parish?        @relation(fields: [parishId], references: [id], onDelete: SetNull)
-  week        Week?          @relation(fields: [weekId], references: [id], onDelete: SetNull)
-  joinRequest AccessRequest? @relation(fields: [joinRequestId], references: [id], onDelete: SetNull)
+  user         User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  parish       Parish?        @relation(fields: [parishId], references: [id], onDelete: SetNull)
+  week         Week?          @relation(fields: [weekId], references: [id], onDelete: SetNull)
+  joinRequest  AccessRequest? @relation(fields: [joinRequestId], references: [id], onDelete: SetNull)
+  announcement Announcement?  @relation(fields: [announcementId], references: [id], onDelete: SetNull)
 
   @@unique([parishId, weekId, userId, type], name: "EmailLog_parishId_weekId_userId_type_key")
   @@unique([joinRequestId, toEmail, type], name: "EmailLog_joinRequestId_toEmail_type_key")
@@ -366,6 +369,7 @@ model EmailLog {
   @@index([parishId])
   @@index([weekId])
   @@index([joinRequestId])
+  @@index([announcementId])
 }
 
 model PasswordResetToken {
@@ -809,18 +813,22 @@ model Digest {
 }
 
 model Announcement {
-  id          String    @id @default(cuid())
-  parishId    String
-  title       String
-  body        String?
-  createdById String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  publishedAt DateTime?
-  archivedAt  DateTime?
+  id              String    @id @default(cuid())
+  parishId        String
+  title           String
+  body            String?
+  bodyHtml        String?
+  bodyText        String?
+  audienceUserIds String[]  @default([])
+  createdById     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  publishedAt     DateTime?
+  archivedAt      DateTime?
 
-  parish    Parish @relation(fields: [parishId], references: [id])
-  createdBy User?  @relation("AnnouncementAuthor", fields: [createdById], references: [id])
+  parish    Parish     @relation(fields: [parishId], references: [id])
+  createdBy User?      @relation("AnnouncementAuthor", fields: [createdById], references: [id])
+  emailLogs EmailLog[]
 
   @@index([parishId, publishedAt])
 }

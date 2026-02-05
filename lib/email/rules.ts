@@ -22,5 +22,9 @@ export function shouldSendEmail(type: EmailType, prefs?: MembershipEmailPreferen
     return prefs.weeklyDigestEnabled === true;
   }
 
+  if (type === "ANNOUNCEMENT") {
+    return prefs.notifyEmailEnabled === true;
+  }
+
   return false;
 }

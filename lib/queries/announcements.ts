@@ -7,6 +7,8 @@ export type AnnouncementListItem = {
   id: string;
   title: string;
   body: string | null;
+  bodyHtml: string | null;
+  bodyText: string | null;
   createdAt: Date;
   updatedAt: Date;
   publishedAt: Date | null;
@@ -21,6 +23,9 @@ export type AnnouncementDetail = {
   id: string;
   title: string;
   body: string | null;
+  bodyHtml: string | null;
+  bodyText: string | null;
+  audienceUserIds: string[];
   createdAt: Date;
   updatedAt: Date;
   publishedAt: Date | null;
@@ -28,6 +33,12 @@ export type AnnouncementDetail = {
     id: string;
     name: string;
   } | null;
+};
+
+export type AnnouncementDeliverySummary = {
+  sentCount: number;
+  failedCount: number;
+  totalCount: number;
 };
 
 type ListAnnouncementsInput = {
@@ -53,6 +64,9 @@ export async function getAnnouncement({
       id: true,
       title: true,
       body: true,
+      bodyHtml: true,
+      bodyText: true,
+      audienceUserIds: true,
       createdAt: true,
       updatedAt: true,
       publishedAt: true,
@@ -73,6 +87,9 @@ export async function getAnnouncement({
   return {
     ...announcement,
     body: announcement.body ?? null,
+    bodyHtml: announcement.bodyHtml ?? null,
+    bodyText: announcement.bodyText ?? null,
+    audienceUserIds: announcement.audienceUserIds ?? [],
     createdBy: announcement.createdBy
       ? {
           id: announcement.createdBy.id,
@@ -102,6 +119,8 @@ export async function listAnnouncements({ parishId, status, getNow }: ListAnnoun
       id: true,
       title: true,
       body: true,
+      bodyHtml: true,
+      bodyText: true,
       createdAt: true,
       updatedAt: true,
       publishedAt: true,
@@ -119,6 +138,8 @@ export async function listAnnouncements({ parishId, status, getNow }: ListAnnoun
   return announcements.map((announcement) => ({
     ...announcement,
     body: announcement.body ?? null,
+    bodyHtml: announcement.bodyHtml ?? null,
+    bodyText: announcement.bodyText ?? null,
     createdBy: announcement.createdBy
       ? {
           id: announcement.createdBy.id,
@@ -126,4 +147,28 @@ export async function listAnnouncements({ parishId, status, getNow }: ListAnnoun
         }
       : null
   })) as AnnouncementListItem[];
+}
+
+export async function getAnnouncementDeliverySummary(
+  announcementId: string
+): Promise<AnnouncementDeliverySummary> {
+  const logs = await prisma.emailLog.groupBy({
+    by: ["status"],
+    where: { announcementId, type: "ANNOUNCEMENT" },
+    _count: { id: true }
+  });
+
+  let sentCount = 0;
+  let failedCount = 0;
+
+  for (const log of logs) {
+    if (log.status === "SENT") sentCount = log._count.id;
+    else if (log.status === "FAILED") failedCount = log._count.id;
+  }
+
+  return {
+    sentCount,
+    failedCount,
+    totalCount: sentCount + failedCount
+  };
 }
