@@ -72,7 +72,7 @@ export async function listGroups(
             memberships: {
               some: {
                 userId: actorUserId,
-                status: "ACTIVE"
+                status: { in: ["ACTIVE", "INVITED", "REQUESTED"] }
               }
             }
           }
