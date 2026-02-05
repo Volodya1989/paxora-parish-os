@@ -159,7 +159,7 @@ export default function TaskEditDialog({
           }}
           options={[
             { value: "public", label: "Public (shared with the parish)" },
-            { value: "private", label: "Private (just you + assignee)" }
+            { value: "private", label: "Private (just you)" }
           ]}
         />
         <p className="text-xs text-ink-400">
