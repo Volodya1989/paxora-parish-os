@@ -184,7 +184,7 @@ export default function TaskCreateDialog({
             }
           }}
           options={[
-            { value: "private", label: "Private (just you + assignee)" },
+            { value: "private", label: "Private (just you)" },
             { value: "public", label: "Public (shared with the parish)" }
           ]}
         />
