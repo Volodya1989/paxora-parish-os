@@ -5,7 +5,7 @@ import { prisma } from "@/server/db/prisma";
 
 /**
  * POST /api/notifications/mark-read
- * Body: { category: "task" | "announcement" | "event" | "all" }
+ * Body: { category: "task" | "announcement" | "event" | "message" | "all" }
  *
  * Marks notifications as read by updating the user's "last seen" timestamps.
  * Chat messages are marked read via the existing markRoomRead server action.
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       updateData.lastSeenEventsAt = now;
     }
 
-    if (category === "all") {
+    if (category === "all" || category === "message") {
       // Also mark all chat rooms as read
       const channels = await prisma.chatChannel.findMany({
         where: { parishId: session.user.activeParishId },
