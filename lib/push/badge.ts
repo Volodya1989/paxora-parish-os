@@ -3,16 +3,17 @@ import { Prisma } from "@prisma/client";
 
 /**
  * Compute the badge count for a user within a parish.
- * Badge = unread chat messages + open tasks assigned to me + new announcements since last seen
+ * Badge = unread chat messages + new tasks (since last seen) + new announcements + new events
  */
 export async function getBadgeCount(userId: string, parishId: string): Promise<number> {
-  const [unreadMessages, openTasksCount, newAnnouncementsCount] = await Promise.all([
+  const [unreadMessages, newTasksCount, newAnnouncementsCount, newEventsCount] = await Promise.all([
     getUnreadMessageCount(userId, parishId),
-    getOpenTasksAssignedCount(userId, parishId),
-    getNewAnnouncementsCount(userId, parishId)
+    getNewTasksCount(userId, parishId),
+    getNewAnnouncementsCount(userId, parishId),
+    getNewEventsCount(userId, parishId)
   ]);
 
-  return unreadMessages + openTasksCount + newAnnouncementsCount;
+  return unreadMessages + newTasksCount + newAnnouncementsCount + newEventsCount;
 }
 
 async function getUnreadMessageCount(userId: string, parishId: string): Promise<number> {
@@ -46,13 +47,21 @@ async function getUnreadMessageCount(userId: string, parishId: string): Promise<
   return rows[0]?.count ?? 0;
 }
 
-async function getOpenTasksAssignedCount(userId: string, parishId: string): Promise<number> {
+async function getNewTasksCount(userId: string, parishId: string): Promise<number> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { lastSeenTasksAt: true }
+  });
+
+  const since = user?.lastSeenTasksAt ?? new Date("1970-01-01");
+
   return prisma.task.count({
     where: {
       parishId,
       ownerId: userId,
       status: { in: ["OPEN", "IN_PROGRESS"] },
-      archivedAt: null
+      archivedAt: null,
+      createdAt: { gt: since }
     }
   });
 }
@@ -70,6 +79,23 @@ async function getNewAnnouncementsCount(userId: string, parishId: string): Promi
       parishId,
       publishedAt: { not: null, gt: since },
       archivedAt: null
+    }
+  });
+}
+
+async function getNewEventsCount(userId: string, parishId: string): Promise<number> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { lastSeenEventsAt: true }
+  });
+
+  const since = user?.lastSeenEventsAt ?? new Date("1970-01-01");
+
+  return prisma.event.count({
+    where: {
+      parishId,
+      startsAt: { gt: since },
+      visibility: { in: ["PUBLIC", "GROUP"] }
     }
   });
 }

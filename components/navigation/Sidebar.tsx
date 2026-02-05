@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getPrimaryNavItems, type NavRole } from "@/components/navigation/navItems";
 import { SignOutButton } from "@/components/navigation/SignOutButton";
+import NotificationCenter from "@/components/notifications/NotificationCenter";
 import { stripLocale } from "@/lib/i18n/routing";
 import { useTranslations } from "@/lib/i18n/provider";
 import { routes } from "@/lib/navigation/routes";
@@ -76,15 +77,18 @@ export function Sidebar({
         <div className={`text-sm font-semibold text-ink-900 ${isCollapsed ? "sr-only" : ""}`}>
           {t("header.appTitle")}
         </div>
-        <button
-          type="button"
-          className="rounded-button border border-mist-200 bg-white px-2 py-1 text-xs text-ink-700 transition hover:bg-mist-50 focus-ring"
-          onClick={handleToggle}
-          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {isCollapsed ? ">>" : "<<"}
-        </button>
+        <div className="flex items-center gap-1">
+          <NotificationCenter />
+          <button
+            type="button"
+            className="rounded-button border border-mist-200 bg-white px-2 py-1 text-xs text-ink-700 transition hover:bg-mist-50 focus-ring"
+            onClick={handleToggle}
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {isCollapsed ? ">>" : "<<"}
+          </button>
+        </div>
       </div>
 
       <nav aria-label="Primary" className="mt-6 flex-1 space-y-1">

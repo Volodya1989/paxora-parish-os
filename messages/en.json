@@ -69,6 +69,18 @@
     "loading": "Loading",
     "error": "Error"
   },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all read",
+    "allCaughtUp": "You're all caught up",
+    "allCaughtUpDesc": "No new updates right now.",
+    "clear": {
+      "message": "Clear messages",
+      "task": "Clear tasks",
+      "announcement": "Clear announcements",
+      "event": "Clear events"
+    }
+  },
   "auth": {
     "signingOut": "Signing out..."
   }
