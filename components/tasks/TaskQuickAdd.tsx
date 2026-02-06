@@ -64,7 +64,7 @@ export default function TaskQuickAdd({ weekId }: TaskQuickAddProps) {
       ref={formRef}
       onSubmit={handleSubmit}
       action={formAction}
-      className="mb-4 flex flex-col gap-3 rounded-card border border-dashed border-mist-200 bg-white/60 p-3 sm:flex-row sm:items-center"
+      className="flex flex-col gap-2 sm:flex-row sm:items-center"
     >
       <input type="hidden" name="weekId" value={weekId} />
       <input type="hidden" name="visibility" value="private" />
@@ -93,12 +93,9 @@ export default function TaskQuickAdd({ weekId }: TaskQuickAddProps) {
           }
         }}
       />
-      <div className="flex items-center gap-3">
-        <Button type="submit" disabled={!title.trim()}>
-          Add
-        </Button>
-        <span className="text-xs text-ink-400">Press Enter to add</span>
-      </div>
+      <Button type="submit" disabled={!title.trim()} className="h-9 shrink-0 px-3 text-sm">
+        + Add
+      </Button>
       {errorMessage ? (
         <p className="text-xs text-rose-600">{errorMessage}</p>
       ) : null}

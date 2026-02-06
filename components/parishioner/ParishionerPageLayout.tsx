@@ -25,16 +25,13 @@ type ParishionerPageLayoutProps = {
 };
 
 /**
- * Standardized layout for parishioner-facing pages.
- * Eliminates repeated PageHeader and wrapper code across pages.
- *
- * The PageHeader is only shown for parishioners (non-leaders).
- * Leaders see the AppHeader at the layout level instead.
+ * Standardized layout for all pages (both leaders and parishioners).
+ * Everyone sees the same warm gradient PageHeader — same product, same style.
+ * Admin-specific capabilities are layered on top within the page content.
  */
 export default function ParishionerPageLayout({
   pageTitle,
   parishName,
-  isLeader,
   subtitle,
   quote,
   quoteSource,
@@ -45,19 +42,16 @@ export default function ParishionerPageLayout({
 }: ParishionerPageLayoutProps) {
   return (
     <div className="space-y-6">
-      {/* Only show PageHeader for parishioners, not for leaders */}
-      {!isLeader && (
-        <PageHeader
-          pageTitle={pageTitle}
-          parishName={parishName}
-          subtitle={subtitle}
-          quote={quote}
-          quoteSource={quoteSource}
-          gradientClass={gradientClass}
-          actions={actions}
-          icon={icon}
-        />
-      )}
+      <PageHeader
+        pageTitle={pageTitle}
+        parishName={parishName}
+        subtitle={subtitle}
+        quote={quote}
+        quoteSource={quoteSource}
+        gradientClass={gradientClass}
+        actions={actions}
+        icon={icon}
+      />
       {children}
     </div>
   );
