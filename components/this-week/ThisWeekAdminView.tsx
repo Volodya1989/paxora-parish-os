@@ -22,6 +22,7 @@ import {
   formatShortDate,
   formatTime,
 } from "@/lib/this-week/formatters";
+import { getNow } from "@/lib/time/getNow";
 import { getLocaleFromCookies, getTranslations } from "@/lib/i18n/server";
 
 type ThisWeekAdminViewProps = {
@@ -102,11 +103,11 @@ function EventRow({ event }: { event: EventPreview }) {
   return (
     <div className="flex items-center gap-3 rounded-xl border border-mist-100 border-l-4 border-l-emerald-400 bg-white px-4 py-3 shadow-sm transition hover:shadow-md">
       <div className="flex shrink-0 flex-col items-center rounded-lg bg-emerald-50 px-2.5 py-1.5">
-        <span className="text-[10px] font-bold uppercase text-emerald-700">{dayLabel}</span>
-        <span className="text-[10px] font-semibold text-emerald-600">{timeLabel}</span>
+        <span className="text-xs font-bold uppercase text-emerald-700">{dayLabel}</span>
+        <span className="text-xs font-semibold text-emerald-600">{timeLabel}</span>
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-ink-900">{event.title}</p>
+        <p className="truncate text-base font-semibold text-ink-900">{event.title}</p>
         {event.location && (
           <p className="mt-1 flex items-center gap-1 text-xs text-ink-500">
             <MapPinIcon className="h-3 w-3 shrink-0" />
@@ -232,13 +233,20 @@ export default async function ThisWeekAdminView({
   const tasksInProgress = data.tasks.filter((t) => t.status === "IN_PROGRESS").length;
   const tasksOpen = data.tasks.filter((t) => t.status === "OPEN").length;
 
+  // Filter events to today and future only
+  const now = getNow();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const upcomingEvents = data.events.filter(
+    (event) => event.startsAt >= startOfToday
+  );
+
   const announcementsSummary =
     publishedAnnouncements.length > 0
       ? `Latest: ${publishedAnnouncements[0]?.title ?? "Parish update"}`
       : t("empty.noAnnouncements");
   const servicesSummary =
-    data.events.length > 0
-      ? `Next: ${formatDayDate(data.events[0].startsAt)}`
+    upcomingEvents.length > 0
+      ? `Next: ${formatDayDate(upcomingEvents[0].startsAt)}`
       : t("empty.nothingScheduled");
   const communitySummary =
     data.memberGroups.length > 0
@@ -284,7 +292,7 @@ export default async function ThisWeekAdminView({
             label: "Services",
             href: routes.calendar,
             summary: servicesSummary,
-            count: data.events.length,
+            count: upcomingEvents.length,
             icon: <CalendarIcon className="h-4 w-4" />,
             accentClass: "border-emerald-200 bg-emerald-50/70 text-emerald-700"
           },
@@ -360,13 +368,13 @@ export default async function ThisWeekAdminView({
       <section className="space-y-2">
         <SectionHeader
           title="Events"
-          count={data.events.length}
-          countLabel="scheduled"
+          count={upcomingEvents.length}
+          countLabel="upcoming"
           href={routes.calendar}
         />
-        {data.events.length > 0 ? (
+        {upcomingEvents.length > 0 ? (
           <div className="space-y-2">
-            {data.events.slice(0, 3).map((event) => (
+            {upcomingEvents.slice(0, 3).map((event) => (
               <EventRow key={event.id} event={event} />
             ))}
           </div>
@@ -385,9 +393,9 @@ export default async function ThisWeekAdminView({
             <span className="text-sm text-emerald-400">&rarr;</span>
           </Link>
         )}
-        {data.events.length > 3 && (
+        {upcomingEvents.length > 3 && (
           <Link href={routes.calendar} className="block pt-1 text-center text-xs font-medium text-primary-600 hover:text-primary-700">
-            +{data.events.length - 3} more
+            +{upcomingEvents.length - 3} more
           </Link>
         )}
       </section>

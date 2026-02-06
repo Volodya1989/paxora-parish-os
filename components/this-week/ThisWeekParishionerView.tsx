@@ -17,6 +17,7 @@ import {
   formatDayDate,
   formatShortDate
 } from "@/lib/this-week/formatters";
+import { getNow } from "@/lib/time/getNow";
 import { getLocaleFromCookies, getTranslations } from "@/lib/i18n/server";
 
 type ThisWeekParishionerViewProps = {
@@ -58,14 +59,21 @@ export default async function ThisWeekParishionerView({
     return a.title.localeCompare(b.title);
   });
 
+  // Filter events to today and future only
+  const now = getNow();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const upcomingEvents = data.events.filter(
+    (event) => event.startsAt >= startOfToday
+  );
+
   // Generate summaries for quick blocks
   const announcementsSummary =
     publishedAnnouncements.length > 0
       ? `Latest: ${publishedAnnouncements[0]?.title ?? "Parish update"}`
       : t("empty.noAnnouncements");
   const servicesSummary =
-    data.events.length > 0
-      ? `Next: ${formatDayDate(data.events[0].startsAt)}`
+    upcomingEvents.length > 0
+      ? `Next: ${formatDayDate(upcomingEvents[0].startsAt)}`
       : t("empty.nothingScheduled");
   const communitySummary =
     data.memberGroups.length > 0
@@ -112,7 +120,7 @@ export default async function ThisWeekParishionerView({
             label: "Services",
             href: routes.calendar,
             summary: servicesSummary,
-            count: data.events.length,
+            count: upcomingEvents.length,
             icon: <CalendarIcon className="h-4 w-4" />,
             accentClass: "border-emerald-200 bg-emerald-50/70 text-emerald-700"
           },
