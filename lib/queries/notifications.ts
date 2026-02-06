@@ -1,7 +1,9 @@
 import { prisma } from "@/server/db/prisma";
 import { Prisma } from "@prisma/client";
+import { getParishMembership } from "@/server/db/groups";
+import { isParishLeader } from "@/lib/permissions";
 
-export type NotificationCategory = "message" | "task" | "announcement" | "event";
+export type NotificationCategory = "message" | "task" | "announcement" | "event" | "request";
 
 export type NotificationItem = {
   id: string;
@@ -24,19 +26,21 @@ export type NotificationsResult = {
  *  - New tasks assigned (since lastSeenTasksAt)
  *  - New announcements (since lastSeenAnnouncementsAt)
  *  - New events (since lastSeenEventsAt)
+ *  - Pending approval requests (tasks, groups, events) — leaders only
  */
 export async function getNotificationItems(
   userId: string,
   parishId: string
 ): Promise<NotificationsResult> {
-  const [messages, tasks, announcements, events] = await Promise.all([
+  const [messages, tasks, announcements, events, requests] = await Promise.all([
     getUnreadMessageItems(userId, parishId),
     getNewTaskItems(userId, parishId),
     getNewAnnouncementItems(userId, parishId),
-    getNewEventItems(userId, parishId)
+    getNewEventItems(userId, parishId),
+    getPendingRequestItems(userId, parishId)
   ]);
 
-  const items = [...messages, ...tasks, ...announcements, ...events].sort(
+  const items = [...messages, ...tasks, ...announcements, ...events, ...requests].sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
 
@@ -228,4 +232,121 @@ async function getNewEventItems(
     href: "/calendar",
     timestamp: evt.startsAt.toISOString()
   }));
+}
+
+async function getPendingRequestItems(
+  userId: string,
+  parishId: string
+): Promise<NotificationItem[]> {
+  const membership = await getParishMembership(parishId, userId);
+  if (!membership || !isParishLeader(membership.role)) {
+    return [];
+  }
+
+  const [pendingTasks, pendingGroups, pendingEvents, pendingAccess] = await Promise.all([
+    prisma.task.findMany({
+      where: {
+        parishId,
+        approvalStatus: "PENDING",
+        archivedAt: null
+      },
+      select: {
+        id: true,
+        title: true,
+        createdAt: true,
+        createdBy: { select: { name: true } }
+      },
+      orderBy: { createdAt: "desc" },
+      take: 10
+    }),
+    prisma.group.findMany({
+      where: {
+        parishId,
+        status: "PENDING_APPROVAL"
+      },
+      select: {
+        id: true,
+        name: true,
+        createdAt: true,
+        createdBy: { select: { name: true, email: true } }
+      },
+      orderBy: { createdAt: "desc" },
+      take: 10
+    }),
+    prisma.eventRequest.findMany({
+      where: {
+        parishId,
+        status: "PENDING"
+      },
+      select: {
+        id: true,
+        title: true,
+        createdAt: true,
+        requester: { select: { name: true } }
+      },
+      orderBy: { createdAt: "desc" },
+      take: 10
+    }),
+    prisma.accessRequest.findMany({
+      where: {
+        parishId,
+        status: "PENDING"
+      },
+      select: {
+        id: true,
+        createdAt: true,
+        user: { select: { name: true, email: true } }
+      },
+      orderBy: { createdAt: "desc" },
+      take: 10
+    })
+  ]);
+
+  const items: NotificationItem[] = [];
+
+  for (const task of pendingTasks) {
+    items.push({
+      id: `req-task-${task.id}`,
+      type: "request",
+      title: `Task approval: ${task.title}`,
+      description: `Requested by ${task.createdBy?.name ?? "a parishioner"}`,
+      href: "/tasks",
+      timestamp: task.createdAt.toISOString()
+    });
+  }
+
+  for (const group of pendingGroups) {
+    items.push({
+      id: `req-group-${group.id}`,
+      type: "request",
+      title: `Group request: ${group.name}`,
+      description: `Requested by ${group.createdBy?.name ?? group.createdBy?.email ?? "a parishioner"}`,
+      href: "/groups",
+      timestamp: group.createdAt.toISOString()
+    });
+  }
+
+  for (const evt of pendingEvents) {
+    items.push({
+      id: `req-event-${evt.id}`,
+      type: "request",
+      title: `Event request: ${evt.title}`,
+      description: `Requested by ${evt.requester?.name ?? "a parishioner"}`,
+      href: "/calendar",
+      timestamp: evt.createdAt.toISOString()
+    });
+  }
+
+  for (const req of pendingAccess) {
+    items.push({
+      id: `req-access-${req.id}`,
+      type: "request",
+      title: "Parish access request",
+      description: req.user?.name ?? req.user?.email ?? "New parishioner",
+      href: "/tasks",
+      timestamp: req.createdAt.toISOString()
+    });
+  }
+
+  return items;
 }
