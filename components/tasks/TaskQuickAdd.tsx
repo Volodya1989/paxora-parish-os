@@ -64,7 +64,7 @@ export default function TaskQuickAdd({ weekId }: TaskQuickAddProps) {
       ref={formRef}
       onSubmit={handleSubmit}
       action={formAction}
-      className="flex flex-col gap-2 sm:flex-row sm:items-center"
+      className="flex flex-row items-center gap-2"
     >
       <input type="hidden" name="weekId" value={weekId} />
       <input type="hidden" name="visibility" value="private" />

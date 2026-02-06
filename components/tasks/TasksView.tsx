@@ -248,88 +248,82 @@ export default function TasksView({
         tone="sky"
       />
 
-      {/* Controls row: toggle + stats + actions */}
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          {renderViewToggle("flex-1 min-w-[220px] sm:flex-none")}
+      {/* Controls: toggle + actions — single compact row */}
+      <div className="flex flex-wrap items-center gap-2">
+        {renderViewToggle("flex-1 min-w-[200px] sm:flex-none")}
 
-          {/* Stats — subtle inline text */}
-          {hasTasks && (
-            <span className="text-xs text-ink-400">{statsLabel}</span>
-          )}
-
-          <div className="md:hidden">
-            <FiltersDrawer title="Filters" className="shrink-0">
-              <div className="space-y-4">
-                {renderViewToggle()}
-                <TaskFilters
-                  filters={filters}
-                  groupOptions={groupOptions}
-                  showOwnership={viewMode !== "opportunities"}
-                  layout="stacked"
-                  searchPlaceholder={viewMode === "opportunities" ? "Search opportunities" : undefined}
-                />
-              </div>
-            </FiltersDrawer>
-          </div>
-        </div>
-
-        {/* Action buttons: + icon on mobile, full text on desktop */}
-        <div className="flex flex-wrap items-center gap-2">
-          {canManageTasks && viewMode !== "opportunities" && (
-            <>
-              <button
-                type="button"
-                onClick={() => setIsCreateOpen(true)}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 sm:hidden"
-                aria-label={ctaLabel}
-              >
-                <PlusIcon />
-              </button>
-              <Button onClick={() => setIsCreateOpen(true)} className="hidden h-9 px-3 text-sm sm:inline-flex">
-                {ctaLabel}
-              </Button>
-            </>
-          )}
-          {!canManageTasks && viewMode === "mine" && (
-            <>
-              <button
-                type="button"
-                onClick={() => openCreateDialogWithVisibility("private")}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 sm:hidden"
-                aria-label="Add a private task"
-              >
-                <PlusIcon />
-              </button>
-              <Button
-                type="button"
-                onClick={() => openCreateDialogWithVisibility("private")}
-                className="hidden h-9 px-3 text-sm sm:inline-flex"
-              >
-                Add a private task
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => openCreateDialogWithVisibility("public")}
-                className="hidden h-9 px-3 text-sm sm:inline-flex"
-              >
-                Request a public task
-              </Button>
-            </>
-          )}
-          {canManageTasks && (
-            <Link
-              href={routes.gratitudeBoard}
-              className="rounded-full border border-mist-200 bg-white px-3 py-1.5 text-xs font-medium text-ink-600 transition hover:bg-mist-50"
+        {/* + create (circle on mobile, button on desktop) */}
+        {canManageTasks && viewMode !== "opportunities" && (
+          <>
+            <button
+              type="button"
+              onClick={() => setIsCreateOpen(true)}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 sm:hidden"
+              aria-label={ctaLabel}
             >
-              Hours &amp; Gratitude Board
-            </Link>
-          )}
+              <PlusIcon />
+            </button>
+            <Button onClick={() => setIsCreateOpen(true)} className="hidden h-9 px-3 text-sm sm:inline-flex">
+              {ctaLabel}
+            </Button>
+          </>
+        )}
+        {!canManageTasks && viewMode === "mine" && (
+          <>
+            <button
+              type="button"
+              onClick={() => openCreateDialogWithVisibility("private")}
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 sm:hidden"
+              aria-label="Add a private task"
+            >
+              <PlusIcon />
+            </button>
+            <Button
+              type="button"
+              onClick={() => openCreateDialogWithVisibility("private")}
+              className="hidden h-9 px-3 text-sm sm:inline-flex"
+            >
+              Add a private task
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => openCreateDialogWithVisibility("public")}
+              className="hidden h-9 px-3 text-sm sm:inline-flex"
+            >
+              Request a public task
+            </Button>
+          </>
+        )}
+
+        {/* Filters drawer (mobile only) */}
+        <div className="md:hidden">
+          <FiltersDrawer title="Filters" className="shrink-0">
+            <div className="space-y-4">
+              {renderViewToggle()}
+              <TaskFilters
+                filters={filters}
+                groupOptions={groupOptions}
+                showOwnership={viewMode !== "opportunities"}
+                layout="stacked"
+                searchPlaceholder={viewMode === "opportunities" ? "Search opportunities" : undefined}
+              />
+            </div>
+          </FiltersDrawer>
         </div>
+
+        {/* Hours & Gratitude Board — desktop only */}
+        {canManageTasks && (
+          <Link
+            href={routes.gratitudeBoard}
+            className="hidden rounded-full border border-mist-200 bg-white px-3 py-1.5 text-xs font-medium text-ink-600 transition hover:bg-mist-50 sm:inline-flex"
+          >
+            Hours &amp; Gratitude Board
+          </Link>
+        )}
       </div>
 
-      {/* Inline filters (desktop) */}
+      {/* Inline filters (desktop only) */}
       <div className="hidden md:block">
         <TaskFilters
           filters={filters}
@@ -446,14 +440,6 @@ export default function TasksView({
       {/* Quick add (admin only, outside of opportunities view) */}
       {canManageTasks && viewMode !== "opportunities" && (
         <TaskQuickAdd weekId={weekId} />
-      )}
-
-      {/* Task list summary */}
-      {hasTasks && (
-        <div className="flex items-baseline justify-between">
-          <p className="text-xs text-ink-400">{filteredCount} items shown</p>
-          <p className="text-xs text-ink-400">Total this week: {summary.total}</p>
-        </div>
       )}
 
       {/* Tasks */}
