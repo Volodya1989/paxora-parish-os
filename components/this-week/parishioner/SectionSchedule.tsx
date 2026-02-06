@@ -4,6 +4,7 @@ import AccentSectionCard from "@/components/layout/AccentSectionCard";
 import { routes } from "@/lib/navigation/routes";
 import type { EventPreview } from "@/lib/queries/this-week";
 import { formatDayDate, formatTime } from "@/lib/this-week/formatters";
+import { getNow } from "@/lib/time/getNow";
 import { getLocaleFromCookies, getTranslations } from "@/lib/i18n/server";
 
 type SectionScheduleProps = {
@@ -13,7 +14,8 @@ type SectionScheduleProps = {
 /**
  * Section displaying the next upcoming parish services and events.
  *
- * Shows the top 3 upcoming events with date, time, and location information.
+ * Shows the top 3 upcoming events (today and future) with date, time, and location.
+ * Past events are filtered out automatically.
  * Uses an emerald/success accent color for events and calendar-related content.
  * Includes a "View calendar" link to the full calendar page.
  *
@@ -24,15 +26,23 @@ type SectionScheduleProps = {
  * **Note:** This is an async component that uses server-side locale cookies.
  *
  * @param props - Component props
- * @param props.events - Array of upcoming event previews to display
+ * @param props.events - Array of event previews to display (past events are filtered out)
  * @returns Rendered services section with scroll anchor
  *
  * @example
- * <SectionSchedule events={upcomingEvents} />
+ * <SectionSchedule events={weekEvents} />
  */
 export default async function SectionSchedule({ events }: SectionScheduleProps) {
   const locale = await getLocaleFromCookies();
   const t = getTranslations(locale);
+
+  // Filter to only show today and future events
+  const now = getNow();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const upcomingEvents = events.filter(
+    (event) => event.startsAt >= startOfToday
+  );
+
   return (
     <section id="services" className="scroll-mt-24">
       <AccentSectionCard
@@ -50,7 +60,7 @@ export default async function SectionSchedule({ events }: SectionScheduleProps) 
         }
       >
         <div className="space-y-3">
-          {events.length === 0 ? (
+          {upcomingEvents.length === 0 ? (
             <div className="rounded-card border border-emerald-100 bg-emerald-50/40 px-4 py-3 text-sm text-ink-500">
               {t("empty.nothingScheduled")}.{" "}
               <Link className="font-medium text-ink-700 underline" href={routes.calendar}>
@@ -59,15 +69,15 @@ export default async function SectionSchedule({ events }: SectionScheduleProps) 
               .
             </div>
           ) : (
-            events.slice(0, 3).map((event) => (
+            upcomingEvents.slice(0, 3).map((event) => (
               <div
                 key={event.id}
                 className="rounded-card border border-mist-100 bg-white px-4 py-3"
               >
-                <p className="text-xs font-semibold uppercase text-ink-400">
+                <p className="text-sm font-semibold text-ink-600">
                   {formatDayDate(event.startsAt)} · {formatTime(event.startsAt)}
                 </p>
-                <p className="mt-2 text-sm font-semibold text-ink-900">{event.title}</p>
+                <p className="mt-1.5 text-base font-semibold text-ink-900">{event.title}</p>
                 <p className="mt-1 flex items-center gap-1 text-xs text-ink-500">
                   <MapPinIcon className="h-3 w-3 text-ink-400" />
                   {event.location ?? "Location to be announced"}

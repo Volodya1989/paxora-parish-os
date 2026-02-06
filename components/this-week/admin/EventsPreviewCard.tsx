@@ -46,17 +46,25 @@ function MoreIcon({ className }: { className?: string }) {
 
 type EventsPreviewCardProps = {
   events: EventPreview[];
+  now?: Date;
 };
 
-export default function EventsPreviewCard({ events }: EventsPreviewCardProps) {
-  if (events.length === 0) {
+export default function EventsPreviewCard({ events, now }: EventsPreviewCardProps) {
+  // Filter to only show today and future events
+  const currentDate = now ?? new Date();
+  const startOfToday = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+  const upcomingEvents = events.filter(
+    (event) => event.startsAt >= startOfToday
+  );
+
+  if (upcomingEvents.length === 0) {
     return (
       <Card className="border-mist-200 bg-white">
         <CardHeader className="space-y-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CardTitle className="text-lg">Events</CardTitle>
-              <span className="text-xs text-ink-400">0 scheduled</span>
+              <span className="text-xs text-ink-400">0 upcoming</span>
             </div>
             <Link href={routes.calendar} className="text-xs font-semibold text-primary-700 underline">
               View all
@@ -71,7 +79,7 @@ export default function EventsPreviewCard({ events }: EventsPreviewCardProps) {
               </div>
               <div className="space-y-1">
                 <h3 className="text-sm font-semibold text-ink-900">
-                  No events scheduled this week
+                  No upcoming events this week
                 </h3>
                 <p className="text-xs text-ink-500">
                   Plan services, rehearsals, and gatherings so everyone stays in sync.
@@ -96,7 +104,7 @@ export default function EventsPreviewCard({ events }: EventsPreviewCardProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CardTitle className="text-lg">Events</CardTitle>
-            <span className="text-xs text-ink-400">{events.length} scheduled</span>
+            <span className="text-xs text-ink-400">{upcomingEvents.length} upcoming</span>
           </div>
           <Link href={routes.calendar} className="text-xs font-semibold text-primary-700 underline">
             View all
@@ -104,11 +112,11 @@ export default function EventsPreviewCard({ events }: EventsPreviewCardProps) {
         </div>
       </CardHeader>
       <CardContent className="space-y-2">
-        {events.slice(0, 3).map((event) => (
+        {upcomingEvents.slice(0, 3).map((event) => (
           <EventRow key={event.id} event={event} />
         ))}
-        {events.length > 3 ? (
-          <p className="pt-1 text-center text-xs text-ink-500">+{events.length - 3} more events</p>
+        {upcomingEvents.length > 3 ? (
+          <p className="pt-1 text-center text-xs text-ink-500">+{upcomingEvents.length - 3} more events</p>
         ) : null}
       </CardContent>
     </Card>
@@ -123,12 +131,12 @@ function EventRow({ event }: { event: EventPreview }) {
     <div className="group flex items-center justify-between gap-2 rounded-card border border-mist-100 bg-mist-50/60 p-2.5">
       <div className="flex min-w-0 flex-1 items-start gap-3">
         <div className="flex shrink-0 flex-col items-center rounded-md bg-primary-50 px-2.5 py-1.5">
-          <span className="text-[10px] font-semibold uppercase text-primary-700">{dayLabel}</span>
-          <span className="text-[10px] font-medium text-primary-600">{timeLabel}</span>
+          <span className="text-xs font-semibold uppercase text-primary-700">{dayLabel}</span>
+          <span className="text-xs font-medium text-primary-600">{timeLabel}</span>
         </div>
         <div className="min-w-0 flex-1">
-          <h4 className="truncate text-sm font-medium text-ink-900">{event.title}</h4>
-          <div className="mt-1 flex items-center gap-1 text-[10px] text-ink-500">
+          <h4 className="truncate text-base font-semibold text-ink-900">{event.title}</h4>
+          <div className="mt-1 flex items-center gap-1 text-xs text-ink-500">
             <MapPinIcon className="h-3 w-3 shrink-0" />
             <span className="truncate">{event.location ?? "Location TBA"}</span>
           </div>
