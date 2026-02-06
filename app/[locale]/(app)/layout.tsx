@@ -60,6 +60,7 @@ export default async function AppLayout({
 
   const pathname = stripLocale(await getRequestPathname());
   const isProfileRoute = pathname.startsWith("/profile");
+  const isLandingRoute = pathname === "/" || pathname === "/this-week" || pathname === "";
 
   if (access.status !== "approved" && !isProfileRoute) {
     redirect(`/${locale}/access`);
@@ -74,14 +75,15 @@ export default async function AppLayout({
     ? await getParishMembership(resolvedParishId, session.user.id)
     : null;
 
-  // Header strategy: AppHeader (with week selector + create controls) is only shown to leaders.
-  // Parishioners see page-specific headers (PageHeader) per page.
-  // See /components/header/HEADER_STRATEGY.md for details.
+  // Header strategy: AppHeader (with week selector + create controls) is only shown to leaders,
+  // but NOT on the landing page (This Week) where the ParishionerHeader hero provides
+  // its own warm header + quick-add. This keeps the landing feeling like home, not a dashboard.
   const isLeader = membership ? isParishLeader(membership.role) : false;
+  const showAppHeader = isLeader && !isLandingRoute;
 
   return (
     <AppShell parishRole={membership?.role ?? null}>
-      {isLeader && <AppHeader parishRole={membership?.role ?? null} />}
+      {showAppHeader && <AppHeader parishRole={membership?.role ?? null} />}
       <main className="flex-1 bg-mist-50 px-4 py-6 pb-[calc(6rem+env(safe-area-inset-bottom))] md:px-8 md:pb-8">
         {children}
       </main>

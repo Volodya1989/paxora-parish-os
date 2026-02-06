@@ -17,7 +17,12 @@ export function handleLocaleRouting(request: NextRequest) {
   }
 
   if (prefix) {
-    const response = NextResponse.next();
+    // Forward request headers (including x-pathname set by middleware)
+    // so server components can read them via headers().
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-pathname", pathname);
+
+    const response = NextResponse.next({ request: { headers: requestHeaders } });
     if (request.cookies.get(localeCookie)?.value !== prefix) {
       response.cookies.set(localeCookie, prefix);
     }
