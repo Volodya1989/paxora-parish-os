@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import {
   CalendarIcon,
   HandHeartIcon,
@@ -9,17 +10,17 @@ import AdminAlertBanner, {
   AlertCircleIcon,
   UserPlusIcon
 } from "@/components/this-week/admin/AdminAlertBanner";
-import AnnouncementsPanel from "@/components/this-week/admin/AnnouncementsPanel";
-import EventsPreviewCard from "@/components/this-week/admin/EventsPreviewCard";
-import ServePreviewCard from "@/components/this-week/admin/ServePreviewCard";
 import GratitudeSpotlightAdminSection from "@/components/this-week/admin/GratitudeSpotlightAdminSection";
 import ParishionerHeader from "@/components/this-week/parishioner/ParishionerHeader";
 import QuickBlocksRow from "@/components/this-week/parishioner/QuickBlocksRow";
 import GroupsSection from "@/components/this-week/parishioner/GroupsSection";
-import type { ThisWeekData } from "@/lib/queries/this-week";
+import Badge from "@/components/ui/Badge";
+import type { ThisWeekData, TaskPreview, EventPreview, AnnouncementPreview } from "@/lib/queries/this-week";
 import { routes } from "@/lib/navigation/routes";
 import {
   formatDayDate,
+  formatShortDate,
+  formatTime,
 } from "@/lib/this-week/formatters";
 import { getLocaleFromCookies, getTranslations } from "@/lib/i18n/server";
 
@@ -43,6 +44,119 @@ type ThisWeekAdminViewProps = {
   userName?: string;
 };
 
+/* ---------- lightweight inline icons ---------- */
+
+function ClockIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <circle cx="12" cy="12" r="8" />
+      <path d="M12 8v5l3 2" />
+    </svg>
+  );
+}
+
+function MapPinIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+      <path d="M12 2C8.1 2 5 5.1 5 9c0 5.3 7 13 7 13s7-7.7 7-13c0-3.9-3.1-7-7-7z" />
+      <circle cx="12" cy="9" r="2.5" />
+    </svg>
+  );
+}
+
+/* ---------- lightweight section row components ---------- */
+
+function ServeRow({ item, t }: { item: TaskPreview; t: (key: string) => string }) {
+  const statusTone = item.status === "DONE" ? "success" as const : item.status === "IN_PROGRESS" ? "warning" as const : "neutral" as const;
+  const statusLabel = item.status === "DONE" ? "Completed" : item.status === "IN_PROGRESS" ? t("common.inProgress") : t("common.todo");
+  const dueLabel = item.dueBy ? formatShortDate(item.dueBy) : null;
+
+  return (
+    <Link
+      href={`${routes.serve}?taskId=${item.id}`}
+      className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 transition hover:bg-mist-50"
+    >
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-ink-900">{item.title}</p>
+        <div className="mt-1 flex items-center gap-2 text-xs text-ink-500">
+          <Badge tone={statusTone} className="text-[10px]">{statusLabel}</Badge>
+          {dueLabel && (
+            <span className="flex items-center gap-0.5">
+              <ClockIcon className="h-3 w-3" />
+              {dueLabel}
+            </span>
+          )}
+        </div>
+      </div>
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-mist-100 text-[10px] font-semibold text-ink-600">
+        {item.owner.initials}
+      </span>
+    </Link>
+  );
+}
+
+function EventRow({ event }: { event: EventPreview }) {
+  const dayLabel = event.startsAt.toLocaleDateString("en-US", { weekday: "short" });
+  const timeLabel = formatTime(event.startsAt);
+
+  return (
+    <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition hover:bg-mist-50">
+      <div className="flex shrink-0 flex-col items-center rounded-lg bg-primary-50 px-2 py-1">
+        <span className="text-[10px] font-semibold uppercase text-primary-700">{dayLabel}</span>
+        <span className="text-[10px] font-medium text-primary-600">{timeLabel}</span>
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-ink-900">{event.title}</p>
+        {event.location && (
+          <p className="mt-0.5 flex items-center gap-1 text-[11px] text-ink-500">
+            <MapPinIcon className="h-3 w-3 shrink-0" />
+            <span className="truncate">{event.location}</span>
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AnnouncementRow({ item }: { item: AnnouncementPreview }) {
+  const isPublished = Boolean(item.publishedAt);
+  return (
+    <Link
+      href={`${routes.announcements}`}
+      className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 transition hover:bg-mist-50"
+    >
+      <p className="min-w-0 truncate text-sm font-medium text-ink-900">{item.title}</p>
+      <Badge tone={isPublished ? "success" : "warning"} className="shrink-0 text-[10px]">
+        {isPublished ? "Live" : "Draft"}
+      </Badge>
+    </Link>
+  );
+}
+
+/* ---------- section header ---------- */
+
+function SectionHeader({ title, count, countLabel, href, linkLabel = "View all" }: {
+  title: string;
+  count: number;
+  countLabel: string;
+  href: string;
+  linkLabel?: string;
+}) {
+  return (
+    <div className="flex items-baseline justify-between">
+      <div className="flex items-baseline gap-2">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-ink-700">{title}</h2>
+        <span className="text-xs text-ink-400">{count} {countLabel}</span>
+      </div>
+      <Link href={href} className="text-xs font-semibold text-primary-600 hover:text-primary-700">
+        {linkLabel}
+      </Link>
+    </div>
+  );
+}
+
+/* ---------- main component ---------- */
+
 export default async function ThisWeekAdminView({
   data,
   viewToggle,
@@ -58,9 +172,7 @@ export default async function ThisWeekAdminView({
     data.pendingTaskApprovals > 0
       ? {
           id: "task-approvals",
-          title: `${data.pendingTaskApprovals} approval${
-            data.pendingTaskApprovals === 1 ? "" : "s"
-          } needed`,
+          title: `${data.pendingTaskApprovals} approval${data.pendingTaskApprovals === 1 ? "" : "s"} needed`,
           description: "Review member-submitted serve items awaiting approval.",
           actionHref: `${routes.serve}?view=opportunities`,
           actionLabel: "Review now",
@@ -71,9 +183,7 @@ export default async function ThisWeekAdminView({
     data.pendingAccessRequests > 0
       ? {
           id: "access-requests",
-          title: `${data.pendingAccessRequests} access request${
-            data.pendingAccessRequests === 1 ? "" : "s"
-          } pending`,
+          title: `${data.pendingAccessRequests} access request${data.pendingAccessRequests === 1 ? "" : "s"} pending`,
           description: "Review parish access requests waiting for approval.",
           actionHref: routes.serve,
           actionLabel: "Review now",
@@ -84,9 +194,7 @@ export default async function ThisWeekAdminView({
     data.pendingEventRequests > 0
       ? {
           id: "event-requests",
-          title: `${data.pendingEventRequests} event request${
-            data.pendingEventRequests === 1 ? "" : "s"
-          } pending`,
+          title: `${data.pendingEventRequests} event request${data.pendingEventRequests === 1 ? "" : "s"} pending`,
           description: "Review calendar event requests awaiting approval.",
           actionHref: routes.calendar,
           actionLabel: "Review now",
@@ -96,7 +204,7 @@ export default async function ThisWeekAdminView({
       : null
   ].filter((alert): alert is NonNullable<typeof alert> => Boolean(alert));
 
-  // Compute same quick-block data as parishioner view
+  // Compute quick-block data (same formula as parishioner view)
   const publishedAnnouncements = [...data.announcements]
     .filter((a) => a.publishedAt)
     .sort((a, b) => {
@@ -130,24 +238,27 @@ export default async function ThisWeekAdminView({
   const tasksOpen = sortedTasks.filter((t) => t.status === "OPEN").length;
   const opportunitiesSummary =
     sortedTasks.length > 0
-      ? `Done ${tasksDone} · Active ${tasksInProgress} · Open ${tasksOpen}`
+      ? `\u{1F7E2} ${tasksDone}  \u00B7  \u{1F7E1} ${tasksInProgress}  \u00B7  \u{1F535} ${tasksOpen}`
       : "Ways to help";
 
   const hasGratitudeItems =
     data.gratitudeSpotlight.enabled && data.gratitudeSpotlight.items.length > 0;
 
+  const activeTaskCount = sortedTasks.filter((t) => t.status !== "DONE").length;
+
   return (
     <div className="space-y-6 overflow-x-hidden">
-      {/* Same warm header as parishioner — with view toggle in actions */}
+      {/* Warm hero header — shared with parishioner, with quick-add "+" for leaders */}
       <ParishionerHeader
         parishName={parishName}
         userName={userName}
         actions={viewToggle}
-        quote="Teach us to number our days, that we may gain a heart of wisdom."
-        quoteSource="Psalm 90:12"
+        showQuickAdd
+        quote="Be watchful, stand firm in the faith, act like men, be strong."
+        quoteSource="1 Corinthians 16:13"
       />
 
-      {/* Same quick blocks as parishioner — same visual language */}
+      {/* Quick blocks — identical to parishioner view */}
       <QuickBlocksRow
         blocks={[
           {
@@ -189,22 +300,88 @@ export default async function ThisWeekAdminView({
         ]}
       />
 
-      {/* Admin alerts — only when there are pending actions */}
-      {alerts.length > 0 && <AdminAlertBanner alerts={alerts} />}
-
-      {/* Admin content sections: serve + events side by side */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <ServePreviewCard items={data.tasks} />
-        <EventsPreviewCard events={data.events} />
-      </div>
-
-      <AnnouncementsPanel announcements={data.announcements} />
-
-      {/* Groups section — same as parishioner view */}
+      {/* Groups section — FIRST, just like parishioner view */}
       <GroupsSection
         groups={data.memberGroups}
         hasPublicGroups={data.hasPublicGroups}
       />
+
+      {/* Admin alerts — compact, only when there are pending actions */}
+      {alerts.length > 0 && <AdminAlertBanner alerts={alerts} />}
+
+      {/* ──── Admin sections: borderless, compact ──── */}
+
+      {/* Serve */}
+      <section className="space-y-1">
+        <SectionHeader
+          title="Serve"
+          count={activeTaskCount}
+          countLabel="active"
+          href={routes.serve}
+        />
+        {sortedTasks.length > 0 ? (
+          <div className="divide-y divide-mist-100">
+            {sortedTasks.slice(0, 3).map((item) => (
+              <ServeRow key={item.id} item={item} t={t} />
+            ))}
+          </div>
+        ) : (
+          <p className="px-3 py-3 text-sm text-ink-400">
+            No serve items this week.{" "}
+            <Link href={`${routes.serve}?create=task`} className="font-medium text-primary-600 hover:text-primary-700">Create one</Link>
+          </p>
+        )}
+        {sortedTasks.length > 3 && (
+          <p className="px-3 text-xs text-ink-400">+{sortedTasks.length - 3} more</p>
+        )}
+      </section>
+
+      {/* Events */}
+      <section className="space-y-1">
+        <SectionHeader
+          title="Events"
+          count={data.events.length}
+          countLabel="scheduled"
+          href={routes.calendar}
+        />
+        {data.events.length > 0 ? (
+          <div className="divide-y divide-mist-100">
+            {data.events.slice(0, 3).map((event) => (
+              <EventRow key={event.id} event={event} />
+            ))}
+          </div>
+        ) : (
+          <p className="px-3 py-3 text-sm text-ink-400">
+            Nothing scheduled.{" "}
+            <Link href={`${routes.calendar}?create=event`} className="font-medium text-primary-600 hover:text-primary-700">Add event</Link>
+          </p>
+        )}
+        {data.events.length > 3 && (
+          <p className="px-3 text-xs text-ink-400">+{data.events.length - 3} more</p>
+        )}
+      </section>
+
+      {/* Announcements */}
+      <section className="space-y-1">
+        <SectionHeader
+          title="Announcements"
+          count={data.announcements.length}
+          countLabel={data.announcements.length === 1 ? "announcement" : "announcements"}
+          href={routes.announcements}
+        />
+        {data.announcements.length > 0 ? (
+          <div className="divide-y divide-mist-100">
+            {data.announcements.slice(0, 3).map((item) => (
+              <AnnouncementRow key={item.id} item={item} />
+            ))}
+          </div>
+        ) : (
+          <p className="px-3 py-3 text-sm text-ink-400">
+            No announcements yet.{" "}
+            <Link href={`${routes.announcements}/new`} className="font-medium text-primary-600 hover:text-primary-700">Create one</Link>
+          </p>
+        )}
+      </section>
 
       {/* Gratitude spotlight (admin can manage nominations) */}
       {(hasGratitudeItems || spotlightAdmin) && (
