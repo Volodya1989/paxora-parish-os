@@ -370,7 +370,7 @@ export default function TaskRow({
               disabled={isBusy}
               className={
                 isInProgress
-                  ? "bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 disabled:bg-emerald-300"
+                  ? "bg-sky-600 hover:bg-sky-500 active:bg-sky-700 disabled:bg-sky-300"
                   : undefined
               }
             >

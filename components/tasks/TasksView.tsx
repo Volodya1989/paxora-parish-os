@@ -253,7 +253,7 @@ export default function TasksView({
         {renderViewToggle("flex-1 min-w-[200px] sm:flex-none")}
 
         {/* + create (circle on mobile, button on desktop) */}
-        {showCreateButton && viewMode !== "opportunities" && (
+        {(canManageTasks || (showCreateButton && viewMode !== "opportunities")) && (
           <>
             <button
               type="button"
