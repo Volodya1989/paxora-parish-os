@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import { getServerSession } from "next-auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import AppHeaderGate from "@/components/header/AppHeaderGate";
 import AppShell from "@/components/navigation/AppShell";
 import ParishSetup from "@/components/setup/ParishSetup";
 import { authOptions } from "@/server/auth/options";
@@ -10,7 +9,6 @@ import { createParish } from "@/server/actions/parish";
 import { getAccessGateState } from "@/lib/queries/access";
 import { getParishMembership } from "@/server/db/groups";
 import { getLocaleFromParam, stripLocale } from "@/lib/i18n/routing";
-import { isParishLeader } from "@/lib/permissions";
 
 export default async function AppLayout({
   children,
@@ -51,14 +49,10 @@ export default async function AppLayout({
     ? await getParishMembership(resolvedParishId, session.user.id)
     : null;
 
-  const isLeader = membership ? isParishLeader(membership.role) : false;
-
-  // AppHeaderGate uses client-side usePathname() to hide/show on navigation.
-  // Server-side header detection doesn't work because layouts are persistent
-  // across client-side navigations in App Router.
+  // No AppHeader — every page now provides its own PageHeader gradient.
+  // Same product, same style for all roles.
   return (
     <AppShell parishRole={membership?.role ?? null}>
-      {isLeader && <AppHeaderGate parishRole={membership?.role ?? null} />}
       <main className="flex-1 bg-mist-50 px-4 py-6 pb-[calc(6rem+env(safe-area-inset-bottom))] md:px-8 md:pb-8">
         {children}
       </main>

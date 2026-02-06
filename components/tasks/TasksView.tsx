@@ -20,6 +20,15 @@ import { cn } from "@/lib/ui/cn";
 import Link from "next/link";
 import { routes } from "@/lib/navigation/routes";
 
+function PlusIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </svg>
+  );
+}
+
 type TasksViewProps = {
   title?: string;
   description?: string;
@@ -244,16 +253,9 @@ export default function TasksView({
         <div className="flex flex-wrap items-center gap-2">
           {renderViewToggle("flex-1 min-w-[220px] sm:flex-none")}
 
-          {/* Stats chips (visible for leaders) */}
-          {canManageTasks && hasTasks && (
-            <div className="flex items-center gap-1.5">
-              <span className="rounded-full bg-mist-100 px-2.5 py-0.5 text-xs font-medium text-ink-600">
-                Week {weekLabel}
-              </span>
-              <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-medium text-rose-700">
-                {statsLabel}
-              </span>
-            </div>
+          {/* Stats — subtle inline text */}
+          {hasTasks && (
+            <span className="text-xs text-ink-400">{statsLabel}</span>
           )}
 
           <div className="md:hidden">
@@ -272,19 +274,37 @@ export default function TasksView({
           </div>
         </div>
 
-        {/* Action buttons */}
+        {/* Action buttons: + icon on mobile, full text on desktop */}
         <div className="flex flex-wrap items-center gap-2">
           {canManageTasks && viewMode !== "opportunities" && (
-            <Button onClick={() => setIsCreateOpen(true)} className="h-9 px-3 text-sm">
-              {ctaLabel}
-            </Button>
+            <>
+              <button
+                type="button"
+                onClick={() => setIsCreateOpen(true)}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 sm:hidden"
+                aria-label={ctaLabel}
+              >
+                <PlusIcon />
+              </button>
+              <Button onClick={() => setIsCreateOpen(true)} className="hidden h-9 px-3 text-sm sm:inline-flex">
+                {ctaLabel}
+              </Button>
+            </>
           )}
           {!canManageTasks && viewMode === "mine" && (
             <>
+              <button
+                type="button"
+                onClick={() => openCreateDialogWithVisibility("private")}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 sm:hidden"
+                aria-label="Add a private task"
+              >
+                <PlusIcon />
+              </button>
               <Button
                 type="button"
                 onClick={() => openCreateDialogWithVisibility("private")}
-                className="h-9 px-3 text-sm"
+                className="hidden h-9 px-3 text-sm sm:inline-flex"
               >
                 Add a private task
               </Button>
@@ -292,7 +312,7 @@ export default function TasksView({
                 type="button"
                 variant="secondary"
                 onClick={() => openCreateDialogWithVisibility("public")}
-                className="h-9 px-3 text-sm"
+                className="hidden h-9 px-3 text-sm sm:inline-flex"
               >
                 Request a public task
               </Button>

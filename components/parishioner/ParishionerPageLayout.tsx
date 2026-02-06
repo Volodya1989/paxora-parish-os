@@ -6,8 +6,8 @@ type ParishionerPageLayoutProps = {
   pageTitle: string;
   /** Parish name to display */
   parishName: string;
-  /** Whether user is a leader (ADMIN/SHEPHERD). If true, hides PageHeader */
-  isLeader: boolean;
+  /** @deprecated No longer used — both roles see PageHeader now */
+  isLeader?: boolean;
   /** Optional subtitle for the page */
   subtitle?: string;
   /** Optional inspirational quote */

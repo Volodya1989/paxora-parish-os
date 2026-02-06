@@ -28,5 +28,9 @@ export function getTasksViewMode({
     return "opportunities";
   }
 
+  if (value === "mine") {
+    return "mine";
+  }
+
   return "all";
 }

@@ -61,16 +61,17 @@ export default function TaskCompletionDialog({
 
   const content = (
     <div className="space-y-4">
-      <div>
-        <h3 className="text-base font-semibold text-ink-900">Log volunteer hours</h3>
-        <p className="text-sm text-ink-500">
+      {/* Accent header banner */}
+      <div className="rounded-xl border-l-4 border-l-emerald-400 bg-emerald-50/60 px-4 py-3">
+        <h3 className="text-sm font-semibold text-emerald-800">Log volunteer hours</h3>
+        <p className="mt-0.5 text-xs text-emerald-600">
           Keep gratitude grounded with a quick hours entry for this task.
         </p>
       </div>
 
       <div className="space-y-3">
-        <label className="space-y-1 text-sm font-medium text-ink-700">
-          Hours mode
+        <label className="block space-y-1.5 text-sm font-medium text-ink-700">
+          <span>How to log hours</span>
           <select
             value={hoursMode}
             onChange={(event) =>
@@ -82,7 +83,7 @@ export default function TaskCompletionDialog({
                     : "estimated"
               )
             }
-            className="mt-1 w-full rounded-button border border-mist-200 bg-white px-3 py-2 text-sm text-ink-700 shadow-card focus-ring"
+            className="mt-1 w-full rounded-xl border border-mist-200 bg-white px-3 py-2.5 text-sm text-ink-700 shadow-sm focus-ring"
           >
             <option value="estimated">Use estimated allocation</option>
             <option value="manual">Enter actual hours</option>
@@ -91,14 +92,14 @@ export default function TaskCompletionDialog({
         </label>
 
         {hoursMode === "estimated" ? (
-          <p className="rounded-card border border-mist-200 bg-mist-50 px-3 py-2 text-xs text-ink-500">
+          <p className="rounded-xl border border-sky-100 bg-sky-50/60 px-3 py-2.5 text-xs text-sky-700">
             Estimated allocation will use {estimatedLabel} and distribute it across participants.
           </p>
         ) : null}
 
         {hoursMode === "manual" ? (
-          <label className="space-y-1 text-sm font-medium text-ink-700">
-            Hours per participant
+          <label className="block space-y-1.5 text-sm font-medium text-ink-700">
+            <span>Hours per participant</span>
             <Input
               type="number"
               min="0"
@@ -112,13 +113,13 @@ export default function TaskCompletionDialog({
         ) : null}
 
         {hoursMode === "skip" ? (
-          <p className="rounded-card border border-mist-200 bg-mist-50 px-3 py-2 text-xs text-ink-500">
+          <p className="rounded-xl border border-amber-100 bg-amber-50/60 px-3 py-2.5 text-xs text-amber-700">
             No hours entry will be created for this completion.
           </p>
         ) : null}
       </div>
 
-      <div className="flex flex-wrap justify-end gap-2">
+      <div className="flex flex-wrap justify-end gap-2 pt-2">
         <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
           Cancel
         </Button>
