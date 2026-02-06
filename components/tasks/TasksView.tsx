@@ -194,7 +194,7 @@ export default function TasksView({
           key={option.value}
           type="button"
           onClick={() => handleViewChange(option.value)}
-          className={`min-h-[36px] flex-1 rounded-full px-3 py-2 text-xs font-semibold transition ${
+          className={`min-h-[36px] flex-1 whitespace-nowrap rounded-full px-3 py-2 text-xs font-semibold transition ${
             viewMode === option.value
               ? "bg-white text-ink-900 shadow-sm"
               : "text-ink-500 hover:text-ink-700"
@@ -250,7 +250,7 @@ export default function TasksView({
 
       {/* Controls: toggle + actions — single compact row */}
       <div className="flex flex-wrap items-center gap-2">
-        {renderViewToggle("flex-1 min-w-[200px] sm:flex-none")}
+        {renderViewToggle()}
 
         {/* + create (circle on mobile, button on desktop) */}
         {(canManageTasks || (showCreateButton && viewMode !== "opportunities")) && (
