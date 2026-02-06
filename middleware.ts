@@ -25,7 +25,13 @@ const authMiddleware = withAuth(
     if (localeResponse) {
       return localeResponse;
     }
-    return NextResponse.next();
+
+    // Forward the real pathname to server components so layouts can reliably
+    // detect the current route (headers like referer are stale on first load).
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-pathname", request.nextUrl.pathname);
+
+    return NextResponse.next({ request: { headers: requestHeaders } });
   },
   {
     callbacks: {

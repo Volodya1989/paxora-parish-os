@@ -64,7 +64,7 @@ function MapPinIcon({ className }: { className?: string }) {
   );
 }
 
-/* ---------- lightweight section row components ---------- */
+/* ---------- card-style section row components (matching parishioner pages) ---------- */
 
 function ServeRow({ item, t }: { item: TaskPreview; t: (key: string) => string }) {
   const statusTone = item.status === "DONE" ? "success" as const : item.status === "IN_PROGRESS" ? "warning" as const : "neutral" as const;
@@ -74,11 +74,11 @@ function ServeRow({ item, t }: { item: TaskPreview; t: (key: string) => string }
   return (
     <Link
       href={`${routes.serve}?taskId=${item.id}`}
-      className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 transition hover:bg-mist-50"
+      className="flex items-center gap-3 rounded-xl border border-mist-100 border-l-4 border-l-rose-400 bg-white px-4 py-3 shadow-sm transition hover:shadow-md"
     >
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-ink-900">{item.title}</p>
-        <div className="mt-1 flex items-center gap-2 text-xs text-ink-500">
+        <p className="truncate text-sm font-semibold text-ink-900">{item.title}</p>
+        <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-ink-500">
           <Badge tone={statusTone} className="text-[10px]">{statusLabel}</Badge>
           {dueLabel && (
             <span className="flex items-center gap-0.5">
@@ -88,7 +88,7 @@ function ServeRow({ item, t }: { item: TaskPreview; t: (key: string) => string }
           )}
         </div>
       </div>
-      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-mist-100 text-[10px] font-semibold text-ink-600">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-rose-50 text-[10px] font-bold text-rose-600">
         {item.owner.initials}
       </span>
     </Link>
@@ -100,15 +100,15 @@ function EventRow({ event }: { event: EventPreview }) {
   const timeLabel = formatTime(event.startsAt);
 
   return (
-    <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition hover:bg-mist-50">
-      <div className="flex shrink-0 flex-col items-center rounded-lg bg-primary-50 px-2 py-1">
-        <span className="text-[10px] font-semibold uppercase text-primary-700">{dayLabel}</span>
-        <span className="text-[10px] font-medium text-primary-600">{timeLabel}</span>
+    <div className="flex items-center gap-3 rounded-xl border border-mist-100 border-l-4 border-l-emerald-400 bg-white px-4 py-3 shadow-sm transition hover:shadow-md">
+      <div className="flex shrink-0 flex-col items-center rounded-lg bg-emerald-50 px-2.5 py-1.5">
+        <span className="text-[10px] font-bold uppercase text-emerald-700">{dayLabel}</span>
+        <span className="text-[10px] font-semibold text-emerald-600">{timeLabel}</span>
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-ink-900">{event.title}</p>
+        <p className="truncate text-sm font-semibold text-ink-900">{event.title}</p>
         {event.location && (
-          <p className="mt-0.5 flex items-center gap-1 text-[11px] text-ink-500">
+          <p className="mt-1 flex items-center gap-1 text-xs text-ink-500">
             <MapPinIcon className="h-3 w-3 shrink-0" />
             <span className="truncate">{event.location}</span>
           </p>
@@ -123,9 +123,9 @@ function AnnouncementRow({ item }: { item: AnnouncementPreview }) {
   return (
     <Link
       href={`${routes.announcements}`}
-      className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 transition hover:bg-mist-50"
+      className="flex items-center justify-between gap-3 rounded-xl border border-mist-100 border-l-4 border-l-amber-400 bg-white px-4 py-3 shadow-sm transition hover:shadow-md"
     >
-      <p className="min-w-0 truncate text-sm font-medium text-ink-900">{item.title}</p>
+      <p className="min-w-0 truncate text-sm font-semibold text-ink-900">{item.title}</p>
       <Badge tone={isPublished ? "success" : "warning"} className="shrink-0 text-[10px]">
         {isPublished ? "Live" : "Draft"}
       </Badge>
@@ -312,7 +312,7 @@ export default async function ThisWeekAdminView({
       {/* ──── Admin sections: borderless, compact ──── */}
 
       {/* Serve */}
-      <section className="space-y-1">
+      <section className="space-y-2">
         <SectionHeader
           title="Serve"
           count={activeTaskCount}
@@ -320,24 +320,26 @@ export default async function ThisWeekAdminView({
           href={routes.serve}
         />
         {sortedTasks.length > 0 ? (
-          <div className="divide-y divide-mist-100">
+          <div className="space-y-2">
             {sortedTasks.slice(0, 3).map((item) => (
               <ServeRow key={item.id} item={item} t={t} />
             ))}
           </div>
         ) : (
-          <p className="px-3 py-3 text-sm text-ink-400">
+          <p className="py-3 text-sm text-ink-400">
             No serve items this week.{" "}
             <Link href={`${routes.serve}?create=task`} className="font-medium text-primary-600 hover:text-primary-700">Create one</Link>
           </p>
         )}
         {sortedTasks.length > 3 && (
-          <p className="px-3 text-xs text-ink-400">+{sortedTasks.length - 3} more</p>
+          <Link href={routes.serve} className="block pt-1 text-center text-xs font-medium text-primary-600 hover:text-primary-700">
+            +{sortedTasks.length - 3} more
+          </Link>
         )}
       </section>
 
       {/* Events */}
-      <section className="space-y-1">
+      <section className="space-y-2">
         <SectionHeader
           title="Events"
           count={data.events.length}
@@ -345,24 +347,26 @@ export default async function ThisWeekAdminView({
           href={routes.calendar}
         />
         {data.events.length > 0 ? (
-          <div className="divide-y divide-mist-100">
+          <div className="space-y-2">
             {data.events.slice(0, 3).map((event) => (
               <EventRow key={event.id} event={event} />
             ))}
           </div>
         ) : (
-          <p className="px-3 py-3 text-sm text-ink-400">
+          <p className="py-3 text-sm text-ink-400">
             Nothing scheduled.{" "}
             <Link href={`${routes.calendar}?create=event`} className="font-medium text-primary-600 hover:text-primary-700">Add event</Link>
           </p>
         )}
         {data.events.length > 3 && (
-          <p className="px-3 text-xs text-ink-400">+{data.events.length - 3} more</p>
+          <Link href={routes.calendar} className="block pt-1 text-center text-xs font-medium text-primary-600 hover:text-primary-700">
+            +{data.events.length - 3} more
+          </Link>
         )}
       </section>
 
       {/* Announcements */}
-      <section className="space-y-1">
+      <section className="space-y-2">
         <SectionHeader
           title="Announcements"
           count={data.announcements.length}
@@ -370,13 +374,13 @@ export default async function ThisWeekAdminView({
           href={routes.announcements}
         />
         {data.announcements.length > 0 ? (
-          <div className="divide-y divide-mist-100">
+          <div className="space-y-2">
             {data.announcements.slice(0, 3).map((item) => (
               <AnnouncementRow key={item.id} item={item} />
             ))}
           </div>
         ) : (
-          <p className="px-3 py-3 text-sm text-ink-400">
+          <p className="py-3 text-sm text-ink-400">
             No announcements yet.{" "}
             <Link href={`${routes.announcements}/new`} className="font-medium text-primary-600 hover:text-primary-700">Create one</Link>
           </p>
