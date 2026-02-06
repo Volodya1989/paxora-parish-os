@@ -78,7 +78,8 @@
       "message": "Clear messages",
       "task": "Clear tasks",
       "announcement": "Clear announcements",
-      "event": "Clear events"
+      "event": "Clear events",
+      "request": "Clear requests"
     }
   },
   "auth": {

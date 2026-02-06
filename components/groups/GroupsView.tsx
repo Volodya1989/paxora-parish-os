@@ -244,7 +244,15 @@ export default function GroupsView({
 
       {/* Action bar */}
       <div className="flex flex-wrap items-center gap-2">
-        <Button onClick={openCreateDialog} className="h-10 px-4 text-sm">
+        <button
+          type="button"
+          onClick={openCreateDialog}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 sm:hidden"
+          aria-label={canManageGroups ? "Start a group" : "Suggest a group"}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
+        </button>
+        <Button onClick={openCreateDialog} className="hidden h-9 px-3 text-sm sm:inline-flex">
           {canManageGroups ? "Start a group" : "Suggest a group"}
         </Button>
         <div className="md:hidden">
@@ -326,6 +334,81 @@ export default function GroupsView({
         </Card>
       ) : null}
 
+      {/* Pending group requests — leaders see approve/reject, members see status */}
+      {canManageGroups && pendingGroups.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-bold uppercase tracking-wider text-amber-700">
+            Group requests
+          </p>
+          {pendingGroups.map((group) => (
+            <div
+              key={group.id}
+              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-l-4 border-amber-200 border-l-amber-400 bg-amber-50/60 px-4 py-3"
+            >
+              <div className="min-w-0 flex-1 space-y-0.5">
+                <p className="text-sm font-semibold text-ink-800">{group.name}</p>
+                <p className="text-xs text-ink-500">
+                  {group.description ?? "No description provided."}
+                </p>
+                <p className="text-xs text-ink-400">
+                  Requested by{" "}
+                  {group.createdBy?.name ?? group.createdBy?.email ?? "Parishioner"}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() =>
+                    void runGroupAction(group.id, () =>
+                      approveGroupRequest({ parishId, actorUserId, groupId: group.id })
+                    )
+                  }
+                  disabled={pendingGroupId === group.id}
+                >
+                  Approve
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() =>
+                    void runGroupAction(group.id, () =>
+                      rejectGroupRequest({ parishId, actorUserId, groupId: group.id })
+                    )
+                  }
+                  disabled={pendingGroupId === group.id}
+                >
+                  Reject
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!canManageGroups && pendingGroups.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-bold uppercase tracking-wider text-amber-700">
+            Your pending requests
+          </p>
+          {pendingGroups.map((group) => (
+            <div
+              key={group.id}
+              className="rounded-xl border border-l-4 border-mist-200 border-l-amber-400 bg-mist-50/60 px-4 py-3"
+            >
+              <p className="text-sm font-semibold text-ink-800">{group.name}</p>
+              <p className="text-xs text-ink-500">
+                {group.description ?? "No description provided."}
+              </p>
+              <p className="mt-1.5 text-xs font-semibold uppercase text-amber-600">
+                Pending approval
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Group cards — flat list, no wrapper */}
       <div className="space-y-5">
         {filteredGroups.length === 0 ? (
@@ -385,82 +468,6 @@ export default function GroupsView({
             ))}
           </div>
         )}
-
-        {canManageGroups && pendingGroups.length ? (
-          <Card>
-            <div className="mb-3 text-sm font-semibold text-ink-900">Group requests</div>
-            <div className="space-y-3">
-              {pendingGroups.map((group) => (
-                <div
-                  key={group.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-amber-200 bg-amber-50/60 px-3 py-3"
-                >
-                  <div className="space-y-1">
-                    <div className="text-sm font-medium text-ink-800">{group.name}</div>
-                    <div className="text-xs text-ink-500">
-                      {group.description ?? "No description provided."}
-                    </div>
-                    <div className="text-xs text-ink-400">
-                      Requested by{" "}
-                      {group.createdBy?.name ?? group.createdBy?.email ?? "Parishioner"}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() =>
-                        void runGroupAction(group.id, () =>
-                          approveGroupRequest({ parishId, actorUserId, groupId: group.id })
-                        )
-                      }
-                      disabled={pendingGroupId === group.id}
-                    >
-                      Approve
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="secondary"
-                      onClick={() =>
-                        void runGroupAction(group.id, () =>
-                          rejectGroupRequest({ parishId, actorUserId, groupId: group.id })
-                        )
-                      }
-                      disabled={pendingGroupId === group.id}
-                    >
-                      Reject
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-        ) : null}
-
-        {!canManageGroups && pendingGroups.length ? (
-          <Card>
-            <div className="mb-3 text-sm font-semibold text-ink-900">
-              Pending group requests
-            </div>
-            <div className="space-y-3">
-              {pendingGroups.map((group) => (
-                <div
-                  key={group.id}
-                  className="rounded-card border border-mist-200 bg-mist-50 px-3 py-3"
-                >
-                  <div className="text-sm font-medium text-ink-800">{group.name}</div>
-                  <div className="text-xs text-ink-500">
-                    {group.description ?? "No description provided."}
-                  </div>
-                  <div className="mt-2 text-xs font-semibold uppercase text-amber-600">
-                    Pending approval
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-        ) : null}
       </div>
 
       <GroupCreateDialog

@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import { getServerSession } from "next-auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import AppHeader from "@/components/header/AppHeader";
 import AppShell from "@/components/navigation/AppShell";
 import ParishSetup from "@/components/setup/ParishSetup";
 import { authOptions } from "@/server/auth/options";
@@ -10,32 +9,6 @@ import { createParish } from "@/server/actions/parish";
 import { getAccessGateState } from "@/lib/queries/access";
 import { getParishMembership } from "@/server/db/groups";
 import { getLocaleFromParam, stripLocale } from "@/lib/i18n/routing";
-import { isParishLeader } from "@/lib/permissions";
-
-async function getRequestPathname() {
-  const headerList = await headers();
-  const nextUrl =
-    headerList.get("x-pathname") ??
-    headerList.get("x-nextjs-pathname") ??
-    headerList.get("x-matched-path") ??
-    headerList.get("x-invoke-path") ??
-    headerList.get("x-original-url") ??
-    headerList.get("x-forwarded-uri") ??
-    headerList.get("next-url") ??
-    headerList.get("x-next-url") ??
-    headerList.get("referer") ??
-    "";
-
-  if (!nextUrl) {
-    return "";
-  }
-
-  try {
-    return new URL(nextUrl, "http://localhost").pathname;
-  } catch {
-    return nextUrl;
-  }
-}
 
 export default async function AppLayout({
   children,
@@ -58,15 +31,16 @@ export default async function AppLayout({
     return <ParishSetup action={createParish} userName={session.user.name} />;
   }
 
-  const pathname = stripLocale(await getRequestPathname());
-  const isProfileRoute = pathname.startsWith("/profile");
-  const isLandingRoute = pathname === "/" || pathname === "/this-week" || pathname === "";
-
-  if (access.status !== "approved" && !isProfileRoute) {
-    redirect(`/${locale}/access`);
-  }
-
+  // Access gate: allow profile page for unapproved users
   if (access.status !== "approved") {
+    const headerList = await headers();
+    const rawPathname = headerList.get("x-pathname") ?? "";
+    const pathname = stripLocale(rawPathname);
+    const isProfileRoute = pathname.startsWith("/profile");
+
+    if (!isProfileRoute) {
+      redirect(`/${locale}/access`);
+    }
     return <main className="min-h-screen bg-mist-50 px-4 py-10">{children}</main>;
   }
 
@@ -75,15 +49,10 @@ export default async function AppLayout({
     ? await getParishMembership(resolvedParishId, session.user.id)
     : null;
 
-  // Header strategy: AppHeader (with week selector + create controls) is only shown to leaders,
-  // but NOT on the landing page (This Week) where the ParishionerHeader hero provides
-  // its own warm header + quick-add. This keeps the landing feeling like home, not a dashboard.
-  const isLeader = membership ? isParishLeader(membership.role) : false;
-  const showAppHeader = isLeader && !isLandingRoute;
-
+  // No AppHeader — every page now provides its own PageHeader gradient.
+  // Same product, same style for all roles.
   return (
     <AppShell parishRole={membership?.role ?? null}>
-      {showAppHeader && <AppHeader parishRole={membership?.role ?? null} />}
       <main className="flex-1 bg-mist-50 px-4 py-6 pb-[calc(6rem+env(safe-area-inset-bottom))] md:px-8 md:pb-8">
         {children}
       </main>

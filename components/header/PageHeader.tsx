@@ -64,10 +64,10 @@ export default function PageHeader({
         <div className="flex items-center gap-2 text-sm font-semibold text-white">
           <span>{parishName}</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {actions}
           {count > 0 && (
-            <NotificationCenter bellClassName="h-11 w-11 md:hidden" />
+            <NotificationCenter bellClassName="h-8 w-8 border-0 bg-white/20 text-white backdrop-blur-sm hover:bg-white/30 md:hidden" />
           )}
           <LanguageIconToggle />
         </div>
