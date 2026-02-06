@@ -192,12 +192,14 @@ export default function CalendarView({
           Add a service
         </Button>
       ) : null}
-      <Button
-        variant={canCreateEvents ? "secondary" : "primary"}
-        onClick={() => setRequestOpen(true)}
-      >
-        Request an event
-      </Button>
+      {!canManageEventRequests && (
+        <Button
+          variant={canCreateEvents ? "secondary" : "primary"}
+          onClick={() => setRequestOpen(true)}
+        >
+          Request an event
+        </Button>
+      )}
     </div>
   );
 
@@ -239,45 +241,59 @@ export default function CalendarView({
           source="Ecclesiastes 3:1"
           tone="primary"
         />
-        <PageShell
-          title="Upcoming Events"
-          summaryChips={[
-            { label: view === "week" ? "This week" : "This month", tone: "mist" }
-          ]}
-          actions={
+        {/* Controls: toggle + actions — single compact row */}
+        <div className="flex flex-wrap items-center gap-2">
+          <TabsList aria-label="Time range" className="flex-wrap">
+            <TabsTrigger value="week">Week</TabsTrigger>
+            <TabsTrigger value="month">Month</TabsTrigger>
+          </TabsList>
+          {surface === "schedule" ? (
+            <div className="md:hidden">
+              <FiltersDrawer title="Schedule filters">{scheduleFilters}</FiltersDrawer>
+            </div>
+          ) : null}
+          {!canManageEventRequests && (
+            <Button
+              type="button"
+              onClick={() => setRequestOpen(true)}
+              className="hidden h-9 px-3 text-sm sm:inline-flex"
+            >
+              Request an event
+            </Button>
+          )}
+          {canCreateEvents && (
             <>
-              <TabsList aria-label="Time range" className="flex-wrap">
-                <TabsTrigger value="week">Week</TabsTrigger>
-                <TabsTrigger value="month">Month</TabsTrigger>
-              </TabsList>
-              {surface === "schedule" ? (
-                <div className="md:hidden">
-                  <FiltersDrawer title="Schedule filters">{scheduleFilters}</FiltersDrawer>
-                </div>
-              ) : null}
+              <button
+                type="button"
+                onClick={() => {
+                  setCreateType("SERVICE");
+                  setCreateOpen(true);
+                }}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 sm:hidden"
+                aria-label="Add event"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
+              </button>
               <Button
                 type="button"
-                onClick={() => setRequestOpen(true)}
-                className="h-9 px-3 text-sm"
+                onClick={() => {
+                  setCreateType("SERVICE");
+                  setCreateOpen(true);
+                }}
+                className="hidden h-9 px-3 text-sm sm:inline-flex"
               >
-                Request an event
+                Add event
               </Button>
-              {canCreateEvents ? (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => {
-                    setCreateType("SERVICE");
-                    setCreateOpen(true);
-                  }}
-                  className="h-9 px-3 text-sm"
-                >
-                  + Add
-                </Button>
-              ) : null}
             </>
-          }
-        >
+          )}
+        </div>
+
+        {/* Pending event request approvals — at top for leaders */}
+        {canManageEventRequests && pendingEventRequests.length > 0 && (
+          <EventRequestApprovals requests={pendingEventRequests} />
+        )}
+
+        <div>
           {surface === "schedule" ? (
             <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)_320px]">
               <aside className="hidden lg:block">
@@ -324,9 +340,6 @@ export default function CalendarView({
               </div>
               <div className="space-y-4">
                 <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} />
-                {canManageEventRequests ? (
-                  <EventRequestApprovals requests={pendingEventRequests} />
-                ) : null}
               </div>
             </div>
           ) : (
@@ -402,13 +415,10 @@ export default function CalendarView({
 
               <div className="space-y-4">
                 <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} />
-                {canManageEventRequests ? (
-                  <EventRequestApprovals requests={pendingEventRequests} />
-                ) : null}
               </div>
             </div>
           )}
-        </PageShell>
+        </div>
       </div>
 
       <EventCreateDialog

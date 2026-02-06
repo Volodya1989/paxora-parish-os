@@ -244,7 +244,15 @@ export default function GroupsView({
 
       {/* Action bar */}
       <div className="flex flex-wrap items-center gap-2">
-        <Button onClick={openCreateDialog} className="h-10 px-4 text-sm">
+        <button
+          type="button"
+          onClick={openCreateDialog}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 sm:hidden"
+          aria-label={canManageGroups ? "Start a group" : "Suggest a group"}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
+        </button>
+        <Button onClick={openCreateDialog} className="hidden h-9 px-3 text-sm sm:inline-flex">
           {canManageGroups ? "Start a group" : "Suggest a group"}
         </Button>
         <div className="md:hidden">
