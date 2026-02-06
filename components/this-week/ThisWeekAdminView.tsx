@@ -213,12 +213,24 @@ export default async function ThisWeekAdminView({
       return bDate.getTime() - aDate.getTime();
     });
 
-  const sortedTasks = [...data.tasks].sort((a, b) => {
-    if (a.dueBy && b.dueBy) return a.dueBy.getTime() - b.dueBy.getTime();
-    if (a.dueBy) return -1;
-    if (b.dueBy) return 1;
-    return a.title.localeCompare(b.title);
-  });
+  // Landing shows only non-completed tasks, prioritized by closest due date
+  const activeTasks = [...data.tasks]
+    .filter((t) => t.status !== "DONE")
+    .sort((a, b) => {
+      // OPEN before IN_PROGRESS (open items need attention first)
+      if (a.status === "OPEN" && b.status !== "OPEN") return -1;
+      if (a.status !== "OPEN" && b.status === "OPEN") return 1;
+      // Within same status, closest due date first
+      if (a.dueBy && b.dueBy) return a.dueBy.getTime() - b.dueBy.getTime();
+      if (a.dueBy) return -1;
+      if (b.dueBy) return 1;
+      return a.title.localeCompare(b.title);
+    });
+
+  // Stats from ALL tasks (for quick-block summary)
+  const tasksDone = data.tasks.filter((t) => t.status === "DONE").length;
+  const tasksInProgress = data.tasks.filter((t) => t.status === "IN_PROGRESS").length;
+  const tasksOpen = data.tasks.filter((t) => t.status === "OPEN").length;
 
   const announcementsSummary =
     publishedAnnouncements.length > 0
@@ -233,18 +245,15 @@ export default async function ThisWeekAdminView({
       ? `${data.memberGroups.length} group${data.memberGroups.length === 1 ? "" : "s"} joined`
       : "Find your community";
 
-  const tasksDone = sortedTasks.filter((t) => t.status === "DONE").length;
-  const tasksInProgress = sortedTasks.filter((t) => t.status === "IN_PROGRESS").length;
-  const tasksOpen = sortedTasks.filter((t) => t.status === "OPEN").length;
   const opportunitiesSummary =
-    sortedTasks.length > 0
+    data.tasks.length > 0
       ? `\u{1F7E2} ${tasksDone}  \u00B7  \u{1F7E1} ${tasksInProgress}  \u00B7  \u{1F535} ${tasksOpen}`
       : "Ways to help";
 
   const hasGratitudeItems =
     data.gratitudeSpotlight.enabled && data.gratitudeSpotlight.items.length > 0;
 
-  const activeTaskCount = sortedTasks.filter((t) => t.status !== "DONE").length;
+  const activeTaskCount = activeTasks.length;
 
   return (
     <div className="space-y-6 overflow-x-hidden">
@@ -293,7 +302,7 @@ export default async function ThisWeekAdminView({
             label: "Opportunities",
             href: `${routes.serve}?view=opportunities`,
             summary: opportunitiesSummary,
-            count: sortedTasks.length,
+            count: data.tasks.length,
             icon: <HandHeartIcon className="h-4 w-4" />,
             accentClass: "border-rose-200 bg-rose-50/70 text-rose-700"
           }
@@ -319,21 +328,30 @@ export default async function ThisWeekAdminView({
           countLabel="active"
           href={routes.serve}
         />
-        {sortedTasks.length > 0 ? (
+        {activeTasks.length > 0 ? (
           <div className="space-y-2">
-            {sortedTasks.slice(0, 3).map((item) => (
+            {activeTasks.slice(0, 3).map((item) => (
               <ServeRow key={item.id} item={item} t={t} />
             ))}
           </div>
         ) : (
-          <p className="py-3 text-sm text-ink-400">
-            No serve items this week.{" "}
-            <Link href={`${routes.serve}?create=task`} className="font-medium text-primary-600 hover:text-primary-700">Create one</Link>
-          </p>
+          <Link
+            href={`${routes.serve}?create=task`}
+            className="flex items-center gap-3 rounded-xl border border-dashed border-rose-300 bg-rose-50/50 px-4 py-4 transition hover:border-rose-400 hover:bg-rose-50"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-rose-100 text-rose-600">
+              <HandHeartIcon className="h-5 w-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-rose-800">Create a serve item</p>
+              <p className="text-xs text-rose-600">Add tasks for your ministry team this week.</p>
+            </div>
+            <span className="text-sm text-rose-400">&rarr;</span>
+          </Link>
         )}
-        {sortedTasks.length > 3 && (
+        {activeTasks.length > 3 && (
           <Link href={routes.serve} className="block pt-1 text-center text-xs font-medium text-primary-600 hover:text-primary-700">
-            +{sortedTasks.length - 3} more
+            +{activeTasks.length - 3} more
           </Link>
         )}
       </section>
@@ -353,10 +371,19 @@ export default async function ThisWeekAdminView({
             ))}
           </div>
         ) : (
-          <p className="py-3 text-sm text-ink-400">
-            Nothing scheduled.{" "}
-            <Link href={`${routes.calendar}?create=event`} className="font-medium text-primary-600 hover:text-primary-700">Add event</Link>
-          </p>
+          <Link
+            href={`${routes.calendar}?create=event`}
+            className="flex items-center gap-3 rounded-xl border border-dashed border-emerald-300 bg-emerald-50/50 px-4 py-4 transition hover:border-emerald-400 hover:bg-emerald-50"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
+              <CalendarIcon className="h-5 w-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-emerald-800">Schedule an event</p>
+              <p className="text-xs text-emerald-600">Add services, rehearsals, or gatherings.</p>
+            </div>
+            <span className="text-sm text-emerald-400">&rarr;</span>
+          </Link>
         )}
         {data.events.length > 3 && (
           <Link href={routes.calendar} className="block pt-1 text-center text-xs font-medium text-primary-600 hover:text-primary-700">
@@ -380,10 +407,19 @@ export default async function ThisWeekAdminView({
             ))}
           </div>
         ) : (
-          <p className="py-3 text-sm text-ink-400">
-            No announcements yet.{" "}
-            <Link href={`${routes.announcements}/new`} className="font-medium text-primary-600 hover:text-primary-700">Create one</Link>
-          </p>
+          <Link
+            href={`${routes.announcements}/new`}
+            className="flex items-center gap-3 rounded-xl border border-dashed border-amber-300 bg-amber-50/50 px-4 py-4 transition hover:border-amber-400 hover:bg-amber-50"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
+              <MegaphoneIcon className="h-5 w-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-amber-800">Create an announcement</p>
+              <p className="text-xs text-amber-600">Share updates, news, or reminders with your parish.</p>
+            </div>
+            <span className="text-sm text-amber-400">&rarr;</span>
+          </Link>
         )}
       </section>
 
