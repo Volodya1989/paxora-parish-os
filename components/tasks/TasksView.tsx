@@ -253,46 +253,41 @@ export default function TasksView({
         {renderViewToggle("flex-1 min-w-[200px] sm:flex-none")}
 
         {/* + create (circle on mobile, button on desktop) */}
-        {canManageTasks && viewMode !== "opportunities" && (
+        {showCreateButton && viewMode !== "opportunities" && (
           <>
             <button
               type="button"
-              onClick={() => setIsCreateOpen(true)}
+              onClick={() =>
+                canManageTasks
+                  ? setIsCreateOpen(true)
+                  : openCreateDialogWithVisibility("private")
+              }
               className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 sm:hidden"
-              aria-label={ctaLabel}
-            >
-              <PlusIcon />
-            </button>
-            <Button onClick={() => setIsCreateOpen(true)} className="hidden h-9 px-3 text-sm sm:inline-flex">
-              {ctaLabel}
-            </Button>
-          </>
-        )}
-        {!canManageTasks && viewMode === "mine" && (
-          <>
-            <button
-              type="button"
-              onClick={() => openCreateDialogWithVisibility("private")}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 sm:hidden"
-              aria-label="Add a private task"
+              aria-label={canManageTasks ? ctaLabel : "Add a task"}
             >
               <PlusIcon />
             </button>
             <Button
               type="button"
-              onClick={() => openCreateDialogWithVisibility("private")}
+              onClick={() =>
+                canManageTasks
+                  ? setIsCreateOpen(true)
+                  : openCreateDialogWithVisibility("private")
+              }
               className="hidden h-9 px-3 text-sm sm:inline-flex"
             >
-              Add a private task
+              {canManageTasks ? ctaLabel : "Add a private task"}
             </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => openCreateDialogWithVisibility("public")}
-              className="hidden h-9 px-3 text-sm sm:inline-flex"
-            >
-              Request a public task
-            </Button>
+            {!canManageTasks && (
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => openCreateDialogWithVisibility("public")}
+                className="hidden h-9 px-3 text-sm sm:inline-flex"
+              >
+                Request a public task
+              </Button>
+            )}
           </>
         )}
 
@@ -300,6 +295,11 @@ export default function TasksView({
         <div className="md:hidden">
           <FiltersDrawer title="Filters" className="shrink-0">
             <div className="space-y-4">
+              <div className="rounded-xl border-l-4 border-l-sky-400 bg-sky-50/60 px-4 py-3">
+                <p className="text-xs text-sky-700">
+                  Narrow down your serve list by status, group, or search.
+                </p>
+              </div>
               {renderViewToggle()}
               <TaskFilters
                 filters={filters}

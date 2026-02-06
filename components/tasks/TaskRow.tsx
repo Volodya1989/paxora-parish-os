@@ -362,11 +362,17 @@ export default function TaskRow({
           {canManageStatus ? (
             <Button
               type="button"
+              variant={isDone ? "secondary" : "primary"}
               onClick={(event) => {
                 event.stopPropagation();
                 statusActionHandler();
               }}
               disabled={isBusy}
+              className={
+                isInProgress
+                  ? "bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 disabled:bg-emerald-300"
+                  : undefined
+              }
             >
               {statusActionLabel}
             </Button>

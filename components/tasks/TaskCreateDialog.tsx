@@ -136,41 +136,53 @@ export default function TaskCreateDialog({
       }}
     >
       <input type="hidden" name="weekId" value={weekId} />
-      <div className="space-y-2">
+
+      {/* Accent header banner */}
+      <div className="rounded-xl border-l-4 border-l-sky-400 bg-sky-50/60 px-4 py-3">
+        <p className="text-xs text-sky-700">
+          Capture what needs attention this week and assign it to the right owner.
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
         <Label htmlFor={titleId}>Title</Label>
         <Input id={titleId} name="title" placeholder="Add a clear task title" required />
       </div>
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label htmlFor={notesId}>Notes (optional)</Label>
         <Textarea
           id={notesId}
           name="notes"
           placeholder="Include links, dependencies, or context for the team."
-          rows={4}
+          rows={3}
         />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor={estimatedHoursId}>Estimated hours (optional)</Label>
-        <Input
-          id={estimatedHoursId}
-          name="estimatedHours"
-          type="number"
-          min={0}
-          step="0.25"
-          placeholder="e.g. 2"
-        />
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor={estimatedHoursId}>Estimated hours (optional)</Label>
+          <Input
+            id={estimatedHoursId}
+            name="estimatedHours"
+            type="number"
+            min={0}
+            step="0.25"
+            placeholder="e.g. 2"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor={dueAtId}>Due date</Label>
+          <Input
+            id={dueAtId}
+            name="dueAt"
+            type="date"
+            defaultValue={formatDateInput(getDefaultDueAt())}
+          />
+          <p className="text-xs text-ink-400">Defaults to two weeks from today.</p>
+        </div>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor={dueAtId}>Due date</Label>
-        <Input
-          id={dueAtId}
-          name="dueAt"
-          type="date"
-          defaultValue={formatDateInput(getDefaultDueAt())}
-        />
-        <p className="text-xs text-ink-400">Defaults to two weeks from today.</p>
-      </div>
-      <div className="space-y-2">
+
+      <div className="space-y-1.5">
         <Label htmlFor={visibilityId}>Visibility</Label>
         <SelectMenu
           id={visibilityId}
@@ -188,13 +200,11 @@ export default function TaskCreateDialog({
             { value: "public", label: "Public (shared with the parish)" }
           ]}
         />
-        {visibility === "public" ? (
-          <p className="text-xs text-ink-400">
-            Public tasks created by members require approval before they appear for everyone.
-          </p>
-        ) : (
-          <p className="text-xs text-ink-400">Private tasks stay assigned to you by default.</p>
-        )}
+        <p className="text-xs text-ink-400">
+          {visibility === "public"
+            ? "Public tasks created by members require approval before they appear for everyone."
+            : "Private tasks stay assigned to you by default."}
+        </p>
       </div>
       {visibility === "private" ? (
         <>
@@ -203,7 +213,7 @@ export default function TaskCreateDialog({
         </>
       ) : (
         <>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor={volunteersId}>Volunteers needed</Label>
             <Input
               id={volunteersId}
@@ -218,8 +228,8 @@ export default function TaskCreateDialog({
               Set this above 1 to allow multiple volunteers to join.
             </p>
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
               <Label htmlFor={groupId}>Group</Label>
               <SelectMenu
                 id={groupId}
@@ -232,7 +242,7 @@ export default function TaskCreateDialog({
                 ]}
               />
             </div>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor={ownerId}>
                 {Number(volunteersNeeded) > 1 ? "Lead (optional)" : "Assignee (optional)"}
               </Label>
@@ -251,7 +261,7 @@ export default function TaskCreateDialog({
       )}
 
       {state.status === "error" ? (
-        <p role="alert" className="text-sm text-rose-600">
+        <p role="alert" className="rounded-xl border border-rose-100 bg-rose-50/60 px-3 py-2.5 text-xs text-rose-700">
           {state.message}
         </p>
       ) : null}
@@ -266,9 +276,6 @@ export default function TaskCreateDialog({
         onClose={() => onOpenChange(false)}
         title="New task"
       >
-        <p className="mb-4 text-sm text-ink-500">
-          Capture what needs attention this week and assign it to the right owner.
-        </p>
         {renderForm(modalFormId, modalFormRef)}
       </Modal>
       <Drawer
@@ -276,9 +283,6 @@ export default function TaskCreateDialog({
         onClose={() => onOpenChange(false)}
         title="New task"
       >
-        <p className="mb-4 text-sm text-ink-500">
-          Capture what needs attention this week and assign it to the right owner.
-        </p>
         {renderForm(drawerFormId, drawerFormRef)}
       </Drawer>
     </>
