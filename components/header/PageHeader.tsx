@@ -1,6 +1,7 @@
 "use client";
 
-import { type ReactNode } from "react";
+import { type ReactNode, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import LanguageIconToggle from "@/components/navigation/LanguageIconToggle";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import { useNotificationContext } from "@/components/notifications/NotificationProvider";
@@ -23,6 +24,8 @@ type PageHeaderProps = {
   quoteSource?: string;
   /** Optional icon to display next to the title */
   icon?: ReactNode;
+  /** Fallback href for back button. When set, a back arrow appears top-left. */
+  backHref?: string;
 };
 
 /**
@@ -44,9 +47,19 @@ export default function PageHeader({
   gradientClass = "from-primary-600 via-primary-500 to-emerald-500",
   quote,
   quoteSource,
-  icon
+  icon,
+  backHref
 }: PageHeaderProps) {
   const { count } = useNotificationContext();
+  const router = useRouter();
+
+  const handleBack = useCallback(() => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else if (backHref) {
+      router.push(backHref);
+    }
+  }, [router, backHref]);
 
   return (
     <header
@@ -62,6 +75,28 @@ export default function PageHeader({
       {/* Top bar with breadcrumb and actions */}
       <div className="relative mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm font-semibold text-white">
+          {backHref ? (
+            <button
+              type="button"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white/80 transition hover:bg-white/10 hover:text-white active:bg-white/20 touch-manipulation"
+              aria-label="Go back"
+              onClick={handleBack}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="h-5 w-5"
+                aria-hidden="true"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+          ) : null}
           <span>{parishName}</span>
         </div>
         <div className="flex items-center gap-1.5">

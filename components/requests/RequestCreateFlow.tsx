@@ -11,18 +11,18 @@ import { createRequest } from "@/server/actions/requests";
 import { REQUEST_TYPE_OPTIONS } from "@/lib/requests/utils";
 import { cn } from "@/lib/ui/cn";
 
-const summaryDefaults: Record<RequestType, string> = {
+const summaryDefaults: Partial<Record<RequestType, string>> = {
   CONFESSION: "Confession request",
   TALK_TO_PRIEST: "Request to talk with a priest",
   PRAYER: "Prayer request",
-  LITURGICAL: "Liturgical support request"
+  GENERIC: "General request"
 };
 
-const requestTypeStyles: Record<RequestType, string> = {
+const requestTypeStyles: Partial<Record<RequestType, string>> = {
   CONFESSION: "border-l-4 border-l-emerald-400 bg-emerald-50/40",
   TALK_TO_PRIEST: "border-l-4 border-l-sky-400 bg-sky-50/40",
   PRAYER: "border-l-4 border-l-amber-400 bg-amber-50/40",
-  LITURGICAL: "border-l-4 border-l-rose-400 bg-rose-50/40"
+  GENERIC: "border-l-4 border-l-violet-400 bg-violet-50/40"
 };
 
 export default function RequestCreateFlow() {
@@ -90,13 +90,21 @@ export default function RequestCreateFlow() {
     );
   }
 
-  const showPreferredTime = selectedType === "CONFESSION" || selectedType === "TALK_TO_PRIEST";
+  const showPreferredTime =
+    selectedType === "CONFESSION" || selectedType === "TALK_TO_PRIEST" || selectedType === "GENERIC";
   const showNotes = selectedType !== "CONFESSION";
-  const notesLabel = selectedType === "TALK_TO_PRIEST" ? "Optional notes" : "Details";
+  const notesLabel =
+    selectedType === "TALK_TO_PRIEST"
+      ? "Optional notes"
+      : selectedType === "GENERIC"
+        ? "Additional details (optional)"
+        : "Details";
   const notesHelper =
     selectedType === "TALK_TO_PRIEST"
       ? "Keep notes brief and avoid sensitive confessional details."
-      : "Share any helpful context (avoid sensitive confessional details).";
+      : selectedType === "GENERIC"
+        ? "Briefly describe your need — e.g., home blessing, car blessing, meeting."
+        : "Share any helpful context (avoid sensitive confessional details).";
 
   return (
     <Card>
@@ -137,7 +145,7 @@ export default function RequestCreateFlow() {
             id="request-title"
             name="title"
             placeholder="Short summary"
-            defaultValue={summaryDefaults[selectedType]}
+            defaultValue={summaryDefaults[selectedType] ?? ""}
             required
           />
         </div>

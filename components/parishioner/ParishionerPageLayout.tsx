@@ -20,6 +20,8 @@ type ParishionerPageLayoutProps = {
   actions?: ReactNode;
   /** Optional icon to display next to the title */
   icon?: ReactNode;
+  /** Fallback href for back button. When set, a back arrow appears top-left. */
+  backHref?: string;
   /** Page content */
   children: ReactNode;
 };
@@ -38,6 +40,7 @@ export default function ParishionerPageLayout({
   gradientClass = "from-primary-600 via-primary-500 to-emerald-500",
   actions,
   icon,
+  backHref,
   children,
 }: ParishionerPageLayoutProps) {
   return (
@@ -51,6 +54,7 @@ export default function ParishionerPageLayout({
         gradientClass={gradientClass}
         actions={actions}
         icon={icon}
+        backHref={backHref}
       />
       {children}
     </div>
