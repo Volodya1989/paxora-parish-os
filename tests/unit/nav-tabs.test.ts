@@ -33,6 +33,7 @@ test("More drawer contains expected items", () => {
 
   assert.match(openMarkup, /role="dialog"/);
   assert.match(openMarkup, /Announcements/);
+  assert.match(openMarkup, /Requests/);
   assert.match(openMarkup, /People/);
   assert.match(openMarkup, /Profile/);
   assert.match(openMarkup, /Sign out/);

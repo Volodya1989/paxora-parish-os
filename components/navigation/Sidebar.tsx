@@ -62,9 +62,13 @@ export function Sidebar({
   };
 
   const baseItems = getPrimaryNavItems(parishRole);
-  // Add People for ADMIN/SHEPHERD on desktop only
+  // Add Requests + People for ADMIN/SHEPHERD on desktop only
   const items = (parishRole === "ADMIN" || parishRole === "SHEPHERD")
-    ? [...baseItems, { labelKey: "nav.people", href: routes.adminPeople, icon: "PE", testId: "people" }]
+    ? [
+        ...baseItems,
+        { labelKey: "nav.requests", href: routes.adminRequests, icon: "RQ", testId: "requests" },
+        { labelKey: "nav.people", href: routes.adminPeople, icon: "PE", testId: "people" }
+      ]
     : baseItems;
 
   return (
