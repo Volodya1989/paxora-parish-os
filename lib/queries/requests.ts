@@ -29,29 +29,36 @@ export type RequestBoardFilters = {
 };
 
 export async function listMyRequests(parishId: string, userId: string): Promise<RequestListItem[]> {
-  return prisma.request.findMany({
-    where: {
-      parishId,
-      createdByUserId: userId
-    },
-    orderBy: { updatedAt: "desc" },
-    select: {
-      id: true,
-      title: true,
-      type: true,
-      status: true,
-      visibilityScope: true,
-      createdAt: true,
-      updatedAt: true,
-      assignedTo: {
-        select: {
-          id: true,
-          name: true,
-          email: true
+  try {
+    return await prisma.request.findMany({
+      where: {
+        parishId,
+        createdByUserId: userId
+      },
+      orderBy: { updatedAt: "desc" },
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        status: true,
+        visibilityScope: true,
+        createdAt: true,
+        updatedAt: true,
+        assignedTo: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
         }
       }
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2021") {
+      return [];
     }
-  });
+    throw error;
+  }
 }
 
 export async function listRequestsForBoard(
@@ -103,37 +110,46 @@ export async function listRequestsForBoard(
     });
   }
 
-  const requests = await prisma.request.findMany({
-    where: {
-      parishId,
-      AND: andFilters.length ? andFilters : undefined
-    },
-    orderBy: { updatedAt: "desc" },
-    select: {
-      id: true,
-      title: true,
-      type: true,
-      status: true,
-      visibilityScope: true,
-      createdAt: true,
-      updatedAt: true,
-      details: true,
-      createdBy: {
-        select: {
-          id: true,
-          name: true,
-          email: true
-        }
+  let requests: RequestDetail[] = [];
+
+  try {
+    requests = await prisma.request.findMany({
+      where: {
+        parishId,
+        AND: andFilters.length ? andFilters : undefined
       },
-      assignedTo: {
-        select: {
-          id: true,
-          name: true,
-          email: true
+      orderBy: { updatedAt: "desc" },
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        status: true,
+        visibilityScope: true,
+        createdAt: true,
+        updatedAt: true,
+        details: true,
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
+        assignedTo: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
         }
       }
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2021") {
+      return [];
     }
-  });
+    throw error;
+  }
 
   return requests;
 }
@@ -145,38 +161,60 @@ export async function getRequestDetail(
 ): Promise<RequestDetail | null> {
   const membership = await getParishMembership(parishId, userId);
 
-  const request = await prisma.request.findFirst({
-    where: {
-      id: requestId,
-      parishId
-    },
-    select: {
-      id: true,
-      title: true,
-      type: true,
-      status: true,
-      visibilityScope: true,
-      createdAt: true,
-      updatedAt: true,
-      details: true,
-      createdByUserId: true,
-      assignedToUserId: true,
-      createdBy: {
-        select: {
-          id: true,
-          name: true,
-          email: true
-        }
+  let request: {
+    id: string;
+    title: string;
+    type: RequestType;
+    status: RequestStatus;
+    visibilityScope: VisibilityScope;
+    createdAt: Date;
+    updatedAt: Date;
+    details: Prisma.JsonValue | null;
+    createdByUserId: string;
+    assignedToUserId: string | null;
+    createdBy: { id: string; name: string | null; email: string };
+    assignedTo: { id: string; name: string | null; email: string } | null;
+  } | null = null;
+
+  try {
+    request = await prisma.request.findFirst({
+      where: {
+        id: requestId,
+        parishId
       },
-      assignedTo: {
-        select: {
-          id: true,
-          name: true,
-          email: true
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        status: true,
+        visibilityScope: true,
+        createdAt: true,
+        updatedAt: true,
+        details: true,
+        createdByUserId: true,
+        assignedToUserId: true,
+        createdBy: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
+        },
+        assignedTo: {
+          select: {
+            id: true,
+            name: true,
+            email: true
+          }
         }
       }
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2021") {
+      return null;
     }
-  });
+    throw error;
+  }
 
   if (!request) {
     return null;
