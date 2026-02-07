@@ -9,12 +9,20 @@ import Textarea from "@/components/ui/Textarea";
 import { Card, CardDescription, CardTitle, InteractiveCard } from "@/components/ui/Card";
 import { createRequest } from "@/server/actions/requests";
 import { REQUEST_TYPE_OPTIONS } from "@/lib/requests/utils";
+import { cn } from "@/lib/ui/cn";
 
 const summaryDefaults: Record<RequestType, string> = {
   CONFESSION: "Confession request",
   TALK_TO_PRIEST: "Request to talk with a priest",
   PRAYER: "Prayer request",
   LITURGICAL: "Liturgical support request"
+};
+
+const requestTypeStyles: Record<RequestType, string> = {
+  CONFESSION: "border-l-4 border-l-emerald-400 bg-emerald-50/40",
+  TALK_TO_PRIEST: "border-l-4 border-l-sky-400 bg-sky-50/40",
+  PRAYER: "border-l-4 border-l-amber-400 bg-amber-50/40",
+  LITURGICAL: "border-l-4 border-l-rose-400 bg-rose-50/40"
 };
 
 export default function RequestCreateFlow() {
@@ -71,7 +79,7 @@ export default function RequestCreateFlow() {
               onClick={() => setSelectedType(option.value)}
               className="text-left"
             >
-              <InteractiveCard className="space-y-2">
+              <InteractiveCard className={cn("space-y-2", requestTypeStyles[option.value])}>
                 <CardTitle className="text-base">{option.label}</CardTitle>
                 <CardDescription>{option.description}</CardDescription>
               </InteractiveCard>
