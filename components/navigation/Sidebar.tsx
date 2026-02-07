@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getPrimaryNavItems, type NavRole } from "@/components/navigation/navItems";
+import ParishSwitcher from "@/components/navigation/ParishSwitcher";
 import { SignOutButton } from "@/components/navigation/SignOutButton";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import { stripLocale } from "@/lib/i18n/routing";
@@ -19,6 +20,9 @@ type SidebarProps = {
   onCollapseChange?: (collapsed: boolean) => void;
   onSignOut?: () => Promise<void> | void;
   parishRole?: NavRole;
+  parishOptions?: Array<{ id: string; name: string; slug: string }>;
+  activeParishId?: string | null;
+  isSuperAdmin?: boolean;
 };
 
 export function Sidebar({
@@ -27,7 +31,10 @@ export function Sidebar({
   initialCollapsed = false,
   onCollapseChange,
   onSignOut,
-  parishRole
+  parishRole,
+  parishOptions = [],
+  activeParishId = null,
+  isSuperAdmin = false
 }: SidebarProps) {
   const t = useTranslations();
   const [internalCollapsed, setInternalCollapsed] = useState(initialCollapsed);
@@ -92,6 +99,15 @@ export function Sidebar({
       </div>
 
       <nav aria-label="Primary" className="mt-6 flex-1 space-y-1">
+        {isCollapsed ? null : (
+          <div className="mb-4 px-2">
+            <ParishSwitcher
+              activeParishId={activeParishId}
+              options={parishOptions}
+              forceVisible={isSuperAdmin}
+            />
+          </div>
+        )}
         {items.map((item) => {
           const isActive = normalizedPath === item.href;
           return (
@@ -126,6 +142,23 @@ export function Sidebar({
       </nav>
 
       <div className="mt-6 space-y-2 px-2">
+        {isSuperAdmin ? (
+          <Link
+            href={routes.superAdmin}
+            className={`flex items-center gap-3 rounded-card px-3 py-2 text-sm font-medium text-ink-700 transition hover:bg-mist-50 focus-ring ${
+              isCollapsed ? "justify-center" : ""
+            }`}
+            title={isCollapsed ? t("nav.superAdmin") : undefined}
+          >
+            <span
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-mist-200 bg-mist-100 text-xs font-semibold text-ink-700"
+              aria-hidden="true"
+            >
+              SA
+            </span>
+            <span className={isCollapsed ? "sr-only" : ""}>{t("nav.superAdmin")}</span>
+          </Link>
+        ) : null}
         <Link
           href="/profile"
           className={`flex items-center gap-3 rounded-card px-3 py-2 text-sm font-medium text-ink-700 transition hover:bg-mist-50 focus-ring ${

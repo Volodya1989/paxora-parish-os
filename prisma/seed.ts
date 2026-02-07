@@ -37,6 +37,15 @@ async function main() {
     }
   });
 
+  const superAdmin = await prisma.user.create({
+    data: {
+      name: "Paxora Super Admin",
+      email: "superadmin@paxora.local",
+      passwordHash,
+      isPaxoraSuperAdmin: true
+    }
+  });
+
   const invited = await prisma.user.create({
     data: {
       name: "Invited Parishioner",
@@ -88,7 +97,7 @@ async function main() {
   });
 
   await prisma.user.updateMany({
-    where: { id: { in: [coordinator.id, parishioner.id, invited.id] } },
+    where: { id: { in: [coordinator.id, parishioner.id, invited.id, superAdmin.id] } },
     data: { activeParishId: parish.id }
   });
 

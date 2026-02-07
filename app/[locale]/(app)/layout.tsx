@@ -7,7 +7,7 @@ import ParishSetup from "@/components/setup/ParishSetup";
 import { authOptions } from "@/server/auth/options";
 import { createParish } from "@/server/actions/parish";
 import { getAccessGateState } from "@/lib/queries/access";
-import { getParishMembership } from "@/server/db/groups";
+import { listParishOptions, resolveParishContext } from "@/server/auth/parish-context";
 import { getLocaleFromParam, stripLocale } from "@/lib/i18n/routing";
 
 export default async function AppLayout({
@@ -27,7 +27,7 @@ export default async function AppLayout({
 
   const access = await getAccessGateState();
 
-  if (!session.user.activeParishId && !access.parishId) {
+  if (!session.user.isPaxoraSuperAdmin && !session.user.activeParishId && !access.parishId) {
     return <ParishSetup action={createParish} userName={session.user.name} />;
   }
 
@@ -44,15 +44,24 @@ export default async function AppLayout({
     return <main className="min-h-screen bg-mist-50 px-4 py-10">{children}</main>;
   }
 
-  const resolvedParishId = access.parishId ?? session.user.activeParishId ?? null;
-  const membership = resolvedParishId
-    ? await getParishMembership(resolvedParishId, session.user.id)
-    : null;
+  const parishContext = await resolveParishContext({
+    userId: session.user.id,
+    activeParishId: session.user.activeParishId
+  });
+  const parishOptions = await listParishOptions({
+    userId: session.user.id,
+    isSuperAdmin: parishContext.isSuperAdmin
+  });
 
   // No AppHeader — every page now provides its own PageHeader gradient.
   // Same product, same style for all roles.
   return (
-    <AppShell parishRole={membership?.role ?? null}>
+    <AppShell
+      parishRole={parishContext.parishRole}
+      parishOptions={parishOptions}
+      activeParishId={parishContext.parishId}
+      isSuperAdmin={parishContext.isSuperAdmin}
+    >
       <main className="flex-1 bg-mist-50 px-4 py-6 pb-[calc(6rem+env(safe-area-inset-bottom))] md:px-8 md:pb-8">
         {children}
       </main>

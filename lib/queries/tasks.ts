@@ -3,6 +3,7 @@ import { canManageGroupMembership, isParishLeader } from "@/lib/permissions";
 import { getNow } from "@/lib/time/getNow";
 import { getOrCreateCurrentWeek } from "@/domain/week";
 import { prisma } from "@/server/db/prisma";
+import { isSuperAdmin } from "@/server/auth/super-admin";
 
 export type TaskStatusFilter = "all" | "open" | "in-progress" | "done";
 export type TaskOwnershipFilter = "mine" | "all";
@@ -61,6 +62,25 @@ export type TaskListItem = {
   canVolunteer: boolean;
   createdByRole: "ADMIN" | "SHEPHERD" | "MEMBER" | null;
 };
+
+async function getParishRole(parishId: string, userId: string) {
+  const superAdmin = await isSuperAdmin(userId);
+  if (superAdmin) {
+    return "ADMIN" as const;
+  }
+
+  const membership = await prisma.membership.findUnique({
+    where: {
+      parishId_userId: {
+        parishId,
+        userId
+      }
+    },
+    select: { role: true }
+  });
+
+  return membership?.role ?? null;
+}
 
 export type TaskListSummary = {
   total: number;
@@ -175,16 +195,9 @@ export async function listTasks({
     query: filters?.query
   };
 
-  const parishMembership = await prisma.membership.findUnique({
-    where: {
-      parishId_userId: {
-        parishId,
-        userId: actorUserId
-      }
-    },
-    select: { role: true }
-  });
-  const isLeader = parishMembership ? isParishLeader(parishMembership.role) : false;
+  const parishRole = await getParishRole(parishId, actorUserId);
+  const parishMembership = parishRole ? { role: parishRole } : null;
+  const isLeader = parishRole ? isParishLeader(parishRole) : false;
   const groupMemberships = await prisma.groupMembership.findMany({
     where: {
       userId: actorUserId,
@@ -509,17 +522,9 @@ export async function listPendingTaskApprovals({
   actorUserId: string;
   weekId?: string;
 }): Promise<PendingTaskApproval[]> {
-  const membership = await prisma.membership.findUnique({
-    where: {
-      parishId_userId: {
-        parishId,
-        userId: actorUserId
-      }
-    },
-    select: { role: true }
-  });
+  const parishRole = await getParishRole(parishId, actorUserId);
 
-  if (!membership || !isParishLeader(membership.role)) {
+  if (!parishRole || !isParishLeader(parishRole)) {
     return [];
   }
 
@@ -670,17 +675,9 @@ export async function getTaskDetail({
     return null;
   }
 
-  const membership = await prisma.membership.findUnique({
-    where: {
-      parishId_userId: {
-        parishId: task.parishId,
-        userId: actorUserId
-      }
-    },
-    select: { id: true }
-  });
+  const parishRole = await getParishRole(task.parishId, actorUserId);
 
-  if (!membership) {
+  if (!parishRole) {
     return null;
   }
 

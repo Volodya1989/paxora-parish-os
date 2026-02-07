@@ -1,4 +1,5 @@
 import { prisma } from "@/server/db/prisma";
+import { isSuperAdmin } from "@/server/auth/super-admin";
 
 type MembershipPolicy = {
   allowGroupLeads: boolean;
@@ -18,6 +19,12 @@ async function canUpdateGroupMembership({
   actorUserId,
   policy
 }: Omit<GroupMembershipActionInput, "targetUserId">) {
+  const superAdmin = await isSuperAdmin(actorUserId);
+
+  if (superAdmin) {
+    return true;
+  }
+
   const parishMembership = await prisma.membership.findUnique({
     where: {
       parishId_userId: {

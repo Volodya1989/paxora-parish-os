@@ -8,6 +8,7 @@ import { prisma } from "@/server/db/prisma";
 import { isParishLeader } from "@/lib/permissions";
 import { getNow as defaultGetNow } from "@/lib/time/getNow";
 import { REACTION_EMOJIS } from "@/lib/chat/reactions";
+import { isSuperAdmin } from "@/server/auth/super-admin";
 
 export type ChatChannelListItem = {
   id: string;
@@ -235,15 +236,18 @@ export async function listUnreadCountsForRooms(roomIds: string[], userId: string
 }
 
 export async function listChannelsForUser(parishId: string, userId: string) {
-  const parishMembership = await prisma.membership.findUnique({
-    where: {
-      parishId_userId: {
-        parishId,
-        userId
-      }
-    },
-    select: { role: true }
-  });
+  const superAdmin = await isSuperAdmin(userId);
+  const parishMembership = superAdmin
+    ? { role: "ADMIN" as const }
+    : await prisma.membership.findUnique({
+        where: {
+          parishId_userId: {
+            parishId,
+            userId
+          }
+        },
+        select: { role: true }
+      });
 
   if (!parishMembership) {
     throw new Error("Unauthorized");

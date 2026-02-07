@@ -23,6 +23,10 @@ export default async function PostLoginPage({
     redirect(buildLocalePathname(locale, "/sign-in"));
   }
 
+  if (session.user.isPaxoraSuperAdmin) {
+    redirect(buildLocalePathname(locale, "/super-admin"));
+  }
+
   const access = await getAccessGateState();
 
   if (access.status !== "approved") {

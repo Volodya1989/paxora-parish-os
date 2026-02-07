@@ -1,6 +1,13 @@
 import { prisma } from "@/server/db/prisma";
+import { isSuperAdmin } from "@/server/auth/super-admin";
 
 export async function getParishMembership(parishId: string, userId: string) {
+  const superAdmin = await isSuperAdmin(userId);
+
+  if (superAdmin) {
+    return { id: "super-admin", role: "ADMIN" as const };
+  }
+
   return prisma.membership.findUnique({
     where: {
       parishId_userId: {

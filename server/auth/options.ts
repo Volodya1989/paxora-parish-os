@@ -53,15 +53,21 @@ export const authOptions: NextAuthOptions = {
     },
     async jwt({ token, user }) {
       if (user && "activeParishId" in user) {
-        token.activeParishId = (user as { activeParishId?: string | null }).activeParishId ?? null;
+        const typedUser = user as {
+          activeParishId?: string | null;
+          isPaxoraSuperAdmin?: boolean;
+        };
+        token.activeParishId = typedUser.activeParishId ?? null;
+        token.isPaxoraSuperAdmin = typedUser.isPaxoraSuperAdmin ?? false;
       }
 
-      if (!token.activeParishId && token.sub) {
+      if (token.sub) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.sub },
-          select: { activeParishId: true }
+          select: { activeParishId: true, isPaxoraSuperAdmin: true }
         });
-        token.activeParishId = dbUser?.activeParishId ?? null;
+        token.activeParishId = dbUser?.activeParishId ?? token.activeParishId ?? null;
+        token.isPaxoraSuperAdmin = dbUser?.isPaxoraSuperAdmin ?? false;
       }
 
       return token;
@@ -70,6 +76,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         session.user.id = token.sub ?? "";
         session.user.activeParishId = (token.activeParishId as string | null) ?? null;
+        session.user.isPaxoraSuperAdmin = Boolean(token.isPaxoraSuperAdmin);
       }
       return session;
     }

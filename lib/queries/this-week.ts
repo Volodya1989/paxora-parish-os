@@ -2,7 +2,8 @@ import { getServerSession } from "next-auth";
 import { unstable_noStore as noStore } from "next/cache";
 import type { ParishRole } from "@prisma/client";
 import { authOptions } from "@/server/auth/options";
-import { ensureParishBootstrap } from "@/server/auth/bootstrap";
+import { resolveParishContext } from "@/server/auth/parish-context";
+import { isSuperAdmin } from "@/server/auth/super-admin";
 import { prisma } from "@/server/db/prisma";
 import { isCoordinatorInParish } from "@/server/db/groups";
 import { getWeekForSelection, type WeekSelection } from "@/domain/week";
@@ -102,15 +103,18 @@ export async function getThisWeekDataForUser({
 }): Promise<ThisWeekData> {
   const week = await getWeekForSelection(parishId, weekSelection, now);
 
-  const membership = await prisma.membership.findUnique({
-    where: {
-      parishId_userId: {
-        parishId,
-        userId
-      }
-    },
-    select: { role: true }
-  });
+  const superAdmin = await isSuperAdmin(userId);
+  const membership = superAdmin
+    ? { role: "ADMIN" as const }
+    : await prisma.membership.findUnique({
+        where: {
+          parishId_userId: {
+            parishId,
+            userId
+          }
+        },
+        select: { role: true }
+      });
 
   const [
     tasks,
@@ -378,15 +382,14 @@ export async function getThisWeekData({
   }
 
   const actorUserId = session.user.id;
-  const activeParishId = session.user.activeParishId;
-  const parishId = activeParishId
-    ? await prisma.parish
-        .findUnique({
-          where: { id: activeParishId },
-          select: { id: true }
-        })
-        .then((parish) => parish?.id ?? ensureParishBootstrap(session.user.id))
-    : await ensureParishBootstrap(session.user.id);
+  const { parishId } = await resolveParishContext({
+    userId: session.user.id,
+    activeParishId: session.user.activeParishId
+  });
+
+  if (!parishId) {
+    throw new Error("Parish context required");
+  }
 
   return getThisWeekDataForUser({
     parishId,

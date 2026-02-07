@@ -15,6 +15,9 @@ type MobileTabsProps = {
   onMoreOpenChange?: (open: boolean) => void;
   onSignOut?: () => Promise<void> | void;
   parishRole?: NavRole;
+  parishOptions?: Array<{ id: string; name: string; slug: string }>;
+  activeParishId?: string | null;
+  isSuperAdmin?: boolean;
 };
 
 export function MobileTabs({
@@ -23,7 +26,10 @@ export function MobileTabs({
   isMoreOpen,
   onMoreOpenChange,
   onSignOut,
-  parishRole
+  parishRole,
+  parishOptions = [],
+  activeParishId = null,
+  isSuperAdmin = false
 }: MobileTabsProps) {
   const t = useTranslations();
   const [internalOpen, setInternalOpen] = useState(false);
@@ -111,6 +117,9 @@ export function MobileTabs({
         onClose={handleClose}
         onSignOut={onSignOut}
         parishRole={parishRole}
+        parishOptions={parishOptions}
+        activeParishId={activeParishId}
+        isSuperAdmin={isSuperAdmin}
       />
     </>
   );

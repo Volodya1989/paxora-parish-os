@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { Prisma, TaskApprovalStatus, TaskVisibility } from "@prisma/client";
 import { unstable_noStore as noStore } from "next/cache";
 import { authOptions } from "@/server/auth/options";
-import { ensureParishBootstrap } from "@/server/auth/bootstrap";
+import { resolveParishContext } from "@/server/auth/parish-context";
 import { prisma } from "@/server/db/prisma";
 import { getOrCreateCurrentWeek } from "@/domain/week";
 import { getNow } from "@/lib/time/getNow";
@@ -52,21 +52,6 @@ export type CommunityRoomPreview = {
   unreadCount?: number | null;
 };
 
-async function resolveParishId(userId: string, activeParishId?: string | null) {
-  if (activeParishId) {
-    const parish = await prisma.parish.findUnique({
-      where: { id: activeParishId },
-      select: { id: true }
-    });
-
-    if (parish?.id) {
-      return parish.id;
-    }
-  }
-
-  return ensureParishBootstrap(userId);
-}
-
 export async function getHomeSummary({
   now = getNow()
 }: {
@@ -80,7 +65,14 @@ export async function getHomeSummary({
   }
 
   const actorUserId = session.user.id;
-  const parishId = await resolveParishId(session.user.id, session.user.activeParishId);
+  const { parishId } = await resolveParishContext({
+    userId: session.user.id,
+    activeParishId: session.user.activeParishId
+  });
+
+  if (!parishId) {
+    throw new Error("Parish context required");
+  }
   const week = await getOrCreateCurrentWeek(parishId, now);
   const visibilityWhere: Prisma.TaskWhereInput = {
     OR: [
@@ -189,7 +181,14 @@ export async function listCommunityRoomsPreview(): Promise<CommunityRoomPreview[
     throw new Error("Unauthorized");
   }
 
-  const parishId = await resolveParishId(session.user.id, session.user.activeParishId);
+  const { parishId } = await resolveParishContext({
+    userId: session.user.id,
+    activeParishId: session.user.activeParishId
+  });
+
+  if (!parishId) {
+    throw new Error("Parish context required");
+  }
   const channels = (await listChannelsForUser(parishId, session.user.id)).filter(
     (channel) => channel.type !== "GROUP"
   );

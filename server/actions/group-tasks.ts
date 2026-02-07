@@ -7,12 +7,32 @@ import { createTask as createTaskDomain } from "@/domain/tasks";
 import { isParishLeader } from "@/lib/permissions";
 import { createGroupTaskSchema } from "@/lib/validation/tasks";
 import { prisma } from "@/server/db/prisma";
+import { isSuperAdmin } from "@/server/auth/super-admin";
 
 function assertSession(session: Session | null) {
   if (!session?.user?.id || !session.user.activeParishId) {
     throw new Error("Unauthorized");
   }
   return { userId: session.user.id, parishId: session.user.activeParishId };
+}
+
+async function getParishRole(userId: string, parishId: string) {
+  const superAdmin = await isSuperAdmin(userId);
+  if (superAdmin) {
+    return "ADMIN" as const;
+  }
+
+  const membership = await prisma.membership.findUnique({
+    where: {
+      parishId_userId: {
+        parishId,
+        userId
+      }
+    },
+    select: { role: true }
+  });
+
+  return membership?.role ?? null;
 }
 
 export async function createGroupTask(formData: FormData) {
@@ -42,22 +62,14 @@ export async function createGroupTask(formData: FormData) {
     throw new Error("Group not found");
   }
 
-  const membership = await prisma.membership.findUnique({
-    where: {
-      parishId_userId: {
-        parishId,
-        userId
-      }
-    },
-    select: { role: true }
-  });
+  const parishRole = await getParishRole(userId, parishId);
 
-  if (!membership) {
+  if (!parishRole) {
     throw new Error("Unauthorized");
   }
 
   const visibility = "PUBLIC";
-  const approvalStatus = isParishLeader(membership.role) ? "APPROVED" : "PENDING";
+  const approvalStatus = isParishLeader(parishRole) ? "APPROVED" : "PENDING";
 
   await createTaskDomain({
     parishId,

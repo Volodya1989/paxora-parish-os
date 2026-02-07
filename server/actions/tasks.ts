@@ -43,6 +43,7 @@ import {
 import type { TaskActionState } from "@/server/actions/taskState";
 import { prisma } from "@/server/db/prisma";
 import { getTaskDetail as getTaskDetailQuery } from "@/lib/queries/tasks";
+import { isSuperAdmin } from "@/server/auth/super-admin";
 
 function assertSession(session: Session | null) {
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -56,6 +57,25 @@ function fd(formData: FormData, key: string) {
   if (v === null) return undefined; // null -> undefined (critical for zod optional)
   if (typeof v === "string" && v.trim() === "") return undefined; // "" -> undefined
   return v;
+}
+
+async function getParishRole(userId: string, parishId: string) {
+  const superAdmin = await isSuperAdmin(userId);
+  if (superAdmin) {
+    return "ADMIN" as const;
+  }
+
+  const membership = await prisma.membership.findUnique({
+    where: {
+      parishId_userId: {
+        parishId,
+        userId
+      }
+    },
+    select: { role: true }
+  });
+
+  return membership?.role ?? null;
 }
 
 
@@ -86,17 +106,9 @@ export async function createTask(
     };
   }
 
-  const membership = await prisma.membership.findUnique({
-    where: {
-      parishId_userId: {
-        parishId,
-        userId
-      }
-    },
-    select: { role: true }
-  });
+  const parishRole = await getParishRole(userId, parishId);
 
-  if (!membership) {
+  if (!parishRole) {
     return {
       status: "error",
       message: "You must be a parish member to create tasks."
@@ -104,7 +116,7 @@ export async function createTask(
   }
 
   if (parsed.data.ownerId && parsed.data.ownerId !== userId) {
-    if (isParishLeader(membership.role)) {
+    if (isParishLeader(parishRole)) {
       // Allowed.
     } else if (parsed.data.groupId) {
       const actorGroupMembership = await prisma.groupMembership.findFirst({
@@ -150,7 +162,7 @@ export async function createTask(
 
   const visibility = parsed.data.visibility === "public" ? "PUBLIC" : "PRIVATE";
   const approvalStatus =
-    visibility === "PRIVATE" || isParishLeader(membership.role) ? "APPROVED" : "PENDING";
+    visibility === "PRIVATE" || isParishLeader(parishRole) ? "APPROVED" : "PENDING";
   const volunteersNeeded = visibility === "PRIVATE" ? 1 : parsed.data.volunteersNeeded;
   const openToVolunteers = visibility === "PUBLIC";
   const ownerId =
@@ -567,17 +579,9 @@ export async function approveTask({ taskId }: { taskId: string }) {
     throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
   }
 
-  const membership = await prisma.membership.findUnique({
-    where: {
-      parishId_userId: {
-        parishId,
-        userId
-      }
-    },
-    select: { role: true }
-  });
+  const parishRole = await getParishRole(userId, parishId);
 
-  if (!membership || !isParishLeader(membership.role)) {
+  if (!parishRole || !isParishLeader(parishRole)) {
     throw new Error("Unauthorized");
   }
 
@@ -617,17 +621,9 @@ export async function rejectTask({ taskId }: { taskId: string }) {
     throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
   }
 
-  const membership = await prisma.membership.findUnique({
-    where: {
-      parishId_userId: {
-        parishId,
-        userId
-      }
-    },
-    select: { role: true }
-  });
+  const parishRole = await getParishRole(userId, parishId);
 
-  if (!membership || !isParishLeader(membership.role)) {
+  if (!parishRole || !isParishLeader(parishRole)) {
     throw new Error("Unauthorized");
   }
 

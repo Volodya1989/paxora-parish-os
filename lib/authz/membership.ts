@@ -1,5 +1,6 @@
-import { prisma } from "@/server/db/prisma";
 import type { GroupMembershipStatus, GroupRole, ParishRole } from "@prisma/client";
+import { prisma } from "@/server/db/prisma";
+import { isSuperAdmin } from "@/server/auth/super-admin";
 
 export function isAdminClergy(role?: ParishRole | null) {
   return role === "ADMIN" || role === "SHEPHERD";
@@ -23,7 +24,8 @@ async function getGroupAccessContext(userId: string, groupId: string): Promise<G
     throw new Error("Group not found");
   }
 
-  const [parishMembership, groupMembership] = await Promise.all([
+  const [superAdmin, parishMembership, groupMembership] = await Promise.all([
+    isSuperAdmin(userId),
     prisma.membership.findUnique({
       where: {
         parishId_userId: {
@@ -47,7 +49,7 @@ async function getGroupAccessContext(userId: string, groupId: string): Promise<G
   return {
     groupId: group.id,
     parishId: group.parishId,
-    parishRole: parishMembership?.role ?? null,
+    parishRole: superAdmin ? "ADMIN" : parishMembership?.role ?? null,
     groupRole: groupMembership?.status === "ACTIVE" ? groupMembership.role : null,
     groupMembershipStatus: groupMembership?.status ?? null
   };

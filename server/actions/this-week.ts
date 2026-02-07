@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/server/auth/options";
 import { getWeekForSelection, type WeekSelection } from "@/domain/week";
-import { ensureParishBootstrap } from "@/server/auth/bootstrap";
+import { resolveParishContext } from "@/server/auth/parish-context";
 import { getWeekDigestSummary } from "@/server/db/digest";
 import { prisma } from "@/server/db/prisma";
 
@@ -36,15 +36,14 @@ export async function getThisWeekSummary(
     throw new Error("Unauthorized");
   }
 
-  const activeParishId = session.user.activeParishId;
-  const parishId = activeParishId
-    ? await prisma.parish
-        .findUnique({
-          where: { id: activeParishId },
-          select: { id: true }
-        })
-        .then((parish) => parish?.id ?? ensureParishBootstrap(session.user.id))
-    : await ensureParishBootstrap(session.user.id);
+  const { parishId } = await resolveParishContext({
+    userId: session.user.id,
+    activeParishId: session.user.activeParishId
+  });
+
+  if (!parishId) {
+    throw new Error("Parish context required");
+  }
   const week = await getWeekForSelection(parishId, weekSelection);
   const summary = await getWeekDigestSummary(parishId, week.id);
 

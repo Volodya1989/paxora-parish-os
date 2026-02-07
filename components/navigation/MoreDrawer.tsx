@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
+import ParishSwitcher from "@/components/navigation/ParishSwitcher";
 import { getMoreNavItems, type NavRole } from "@/components/navigation/navItems";
 import { SignOutButton } from "@/components/navigation/SignOutButton";
 import { useTranslations } from "@/lib/i18n/provider";
@@ -12,12 +13,23 @@ type MoreDrawerProps = {
   onClose: () => void;
   onSignOut?: () => Promise<void> | void;
   parishRole?: NavRole;
+  parishOptions?: Array<{ id: string; name: string; slug: string }>;
+  activeParishId?: string | null;
+  isSuperAdmin?: boolean;
 };
 
-export function MoreDrawer({ open, onClose, onSignOut, parishRole }: MoreDrawerProps) {
+export function MoreDrawer({
+  open,
+  onClose,
+  onSignOut,
+  parishRole,
+  parishOptions = [],
+  activeParishId = null,
+  isSuperAdmin = false
+}: MoreDrawerProps) {
   const t = useTranslations();
   const firstItemRef = useRef<HTMLAnchorElement | null>(null);
-  const items = getMoreNavItems(parishRole);
+  const items = getMoreNavItems({ parishRole, isSuperAdmin });
 
   useEffect(() => {
     if (!open) {
@@ -61,6 +73,11 @@ export function MoreDrawer({ open, onClose, onSignOut, parishRole }: MoreDrawerP
       >
         <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-mist-200" />
         <div className="space-y-2">
+          <ParishSwitcher
+            activeParishId={activeParishId}
+            options={parishOptions}
+            forceVisible={isSuperAdmin}
+          />
           {items.map((item, index) => (
             <Link
               key={item.href}

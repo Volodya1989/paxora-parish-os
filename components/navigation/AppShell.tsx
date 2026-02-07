@@ -12,9 +12,18 @@ import PushRegistration from "@/components/push/PushRegistration";
 type AppShellProps = {
   children: ReactNode;
   parishRole?: "ADMIN" | "SHEPHERD" | "MEMBER" | null;
+  parishOptions?: Array<{ id: string; name: string; slug: string }>;
+  activeParishId?: string | null;
+  isSuperAdmin?: boolean;
 };
 
-export function AppShell({ children, parishRole }: AppShellProps) {
+export function AppShell({
+  children,
+  parishRole,
+  parishOptions = [],
+  activeParishId = null,
+  isSuperAdmin = false
+}: AppShellProps) {
   const pathname = usePathname();
 
   return (
@@ -23,10 +32,22 @@ export function AppShell({ children, parishRole }: AppShellProps) {
         <PushRegistration />
         <InviteToastListener />
         <div className="flex min-h-screen w-full">
-          <Sidebar currentPath={pathname} parishRole={parishRole} />
+          <Sidebar
+            currentPath={pathname}
+            parishRole={parishRole}
+            parishOptions={parishOptions}
+            activeParishId={activeParishId}
+            isSuperAdmin={isSuperAdmin}
+          />
           <div className="flex min-h-screen flex-1 flex-col">
             {children}
-            <MobileTabs currentPath={pathname} parishRole={parishRole} />
+            <MobileTabs
+              currentPath={pathname}
+              parishRole={parishRole}
+              parishOptions={parishOptions}
+              activeParishId={activeParishId}
+              isSuperAdmin={isSuperAdmin}
+            />
           </div>
         </div>
         <ToastViewport />

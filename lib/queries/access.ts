@@ -1,5 +1,6 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/server/auth/options";
+import { resolveParishContext } from "@/server/auth/parish-context";
 import { prisma } from "@/server/db/prisma";
 
 export type AccessGateStatus = "none" | "pending" | "approved" | "unverified";
@@ -20,33 +21,6 @@ export type PendingAccessRequest = {
   requestedAt: Date;
 };
 
-async function resolveAccessParishId(userId: string, activeParishId?: string | null) {
-  if (activeParishId) {
-    const parish = await prisma.parish.findUnique({
-      where: { id: activeParishId },
-      select: { id: true }
-    });
-
-    if (parish?.id) {
-      return parish.id;
-    }
-  }
-
-  const fallbackParish = await prisma.parish.findFirst({
-    orderBy: { createdAt: "asc" },
-    select: { id: true }
-  });
-
-  if (fallbackParish?.id && !activeParishId) {
-    await prisma.user.update({
-      where: { id: userId },
-      data: { activeParishId: fallbackParish.id }
-    });
-  }
-
-  return fallbackParish?.id ?? null;
-}
-
 export async function getAccessGateState(): Promise<AccessGateState> {
   const session = await getServerSession(authOptions);
 
@@ -54,12 +28,30 @@ export async function getAccessGateState(): Promise<AccessGateState> {
     throw new Error("Unauthorized");
   }
 
-  const parishId = await resolveAccessParishId(session.user.id, session.user.activeParishId);
+  const { parishId, isSuperAdmin } = await resolveParishContext({
+    userId: session.user.id,
+    activeParishId: session.user.activeParishId
+  });
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: { emailVerifiedAt: true }
   });
+
+  if (isSuperAdmin) {
+    return {
+      status: "approved",
+      parishId,
+      parishName: parishId
+        ? (
+            await prisma.parish.findUnique({
+              where: { id: parishId },
+              select: { name: true }
+            })
+          )?.name ?? null
+        : null
+    };
+  }
 
   if (!parishId) {
     return {

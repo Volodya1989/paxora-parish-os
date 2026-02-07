@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
 import type { ParishRole } from "@prisma/client";
 import { authOptions } from "@/server/auth/options";
+import { resolveParishContext } from "@/server/auth/parish-context";
 import { requireAdminOrShepherd } from "@/server/auth/permissions";
 import { prisma } from "@/server/db/prisma";
 import { removeMemberSchema, updateMemberRoleSchema } from "@/lib/validation/people";
@@ -17,13 +18,23 @@ function buildError(message: string, error: PeopleActionError): PeopleActionStat
 
 async function requireAdminSession() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id || !session.user.activeParishId) {
+  if (!session?.user?.id) {
     throw new Error("Unauthorized");
   }
-  await requireAdminOrShepherd(session.user.id, session.user.activeParishId);
+
+  const parishContext = await resolveParishContext({
+    userId: session.user.id,
+    activeParishId: session.user.activeParishId
+  });
+
+  if (!parishContext.parishId) {
+    throw new Error("Unauthorized");
+  }
+
+  await requireAdminOrShepherd(session.user.id, parishContext.parishId);
   return {
     userId: session.user.id,
-    parishId: session.user.activeParishId
+    parishId: parishContext.parishId
   };
 }
 

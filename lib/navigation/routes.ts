@@ -6,5 +6,6 @@ export const routes = {
   groups: "/groups",
   announcements: "/announcements",
   parish: "/parish",
-  adminPeople: "/admin/people"
+  adminPeople: "/admin/people",
+  superAdmin: "/super-admin"
 } as const;
