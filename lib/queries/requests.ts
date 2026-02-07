@@ -1,4 +1,4 @@
-import type { Prisma, RequestStatus, RequestType, VisibilityScope } from "@prisma/client";
+import { Prisma, type RequestStatus, type RequestType, type VisibilityScope } from "@prisma/client";
 import { prisma } from "@/server/db/prisma";
 import { getParishMembership } from "@/server/db/groups";
 import { isParishLeader } from "@/lib/permissions";
