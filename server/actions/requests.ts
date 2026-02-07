@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
 import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
+import { Prisma } from "@prisma/client";
 import { requireAdminOrShepherd } from "@/server/auth/permissions";
 import { createRequestSchema } from "@/lib/validation/requests";
 import { getDefaultVisibilityForType, getRequestTypeLabel } from "@/lib/requests/utils";
@@ -48,7 +49,7 @@ export async function createRequest(formData: FormData): Promise<RequestActionRe
       type,
       title,
       visibilityScope,
-      details: Object.keys(details).length ? details : null
+      details: Object.keys(details).length ? details : Prisma.DbNull
     }
   });
 

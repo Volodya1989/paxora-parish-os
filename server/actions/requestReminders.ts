@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/server/db/prisma";
+import type { ParishRole } from "@prisma/client";
 import { getNow } from "@/lib/time/getNow";
 import {
   REQUEST_OVERDUE_STALE_DAYS,
@@ -65,7 +66,7 @@ export async function sendRequestOverdueReminders() {
       return leaderCache.get(cacheKey) ?? [];
     }
 
-    const roles = scope === "CLERGY_ONLY" ? ["SHEPHERD"] : ["ADMIN", "SHEPHERD"];
+    const roles: ParishRole[] = scope === "CLERGY_ONLY" ? ["SHEPHERD"] : ["ADMIN", "SHEPHERD"];
     const leaders = await prisma.membership.findMany({
       where: {
         parishId,
