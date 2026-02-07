@@ -42,16 +42,26 @@ export async function createRequest(formData: FormData): Promise<RequestActionRe
     details.notes = notes;
   }
 
-  await prisma.request.create({
-    data: {
-      parishId: session.user.activeParishId,
-      createdByUserId: session.user.id,
-      type,
-      title,
-      visibilityScope,
-      details: Object.keys(details).length ? details : Prisma.DbNull
+  try {
+    await prisma.request.create({
+      data: {
+        parishId: session.user.activeParishId,
+        createdByUserId: session.user.id,
+        type,
+        title,
+        visibilityScope,
+        details: Object.keys(details).length ? details : Prisma.DbNull
+      }
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2021") {
+      return {
+        status: "error",
+        message: "Requests are not available yet. Please try again after the system update."
+      };
     }
-  });
+    throw error;
+  }
 
   revalidatePath("/requests");
 
