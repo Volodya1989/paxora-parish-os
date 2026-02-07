@@ -27,6 +27,7 @@ export default async function MyRequestsPage() {
       pageTitle="My Requests"
       parishName={parish?.name ?? "My Parish"}
       subtitle="Track updates and follow-ups"
+      backHref="/parish"
       actions={
         <Link
           href="/requests/new"

@@ -55,12 +55,17 @@ export async function createRequest(formData: FormData): Promise<RequestActionRe
     });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2021") {
+      console.error("[requests] Request table missing (P2021) — run prisma migrate deploy", error.message);
       return {
         status: "error",
         message: "Requests are not available yet. Please try again after the system update."
       };
     }
-    throw error;
+    console.error("[requests] Failed to create request", error);
+    return {
+      status: "error",
+      message: "Something went wrong while submitting your request. Please try again."
+    };
   }
 
   revalidatePath("/requests");
@@ -75,7 +80,7 @@ export async function updateRequestStatus(input: {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id || !session.user.activeParishId) {
-    return { status: "error", message: "Unauthorized" };
+    return { status: "error", message: "Please sign in to perform this action." };
   }
 
   const parishId = session.user.activeParishId;
@@ -103,7 +108,7 @@ export async function updateRequestVisibility(input: {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id || !session.user.activeParishId) {
-    return { status: "error", message: "Unauthorized" };
+    return { status: "error", message: "Please sign in to perform this action." };
   }
 
   const parishId = session.user.activeParishId;
@@ -155,7 +160,7 @@ export async function assignRequest(input: {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id || !session.user.activeParishId) {
-    return { status: "error", message: "Unauthorized" };
+    return { status: "error", message: "Please sign in to perform this action." };
   }
 
   const parishId = session.user.activeParishId;

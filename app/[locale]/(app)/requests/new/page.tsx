@@ -21,6 +21,7 @@ export default async function NewRequestPage() {
       pageTitle="Make a Request"
       parishName={parish?.name ?? "My Parish"}
       subtitle="Share a need or ask for support"
+      backHref="/parish"
     >
       <RequestCreateFlow />
     </ParishionerPageLayout>

@@ -36,6 +36,7 @@ const filterTypes = [
   { value: "CONFESSION", label: "Confession" },
   { value: "TALK_TO_PRIEST", label: "Talk to a priest" },
   { value: "PRAYER", label: "Prayer" },
+  { value: "GENERIC", label: "General request" },
   { value: "LITURGICAL", label: "Liturgical" }
 ];
 

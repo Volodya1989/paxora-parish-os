@@ -125,6 +125,7 @@ enum VisibilityScope {
 
 enum RequestType {
   CONFESSION
+  GENERIC
   LITURGICAL
   PRAYER
   TALK_TO_PRIEST

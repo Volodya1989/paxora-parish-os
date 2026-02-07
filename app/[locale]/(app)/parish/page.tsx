@@ -73,8 +73,24 @@ export default async function ParishHubPage() {
         </Link>
       }
     >
-      {/* Featured Panel */}
-      {/* <FeaturedPanel config={featuredConfig} /> */}
+      {/* Quick-action panel: Make a Request */}
+      <div className="flex items-center gap-3 rounded-2xl border border-primary-100 bg-gradient-to-r from-primary-50/60 to-white px-4 py-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-100 text-primary-600">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+          </svg>
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-ink-800">Need something from the parish?</p>
+          <p className="text-xs text-ink-500">Confession, blessing, meeting, or prayer</p>
+        </div>
+        <Link
+          href="/requests/new"
+          className="shrink-0 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2"
+        >
+          Request
+        </Link>
+      </div>
 
       {/* Parish Hub Grid */}
       {hubItems.length > 0 ? (

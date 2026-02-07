@@ -25,9 +25,9 @@ export const REQUEST_TYPE_OPTIONS: Array<{ value: RequestType; label: string; de
     description: "Ask for prayer for an intention or need."
   },
   {
-    value: "LITURGICAL",
-    label: "Liturgical support",
-    description: "Prepare for a Mass, service, or sacristy need."
+    value: "GENERIC",
+    label: "General request",
+    description: "Blessing, meeting, or any other parish need."
   }
 ];
 
