@@ -5,9 +5,12 @@ import { getParishMembership } from "@/server/db/groups";
 import { getOrCreateCurrentWeek } from "@/domain/week";
 import { getNow } from "@/lib/time/getNow";
 import { listTasks } from "@/lib/queries/tasks";
+import { getUserYtdHours } from "@/lib/queries/hours";
+import { getMilestoneTier } from "@/lib/hours/milestones";
 import { isParishLeader } from "@/lib/permissions";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
 import ServeBoardView from "@/components/serve-board/ServeBoardView";
+import VolunteerHoursSummary from "@/components/serve-board/VolunteerHoursSummary";
 import { HandHeartIcon, HeartIcon } from "@/components/icons/ParishIcons";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +36,7 @@ export default async function ServeBoardPage() {
   const week = await getOrCreateCurrentWeek(parishId, getNow());
   const isLeader = isParishLeader(membership.role);
 
-  const [taskList, members, parish] = await Promise.all([
+  const [taskList, members, parish, ytdHours] = await Promise.all([
     listTasks({
       parishId,
       actorUserId: session.user.id,
@@ -55,9 +58,17 @@ export default async function ServeBoardPage() {
     }),
     prisma.parish.findUnique({
       where: { id: parishId },
-      select: { name: true }
-    })
+      select: { name: true, bronzeHours: true, silverHours: true, goldHours: true }
+    }),
+    getUserYtdHours({ parishId, userId: session.user.id })
   ]);
+
+  const milestoneTier = getMilestoneTier({
+    ytdHours,
+    bronzeHours: parish?.bronzeHours ?? 10,
+    silverHours: parish?.silverHours ?? 25,
+    goldHours: parish?.goldHours ?? 50
+  });
 
   const memberOptions = members.map((member) => {
     const name = getDisplayName(member.user.name, member.user.email);
@@ -77,6 +88,7 @@ export default async function ServeBoardPage() {
       gradientClass="from-sky-500 via-sky-400 to-cyan-500"
       icon={<HandHeartIcon className="h-6 w-6 text-white" />}
     >
+      <VolunteerHoursSummary ytdHours={ytdHours} tier={milestoneTier} />
       <ServeBoardView
         tasks={taskList.tasks}
         memberOptions={memberOptions}

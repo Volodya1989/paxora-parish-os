@@ -6,10 +6,13 @@ import { getWeekForSelection, parseWeekSelection } from "@/domain/week";
 import { getNow } from "@/lib/time/getNow";
 import { listPendingTaskApprovals, listTasks, type TaskFilters } from "@/lib/queries/tasks";
 import { getPendingAccessRequests } from "@/lib/queries/access";
+import { getUserYtdHours } from "@/lib/queries/hours";
+import { getMilestoneTier } from "@/lib/hours/milestones";
 import { approveParishAccess, rejectParishAccess } from "@/app/actions/access";
 import TasksView from "@/components/tasks/TasksView";
 import { getTasksViewMode } from "@/lib/tasks/viewMode";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
+import VolunteerHoursSummary from "@/components/serve-board/VolunteerHoursSummary";
 import { isParishLeader } from "@/lib/permissions";
 import { HandHeartIcon } from "@/components/icons/ParishIcons";
 
@@ -108,7 +111,7 @@ export default async function TasksPage({
   const week = await getWeekForSelection(parishId, weekSelection, getNow());
   const filters = parseTaskFilters(resolvedSearchParams, viewMode);
 
-  const [taskList, groups, members, pendingRequests, pendingTaskApprovals, parish] = await Promise.all([
+  const [taskList, groups, members, pendingRequests, pendingTaskApprovals, parish, ytdHours] = await Promise.all([
     listTasks({
       parishId,
       actorUserId: session.user.id,
@@ -138,9 +141,17 @@ export default async function TasksPage({
     }),
     prisma.parish.findUnique({
       where: { id: parishId },
-      select: { name: true }
-    })
+      select: { name: true, bronzeHours: true, silverHours: true, goldHours: true }
+    }),
+    getUserYtdHours({ parishId, userId: session.user.id })
   ]);
+
+  const milestoneTier = getMilestoneTier({
+    ytdHours,
+    bronzeHours: parish?.bronzeHours ?? 10,
+    silverHours: parish?.silverHours ?? 25,
+    goldHours: parish?.goldHours ?? 50
+  });
 
   const memberOptions = members.map((membership) => {
     const name = getDisplayName(membership.user.name, membership.user.email);
@@ -163,6 +174,7 @@ export default async function TasksPage({
       gradientClass="from-sky-500 via-sky-400 to-cyan-500"
       icon={<HandHeartIcon className="h-6 w-6 text-white" />}
     >
+      <VolunteerHoursSummary ytdHours={ytdHours} tier={milestoneTier} />
       <TasksView
         weekLabel={week.label}
         weekRange={formatDateRange(week.startsOn, week.endsOn)}
