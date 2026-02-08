@@ -19,6 +19,11 @@ export type ModalProps = {
 export function Modal({ open, onClose, title, children, footer }: ModalProps) {
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) {
@@ -26,15 +31,23 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
     }
 
     const dialog = dialogRef.current;
+
+    // Skip focus management if the dialog is not visible (e.g. hidden via CSS on mobile)
+    if (!dialog || dialog.offsetParent === null) {
+      return;
+    }
+
     const previousActive = document.activeElement as HTMLElement | null;
-    const focusable = dialog ? getFocusableElements(dialog) : [];
+    const focusable = getFocusableElements(dialog);
     (focusable[0] ?? dialog)?.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Guard against the dialog becoming hidden between renders
+      if (dialog.offsetParent === null) return;
       if (event.key === "Escape") {
-        onClose();
+        onCloseRef.current();
       }
-      if (event.key === "Tab" && dialog) {
+      if (event.key === "Tab") {
         trapFocus(dialog, event);
       }
     };
@@ -45,7 +58,7 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
       document.removeEventListener("keydown", handleKeyDown);
       previousActive?.focus();
     };
-  }, [onClose, open]);
+  }, [open]);
 
   if (!open) {
     return null;

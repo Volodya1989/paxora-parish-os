@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import React, { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
 import { useNotifications } from "@/components/notifications/useNotifications";
 import NotificationPanel from "@/components/notifications/NotificationPanel";
 import NotificationAutoClear from "@/components/notifications/NotificationAutoClear";
@@ -43,13 +43,31 @@ export function useNotificationContext() {
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const { items, count, loading, markCategoryRead, markAllRead } = useNotifications();
   const [panelOpen, setPanelOpen] = useState(false);
+  const hadItemsRef = useRef(false);
 
-  const togglePanel = () => setPanelOpen((prev) => !prev);
+  const handleClose = useCallback(() => {
+    // Auto-mark all as read when closing the panel if there were items to see
+    if (hadItemsRef.current) {
+      markAllRead();
+      hadItemsRef.current = false;
+    }
+    setPanelOpen(false);
+  }, [markAllRead]);
+
+  const togglePanel = useCallback(() => {
+    setPanelOpen((prev) => {
+      const next = !prev;
+      if (next && count > 0) {
+        hadItemsRef.current = true;
+      }
+      return next;
+    });
+  }, [count]);
 
   const value = useMemo(
     () => ({ items, count, loading, panelOpen, setPanelOpen, togglePanel }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [items, count, loading, panelOpen]
+    [items, count, loading, panelOpen, togglePanel]
   );
 
   return (
@@ -57,7 +75,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       {children}
       <NotificationPanel
         open={panelOpen}
-        onClose={() => setPanelOpen(false)}
+        onClose={handleClose}
         items={items}
         onMarkAllRead={markAllRead}
         onMarkCategoryRead={markCategoryRead}

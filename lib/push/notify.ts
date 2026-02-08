@@ -200,3 +200,41 @@ export async function notifyEventCreated(opts: {
 
   await sendPushToUsers(recipientIds, parishId, payload);
 }
+
+export async function notifyRequestAssigned(opts: {
+  requestId: string;
+  requestTitle: string;
+  parishId: string;
+  assigneeId: string;
+}) {
+  const { requestId, requestTitle, parishId, assigneeId } = opts;
+
+  const payload: PushPayload = {
+    title: "New request assigned to you",
+    body: requestTitle,
+    url: `/requests/${requestId}`,
+    tag: `request-${requestId}`
+  };
+
+  await sendPushToUsers([assigneeId], parishId, payload);
+}
+
+export async function notifyRequestReminder(opts: {
+  requestId: string;
+  requestTitle: string;
+  parishId: string;
+  recipientIds: string[];
+}) {
+  const { requestId, requestTitle, parishId, recipientIds } = opts;
+
+  if (recipientIds.length === 0) return;
+
+  const payload: PushPayload = {
+    title: "Request reminder",
+    body: requestTitle,
+    url: `/requests/${requestId}`,
+    tag: `request-reminder-${requestId}`
+  };
+
+  await sendPushToUsers(recipientIds, parishId, payload);
+}

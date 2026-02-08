@@ -109,6 +109,28 @@ enum EventRequestCategory {
   OTHER
 }
 
+enum RequestStatus {
+  SUBMITTED
+  ACKNOWLEDGED
+  SCHEDULED
+  COMPLETED
+  CANCELED
+}
+
+enum VisibilityScope {
+  CLERGY_ONLY
+  ADMIN_ALL
+  ADMIN_SPECIFIC
+}
+
+enum RequestType {
+  CONFESSION
+  GENERIC
+  LITURGICAL
+  PRAYER
+  TALK_TO_PRIEST
+}
+
 enum ChatChannelType {
   ANNOUNCEMENT
   GROUP
@@ -197,6 +219,7 @@ model Parish {
   tasks           Task[]
   events          Event[]
   eventRequests   EventRequest[]
+  requests        Request[]
   digests         Digest[]
   announcements   Announcement[]
   chatChannels    ChatChannel[]
@@ -246,6 +269,7 @@ model User {
   lastSeenAnnouncementsAt  DateTime?
   lastSeenEventsAt         DateTime?
   lastSeenTasksAt          DateTime?
+  lastSeenRequestsAt       DateTime?
   createdAt                DateTime  @default(now())
 
   pushSubscriptions        PushSubscription[]
@@ -283,6 +307,8 @@ model User {
   sentParishInvites        ParishInvite[]           @relation("ParishInviteActor")
   eventRequests            EventRequest[]
   decidedEventRequests     EventRequest[]           @relation("EventRequestDecisionBy")
+  requestsCreated          Request[]                @relation("RequestCreatedBy")
+  requestsAssigned         Request[]                @relation("RequestAssignedTo")
 }
 
 model Membership {
@@ -341,6 +367,29 @@ model EventRequest {
 
   @@index([parishId, status])
   @@index([requesterId])
+}
+
+model Request {
+  id               String          @id @default(cuid())
+  parishId         String
+  createdByUserId  String
+  assignedToUserId String?
+  type             RequestType
+  status           RequestStatus   @default(SUBMITTED)
+  visibilityScope  VisibilityScope @default(ADMIN_ALL)
+  title            String
+  details          Json?
+  lastReminderAt   DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  parish     Parish @relation(fields: [parishId], references: [id], onDelete: Cascade)
+  createdBy  User   @relation("RequestCreatedBy", fields: [createdByUserId], references: [id])
+  assignedTo User?  @relation("RequestAssignedTo", fields: [assignedToUserId], references: [id])
+
+  @@index([parishId, status])
+  @@index([parishId, createdByUserId])
+  @@index([parishId, assignedToUserId])
 }
 
 model EmailLog {

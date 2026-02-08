@@ -29,12 +29,20 @@ const baseMoreNavItems: NavItem[] = [
 ];
 
 export function getMoreNavItems(role?: NavRole) {
+  const requestItem: NavItem = {
+    labelKey: "nav.requests",
+    href: role === "ADMIN" || role === "SHEPHERD" ? routes.adminRequests : routes.requests,
+    icon: "RQ",
+    testId: "requests"
+  };
+
   if (role === "ADMIN" || role === "SHEPHERD") {
     return [
       baseMoreNavItems[0],
+      requestItem,
       { labelKey: "nav.people", href: routes.adminPeople, icon: "PE", testId: "people" },
       baseMoreNavItems[1]
     ];
   }
-  return baseMoreNavItems;
+  return [baseMoreNavItems[0], requestItem, baseMoreNavItems[1]];
 }
