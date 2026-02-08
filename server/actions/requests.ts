@@ -175,15 +175,11 @@ export async function updateRequestVisibility(input: {
 
   const request = await prisma.request.findUnique({
     where: { id: input.requestId },
-    select: { assignedToUserId: true, parishId: true }
+    select: { assignedToUserId: true, parishId: true, status: true }
   });
 
   if (!request || request.parishId !== parishId) {
     return { status: "error", message: "Request not found." };
-  }
-
-  if (request.status === "COMPLETED") {
-    return { status: "error", message: "Completed requests cannot be canceled." };
   }
 
   if (request.status === "COMPLETED") {
@@ -371,7 +367,6 @@ export async function sendRequestInfoEmailAction(input: {
     select: {
       id: true,
       parishId: true,
-      status: true,
       title: true,
       type: true,
       status: true,
@@ -473,7 +468,6 @@ export async function scheduleRequest(input: {
     select: {
       id: true,
       parishId: true,
-      status: true,
       title: true,
       type: true,
       status: true,

@@ -31,7 +31,7 @@ export type RequestDetails = {
   history?: RequestEmailHistoryEntry[];
 };
 
-const isPlainObject = (value: Prisma.JsonValue | null): value is Record<string, unknown> => {
+const isPlainObject = (value: Prisma.JsonValue | null): value is Prisma.JsonObject => {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 };
 
