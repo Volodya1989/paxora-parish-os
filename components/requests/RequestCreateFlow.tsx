@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { RequestType } from "@prisma/client";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -25,11 +26,20 @@ const requestTypeStyles: Partial<Record<RequestType, string>> = {
   GENERIC: "border-l-4 border-l-violet-400 bg-violet-50/40"
 };
 
-export default function RequestCreateFlow() {
+type RequestCreateFlowProps = {
+  defaultName?: string;
+  defaultEmail?: string;
+};
+
+export default function RequestCreateFlow({
+  defaultName = "",
+  defaultEmail = ""
+}: RequestCreateFlowProps) {
   const [selectedType, setSelectedType] = useState<RequestType | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
 
   const selectedCopy = useMemo(
     () => REQUEST_TYPE_OPTIONS.find((option) => option.value === selectedType) ?? null,
@@ -92,16 +102,18 @@ export default function RequestCreateFlow() {
 
   const showPreferredTime =
     selectedType === "CONFESSION" || selectedType === "TALK_TO_PRIEST" || selectedType === "GENERIC";
-  const showNotes = selectedType !== "CONFESSION";
+  const showNotes = true;
   const notesLabel =
     selectedType === "TALK_TO_PRIEST"
-      ? "Optional notes"
+      ? "Details"
       : selectedType === "GENERIC"
-        ? "Additional details (optional)"
+        ? "Details"
         : "Details";
   const notesHelper =
-    selectedType === "TALK_TO_PRIEST"
-      ? "Keep notes brief and avoid sensitive confessional details."
+    selectedType === "CONFESSION"
+      ? "Keep it brief and avoid sensitive confessional details."
+      : selectedType === "TALK_TO_PRIEST"
+      ? "Share a brief overview so we can prepare (avoid sensitive confessional details)."
       : selectedType === "GENERIC"
         ? "Briefly describe your need — e.g., home blessing, car blessing, meeting."
         : "Share any helpful context (avoid sensitive confessional details).";
@@ -118,6 +130,7 @@ export default function RequestCreateFlow() {
           startTransition(async () => {
             const result = await createRequest(formData);
             if (result.status === "success") {
+              router.refresh();
               setSubmitted(true);
               return;
             }
@@ -136,6 +149,49 @@ export default function RequestCreateFlow() {
             {errorMessage}
           </div>
         ) : null}
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-ink-700" htmlFor="requester-name">
+            Your name
+          </label>
+          <Input
+            id="requester-name"
+            name="requesterName"
+            placeholder="Full name"
+            defaultValue={defaultName}
+            autoComplete="name"
+            required
+          />
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-ink-700" htmlFor="requester-email">
+            Email
+          </label>
+          <Input
+            id="requester-email"
+            name="requesterEmail"
+            type="email"
+            placeholder="you@example.com"
+            defaultValue={defaultEmail}
+            autoComplete="email"
+            required
+          />
+          <p className="text-xs text-ink-500">We&apos;ll use this to follow up on your request.</p>
+        </div>
+
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-ink-700" htmlFor="requester-phone">
+            Phone (optional)
+          </label>
+          <Input
+            id="requester-phone"
+            name="requesterPhone"
+            type="tel"
+            placeholder="(555) 555-1234"
+            autoComplete="tel"
+          />
+        </div>
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-ink-700" htmlFor="request-title">
@@ -175,9 +231,11 @@ export default function RequestCreateFlow() {
             </label>
             <Textarea
               id="request-notes"
-              name="notes"
+              name="description"
               rows={4}
-              placeholder="Share any helpful context"
+              minLength={15}
+              placeholder="Please share at least 15 characters"
+              required
             />
             <p className="text-xs text-ink-500">{notesHelper}</p>
           </div>

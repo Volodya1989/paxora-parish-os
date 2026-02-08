@@ -34,6 +34,8 @@ export function NotificationAutoClear({ onMarkCategoryRead }: NotificationAutoCl
       onMarkCategoryRead("announcement");
     } else if (normalized.startsWith("/calendar")) {
       onMarkCategoryRead("event");
+    } else if (normalized.startsWith("/requests") || normalized.startsWith("/admin/requests")) {
+      onMarkCategoryRead("request");
     }
     // Chat auto-clear is handled by the existing markRoomRead server action
     // when the user opens a specific channel, so we don't need to handle it here.

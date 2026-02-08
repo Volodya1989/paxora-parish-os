@@ -269,6 +269,7 @@ model User {
   lastSeenAnnouncementsAt  DateTime?
   lastSeenEventsAt         DateTime?
   lastSeenTasksAt          DateTime?
+  lastSeenRequestsAt       DateTime?
   createdAt                DateTime  @default(now())
 
   pushSubscriptions        PushSubscription[]

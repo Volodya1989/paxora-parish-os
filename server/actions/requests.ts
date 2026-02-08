@@ -6,12 +6,54 @@ import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
 import { Prisma } from "@prisma/client";
 import { requireAdminOrShepherd } from "@/server/auth/permissions";
-import { createRequestSchema } from "@/lib/validation/requests";
+import {
+  createRequestSchema,
+  requestEmailSchema,
+  requestResponseSchema,
+  scheduleRequestSchema
+} from "@/lib/validation/requests";
 import { getDefaultVisibilityForType, getRequestTypeLabel } from "@/lib/requests/utils";
 import { sendRequestAssignmentEmail } from "@/lib/email/requestNotifications";
 import { notifyRequestAssigned } from "@/lib/push/notify";
+import { getWeekEnd, getWeekLabel, getWeekStartMonday } from "@/lib/date/week";
+import {
+  appendRequestHistory,
+  parseRequestDetails
+} from "@/lib/requests/details";
+import {
+  sendRequestCancellationEmail,
+  sendRequestInfoEmail,
+  sendRequestScheduleEmail,
+  sendRequestUnableToScheduleEmail
+} from "@/lib/email/requesterRequests";
 
 export type RequestActionResult = { status: "success" | "error"; message?: string };
+
+async function getOrCreateWeekForDate(parishId: string, startsAt: Date) {
+  const weekStart = getWeekStartMonday(startsAt);
+  const weekEnd = getWeekEnd(weekStart);
+
+  const existing = await prisma.week.findUnique({
+    where: {
+      parishId_startsOn: {
+        parishId,
+        startsOn: weekStart
+      }
+    }
+  });
+
+  return (
+    existing ??
+    prisma.week.create({
+      data: {
+        parishId,
+        startsOn: weekStart,
+        endsOn: weekEnd,
+        label: getWeekLabel(weekStart)
+      }
+    })
+  );
+}
 
 export async function createRequest(formData: FormData): Promise<RequestActionResult> {
   const session = await getServerSession(authOptions);
@@ -23,6 +65,10 @@ export async function createRequest(formData: FormData): Promise<RequestActionRe
   const parsed = createRequestSchema.safeParse({
     type: formData.get("type")?.toString(),
     title: formData.get("title")?.toString(),
+    requesterName: formData.get("requesterName")?.toString(),
+    requesterEmail: formData.get("requesterEmail")?.toString(),
+    requesterPhone: formData.get("requesterPhone")?.toString() ?? undefined,
+    description: formData.get("description")?.toString(),
     preferredTimeWindow: formData.get("preferredTimeWindow")?.toString() ?? undefined,
     notes: formData.get("notes")?.toString() ?? undefined
   });
@@ -31,15 +77,27 @@ export async function createRequest(formData: FormData): Promise<RequestActionRe
     return { status: "error", message: parsed.error.errors[0]?.message ?? "Invalid request." };
   }
 
-  const { type, title, preferredTimeWindow, notes } = parsed.data;
+  const {
+    type,
+    title,
+    requesterName,
+    requesterEmail,
+    requesterPhone,
+    description,
+    preferredTimeWindow
+  } = parsed.data;
   const visibilityScope = getDefaultVisibilityForType(type);
-  const details: Record<string, string> = {};
+  const details: Record<string, string> = {
+    requesterName,
+    requesterEmail,
+    description
+  };
 
   if (preferredTimeWindow) {
     details.preferredTimeWindow = preferredTimeWindow;
   }
-  if (notes) {
-    details.notes = notes;
+  if (requesterPhone) {
+    details.requesterPhone = requesterPhone;
   }
 
   try {
@@ -69,6 +127,7 @@ export async function createRequest(formData: FormData): Promise<RequestActionRe
   }
 
   revalidatePath("/requests");
+  revalidatePath("/admin/requests");
 
   return { status: "success" };
 }
@@ -123,6 +182,18 @@ export async function updateRequestVisibility(input: {
     return { status: "error", message: "Request not found." };
   }
 
+  if (request.status === "COMPLETED") {
+    return { status: "error", message: "Completed requests cannot be canceled." };
+  }
+
+  if (request.status === "COMPLETED") {
+    return { status: "error", message: "Completed requests cannot be canceled." };
+  }
+
+  if (["COMPLETED", "CANCELED"].includes(request.status)) {
+    return { status: "error", message: "This request can no longer be scheduled." };
+  }
+
   if (input.visibilityScope === "CLERGY_ONLY" && request.assignedToUserId) {
     const assignee = await prisma.membership.findUnique({
       where: {
@@ -171,6 +242,7 @@ export async function assignRequest(input: {
     select: {
       id: true,
       parishId: true,
+      status: true,
       title: true,
       type: true,
       visibilityScope: true,
@@ -272,6 +344,616 @@ export async function assignRequest(input: {
 
   revalidatePath("/admin/requests");
   revalidatePath("/requests");
+
+  return { status: "success" };
+}
+
+export async function sendRequestInfoEmailAction(input: {
+  requestId: string;
+  note?: string;
+}): Promise<RequestActionResult> {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id || !session.user.activeParishId) {
+    return { status: "error", message: "Please sign in to perform this action." };
+  }
+
+  const parsed = requestEmailSchema.safeParse(input);
+  if (!parsed.success) {
+    return { status: "error", message: parsed.error.errors[0]?.message ?? "Invalid request." };
+  }
+
+  const parishId = session.user.activeParishId;
+  await requireAdminOrShepherd(session.user.id, parishId);
+
+  const request = await prisma.request.findUnique({
+    where: { id: parsed.data.requestId },
+    select: {
+      id: true,
+      parishId: true,
+      status: true,
+      title: true,
+      type: true,
+      status: true,
+      details: true,
+      createdBy: { select: { id: true, name: true, email: true } }
+    }
+  });
+
+  if (!request || request.parishId !== parishId) {
+    return { status: "error", message: "Request not found." };
+  }
+
+  if (request.status === "COMPLETED") {
+    return { status: "error", message: "Completed requests cannot be canceled." };
+  }
+
+  const parish = await prisma.parish.findUnique({
+    where: { id: parishId },
+    select: { name: true }
+  });
+
+  const details = parseRequestDetails(request.details);
+  const requesterName = details?.requesterName ?? request.createdBy.name ?? null;
+  const requesterEmail = details?.requesterEmail ?? request.createdBy.email;
+
+  if (!requesterEmail) {
+    return { status: "error", message: "Requester email is missing." };
+  }
+
+  const membership = await prisma.membership.findUnique({
+    where: {
+      parishId_userId: {
+        parishId,
+        userId: request.createdBy.id
+      }
+    },
+    select: { notifyEmailEnabled: true, weeklyDigestEnabled: true }
+  });
+
+  const email = await sendRequestInfoEmail({
+    parishId,
+    parishName: parish?.name ?? "Your parish",
+    requestId: request.id,
+    requestTitle: request.title,
+    requestTypeLabel: getRequestTypeLabel(request.type),
+    requester: {
+      userId: request.createdBy.id,
+      name: requesterName,
+      email: requesterEmail,
+      notifyEmailEnabled: membership?.notifyEmailEnabled ?? true,
+      role: "MEMBER"
+    },
+    note: parsed.data.note
+  });
+
+  if (email.status === "SENT") {
+    const historyEntry = {
+      sentAt: new Date().toISOString(),
+      template: "NEED_INFO" as const,
+      subject: email.subject,
+      note: parsed.data.note
+    };
+    const updatedDetails = appendRequestHistory(request.details, historyEntry);
+    await prisma.request.update({
+      where: { id: request.id },
+      data: { details: updatedDetails }
+    });
+  }
+
+  revalidatePath("/admin/requests");
+  revalidatePath("/requests");
+
+  return { status: "success" };
+}
+
+export async function scheduleRequest(input: {
+  requestId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  note?: string;
+}): Promise<RequestActionResult> {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id || !session.user.activeParishId) {
+    return { status: "error", message: "Please sign in to perform this action." };
+  }
+
+  const parsed = scheduleRequestSchema.safeParse(input);
+  if (!parsed.success) {
+    return { status: "error", message: parsed.error.errors[0]?.message ?? "Invalid schedule." };
+  }
+
+  const parishId = session.user.activeParishId;
+  await requireAdminOrShepherd(session.user.id, parishId);
+
+  const request = await prisma.request.findUnique({
+    where: { id: parsed.data.requestId },
+    select: {
+      id: true,
+      parishId: true,
+      status: true,
+      title: true,
+      type: true,
+      status: true,
+      details: true,
+      createdByUserId: true,
+      assignedToUserId: true,
+      createdBy: { select: { id: true, name: true, email: true } }
+    }
+  });
+
+  if (!request || request.parishId !== parishId) {
+    return { status: "error", message: "Request not found." };
+  }
+
+  if (request.status === "COMPLETED") {
+    return { status: "error", message: "Completed requests cannot be canceled." };
+  }
+
+  if (["COMPLETED", "CANCELED"].includes(request.status)) {
+    return { status: "error", message: "This request can no longer be scheduled." };
+  }
+
+  const startsAt = new Date(`${parsed.data.date}T${parsed.data.startTime}`);
+  const endsAt = new Date(`${parsed.data.date}T${parsed.data.endTime}`);
+
+  if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {
+    return { status: "error", message: "Enter a valid date and time." };
+  }
+
+  if (endsAt <= startsAt) {
+    return { status: "error", message: "End time must be after the start time." };
+  }
+
+  const parish = await prisma.parish.findUnique({
+    where: { id: parishId },
+    select: { name: true }
+  });
+
+  const week = await getOrCreateWeekForDate(parishId, startsAt);
+
+  const event = await prisma.event.create({
+    data: {
+      parishId,
+      weekId: week.id,
+      title: `Request: ${request.title}`,
+      startsAt,
+      endsAt,
+      summary: `Scheduled request · ${getRequestTypeLabel(request.type)}`,
+      visibility: "PRIVATE",
+      type: "EVENT"
+    },
+    select: { id: true }
+  });
+
+  await prisma.eventRsvp.create({
+    data: {
+      eventId: event.id,
+      userId: request.createdByUserId,
+      response: "MAYBE"
+    }
+  });
+
+  if (request.assignedToUserId) {
+    await prisma.eventRsvp.upsert({
+      where: { eventId_userId: { eventId: event.id, userId: request.assignedToUserId } },
+      update: { response: "YES" },
+      create: { eventId: event.id, userId: request.assignedToUserId, response: "YES" }
+    });
+  }
+
+  const details = parseRequestDetails(request.details) ?? {};
+  const detailsWithSchedule = {
+    ...details,
+    schedule: {
+      eventId: event.id,
+      startsAt: startsAt.toISOString(),
+      endsAt: endsAt.toISOString()
+    }
+  };
+
+  await prisma.request.update({
+    where: { id: request.id },
+    data: {
+      status: "SCHEDULED",
+      details: detailsWithSchedule
+    }
+  });
+
+  const requesterName = details.requesterName ?? request.createdBy.name ?? null;
+  const requesterEmail = details.requesterEmail ?? request.createdBy.email;
+
+  if (requesterEmail) {
+    const membership = await prisma.membership.findUnique({
+      where: {
+        parishId_userId: {
+          parishId,
+          userId: request.createdBy.id
+        }
+      },
+      select: { notifyEmailEnabled: true, weeklyDigestEnabled: true }
+    });
+
+    const email = await sendRequestScheduleEmail({
+      parishId,
+      parishName: parish?.name ?? "Your parish",
+      requestId: request.id,
+      requestTitle: request.title,
+      requestTypeLabel: getRequestTypeLabel(request.type),
+      requester: {
+        userId: request.createdBy.id,
+        name: requesterName,
+        email: requesterEmail,
+        notifyEmailEnabled: membership?.notifyEmailEnabled ?? true,
+        role: "MEMBER"
+      },
+      scheduleWindow: `${startsAt.toLocaleString()} - ${endsAt.toLocaleTimeString()}`,
+      note: parsed.data.note
+    });
+
+    if (email.status === "SENT") {
+      const historyEntry = {
+        sentAt: new Date().toISOString(),
+        template: "SCHEDULE" as const,
+        subject: email.subject,
+        note: parsed.data.note
+      };
+      const updatedDetails = appendRequestHistory(detailsWithSchedule, historyEntry);
+      await prisma.request.update({
+        where: { id: request.id },
+        data: { details: updatedDetails }
+      });
+    }
+  }
+
+  revalidatePath("/admin/requests");
+  revalidatePath("/requests");
+  revalidatePath("/calendar");
+
+  return { status: "success" };
+}
+
+export async function cancelRequest(input: {
+  requestId: string;
+  note?: string;
+}): Promise<RequestActionResult> {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id || !session.user.activeParishId) {
+    return { status: "error", message: "Please sign in to perform this action." };
+  }
+
+  const parsed = requestEmailSchema.safeParse(input);
+  if (!parsed.success) {
+    return { status: "error", message: parsed.error.errors[0]?.message ?? "Invalid request." };
+  }
+
+  const parishId = session.user.activeParishId;
+  await requireAdminOrShepherd(session.user.id, parishId);
+
+  const request = await prisma.request.findUnique({
+    where: { id: parsed.data.requestId },
+    select: {
+      id: true,
+      parishId: true,
+      status: true,
+      title: true,
+      type: true,
+      details: true,
+      createdByUserId: true,
+      createdBy: { select: { id: true, name: true, email: true } }
+    }
+  });
+
+  if (!request || request.parishId !== parishId) {
+    return { status: "error", message: "Request not found." };
+  }
+
+  if (request.status === "COMPLETED") {
+    return { status: "error", message: "Completed requests cannot be canceled." };
+  }
+
+  const details = parseRequestDetails(request.details);
+  const scheduleEventId = details?.schedule?.eventId;
+  if (scheduleEventId) {
+    await prisma.event.delete({ where: { id: scheduleEventId } }).catch(() => null);
+  }
+
+  await prisma.request.update({
+    where: { id: request.id },
+    data: { status: "CANCELED" }
+  });
+
+  const parish = await prisma.parish.findUnique({
+    where: { id: parishId },
+    select: { name: true }
+  });
+
+  const requesterName = details?.requesterName ?? request.createdBy.name ?? null;
+  const requesterEmail = details?.requesterEmail ?? request.createdBy.email;
+
+  if (requesterEmail) {
+    const membership = await prisma.membership.findUnique({
+      where: {
+        parishId_userId: {
+          parishId,
+          userId: request.createdBy.id
+        }
+      },
+      select: { notifyEmailEnabled: true, weeklyDigestEnabled: true }
+    });
+
+    const email = await sendRequestUnableToScheduleEmail({
+      parishId,
+      parishName: parish?.name ?? "Your parish",
+      requestId: request.id,
+      requestTitle: request.title,
+      requestTypeLabel: getRequestTypeLabel(request.type),
+      requester: {
+        userId: request.createdBy.id,
+        name: requesterName,
+        email: requesterEmail,
+        notifyEmailEnabled: membership?.notifyEmailEnabled ?? true,
+        role: "MEMBER"
+      },
+      note: parsed.data.note
+    });
+
+    if (email.status === "SENT") {
+      const historyEntry = {
+        sentAt: new Date().toISOString(),
+        template: "CANNOT_SCHEDULE" as const,
+        subject: email.subject,
+        note: parsed.data.note
+      };
+      const updatedDetails = appendRequestHistory(request.details, historyEntry);
+      await prisma.request.update({
+        where: { id: request.id },
+        data: { details: updatedDetails }
+      });
+    }
+  }
+
+  revalidatePath("/admin/requests");
+  revalidatePath("/requests");
+  revalidatePath("/calendar");
+
+  return { status: "success" };
+}
+
+export async function respondToScheduledRequest(input: {
+  requestId: string;
+  response: "ACCEPT" | "REJECT";
+}): Promise<RequestActionResult> {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id || !session.user.activeParishId) {
+    return { status: "error", message: "Please sign in to perform this action." };
+  }
+
+  const parsed = requestResponseSchema.safeParse(input);
+  if (!parsed.success) {
+    return { status: "error", message: parsed.error.errors[0]?.message ?? "Invalid response." };
+  }
+
+  const parishId = session.user.activeParishId;
+
+  const request = await prisma.request.findUnique({
+    where: { id: parsed.data.requestId },
+    select: {
+      id: true,
+      parishId: true,
+      title: true,
+      type: true,
+      status: true,
+      details: true,
+      createdByUserId: true,
+      createdBy: { select: { id: true, name: true, email: true } }
+    }
+  });
+
+  if (!request || request.parishId !== parishId) {
+    return { status: "error", message: "Request not found." };
+  }
+
+  if (request.createdByUserId !== session.user.id) {
+    return { status: "error", message: "You can only respond to your own request." };
+  }
+
+  if (request.status !== "SCHEDULED") {
+    return { status: "error", message: "This request is not scheduled." };
+  }
+
+  const details = parseRequestDetails(request.details);
+  const scheduleEventId = details?.schedule?.eventId;
+
+  if (!scheduleEventId) {
+    return { status: "error", message: "This request is not scheduled yet." };
+  }
+
+  if (parsed.data.response === "ACCEPT") {
+    await prisma.eventRsvp.upsert({
+      where: { eventId_userId: { eventId: scheduleEventId, userId: session.user.id } },
+      update: { response: "YES" },
+      create: { eventId: scheduleEventId, userId: session.user.id, response: "YES" }
+    });
+
+    revalidatePath("/requests");
+    revalidatePath("/calendar");
+
+    return { status: "success" };
+  }
+
+  await prisma.request.update({
+    where: { id: request.id },
+    data: { status: "CANCELED" }
+  });
+
+  await prisma.event.delete({ where: { id: scheduleEventId } }).catch(() => null);
+
+  const parish = await prisma.parish.findUnique({
+    where: { id: parishId },
+    select: { name: true }
+  });
+
+  const requesterName = details?.requesterName ?? request.createdBy.name ?? null;
+  const requesterEmail = details?.requesterEmail ?? request.createdBy.email;
+
+  if (requesterEmail) {
+    const membership = await prisma.membership.findUnique({
+      where: {
+        parishId_userId: {
+          parishId,
+          userId: request.createdBy.id
+        }
+      },
+      select: { notifyEmailEnabled: true, weeklyDigestEnabled: true }
+    });
+
+    const email = await sendRequestCancellationEmail({
+      parishId,
+      parishName: parish?.name ?? "Your parish",
+      requestId: request.id,
+      requestTitle: request.title,
+      requestTypeLabel: getRequestTypeLabel(request.type),
+      requester: {
+        userId: request.createdBy.id,
+        name: requesterName,
+        email: requesterEmail,
+        notifyEmailEnabled: membership?.notifyEmailEnabled ?? true,
+        role: "MEMBER"
+      },
+      note: "We received your cancellation. If you still need this, please call the office."
+    });
+
+    if (email.status === "SENT") {
+      const historyEntry = {
+        sentAt: new Date().toISOString(),
+        template: "REQUESTER_REJECT" as const,
+        subject: email.subject
+      };
+      const updatedDetails = appendRequestHistory(request.details, historyEntry);
+      await prisma.request.update({
+        where: { id: request.id },
+        data: { details: updatedDetails }
+      });
+    }
+  }
+
+  revalidatePath("/requests");
+  revalidatePath("/admin/requests");
+  revalidatePath("/calendar");
+
+  return { status: "success" };
+}
+
+export async function cancelOwnRequest(input: {
+  requestId: string;
+}): Promise<RequestActionResult> {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id || !session.user.activeParishId) {
+    return { status: "error", message: "Please sign in to perform this action." };
+  }
+
+  const parsed = requestEmailSchema.safeParse(input);
+  if (!parsed.success) {
+    return { status: "error", message: parsed.error.errors[0]?.message ?? "Invalid request." };
+  }
+
+  const parishId = session.user.activeParishId;
+
+  const request = await prisma.request.findUnique({
+    where: { id: parsed.data.requestId },
+    select: {
+      id: true,
+      parishId: true,
+      status: true,
+      title: true,
+      type: true,
+      details: true,
+      createdByUserId: true,
+      createdBy: { select: { id: true, name: true, email: true } }
+    }
+  });
+
+  if (!request || request.parishId !== parishId) {
+    return { status: "error", message: "Request not found." };
+  }
+
+  if (request.createdByUserId !== session.user.id) {
+    return { status: "error", message: "You can only cancel your own request." };
+  }
+
+  if (request.status === "COMPLETED") {
+    return { status: "error", message: "Completed requests cannot be canceled." };
+  }
+
+  const details = parseRequestDetails(request.details);
+  const scheduleEventId = details?.schedule?.eventId;
+  if (scheduleEventId) {
+    await prisma.event.delete({ where: { id: scheduleEventId } }).catch(() => null);
+  }
+
+  await prisma.request.update({
+    where: { id: request.id },
+    data: { status: "CANCELED" }
+  });
+
+  const parish = await prisma.parish.findUnique({
+    where: { id: parishId },
+    select: { name: true }
+  });
+
+  const requesterName = details?.requesterName ?? request.createdBy.name ?? null;
+  const requesterEmail = details?.requesterEmail ?? request.createdBy.email;
+
+  if (requesterEmail) {
+    const membership = await prisma.membership.findUnique({
+      where: {
+        parishId_userId: {
+          parishId,
+          userId: request.createdBy.id
+        }
+      },
+      select: { notifyEmailEnabled: true, weeklyDigestEnabled: true }
+    });
+
+    const email = await sendRequestCancellationEmail({
+      parishId,
+      parishName: parish?.name ?? "Your parish",
+      requestId: request.id,
+      requestTitle: request.title,
+      requestTypeLabel: getRequestTypeLabel(request.type),
+      requester: {
+        userId: request.createdBy.id,
+        name: requesterName,
+        email: requesterEmail,
+        notifyEmailEnabled: membership?.notifyEmailEnabled ?? true,
+        role: "MEMBER"
+      },
+      note: "We received your cancellation. If you still need this, please call the office."
+    });
+
+    if (email.status === "SENT") {
+      const historyEntry = {
+        sentAt: new Date().toISOString(),
+        template: "REQUESTER_CANCEL" as const,
+        subject: email.subject
+      };
+      const updatedDetails = appendRequestHistory(request.details, historyEntry);
+      await prisma.request.update({
+        where: { id: request.id },
+        data: { details: updatedDetails }
+      });
+    }
+  }
+
+  revalidatePath("/requests");
+  revalidatePath("/admin/requests");
+  revalidatePath("/calendar");
 
   return { status: "success" };
 }

@@ -83,6 +83,7 @@ type GetEventByIdInput = {
 type EventViewerContext = {
   isLeader: boolean;
   groupIds: string[];
+  userId?: string;
 };
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -137,7 +138,8 @@ async function getViewerContext(
 
   return {
     isLeader: membership ? isParishLeader(membership.role) : false,
-    groupIds: groupMemberships.map((membership) => membership.groupId)
+    groupIds: groupMemberships.map((membership) => membership.groupId),
+    userId
   };
 }
 
@@ -152,6 +154,10 @@ function buildVisibilityFilter(context: EventViewerContext) {
 
   if (context.groupIds.length > 0) {
     filters.push({ visibility: "GROUP", groupId: { in: context.groupIds } });
+  }
+
+  if (context.userId) {
+    filters.push({ visibility: "PRIVATE", rsvps: { some: { userId: context.userId } } });
   }
 
   return { OR: filters };
@@ -434,7 +440,8 @@ export async function getEventById({
       event.visibility === "PUBLIC" ||
       (event.visibility === "GROUP" &&
         event.group?.id &&
-        context.groupIds.includes(event.group.id));
+        context.groupIds.includes(event.group.id)) ||
+      (event.visibility === "PRIVATE" && (event.rsvps?.length ?? 0) > 0);
 
     if (!allowed) {
       return null;

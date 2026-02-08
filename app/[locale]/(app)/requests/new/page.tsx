@@ -11,10 +11,16 @@ export default async function NewRequestPage() {
     return null;
   }
 
-  const parish = await prisma.parish.findUnique({
-    where: { id: session.user.activeParishId },
-    select: { name: true }
-  });
+  const [parish, user] = await Promise.all([
+    prisma.parish.findUnique({
+      where: { id: session.user.activeParishId },
+      select: { name: true }
+    }),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { name: true, email: true }
+    })
+  ]);
 
   return (
     <ParishionerPageLayout
@@ -23,7 +29,10 @@ export default async function NewRequestPage() {
       subtitle="Share a need or ask for support"
       backHref="/parish"
     >
-      <RequestCreateFlow />
+      <RequestCreateFlow
+        defaultName={user?.name ?? ""}
+        defaultEmail={user?.email ?? ""}
+      />
     </ParishionerPageLayout>
   );
 }

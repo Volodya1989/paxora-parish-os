@@ -39,6 +39,8 @@ export default function MyRequestsList({ requests }: { requests: RequestListItem
             <div className="flex flex-wrap items-center gap-2 text-xs text-ink-500">
               <span>{getRequestTypeLabel(request.type)}</span>
               <span aria-hidden="true">•</span>
+              <span>Submitted {formatMessageTime(request.createdAt)}</span>
+              <span aria-hidden="true">•</span>
               <span>Updated {formatMessageTime(request.updatedAt)}</span>
               {request.assignedTo?.name ? (
                 <>
