@@ -2,6 +2,7 @@
 
 import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
+import crypto from "crypto";
 import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
 import { Prisma } from "@prisma/client";
@@ -12,13 +13,21 @@ import {
   requestResponseSchema,
   scheduleRequestSchema
 } from "@/lib/validation/requests";
-import { getDefaultVisibilityForType, getRequestTypeLabel } from "@/lib/requests/utils";
+import {
+  REQUEST_VISIBILITY_LABELS,
+  getDefaultVisibilityForType,
+  getRequestStatusLabel,
+  getRequestTypeLabel
+} from "@/lib/requests/utils";
 import { sendRequestAssignmentEmail } from "@/lib/email/requestNotifications";
 import { notifyRequestAssigned } from "@/lib/push/notify";
 import { getWeekEnd, getWeekLabel, getWeekStartMonday } from "@/lib/date/week";
 import {
+  appendRequestActivity,
   appendRequestHistory,
-  parseRequestDetails
+  hasRequestEmailHistoryEntry,
+  parseRequestDetails,
+  type RequestDetails
 } from "@/lib/requests/details";
 import {
   sendRequestCancellationEmail,
@@ -28,6 +37,9 @@ import {
 } from "@/lib/email/requesterRequests";
 
 export type RequestActionResult = { status: "success" | "error"; message?: string };
+
+const hashEmailPayload = (payload: Record<string, unknown>) =>
+  crypto.createHash("sha256").update(JSON.stringify(payload)).digest("hex");
 
 async function getOrCreateWeekForDate(parishId: string, startsAt: Date) {
   const weekStart = getWeekStartMonday(startsAt);
@@ -145,14 +157,33 @@ export async function updateRequestStatus(input: {
   const parishId = session.user.activeParishId;
   await requireAdminOrShepherd(session.user.id, parishId);
 
-  const updated = await prisma.request.updateMany({
-    where: { id: input.requestId, parishId },
-    data: { status: input.status }
+  const request = await prisma.request.findUnique({
+    where: { id: input.requestId },
+    select: { id: true, parishId: true, status: true, details: true }
   });
 
-  if (!updated.count) {
+  if (!request || request.parishId !== parishId) {
     return { status: "error", message: "Request not found." };
   }
+
+  if (request.status === input.status) {
+    return { status: "success" };
+  }
+
+  const actorName = session.user.name ?? session.user.email ?? "Unknown";
+  const activityEntry = {
+    occurredAt: new Date().toISOString(),
+    type: "STATUS" as const,
+    actorId: session.user.id,
+    actorName,
+    description: `Status changed from ${getRequestStatusLabel(request.status)} to ${getRequestStatusLabel(input.status)}.`
+  };
+  const detailsWithActivity = appendRequestActivity(request.details, activityEntry);
+
+  await prisma.request.update({
+    where: { id: request.id },
+    data: { status: input.status, details: detailsWithActivity as Prisma.InputJsonValue }
+  });
 
   revalidatePath("/admin/requests");
   revalidatePath("/requests");
@@ -175,7 +206,13 @@ export async function updateRequestVisibility(input: {
 
   const request = await prisma.request.findUnique({
     where: { id: input.requestId },
-    select: { assignedToUserId: true, parishId: true, status: true }
+    select: {
+      assignedToUserId: true,
+      parishId: true,
+      status: true,
+      visibilityScope: true,
+      details: true
+    }
   });
 
   if (!request || request.parishId !== parishId) {
@@ -209,10 +246,25 @@ export async function updateRequestVisibility(input: {
     }
   }
 
-  await prisma.request.update({
-    where: { id: input.requestId },
-    data: { visibilityScope: input.visibilityScope }
-  });
+  if (request.visibilityScope !== input.visibilityScope) {
+    const actorName = session.user.name ?? session.user.email ?? "Unknown";
+    const activityEntry = {
+      occurredAt: new Date().toISOString(),
+      type: "VISIBILITY" as const,
+      actorId: session.user.id,
+      actorName,
+      description: `Visibility changed from ${REQUEST_VISIBILITY_LABELS[request.visibilityScope]} to ${REQUEST_VISIBILITY_LABELS[input.visibilityScope]}.`
+    };
+    const detailsWithActivity = appendRequestActivity(request.details, activityEntry);
+
+    await prisma.request.update({
+      where: { id: input.requestId },
+      data: {
+        visibilityScope: input.visibilityScope,
+        details: detailsWithActivity as Prisma.InputJsonValue
+      }
+    });
+  }
 
   revalidatePath("/admin/requests");
   revalidatePath("/requests");
@@ -242,7 +294,15 @@ export async function assignRequest(input: {
       title: true,
       type: true,
       visibilityScope: true,
-      assignedToUserId: true
+      assignedToUserId: true,
+      details: true,
+      assignedTo: {
+        select: {
+          id: true,
+          name: true,
+          email: true
+        }
+      }
     }
   });
 
@@ -294,9 +354,30 @@ export async function assignRequest(input: {
     }
   }
 
+  const actorName = session.user.name ?? session.user.email ?? "Unknown";
+  const previousAssigneeLabel = request.assignedTo?.name
+    ? `${request.assignedTo.name} (${request.assignedTo.email})`
+    : request.assignedTo?.email ?? "Unassigned";
+  const nextAssigneeLabel = assignee
+    ? assignee.user.name
+      ? `${assignee.user.name} (${assignee.user.email})`
+      : assignee.user.email
+    : "Unassigned";
+  const activityEntry = {
+    occurredAt: new Date().toISOString(),
+    type: "ASSIGNMENT" as const,
+    actorId: session.user.id,
+    actorName,
+    description:
+      previousAssigneeLabel === nextAssigneeLabel
+        ? `Assignment kept as ${nextAssigneeLabel}.`
+        : `Assignment changed from ${previousAssigneeLabel} to ${nextAssigneeLabel}.`
+  };
+  const detailsWithActivity = appendRequestActivity(request.details, activityEntry);
+
   await prisma.request.update({
     where: { id: input.requestId },
-    data: { assignedToUserId: input.assigneeId }
+    data: { assignedToUserId: input.assigneeId, details: detailsWithActivity as Prisma.InputJsonValue }
   });
 
   if (assignee && assignee.user.email) {
@@ -396,6 +477,16 @@ export async function sendRequestInfoEmailAction(input: {
     return { status: "error", message: "Requester email is missing." };
   }
 
+  const payloadHash = hashEmailPayload({ note: parsed.data.note ?? "" });
+  const alreadySent = hasRequestEmailHistoryEntry(request.details, {
+    type: "NEED_MORE_INFO",
+    payloadHash
+  });
+
+  if (alreadySent) {
+    return { status: "success", message: "Email already sent." };
+  }
+
   const email = await sendRequestInfoEmail({
     parishId,
     parishName: parish?.name ?? "Your parish",
@@ -416,16 +507,21 @@ export async function sendRequestInfoEmailAction(input: {
   }
 
   if (email.status === "SENT") {
+    const actorName = session.user.name ?? session.user.email ?? "Unknown";
     const historyEntry = {
       sentAt: new Date().toISOString(),
+      type: "NEED_MORE_INFO" as const,
       template: "NEED_INFO" as const,
       subject: email.subject,
-      note: parsed.data.note
+      note: parsed.data.note,
+      sentByUserId: session.user.id,
+      sentByName: actorName,
+      payloadHash
     };
-    const updatedDetails = appendRequestHistory(request.details, historyEntry);
+    const detailsWithHistory = appendRequestHistory(request.details, historyEntry);
     await prisma.request.update({
       where: { id: request.id },
-      data: { details: updatedDetails as Prisma.InputJsonValue }
+      data: { details: detailsWithHistory as Prisma.InputJsonValue }
     });
   }
 
@@ -494,44 +590,103 @@ export async function scheduleRequest(input: {
     return { status: "error", message: "End time must be after the start time." };
   }
 
-  const parish = await prisma.parish.findUnique({
-    where: { id: parishId },
-    select: { name: true }
+  const actorName = session.user.name ?? session.user.email ?? "Unknown";
+  const details = parseRequestDetails(request.details) ?? {};
+  const startsAtIso = startsAt.toISOString();
+  const endsAtIso = endsAt.toISOString();
+  const existingSchedule = details.schedule ?? null;
+  const scheduleMatches =
+    existingSchedule?.startsAt === startsAtIso && existingSchedule?.endsAt === endsAtIso;
+  const schedulePayloadHash = hashEmailPayload({ startsAt: startsAtIso, endsAt: endsAtIso });
+  const scheduleAlreadySent = hasRequestEmailHistoryEntry(request.details, {
+    type: "SCHEDULE",
+    payloadHash: schedulePayloadHash
   });
 
-  const week = await getOrCreateWeekForDate(parishId, startsAt);
+  let eventId = existingSchedule?.eventId ?? null;
 
-  const event = await prisma.event.create({
-    data: {
-      parishId,
-      weekId: week.id,
-      title: `Request: ${request.title}`,
-      startsAt,
-      endsAt,
-      summary: `Scheduled request · ${getRequestTypeLabel(request.type)}`,
-      visibility: "PRIVATE",
-      type: "EVENT"
-    },
-    select: { id: true }
-  });
+  if (existingSchedule?.eventId && !scheduleMatches) {
+    await prisma.event.delete({ where: { id: existingSchedule.eventId } }).catch(() => null);
+    eventId = null;
+  }
 
-  if (request.assignedToUserId) {
+  if (!eventId) {
+    const week = await getOrCreateWeekForDate(parishId, startsAt);
+    const event = await prisma.event.create({
+      data: {
+        parishId,
+        weekId: week.id,
+        title: `Request: ${request.title}`,
+        startsAt,
+        endsAt,
+        summary: `Scheduled request · ${getRequestTypeLabel(request.type)}`,
+        visibility: "PRIVATE",
+        type: "EVENT"
+      },
+      select: { id: true }
+    });
+    eventId = event.id;
+  }
+
+  if (request.assignedToUserId && eventId) {
     await prisma.eventRsvp.upsert({
-      where: { eventId_userId: { eventId: event.id, userId: request.assignedToUserId } },
+      where: { eventId_userId: { eventId: eventId, userId: request.assignedToUserId } },
       update: { response: "YES" },
-      create: { eventId: event.id, userId: request.assignedToUserId, response: "YES" }
+      create: { eventId: eventId, userId: request.assignedToUserId, response: "YES" }
     });
   }
 
-  const details = parseRequestDetails(request.details) ?? {};
-  const detailsWithSchedule = {
-    ...details,
+  // Create RSVP for requester so the event is visible on their calendar
+  if (eventId) {
+    await prisma.eventRsvp.upsert({
+      where: { eventId_userId: { eventId: eventId, userId: request.createdByUserId } },
+      update: { response: "MAYBE" },
+      create: { eventId: eventId, userId: request.createdByUserId, response: "MAYBE" }
+    });
+  }
+
+  if (!eventId) {
+    return { status: "error", message: "Unable to schedule this request. Please try again." };
+  }
+
+  const { scheduleResponse: _scheduleResponse, ...detailsWithoutResponse } = details;
+  const baseDetails = scheduleMatches ? details : detailsWithoutResponse;
+  let detailsWithSchedule: RequestDetails = {
+    ...baseDetails,
     schedule: {
-      eventId: event.id,
-      startsAt: startsAt.toISOString(),
-      endsAt: endsAt.toISOString()
+      eventId,
+      startsAt: startsAtIso,
+      endsAt: endsAtIso
     }
   };
+
+  if (request.status !== "SCHEDULED") {
+    detailsWithSchedule = appendRequestActivity(detailsWithSchedule, {
+      occurredAt: new Date().toISOString(),
+      type: "STATUS" as const,
+      actorId: session.user.id,
+      actorName,
+      description: `Status changed to ${getRequestStatusLabel("SCHEDULED")}.`
+    });
+  }
+
+  if (!existingSchedule) {
+    detailsWithSchedule = appendRequestActivity(detailsWithSchedule, {
+      occurredAt: new Date().toISOString(),
+      type: "SCHEDULE" as const,
+      actorId: session.user.id,
+      actorName,
+      description: `Scheduled for ${startsAt.toLocaleString()}.`
+    });
+  } else if (!scheduleMatches) {
+    detailsWithSchedule = appendRequestActivity(detailsWithSchedule, {
+      occurredAt: new Date().toISOString(),
+      type: "SCHEDULE" as const,
+      actorId: session.user.id,
+      actorName,
+      description: `Schedule updated from ${new Date(existingSchedule.startsAt).toLocaleString()} to ${startsAt.toLocaleString()}.`
+    });
+  }
 
   await prisma.request.update({
     where: { id: request.id },
@@ -541,11 +696,9 @@ export async function scheduleRequest(input: {
     }
   });
 
-  // Create RSVP for requester so the event is visible on their calendar
-  await prisma.eventRsvp.upsert({
-    where: { eventId_userId: { eventId: event.id, userId: request.createdByUserId } },
-    update: { response: "MAYBE" },
-    create: { eventId: event.id, userId: request.createdByUserId, response: "MAYBE" }
+  const parish = await prisma.parish.findUnique({
+    where: { id: parishId },
+    select: { name: true }
   });
 
   const requesterName = details.requesterName ?? request.createdBy.name ?? null;
@@ -553,7 +706,7 @@ export async function scheduleRequest(input: {
   const hasRequesterEmail = Boolean(requesterEmail);
   let emailStatus: "SENT" | "FAILED" | "SKIPPED" | null = null;
 
-  if (requesterEmail) {
+  if (requesterEmail && !scheduleAlreadySent) {
     const email = await sendRequestScheduleEmail({
       parishId,
       parishName: parish?.name ?? "Your parish",
@@ -575,9 +728,13 @@ export async function scheduleRequest(input: {
     if (email.status === "SENT") {
       const historyEntry = {
         sentAt: new Date().toISOString(),
+        type: "SCHEDULE" as const,
         template: "SCHEDULE" as const,
         subject: email.subject,
-        note: parsed.data.note
+        note: parsed.data.note,
+        sentByUserId: session.user.id,
+        sentByName: actorName,
+        payloadHash: schedulePayloadHash
       };
       const updatedDetails = appendRequestHistory(detailsWithSchedule, historyEntry);
       await prisma.request.update({
@@ -585,10 +742,13 @@ export async function scheduleRequest(input: {
         data: { details: updatedDetails as Prisma.InputJsonValue }
       });
     }
+  } else if (scheduleAlreadySent) {
+    emailStatus = "SKIPPED";
   }
 
   revalidatePath("/admin/requests");
   revalidatePath("/requests");
+  revalidatePath(`/requests/${request.id}`);
   revalidatePath("/calendar");
 
   if (!hasRequesterEmail) {
@@ -596,6 +756,9 @@ export async function scheduleRequest(input: {
   }
 
   if (emailStatus && emailStatus !== "SENT") {
+    if (emailStatus === "SKIPPED") {
+      return { status: "success", message: "Email already sent." };
+    }
     return { status: "success", message: "Scheduled, but the email failed to send." };
   }
 
@@ -642,6 +805,7 @@ export async function cancelRequest(input: {
     return { status: "error", message: "Completed requests cannot be canceled." };
   }
 
+  const actorName = session.user.name ?? session.user.email ?? "Unknown";
   const details = parseRequestDetails(request.details);
   const scheduleEventId = details?.schedule?.eventId;
   if (scheduleEventId) {
@@ -649,14 +813,22 @@ export async function cancelRequest(input: {
   }
 
   const { schedule: _schedule, ...detailsWithoutSchedule } = details ?? {};
+  let updatedDetails = details ? detailsWithoutSchedule : undefined;
+  if (updatedDetails) {
+    updatedDetails = appendRequestActivity(updatedDetails, {
+      occurredAt: new Date().toISOString(),
+      type: "STATUS" as const,
+      actorId: session.user.id,
+      actorName,
+      description: `Status changed to ${getRequestStatusLabel("CANCELED")}.`
+    });
+  }
 
   await prisma.request.update({
     where: { id: request.id },
     data: {
       status: "CANCELED",
-      details: details
-        ? (detailsWithoutSchedule as Prisma.InputJsonValue)
-        : undefined
+      details: updatedDetails ? (updatedDetails as Prisma.InputJsonValue) : undefined
     }
   });
 
@@ -669,8 +841,13 @@ export async function cancelRequest(input: {
   const requesterEmail = details?.requesterEmail ?? request.createdBy.email;
   const hasRequesterEmail = Boolean(requesterEmail);
   let emailStatus: "SENT" | "FAILED" | "SKIPPED" | null = null;
+  const payloadHash = hashEmailPayload({ action: "CANCEL" });
+  const alreadySent = hasRequestEmailHistoryEntry(request.details, {
+    type: "CANCEL",
+    payloadHash
+  });
 
-  if (requesterEmail) {
+  if (requesterEmail && !alreadySent) {
     const email = await sendRequestUnableToScheduleEmail({
       parishId,
       parishName: parish?.name ?? "Your parish",
@@ -691,20 +868,27 @@ export async function cancelRequest(input: {
     if (email.status === "SENT") {
       const historyEntry = {
         sentAt: new Date().toISOString(),
+        type: "CANCEL" as const,
         template: "CANNOT_SCHEDULE" as const,
         subject: email.subject,
-        note: parsed.data.note
+        note: parsed.data.note,
+        sentByUserId: session.user.id,
+        sentByName: actorName,
+        payloadHash
       };
-      const updatedDetails = appendRequestHistory(request.details, historyEntry);
+      const detailsWithHistory = appendRequestHistory(updatedDetails ?? request.details, historyEntry);
       await prisma.request.update({
         where: { id: request.id },
-        data: { details: updatedDetails as Prisma.InputJsonValue }
+        data: { details: detailsWithHistory as Prisma.InputJsonValue }
       });
     }
+  } else if (alreadySent) {
+    emailStatus = "SKIPPED";
   }
 
   revalidatePath("/admin/requests");
   revalidatePath("/requests");
+  revalidatePath(`/requests/${request.id}`);
   revalidatePath("/calendar");
 
   if (!hasRequesterEmail) {
@@ -712,6 +896,9 @@ export async function cancelRequest(input: {
   }
 
   if (emailStatus && emailStatus !== "SENT") {
+    if (emailStatus === "SKIPPED") {
+      return { status: "success", message: "Cancellation email already sent." };
+    }
     return { status: "success", message: "Request canceled, but the email failed to send." };
   }
 
@@ -764,16 +951,48 @@ export async function respondToScheduledRequest(input: {
 
   const details = parseRequestDetails(request.details);
   const scheduleEventId = details?.schedule?.eventId;
+  const actorName = session.user.name ?? session.user.email ?? "Unknown";
 
-  if (!scheduleEventId) {
-    return { status: "error", message: "This request is not scheduled yet." };
+  if (parsed.data.response === "ACCEPT" && details?.scheduleResponse?.status === "ACCEPTED") {
+    return { status: "success", message: "Schedule already confirmed." };
+  }
+
+  if (parsed.data.response === "REJECT" && details?.scheduleResponse?.status === "REJECTED") {
+    return { status: "success", message: "Proposed time already declined." };
+  }
+
+  if (!scheduleEventId && parsed.data.response === "ACCEPT") {
+    return { status: "error", message: "Scheduling details are missing. Please check back soon." };
   }
 
   if (parsed.data.response === "ACCEPT") {
-    await prisma.eventRsvp.upsert({
-      where: { eventId_userId: { eventId: scheduleEventId, userId: session.user.id } },
-      update: { response: "YES" },
-      create: { eventId: scheduleEventId, userId: session.user.id, response: "YES" }
+    if (scheduleEventId) {
+      await prisma.eventRsvp.upsert({
+        where: { eventId_userId: { eventId: scheduleEventId, userId: session.user.id } },
+        update: { response: "YES" },
+        create: { eventId: scheduleEventId, userId: session.user.id, response: "YES" }
+      });
+    }
+
+    const detailsWithResponse = {
+      ...(details ?? {}),
+      scheduleResponse: {
+        status: "ACCEPTED" as const,
+        respondedAt: new Date().toISOString(),
+        respondedByUserId: session.user.id,
+        respondedByName: actorName
+      }
+    };
+    const detailsWithActivity = appendRequestActivity(detailsWithResponse, {
+      occurredAt: new Date().toISOString(),
+      type: "RESPONSE" as const,
+      actorId: session.user.id,
+      actorName,
+      description: "Requester confirmed the scheduled time."
+    });
+    await prisma.request.update({
+      where: { id: request.id },
+      data: { details: detailsWithActivity as Prisma.InputJsonValue }
     });
 
     revalidatePath("/requests");
@@ -784,40 +1003,42 @@ export async function respondToScheduledRequest(input: {
   }
 
   const { schedule: _schedule, ...detailsWithoutSchedule } = details ?? {};
+  const detailsWithResponse = {
+    ...(detailsWithoutSchedule ?? {}),
+    scheduleResponse: {
+      status: "REJECTED" as const,
+      respondedAt: new Date().toISOString(),
+      respondedByUserId: session.user.id,
+      respondedByName: actorName
+    }
+  };
+  let detailsWithActivity = appendRequestActivity(detailsWithResponse, {
+    occurredAt: new Date().toISOString(),
+    type: "RESPONSE" as const,
+    actorId: session.user.id,
+    actorName,
+    description: "Requester declined the proposed time."
+  });
+  detailsWithActivity = appendRequestActivity(detailsWithActivity, {
+    occurredAt: new Date().toISOString(),
+    type: "STATUS" as const,
+    actorId: session.user.id,
+    actorName,
+    description: `Status changed to ${getRequestStatusLabel("ACKNOWLEDGED")}.`
+  });
 
   // Move back to ACKNOWLEDGED so admin can propose a new time
   await prisma.request.update({
     where: { id: request.id },
     data: {
       status: "ACKNOWLEDGED",
-      details: details
-        ? (detailsWithoutSchedule as Prisma.InputJsonValue)
-        : undefined
+      details: detailsWithActivity as Prisma.InputJsonValue
     }
   });
 
-  await prisma.event.delete({ where: { id: scheduleEventId } }).catch(() => null);
-
-  const parish = await prisma.parish.findUnique({
-    where: { id: parishId },
-    select: { name: true }
-  });
-
-  // Record the rejection in email history
-  const historyEntry = {
-    sentAt: new Date().toISOString(),
-    template: "REQUESTER_REJECT" as const,
-    subject: `Declined: ${request.title}`,
-    note: "The requester declined the proposed time."
-  };
-  const detailsAfterHistory = appendRequestHistory(
-    details ? detailsWithoutSchedule : request.details,
-    historyEntry
-  );
-  await prisma.request.update({
-    where: { id: request.id },
-    data: { details: detailsAfterHistory as Prisma.InputJsonValue }
-  });
+  if (scheduleEventId) {
+    await prisma.event.delete({ where: { id: scheduleEventId } }).catch(() => null);
+  }
 
   // Notify the assigned admin/clergy about the rejection via push notification
   if (request.assignedToUserId) {
@@ -883,6 +1104,7 @@ export async function cancelOwnRequest(input: {
     return { status: "error", message: "Completed requests cannot be canceled." };
   }
 
+  const actorName = session.user.name ?? session.user.email ?? "Unknown";
   const details = parseRequestDetails(request.details);
   const scheduleEventId = details?.schedule?.eventId;
   if (scheduleEventId) {
@@ -890,14 +1112,22 @@ export async function cancelOwnRequest(input: {
   }
 
   const { schedule: _schedule, ...detailsWithoutSchedule } = details ?? {};
+  let updatedDetails = details ? detailsWithoutSchedule : undefined;
+  if (updatedDetails) {
+    updatedDetails = appendRequestActivity(updatedDetails, {
+      occurredAt: new Date().toISOString(),
+      type: "STATUS" as const,
+      actorId: session.user.id,
+      actorName,
+      description: `Status changed to ${getRequestStatusLabel("CANCELED")}.`
+    });
+  }
 
   await prisma.request.update({
     where: { id: request.id },
     data: {
       status: "CANCELED",
-      details: details
-        ? (detailsWithoutSchedule as Prisma.InputJsonValue)
-        : undefined
+      details: updatedDetails ? (updatedDetails as Prisma.InputJsonValue) : undefined
     }
   });
 
@@ -910,8 +1140,13 @@ export async function cancelOwnRequest(input: {
   const requesterEmail = details?.requesterEmail ?? request.createdBy.email;
   const hasRequesterEmail = Boolean(requesterEmail);
   let emailStatus: "SENT" | "FAILED" | "SKIPPED" | null = null;
+  const payloadHash = hashEmailPayload({ action: "CANCEL" });
+  const alreadySent = hasRequestEmailHistoryEntry(request.details, {
+    type: "CANCEL",
+    payloadHash
+  });
 
-  if (requesterEmail) {
+  if (requesterEmail && !alreadySent) {
     const email = await sendRequestCancellationEmail({
       parishId,
       parishName: parish?.name ?? "Your parish",
@@ -932,18 +1167,21 @@ export async function cancelOwnRequest(input: {
     if (email.status === "SENT") {
       const historyEntry = {
         sentAt: new Date().toISOString(),
+        type: "CANCEL" as const,
         template: "REQUESTER_CANCEL" as const,
-        subject: email.subject
+        subject: email.subject,
+        sentByUserId: session.user.id,
+        sentByName: actorName,
+        payloadHash
       };
-      const updatedDetails = appendRequestHistory(
-        details ? detailsWithoutSchedule : request.details,
-        historyEntry
-      );
+      const detailsWithHistory = appendRequestHistory(updatedDetails ?? request.details, historyEntry);
       await prisma.request.update({
         where: { id: request.id },
-        data: { details: updatedDetails as Prisma.InputJsonValue }
+        data: { details: detailsWithHistory as Prisma.InputJsonValue }
       });
     }
+  } else if (alreadySent) {
+    emailStatus = "SKIPPED";
   }
 
   revalidatePath("/requests");
@@ -956,6 +1194,9 @@ export async function cancelOwnRequest(input: {
   }
 
   if (emailStatus && emailStatus !== "SENT") {
+    if (emailStatus === "SKIPPED") {
+      return { status: "success", message: "Cancellation email already sent." };
+    }
     return { status: "success", message: "Request canceled, but the email failed to send." };
   }
 

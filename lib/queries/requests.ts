@@ -13,6 +13,7 @@ export type RequestListItem = {
   visibilityScope: VisibilityScope;
   createdAt: Date;
   updatedAt: Date;
+  archivedAt: Date | null;
   assignedTo: { id: string; name: string | null; email: string } | null;
 };
 
@@ -26,6 +27,7 @@ export type RequestBoardFilters = {
   assigneeId?: string | null;
   visibilityScope?: VisibilityScope | null;
   overdue?: boolean;
+  archived?: boolean;
 };
 
 export async function listMyRequests(parishId: string, userId: string): Promise<RequestListItem[]> {
@@ -33,7 +35,8 @@ export async function listMyRequests(parishId: string, userId: string): Promise<
     return await prisma.request.findMany({
       where: {
         parishId,
-        createdByUserId: userId
+        createdByUserId: userId,
+        archivedAt: null
       },
       orderBy: { updatedAt: "desc" },
       select: {
@@ -44,6 +47,7 @@ export async function listMyRequests(parishId: string, userId: string): Promise<
         visibilityScope: true,
         createdAt: true,
         updatedAt: true,
+        archivedAt: true,
         assignedTo: {
           select: {
             id: true,
@@ -116,6 +120,7 @@ export async function listRequestsForBoard(
     requests = await prisma.request.findMany({
       where: {
         parishId,
+        archivedAt: filters.archived ? { not: null } : null,
         AND: andFilters.length ? andFilters : undefined
       },
       orderBy: { updatedAt: "desc" },
@@ -127,6 +132,7 @@ export async function listRequestsForBoard(
         visibilityScope: true,
         createdAt: true,
         updatedAt: true,
+        archivedAt: true,
         details: true,
         createdBy: {
           select: {
@@ -170,6 +176,7 @@ export async function getRequestDetail(
     createdAt: Date;
     updatedAt: Date;
     details: Prisma.JsonValue | null;
+    archivedAt: Date | null;
     createdByUserId: string;
     assignedToUserId: string | null;
     createdBy: { id: string; name: string | null; email: string };
@@ -191,6 +198,7 @@ export async function getRequestDetail(
         createdAt: true,
         updatedAt: true,
         details: true,
+        archivedAt: true,
         createdByUserId: true,
         assignedToUserId: true,
         createdBy: {
@@ -240,6 +248,7 @@ export async function getRequestDetail(
     visibilityScope: request.visibilityScope,
     createdAt: request.createdAt,
     updatedAt: request.updatedAt,
+    archivedAt: request.archivedAt,
     details: request.details,
     createdBy: request.createdBy,
     assignedTo: request.assignedTo

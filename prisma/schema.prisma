@@ -380,6 +380,8 @@ model Request {
   title            String
   details          Json?
   lastReminderAt   DateTime?
+  archivedAt       DateTime?
+  archivedReason   String?
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 

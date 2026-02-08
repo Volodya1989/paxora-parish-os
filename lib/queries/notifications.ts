@@ -379,7 +379,8 @@ async function getRequestNotificationItems(
     where: {
       parishId,
       createdByUserId: userId,
-      updatedAt: { gt: since }
+      updatedAt: { gt: since },
+      archivedAt: null
     },
     select: {
       id: true,
@@ -412,7 +413,8 @@ async function getRequestNotificationItems(
       prisma.request.findMany({
         where: {
           parishId,
-          createdAt: { gt: since }
+          createdAt: { gt: since },
+          archivedAt: null
         },
         select: {
           id: true,
@@ -430,7 +432,8 @@ async function getRequestNotificationItems(
         where: {
           parishId,
           status: "CANCELED",
-          updatedAt: { gt: since }
+          updatedAt: { gt: since },
+          archivedAt: null
         },
         select: {
           id: true,

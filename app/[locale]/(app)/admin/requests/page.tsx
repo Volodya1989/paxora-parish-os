@@ -31,13 +31,15 @@ export default async function AdminRequestsPage({
     ? (scopeParam as "CLERGY_ONLY" | "ADMIN_ALL" | "ADMIN_SPECIFIC")
     : null;
   const overdue = params.overdue === "true";
+  const archived = params.archived === "true";
 
   const [requests, people, parish] = await Promise.all([
     listRequestsForBoard(session.user.activeParishId, session.user.id, {
       type,
       assigneeId,
       visibilityScope,
-      overdue
+      overdue,
+      archived
     }),
     getPeopleList(session.user.activeParishId),
     prisma.parish.findUnique({
