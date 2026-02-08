@@ -61,6 +61,11 @@ const filterVisibility = [
   { value: "ADMIN_SPECIFIC", label: "Clergy + assigned" }
 ];
 
+const filterArchived = [
+  { value: "", label: "Active requests" },
+  { value: "true", label: "Archived requests" }
+];
+
 export type RequestsBoardProps = {
   requests: RequestDetail[];
   assignees: Array<{ id: string; name: string | null; email: string }>;
@@ -79,6 +84,14 @@ export default function RequestsBoard({ requests, assignees }: RequestsBoardProp
   const [scheduleStartTime, setScheduleStartTime] = useState("");
   const [scheduleEndTime, setScheduleEndTime] = useState("");
   const [isUpdating, startTransition] = useTransition();
+  const [expandedStatuses, setExpandedStatuses] = useState<Record<RequestStatus, boolean>>({
+    SUBMITTED: false,
+    ACKNOWLEDGED: false,
+    SCHEDULED: false,
+    COMPLETED: false,
+    CANCELED: false
+  });
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   const requestIdParam = searchParams?.get("requestId") ?? null;
 
@@ -95,6 +108,16 @@ export default function RequestsBoard({ requests, assignees }: RequestsBoardProp
       items: requests.filter((request) => request.status === status)
     }));
   }, [requests]);
+
+  const mobileLimit = 5;
+  const collapsedStatuses = new Set<RequestStatus>(["COMPLETED", "CANCELED"]);
+
+  const toggleStatusExpansion = (status: RequestStatus) => {
+    setExpandedStatuses((current) => ({
+      ...current,
+      [status]: !current[status]
+    }));
+  };
 
   const openRequest = (requestId: string) => {
     const params = new URLSearchParams(searchParams?.toString() ?? "");
@@ -187,6 +210,40 @@ export default function RequestsBoard({ requests, assignees }: RequestsBoardProp
     isRequestOverdue(request.status, request.createdAt, request.updatedAt) ? "Overdue" : null;
 
   const requestDetails = parseRequestDetails(selectedRequest?.details ?? null);
+  const historyItems = useMemo(() => {
+    if (!requestDetails) return [];
+    const emailHistory = (requestDetails.history ?? []).map((entry, index) => {
+      const typeLabel = (entry.type ?? entry.template ?? "EMAIL").replace(/_/g, " ").toLowerCase();
+      const metaParts = [
+        typeLabel,
+        entry.sentByName ? `Sent by ${entry.sentByName}` : null
+      ].filter(Boolean);
+      return {
+        id: `email-${index}-${entry.sentAt}`,
+        title: entry.subject ?? `${typeLabel} email`,
+        timestamp: entry.sentAt,
+        meta: metaParts.join(" · "),
+        note: entry.note
+      };
+    });
+    const activityHistory = (requestDetails.activity ?? []).map((entry, index) => {
+      const metaParts = [
+        entry.type.replace(/_/g, " ").toLowerCase(),
+        entry.actorName ? `By ${entry.actorName}` : null
+      ].filter(Boolean);
+      return {
+        id: `activity-${index}-${entry.occurredAt}`,
+        title: entry.description,
+        timestamp: entry.occurredAt,
+        meta: metaParts.join(" · "),
+        note: null as string | null
+      };
+    });
+
+    return [...emailHistory, ...activityHistory].sort(
+      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+  }, [requestDetails]);
 
   const formatDateInput = (date: Date) => date.toISOString().split("T")[0];
   const formatTimeInput = (date: Date) => date.toTimeString().slice(0, 5);
@@ -219,47 +276,53 @@ export default function RequestsBoard({ requests, assignees }: RequestsBoardProp
 
   const handleSendEmail = () => {
     if (!selectedRequest || !emailDialog) return;
+    if (isUpdating || isSendingEmail) return;
     setStatusMessage(null);
 
+    setIsSendingEmail(true);
     startTransition(async () => {
-      let result: RequestActionResult | null = null;
-      if (emailDialog === "need-info") {
-        result = await sendRequestInfoEmailAction({
-          requestId: selectedRequest.id,
-          note: emailNote || undefined
-        });
-      }
+      try {
+        let result: RequestActionResult | null = null;
+        if (emailDialog === "need-info") {
+          result = await sendRequestInfoEmailAction({
+            requestId: selectedRequest.id,
+            note: emailNote || undefined
+          });
+        }
 
-      if (emailDialog === "cannot-schedule") {
-        result = await cancelRequest({
-          requestId: selectedRequest.id,
-          note: emailNote || undefined
-        });
-      }
+        if (emailDialog === "cannot-schedule") {
+          result = await cancelRequest({
+            requestId: selectedRequest.id,
+            note: emailNote || undefined
+          });
+        }
 
-      if (emailDialog === "schedule") {
-        result = await scheduleRequest({
-          requestId: selectedRequest.id,
-          date: scheduleDate,
-          startTime: scheduleStartTime,
-          endTime: scheduleEndTime,
-          note: emailNote || undefined
-        });
-      }
+        if (emailDialog === "schedule") {
+          result = await scheduleRequest({
+            requestId: selectedRequest.id,
+            date: scheduleDate,
+            startTime: scheduleStartTime,
+            endTime: scheduleEndTime,
+            note: emailNote || undefined
+          });
+        }
 
-      if (result?.status === "error") {
-        const message = result.message ?? "Something went wrong.";
-        setStatusMessage(message);
-        addToast({ title: message, status: "error" });
-        return;
-      }
+        if (result?.status === "error") {
+          const message = result.message ?? "Something went wrong.";
+          setStatusMessage(message);
+          addToast({ title: message, status: "error" });
+          return;
+        }
 
-      closeEmailDialog();
-      router.refresh();
-      if (result) {
-        const message = result.message ?? "Email sent.";
-        const status = message.toLowerCase().includes("failed") ? "warning" : "success";
-        addToast({ title: message, status });
+        closeEmailDialog();
+        router.refresh();
+        if (result) {
+          const message = result.message ?? "Email sent.";
+          const status = message.toLowerCase().includes("failed") ? "warning" : "success";
+          addToast({ title: message, status });
+        }
+      } finally {
+        setIsSendingEmail(false);
       }
     });
   };
@@ -275,7 +338,7 @@ export default function RequestsBoard({ requests, assignees }: RequestsBoardProp
   const detailOpen = Boolean(selectedRequest) && !emailDialog;
 
   const filterControls = (
-    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
       <SelectMenu
         value={searchParams?.get("type") ?? ""}
         onValueChange={(value) => updateFilter("type", value)}
@@ -304,6 +367,11 @@ export default function RequestsBoard({ requests, assignees }: RequestsBoardProp
       >
         Overdue
       </Button>
+      <SelectMenu
+        value={searchParams?.get("archived") ?? ""}
+        onValueChange={(value) => updateFilter("archived", value)}
+        options={filterArchived}
+      />
     </div>
   );
 
@@ -332,34 +400,93 @@ export default function RequestsBoard({ requests, assignees }: RequestsBoardProp
                   <CardDescription>No requests here.</CardDescription>
                 </Card>
               ) : (
-                group.items.map((request) => (
-                  <button
-                    key={request.id}
-                    type="button"
-                    onClick={() => openRequest(request.id)}
-                    className="w-full text-left"
-                  >
-                    <Card className="space-y-2">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <CardTitle className="text-base">{request.title}</CardTitle>
-                        <Badge tone={REQUEST_STATUS_TONES[request.status]}>
-                          {getRequestStatusLabel(request.status)}
-                        </Badge>
-                      </div>
-                      <div className="text-xs text-ink-500">
-                        {getRequestTypeLabel(request.type)} · Updated {formatMessageTime(request.updatedAt)}
-                      </div>
-                      {request.assignedTo?.name ? (
-                        <div className="text-xs text-ink-500">Assigned to {request.assignedTo.name}</div>
-                      ) : (
-                        <div className="text-xs text-ink-400">Unassigned</div>
-                      )}
-                      {overdueLabel(request) ? (
-                        <Badge tone="warning">Overdue</Badge>
-                      ) : null}
-                    </Card>
-                  </button>
-                ))
+                <>
+                  <div className="space-y-2 md:hidden">
+                    {(() => {
+                      const isCollapsed = collapsedStatuses.has(group.status);
+                      const isExpanded = expandedStatuses[group.status];
+                      const visibleItems = isExpanded
+                        ? group.items
+                        : group.items.slice(0, isCollapsed ? 0 : mobileLimit);
+                      return visibleItems.map((request) => (
+                        <button
+                          key={request.id}
+                          type="button"
+                          onClick={() => openRequest(request.id)}
+                          className="w-full text-left"
+                        >
+                          <Card className="space-y-2">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <CardTitle className="text-base">{request.title}</CardTitle>
+                              <Badge tone={REQUEST_STATUS_TONES[request.status]}>
+                                {getRequestStatusLabel(request.status)}
+                              </Badge>
+                            </div>
+                            <div className="text-xs text-ink-500">
+                              {getRequestTypeLabel(request.type)} · Updated{" "}
+                              {formatMessageTime(request.updatedAt)}
+                            </div>
+                            {request.assignedTo?.name ? (
+                              <div className="text-xs text-ink-500">
+                                Assigned to {request.assignedTo.name}
+                              </div>
+                            ) : (
+                              <div className="text-xs text-ink-400">Unassigned</div>
+                            )}
+                            {overdueLabel(request) ? <Badge tone="warning">Overdue</Badge> : null}
+                          </Card>
+                        </button>
+                      ));
+                    })()}
+                    {(() => {
+                      const isCollapsed = collapsedStatuses.has(group.status);
+                      const isExpanded = expandedStatuses[group.status];
+                      const limit = isCollapsed ? 0 : mobileLimit;
+                      const hasMore = group.items.length > limit;
+                      if (!hasMore) return null;
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => toggleStatusExpansion(group.status)}
+                          className="text-xs font-semibold text-primary-700"
+                        >
+                          {isExpanded ? "Show less" : "Show more"} ({group.items.length})
+                        </button>
+                      );
+                    })()}
+                  </div>
+                  <div className="hidden space-y-2 md:block">
+                    {group.items.map((request) => (
+                      <button
+                        key={request.id}
+                        type="button"
+                        onClick={() => openRequest(request.id)}
+                        className="w-full text-left"
+                      >
+                        <Card className="space-y-2">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <CardTitle className="text-base">{request.title}</CardTitle>
+                            <Badge tone={REQUEST_STATUS_TONES[request.status]}>
+                              {getRequestStatusLabel(request.status)}
+                            </Badge>
+                          </div>
+                          <div className="text-xs text-ink-500">
+                            {getRequestTypeLabel(request.type)} · Updated{" "}
+                            {formatMessageTime(request.updatedAt)}
+                          </div>
+                          {request.assignedTo?.name ? (
+                            <div className="text-xs text-ink-500">
+                              Assigned to {request.assignedTo.name}
+                            </div>
+                          ) : (
+                            <div className="text-xs text-ink-400">Unassigned</div>
+                          )}
+                          {overdueLabel(request) ? <Badge tone="warning">Overdue</Badge> : null}
+                        </Card>
+                      </button>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -500,18 +627,19 @@ export default function RequestsBoard({ requests, assignees }: RequestsBoardProp
               </div>
             </div>
 
-            {requestDetails?.history?.length ? (
+            {historyItems.length ? (
               <div className="space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">History</p>
                 <div className="space-y-2">
-                  {requestDetails.history.map((entry) => (
+                  {historyItems.map((entry) => (
                     <div
-                      key={`${entry.template}-${entry.sentAt}`}
+                      key={entry.id}
                       className="rounded-card border border-mist-200 bg-white px-3 py-2 text-xs text-ink-600"
                     >
-                      <p className="font-semibold text-ink-700">{entry.subject}</p>
+                      <p className="font-semibold text-ink-700">{entry.title}</p>
                       <p className="text-[11px] text-ink-400">
-                        {new Date(entry.sentAt).toLocaleString()} · {entry.template.replace("_", " ")}
+                        {new Date(entry.timestamp).toLocaleString()}
+                        {entry.meta ? ` · ${entry.meta}` : ""}
                       </p>
                       {entry.note ? (
                         <p className="mt-1 text-[11px] text-ink-500">{entry.note}</p>
@@ -655,18 +783,19 @@ export default function RequestsBoard({ requests, assignees }: RequestsBoardProp
               </div>
             </div>
 
-            {requestDetails?.history?.length ? (
+            {historyItems.length ? (
               <div className="space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">History</p>
                 <div className="space-y-2">
-                  {requestDetails.history.map((entry) => (
+                  {historyItems.map((entry) => (
                     <div
-                      key={`${entry.template}-${entry.sentAt}`}
+                      key={entry.id}
                       className="rounded-card border border-mist-200 bg-white px-3 py-2 text-xs text-ink-600"
                     >
-                      <p className="font-semibold text-ink-700">{entry.subject}</p>
+                      <p className="font-semibold text-ink-700">{entry.title}</p>
                       <p className="text-[11px] text-ink-400">
-                        {new Date(entry.sentAt).toLocaleString()} · {entry.template.replace("_", " ")}
+                        {new Date(entry.timestamp).toLocaleString()}
+                        {entry.meta ? ` · ${entry.meta}` : ""}
                       </p>
                       {entry.note ? (
                         <p className="mt-1 text-[11px] text-ink-500">{entry.note}</p>
@@ -689,7 +818,7 @@ export default function RequestsBoard({ requests, assignees }: RequestsBoardProp
             <Button type="button" variant="secondary" onClick={closeEmailDialog}>
               Cancel
             </Button>
-            <Button type="button" onClick={handleSendEmail} isLoading={isUpdating}>
+            <Button type="button" onClick={handleSendEmail} isLoading={isUpdating || isSendingEmail}>
               Send email
             </Button>
           </div>
@@ -779,7 +908,7 @@ export default function RequestsBoard({ requests, assignees }: RequestsBoardProp
             <Button type="button" variant="secondary" onClick={closeEmailDialog}>
               Cancel
             </Button>
-            <Button type="button" onClick={handleSendEmail} isLoading={isUpdating}>
+            <Button type="button" onClick={handleSendEmail} isLoading={isUpdating || isSendingEmail}>
               Send email
             </Button>
           </div>

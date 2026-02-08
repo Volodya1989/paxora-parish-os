@@ -78,6 +78,7 @@ export default async function RequestDetailPage({
           status={request.status}
           scheduledStart={details?.schedule?.startsAt ?? null}
           scheduledEnd={details?.schedule?.endsAt ?? null}
+          scheduleResponseStatus={details?.scheduleResponse?.status ?? null}
         />
 
         {details ? (
