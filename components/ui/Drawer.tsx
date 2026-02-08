@@ -31,15 +31,23 @@ export function Drawer({ open, onClose, title, children, footer }: DrawerProps) 
     }
 
     const drawer = drawerRef.current;
+
+    // Skip focus management if the drawer is not visible (e.g. hidden via CSS on desktop)
+    if (!drawer || drawer.offsetParent === null) {
+      return;
+    }
+
     const previousActive = document.activeElement as HTMLElement | null;
-    const focusable = drawer ? getFocusableElements(drawer) : [];
+    const focusable = getFocusableElements(drawer);
     (focusable[0] ?? drawer)?.focus();
 
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Guard against the drawer becoming hidden between renders
+      if (drawer.offsetParent === null) return;
       if (event.key === "Escape") {
         onCloseRef.current();
       }
-      if (event.key === "Tab" && drawer) {
+      if (event.key === "Tab") {
         trapFocus(drawer, event);
       }
     };

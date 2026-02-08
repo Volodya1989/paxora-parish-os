@@ -56,13 +56,7 @@ export async function sendRequestScheduleEmail(input: {
     html,
     text,
     parishId: input.parishId,
-    userId: input.requester.userId,
-    dedupeLog: {
-      type: "NOTIFICATION",
-      parishId: input.parishId,
-      userId: input.requester.userId,
-      toEmail: input.requester.email
-    }
+    userId: input.requester.userId
   });
 
   return { status: result.status, subject };
@@ -96,13 +90,7 @@ export async function sendRequestInfoEmail(input: {
     html,
     text,
     parishId: input.parishId,
-    userId: input.requester.userId,
-    dedupeLog: {
-      type: "NOTIFICATION",
-      parishId: input.parishId,
-      userId: input.requester.userId,
-      toEmail: input.requester.email
-    }
+    userId: input.requester.userId
   });
 
   return { status: result.status, subject };
@@ -136,13 +124,7 @@ export async function sendRequestUnableToScheduleEmail(input: {
     html,
     text,
     parishId: input.parishId,
-    userId: input.requester.userId,
-    dedupeLog: {
-      type: "NOTIFICATION",
-      parishId: input.parishId,
-      userId: input.requester.userId,
-      toEmail: input.requester.email
-    }
+    userId: input.requester.userId
   });
 
   return { status: result.status, subject };
@@ -176,13 +158,7 @@ export async function sendRequestCancellationEmail(input: {
     html,
     text,
     parishId: input.parishId,
-    userId: input.requester.userId,
-    dedupeLog: {
-      type: "NOTIFICATION",
-      parishId: input.parishId,
-      userId: input.requester.userId,
-      toEmail: input.requester.email
-    }
+    userId: input.requester.userId
   });
 
   return { status: result.status, subject };
