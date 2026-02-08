@@ -4,12 +4,13 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
-import Card from "@/components/ui/Card";
 import { Drawer } from "@/components/ui/Drawer";
+import { Modal } from "@/components/ui/Modal";
 import RsvpButtons from "@/components/events/RsvpButtons";
 import { formatRecurrenceSummary } from "@/lib/events/recurrence";
 import type { CalendarEvent } from "@/lib/queries/events";
 import { useTranslations } from "@/lib/i18n/provider";
+import { formatTime as formatTimeLabel } from "@/lib/this-week/formatters";
 
 type EventDetailPanelProps = {
   event: CalendarEvent | null;
@@ -25,14 +26,8 @@ function formatDate(event: CalendarEvent) {
 }
 
 function formatTime(event: CalendarEvent) {
-  const startTime = event.startsAt.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit"
-  });
-  const endTime = event.endsAt.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit"
-  });
+  const startTime = formatTimeLabel(event.startsAt);
+  const endTime = formatTimeLabel(event.endsAt);
   return `${startTime} – ${endTime}`;
 }
 
@@ -125,23 +120,16 @@ export default function EventDetailPanel({ event, onClose }: EventDetailPanelPro
 
   return (
     <>
-      <div className="hidden lg:block">
-        <Card>
-          {event ? (
-            <EventDetailContent
-              event={event}
-              t={t}
-              rsvpTotalCount={rsvpTotalCount}
-              onRsvpUpdated={setRsvpTotalCount}
-            />
-          ) : (
-            <div className="space-y-2 text-sm text-ink-500">
-              <h3 className="text-lg font-semibold text-ink-900">Event details</h3>
-              <p>Select an event to see more information.</p>
-            </div>
-          )}
-        </Card>
-      </div>
+      <Modal open={Boolean(event)} onClose={onClose} title="Event details">
+        {event ? (
+          <EventDetailContent
+            event={event}
+            t={t}
+            rsvpTotalCount={rsvpTotalCount}
+            onRsvpUpdated={setRsvpTotalCount}
+          />
+        ) : null}
+      </Modal>
       <Drawer open={Boolean(event)} onClose={onClose} title="Event details">
         {event ? (
           <EventDetailContent

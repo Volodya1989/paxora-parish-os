@@ -290,6 +290,7 @@ model User {
   digestsCreated           Digest[]                 @relation("DigestAuthor")
   createdAnnouncements     Announcement[]           @relation("AnnouncementAuthor")
   eventRsvps               EventRsvp[]
+  eventReminders           EventReminder[]
   chatMessages             ChatMessage[]
   chatChannelMemberships   ChatChannelMembership[]
   chatPinnedMessages       ChatPinnedMessage[]      @relation("ChatPinnedBy")
@@ -824,6 +825,7 @@ model Event {
   week   Week        @relation(fields: [weekId], references: [id], onDelete: Cascade)
   group  Group?      @relation(fields: [groupId], references: [id])
   rsvps  EventRsvp[]
+  reminders EventReminder[]
   eventRequest EventRequest?
 
   @@index([weekId])
@@ -845,6 +847,22 @@ model EventRsvp {
   @@unique([eventId, userId])
   @@index([eventId])
   @@index([userId])
+}
+
+model EventReminder {
+  id       String   @id @default(cuid())
+  eventId  String
+  userId   String
+  startsAt DateTime
+  sentAt   DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId, startsAt])
+  @@index([eventId])
+  @@index([userId])
+  @@index([startsAt])
 }
 
 model Digest {

@@ -22,6 +22,7 @@ import {
 import { sendRequestAssignmentEmail } from "@/lib/email/requestNotifications";
 import { notifyRequestAssigned } from "@/lib/push/notify";
 import { getWeekEnd, getWeekLabel, getWeekStartMonday } from "@/lib/date/week";
+import { parseParishDateTime } from "@/lib/time/parish";
 import {
   appendRequestActivity,
   appendRequestHistory,
@@ -579,8 +580,8 @@ export async function scheduleRequest(input: {
     return { status: "error", message: "This request can no longer be scheduled." };
   }
 
-  const startsAt = new Date(`${parsed.data.date}T${parsed.data.startTime}`);
-  const endsAt = new Date(`${parsed.data.date}T${parsed.data.endTime}`);
+  const startsAt = parseParishDateTime(parsed.data.date, parsed.data.startTime);
+  const endsAt = parseParishDateTime(parsed.data.date, parsed.data.endTime);
 
   if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {
     return { status: "error", message: "Enter a valid date and time." };

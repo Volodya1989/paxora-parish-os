@@ -7,6 +7,7 @@ import { getDateKey } from "@/lib/date/calendar";
 import { formatRecurrenceSummary } from "@/lib/events/recurrence";
 import type { CalendarEvent } from "@/lib/queries/events";
 import { useTranslations } from "@/lib/i18n/provider";
+import { formatTime } from "@/lib/this-week/formatters";
 
 const visibilityTone: Record<CalendarEvent["visibility"], "neutral" | "warning"> = {
   PUBLIC: "neutral",
@@ -26,18 +27,6 @@ function formatDayLabel(date: Date, now: Date) {
     month: "short",
     day: "numeric"
   });
-}
-
-function formatTimeRange(event: CalendarEvent) {
-  const startTime = event.startsAt.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit"
-  });
-  const endTime = event.endsAt.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit"
-  });
-  return `${startTime} – ${endTime}`;
 }
 
 const typeAccent: Record<CalendarEvent["type"], string> = {
@@ -106,8 +95,8 @@ function ScheduleDaySection({
               <div className="space-y-1.5">
                 {/* Time + badges row */}
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-sm font-semibold text-ink-600">
-                    {formatTimeRange(event)}
+                  <span className="inline-flex items-center rounded-full bg-primary-50 px-2.5 py-1 text-xs font-semibold text-primary-700">
+                    {formatTime(event.startsAt)}
                   </span>
                   <div className="flex flex-wrap items-center gap-1.5">
                     <Badge

@@ -295,7 +295,7 @@ export default function CalendarView({
 
         <div>
           {surface === "schedule" ? (
-            <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)_320px]">
+            <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
               <aside className="hidden lg:block">
                 <Card className="space-y-3">
                   <div className="flex items-center gap-2 text-xs font-semibold text-ink-500">
@@ -338,88 +338,81 @@ export default function CalendarView({
                   )}
                 </div>
               </div>
-              <div className="space-y-4">
-                <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} />
-              </div>
             </div>
           ) : (
-            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-              <div className="section-gap">
-                <TabsPanel value="week">
-                  {weekEvents.length === 0 ? (
-                    <ListEmptyState
-                      title="A quiet week ahead"
-                      description="No services or events are scheduled this week. Check back soon!"
-                      icon={<CalendarIcon className="h-6 w-6" />}
-                      action={renderEmptyActions()}
-                      variant="friendly"
-                    />
-                  ) : (
-                    <>
-                      <div className="md:hidden">
-                        <CalendarDayList
-                          days={weekDays}
-                          eventsByDay={weekEventsByDay}
-                          today={now}
-                          onSelectEvent={setSelectedEvent}
-                        />
-                      </div>
-                      <div className="hidden md:block">
-                        <CalendarGridWeek
-                          days={weekDays}
-                          eventsByDay={weekEventsByDay}
-                          today={now}
-                          selectedEventId={selectedEvent?.instanceId}
-                          onSelectEvent={setSelectedEvent}
-                        />
-                      </div>
-                    </>
-                  )}
-                </TabsPanel>
-                <TabsPanel value="month">
-                  {monthEvents.length === 0 ? (
-                    <ListEmptyState
-                      title="Nothing on the calendar this month"
-                      description="Events and services will appear here once they're scheduled."
-                      icon={<CalendarIcon className="h-6 w-6" />}
-                      action={renderEmptyActions()}
-                      variant="friendly"
-                    />
-                  ) : (
-                    <>
-                      <div className="md:hidden">
-                        <CalendarDayList
-                          days={monthDays}
-                          monthStart={monthRange.start}
-                          monthEnd={monthRange.end}
-                          eventsByDay={monthEventsByDay}
-                          today={now}
-                          onSelectEvent={setSelectedEvent}
-                        />
-                      </div>
-                      <div className="hidden md:block">
-                        <CalendarGridMonth
-                          days={monthDays}
-                          monthStart={monthRange.start}
-                          monthEnd={monthRange.end}
-                          eventsByDay={monthEventsByDay}
-                          today={now}
-                          selectedEventId={selectedEvent?.instanceId}
-                          onSelectEvent={setSelectedEvent}
-                        />
-                      </div>
-                    </>
-                  )}
-                </TabsPanel>
-              </div>
-
-              <div className="space-y-4">
-                <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} />
-              </div>
+            <div className="section-gap">
+              <TabsPanel value="week">
+                {weekEvents.length === 0 ? (
+                  <ListEmptyState
+                    title="A quiet week ahead"
+                    description="No services or events are scheduled this week. Check back soon!"
+                    icon={<CalendarIcon className="h-6 w-6" />}
+                    action={renderEmptyActions()}
+                    variant="friendly"
+                  />
+                ) : (
+                  <>
+                    <div className="md:hidden">
+                      <CalendarDayList
+                        days={weekDays}
+                        eventsByDay={weekEventsByDay}
+                        today={now}
+                        onSelectEvent={setSelectedEvent}
+                      />
+                    </div>
+                    <div className="hidden md:block">
+                      <CalendarGridWeek
+                        days={weekDays}
+                        eventsByDay={weekEventsByDay}
+                        today={now}
+                        selectedEventId={selectedEvent?.instanceId}
+                        onSelectEvent={setSelectedEvent}
+                      />
+                    </div>
+                  </>
+                )}
+              </TabsPanel>
+              <TabsPanel value="month">
+                {monthEvents.length === 0 ? (
+                  <ListEmptyState
+                    title="Nothing on the calendar this month"
+                    description="Events and services will appear here once they're scheduled."
+                    icon={<CalendarIcon className="h-6 w-6" />}
+                    action={renderEmptyActions()}
+                    variant="friendly"
+                  />
+                ) : (
+                  <>
+                    <div className="md:hidden">
+                      <CalendarDayList
+                        days={monthDays}
+                        monthStart={monthRange.start}
+                        monthEnd={monthRange.end}
+                        eventsByDay={monthEventsByDay}
+                        today={now}
+                        onSelectEvent={setSelectedEvent}
+                      />
+                    </div>
+                    <div className="hidden md:block">
+                      <CalendarGridMonth
+                        days={monthDays}
+                        monthStart={monthRange.start}
+                        monthEnd={monthRange.end}
+                        eventsByDay={monthEventsByDay}
+                        today={now}
+                        selectedEventId={selectedEvent?.instanceId}
+                        onSelectEvent={setSelectedEvent}
+                      />
+                    </div>
+                  </>
+                )}
+              </TabsPanel>
             </div>
           )}
         </div>
       </div>
+
+      <EventDetailPanel event={selectedEvent} onClose={() => setSelectedEvent(null)} />
 
       <EventCreateDialog
         open={createOpen}

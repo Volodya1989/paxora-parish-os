@@ -7,6 +7,7 @@ import { getWeekForSelection, type WeekSelection } from "@/domain/week";
 import { getWeekEnd, getWeekLabel, getWeekStartMonday } from "@/lib/date/week";
 import { isParishLeader } from "@/lib/permissions";
 import { createEventSchema, updateEventSchema } from "@/lib/validation/events";
+import { parseParishDateTime } from "@/lib/time/parish";
 import {
   createEvent as createEventRecord,
   listWeekEvents as listWeekEventsData
@@ -93,7 +94,7 @@ function resolveRecurrence(input: {
   let recurrenceUntil: Date | null = null;
 
   if (input.recurrenceUntil) {
-    const parsedUntil = new Date(`${input.recurrenceUntil}T23:59:59`);
+    const parsedUntil = parseParishDateTime(input.recurrenceUntil, "23:59:59");
     if (Number.isNaN(parsedUntil.getTime())) {
       throw new Error("Enter a valid recurrence end date.");
     }
@@ -189,8 +190,8 @@ export async function createEvent(
     return { status: "error", message: "That group is no longer available." };
   }
 
-  const startsAt = new Date(`${parsed.data.date}T${parsed.data.startTime}`);
-  const endsAt = new Date(`${parsed.data.date}T${parsed.data.endTime}`);
+  const startsAt = parseParishDateTime(parsed.data.date, parsed.data.startTime);
+  const endsAt = parseParishDateTime(parsed.data.date, parsed.data.endTime);
 
   if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {
     return {
@@ -366,8 +367,8 @@ export async function updateEvent(
     }
   }
 
-  const startsAt = new Date(`${parsed.data.date}T${parsed.data.startTime}`);
-  const endsAt = new Date(`${parsed.data.date}T${parsed.data.endTime}`);
+  const startsAt = parseParishDateTime(parsed.data.date, parsed.data.startTime);
+  const endsAt = parseParishDateTime(parsed.data.date, parsed.data.endTime);
 
   if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime())) {
     return {

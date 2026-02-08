@@ -7,6 +7,7 @@ import { prisma } from "@/server/db/prisma";
 import { isParishLeader } from "@/lib/permissions";
 import { getWeekEnd, getWeekLabel, getWeekStartMonday } from "@/lib/date/week";
 import { createEventRequestSchema } from "@/lib/validation/eventRequests";
+import { parseParishDateTime } from "@/lib/time/parish";
 import {
   selectEventRequestAdminRecipients,
   sendEventRequestAdminNotificationEmail,
@@ -49,7 +50,7 @@ async function getOrCreateWeekForDate(parishId: string, startsAt: Date) {
 }
 
 function parseStartsAt(date: string, time: string) {
-  const startsAt = new Date(`${date}T${time}`);
+  const startsAt = parseParishDateTime(date, time);
   if (Number.isNaN(startsAt.getTime())) {
     throw new Error("Enter a valid date and time.");
   }
