@@ -3,7 +3,7 @@ import CalendarView from "@/components/calendar/CalendarView";
 import { getMonthRange, getWeekRange } from "@/lib/date/calendar";
 import { listEventsByRange } from "@/lib/queries/events";
 import { listPendingEventRequests } from "@/lib/queries/eventRequests";
-import { getNow } from "@/lib/time/getNow";
+import { getParishNow } from "@/lib/time/parish";
 import { isParishLeader } from "@/lib/permissions";
 import { authOptions } from "@/server/auth/options";
 import { ensureParishBootstrap } from "@/server/auth/bootstrap";
@@ -30,7 +30,7 @@ export default async function CalendarPage() {
         .then((parish) => parish?.id ?? ensureParishBootstrap(userId))
     : await ensureParishBootstrap(userId);
 
-  const now = getNow();
+  const now = getParishNow();
   const weekRange = getWeekRange({ now });
   const monthRange = getMonthRange({ now });
   const nextWeekNow = new Date(now);
