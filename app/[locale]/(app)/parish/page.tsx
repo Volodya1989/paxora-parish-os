@@ -11,7 +11,6 @@ import FeaturedPanel from "@/components/parish-hub/FeaturedPanel";
 import type { FeaturedPanelConfig } from "@/components/parish-hub/FeaturedPanel";
 import type { ParishHubItemData } from "@/components/parish-hub/ParishHubTile";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
-import { cn } from "@/lib/ui/cn";
 
 /* ── Static featured-panel configuration ─────────────────────────── */
 const featuredConfig: FeaturedPanelConfig = {
@@ -62,16 +61,6 @@ export default async function ParishHubPage() {
       isLeader={isLeader}
       subtitle="Quick links to parish resources and information"
       gradientClass="from-primary-600 via-primary-500 to-emerald-500"
-      actions={
-        <Link
-          href="/requests/new"
-          className={cn(
-            "inline-flex items-center justify-center gap-2 rounded-button border border-white/40 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-white/20 focus-ring"
-          )}
-        >
-          Make a Request
-        </Link>
-      }
     >
       {/* Quick-action panel: Make a Request */}
       <div className="flex items-center gap-3 rounded-2xl border border-primary-100 bg-gradient-to-r from-primary-50/60 to-white px-4 py-3">

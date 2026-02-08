@@ -2,6 +2,9 @@ import { prisma } from "@/server/db/prisma";
 import { Prisma } from "@prisma/client";
 import { getParishMembership } from "@/server/db/groups";
 import { isParishLeader } from "@/lib/permissions";
+import { canViewRequest } from "@/lib/requests/access";
+import { parseRequestDetails } from "@/lib/requests/details";
+import { getRequestStatusLabel } from "@/lib/requests/utils";
 
 export type NotificationCategory = "message" | "task" | "announcement" | "event" | "request";
 
@@ -32,15 +35,23 @@ export async function getNotificationItems(
   userId: string,
   parishId: string
 ): Promise<NotificationsResult> {
-  const [messages, tasks, announcements, events, requests] = await Promise.all([
+  const [messages, tasks, announcements, events, pendingRequests, requestUpdates] = await Promise.all([
     getUnreadMessageItems(userId, parishId),
     getNewTaskItems(userId, parishId),
     getNewAnnouncementItems(userId, parishId),
     getNewEventItems(userId, parishId),
-    getPendingRequestItems(userId, parishId)
+    getPendingRequestItems(userId, parishId),
+    getRequestNotificationItems(userId, parishId)
   ]);
 
-  const items = [...messages, ...tasks, ...announcements, ...events, ...requests].sort(
+  const items = [
+    ...messages,
+    ...tasks,
+    ...announcements,
+    ...events,
+    ...pendingRequests,
+    ...requestUpdates
+  ].sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
 
@@ -346,6 +357,132 @@ async function getPendingRequestItems(
       href: "/tasks",
       timestamp: req.createdAt.toISOString()
     });
+  }
+
+  return items;
+}
+
+async function getRequestNotificationItems(
+  userId: string,
+  parishId: string
+): Promise<NotificationItem[]> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { lastSeenRequestsAt: true }
+  });
+
+  const since = user?.lastSeenRequestsAt ?? new Date("1970-01-01");
+  const membership = await getParishMembership(parishId, userId);
+  const items: NotificationItem[] = [];
+
+  const requesterUpdates = await prisma.request.findMany({
+    where: {
+      parishId,
+      createdByUserId: userId,
+      updatedAt: { gt: since }
+    },
+    select: {
+      id: true,
+      title: true,
+      status: true,
+      updatedAt: true,
+      details: true
+    },
+    orderBy: { updatedAt: "desc" },
+    take: 20
+  });
+
+  for (const request of requesterUpdates) {
+    const details = parseRequestDetails(request.details);
+    const scheduleWindow = details?.schedule?.startsAt
+      ? new Date(details.schedule.startsAt).toLocaleString()
+      : null;
+    items.push({
+      id: `req-update-${request.id}`,
+      type: "request",
+      title: `Request ${getRequestStatusLabel(request.status).toLowerCase()}: ${request.title}`,
+      description: scheduleWindow ? `Proposed time: ${scheduleWindow}` : "Check the latest update.",
+      href: `/requests/${request.id}`,
+      timestamp: request.updatedAt.toISOString()
+    });
+  }
+
+  if (membership && isParishLeader(membership.role)) {
+    const [newRequests, canceledRequests] = await Promise.all([
+      prisma.request.findMany({
+        where: {
+          parishId,
+          createdAt: { gt: since }
+        },
+        select: {
+          id: true,
+          title: true,
+          createdAt: true,
+          createdByUserId: true,
+          assignedToUserId: true,
+          visibilityScope: true,
+          createdBy: { select: { name: true, email: true } }
+        },
+        orderBy: { createdAt: "desc" },
+        take: 20
+      }),
+      prisma.request.findMany({
+        where: {
+          parishId,
+          status: "CANCELED",
+          updatedAt: { gt: since }
+        },
+        select: {
+          id: true,
+          title: true,
+          updatedAt: true,
+          createdByUserId: true,
+          assignedToUserId: true,
+          visibilityScope: true,
+          createdBy: { select: { name: true, email: true } }
+        },
+        orderBy: { updatedAt: "desc" },
+        take: 20
+      })
+    ]);
+
+    for (const request of newRequests) {
+      const canView = canViewRequest({
+        viewerId: userId,
+        viewerRole: membership.role,
+        createdByUserId: request.createdByUserId,
+        assignedToUserId: request.assignedToUserId,
+        visibilityScope: request.visibilityScope
+      });
+      if (!canView) continue;
+      items.push({
+        id: `req-new-${request.id}`,
+        type: "request",
+        title: `New request: ${request.title}`,
+        description: `Submitted by ${request.createdBy?.name ?? request.createdBy?.email ?? "a parishioner"}`,
+        href: `/admin/requests?requestId=${request.id}`,
+        timestamp: request.createdAt.toISOString()
+      });
+    }
+
+    for (const request of canceledRequests) {
+      const canView = canViewRequest({
+        viewerId: userId,
+        viewerRole: membership.role,
+        createdByUserId: request.createdByUserId,
+        assignedToUserId: request.assignedToUserId,
+        visibilityScope: request.visibilityScope
+      });
+      if (!canView) continue;
+      items.push({
+        id: `req-canceled-${request.id}`,
+        type: "request",
+        title: `Request canceled: ${request.title}`,
+        description: `Canceled by ${request.createdBy?.name ?? request.createdBy?.email ?? "a parishioner"}`,
+        href: `/admin/requests?requestId=${request.id}`,
+        timestamp: request.updatedAt.toISOString()
+      });
+    }
   }
 
   return items;

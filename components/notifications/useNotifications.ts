@@ -32,6 +32,13 @@ export function useNotifications() {
 
   const markCategoryRead = useCallback(
     async (category: NotificationCategory | "all") => {
+      setState((prev) => {
+        if (category === "all") {
+          return { ...prev, items: [], count: 0 };
+        }
+        const remaining = prev.items.filter((item) => item.type !== category);
+        return { ...prev, items: remaining, count: remaining.length };
+      });
       try {
         await fetch("/api/notifications/mark-read", {
           method: "POST",

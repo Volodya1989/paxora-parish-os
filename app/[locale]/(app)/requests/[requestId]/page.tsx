@@ -8,11 +8,13 @@ import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayou
 import { Card, CardDescription, CardTitle } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import { formatMessageTime } from "@/lib/time/messageTime";
+import { parseRequestDetails } from "@/lib/requests/details";
 import {
   getRequestStatusLabel,
   getRequestTypeLabel,
   REQUEST_STATUS_TONES
 } from "@/lib/requests/utils";
+import RequestDetailActions from "@/components/requests/RequestDetailActions";
 
 export default async function RequestDetailPage({
   params
@@ -39,7 +41,7 @@ export default async function RequestDetailPage({
     notFound();
   }
 
-  const details = request.details && typeof request.details === "object" ? request.details : null;
+  const details = parseRequestDetails(request.details);
 
   return (
     <ParishionerPageLayout
@@ -71,15 +73,22 @@ export default async function RequestDetailPage({
           <div className="text-sm text-ink-600">Assigned to {request.assignedTo.name}</div>
         ) : null}
 
+        <RequestDetailActions
+          requestId={request.id}
+          status={request.status}
+          scheduledStart={details?.schedule?.startsAt ?? null}
+          scheduledEnd={details?.schedule?.endsAt ?? null}
+        />
+
         {details ? (
           <div className="space-y-2">
-            {"preferredTimeWindow" in details ? (
-              <p className="text-sm text-ink-700">
-                Preferred time window: {String((details as any).preferredTimeWindow)}
-              </p>
+            {details.description || details.notes ? (
+              <p className="text-sm text-ink-700">{details.description ?? details.notes}</p>
             ) : null}
-            {"notes" in details && (details as any).notes ? (
-              <p className="text-sm text-ink-700">Notes: {String((details as any).notes)}</p>
+            {details.preferredTimeWindow ? (
+              <p className="text-sm text-ink-700">
+                Preferred time window: {details.preferredTimeWindow}
+              </p>
             ) : null}
           </div>
         ) : (

@@ -5,7 +5,7 @@ import { prisma } from "@/server/db/prisma";
 
 /**
  * POST /api/notifications/mark-read
- * Body: { category: "task" | "announcement" | "event" | "message" | "all" }
+ * Body: { category: "task" | "announcement" | "event" | "message" | "request" | "all" }
  *
  * Marks notifications as read by updating the user's "last seen" timestamps.
  * Chat messages are marked read via the existing markRoomRead server action.
@@ -33,6 +33,9 @@ export async function POST(request: NextRequest) {
     }
     if (category === "event" || category === "all") {
       updateData.lastSeenEventsAt = now;
+    }
+    if (category === "request" || category === "all") {
+      updateData.lastSeenRequestsAt = now;
     }
 
     if (category === "all" || category === "message") {
