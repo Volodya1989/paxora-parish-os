@@ -10,8 +10,10 @@ import { approveParishAccess, rejectParishAccess } from "@/app/actions/access";
 import TasksView from "@/components/tasks/TasksView";
 import { getTasksViewMode } from "@/lib/tasks/viewMode";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
+import VolunteerHoursCard from "@/components/profile/VolunteerHoursCard";
 import { isParishLeader } from "@/lib/permissions";
 import { HandHeartIcon } from "@/components/icons/ParishIcons";
+import { getProfileSettings } from "@/lib/queries/profile";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -108,7 +110,7 @@ export default async function TasksPage({
   const week = await getWeekForSelection(parishId, weekSelection, getNow());
   const filters = parseTaskFilters(resolvedSearchParams, viewMode);
 
-  const [taskList, groups, members, pendingRequests, pendingTaskApprovals, parish] = await Promise.all([
+  const [taskList, groups, members, pendingRequests, pendingTaskApprovals, parish, profile] = await Promise.all([
     listTasks({
       parishId,
       actorUserId: session.user.id,
@@ -139,7 +141,8 @@ export default async function TasksPage({
     prisma.parish.findUnique({
       where: { id: parishId },
       select: { name: true }
-    })
+    }),
+    getProfileSettings({ userId: session.user.id, parishId })
   ]);
 
   const memberOptions = members.map((membership) => {
@@ -163,6 +166,15 @@ export default async function TasksPage({
       gradientClass="from-sky-500 via-sky-400 to-cyan-500"
       icon={<HandHeartIcon className="h-6 w-6 text-white" />}
     >
+      <div className="w-full md:ml-auto md:max-w-md">
+        <VolunteerHoursCard
+          ytdHours={profile.ytdHours}
+          tier={profile.milestoneTier}
+          bronzeHours={profile.bronzeHours}
+          silverHours={profile.silverHours}
+          goldHours={profile.goldHours}
+        />
+      </div>
       <TasksView
         weekLabel={week.label}
         weekRange={formatDateRange(week.startsOn, week.endsOn)}
