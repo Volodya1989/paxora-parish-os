@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Badge from "@/components/ui/Badge";
 import { MapPinIcon } from "@/components/icons/ParishIcons";
 import { getDateKey } from "@/lib/date/calendar";
 import type { CalendarEvent } from "@/lib/queries/events";
+import { formatTime } from "@/lib/this-week/formatters";
 
 type CalendarDayListProps = {
   days: Date[];
@@ -22,18 +22,6 @@ function formatDayLabel(date: Date, isToday: boolean) {
     month: "short",
     day: "numeric"
   });
-}
-
-function formatTimeRange(event: CalendarEvent) {
-  const startTime = event.startsAt.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit"
-  });
-  const endTime = event.endsAt.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit"
-  });
-  return `${startTime} – ${endTime}`;
 }
 
 const typeAccent: Record<CalendarEvent["type"], string> = {
@@ -54,25 +42,14 @@ function EventCard({
     <button
       key={event.instanceId}
       type="button"
-      className={`w-full rounded-card border border-mist-200 bg-white p-3 shadow-card text-left transition hover:border-primary-200 hover:bg-primary-50/40 sm:p-4 border-t-2 ${typeAccent[event.type] ?? "border-t-sky-300"} ${dimmed ? "opacity-60" : ""}`}
+      className={`w-full rounded-card border border-mist-100 bg-white p-3 shadow-card text-left transition hover:border-primary-200 hover:bg-primary-50/40 sm:p-4 border-t-2 ${typeAccent[event.type] ?? "border-t-sky-300"} ${dimmed ? "opacity-60" : ""}`}
       onClick={() => onSelectEvent(event)}
     >
       <div className="space-y-1.5">
-        {/* Time + type badge row */}
         <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-semibold text-ink-600">
-            {formatTimeRange(event)}
+          <span className="inline-flex items-center rounded-full bg-primary-50 px-2.5 py-1 text-xs font-semibold text-primary-700">
+            {formatTime(event.startsAt)}
           </span>
-          <Badge
-            tone={event.type === "SERVICE" ? "success" : "neutral"}
-            className={
-              event.type === "SERVICE"
-                ? "bg-emerald-50 text-emerald-700"
-                : "bg-sky-50 text-sky-700"
-            }
-          >
-            {event.type === "SERVICE" ? "Service" : "Event"}
-          </Badge>
         </div>
 
         {/* Title */}

@@ -238,3 +238,24 @@ export async function notifyRequestReminder(opts: {
 
   await sendPushToUsers(recipientIds, parishId, payload);
 }
+
+export async function notifyEventReminder(opts: {
+  eventId: string;
+  eventTitle: string;
+  parishId: string;
+  recipientIds: string[];
+  startsAtLabel: string;
+}) {
+  const { eventId, eventTitle, parishId, recipientIds, startsAtLabel } = opts;
+
+  if (recipientIds.length === 0) return;
+
+  const payload: PushPayload = {
+    title: "Event reminder",
+    body: `${eventTitle} · ${startsAtLabel}`,
+    url: "/calendar",
+    tag: `event-reminder-${eventId}`
+  };
+
+  await sendPushToUsers(recipientIds, parishId, payload);
+}

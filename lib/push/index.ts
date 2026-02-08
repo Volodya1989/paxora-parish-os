@@ -6,5 +6,6 @@ export {
   notifyTaskCreated,
   notifyTaskAssigned,
   notifyAnnouncementPublished,
+  notifyEventReminder,
   notifyEventCreated
 } from "./notify";

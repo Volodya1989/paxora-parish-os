@@ -6,6 +6,7 @@ import { getDateKey } from "@/lib/date/calendar";
 import { formatRecurrenceSummary } from "@/lib/events/recurrence";
 import type { CalendarEvent } from "@/lib/queries/events";
 import EventChip from "@/components/calendar/EventChip";
+import { formatTime } from "@/lib/this-week/formatters";
 
 type CalendarGridWeekProps = {
   days: Date[];
@@ -17,13 +18,6 @@ type CalendarGridWeekProps = {
 
 const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-function formatChipTime(startsAt: Date) {
-  return startsAt.toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit"
-  });
-}
-
 export default function CalendarGridWeek({
   days,
   eventsByDay,
@@ -34,7 +28,7 @@ export default function CalendarGridWeek({
   const todayKey = getDateKey(today);
 
   return (
-    <div data-testid="calendar-week-grid" className="space-y-3">
+    <div data-testid="calendar-week-grid" className="space-y-4">
       <div className="grid grid-cols-7 gap-3 text-xs uppercase tracking-wide text-ink-400">
         {dayNames.map((day) => (
           <div key={day} className="text-center">
@@ -52,8 +46,8 @@ export default function CalendarGridWeek({
             <div
               key={key}
               className={cn(
-                "min-h-[140px] rounded-card border border-mist-100 bg-white p-3",
-                isToday && "border-emerald-300 bg-emerald-50/40"
+                "min-h-[150px] rounded-card bg-white/80 p-3 ring-1 ring-mist-100/70",
+                isToday && "bg-emerald-50/40 ring-emerald-200"
               )}
             >
               <div className="flex items-center justify-between">
@@ -76,7 +70,7 @@ export default function CalendarGridWeek({
                   <EventChip
                     key={event.instanceId}
                     title={event.title}
-                    timeLabel={formatChipTime(event.startsAt)}
+                    timeLabel={formatTime(event.startsAt)}
                     isSelected={selectedEventId === event.instanceId}
                     ariaLabel={`${event.title} on ${event.startsAt.toLocaleDateString("en-US", {
                       month: "short",
