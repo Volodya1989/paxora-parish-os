@@ -1,5 +1,7 @@
+import { toZonedTime } from "date-fns-tz";
 import { getWeekEnd, getWeekStartMonday } from "@/lib/date/week";
 import { getNow as defaultGetNow } from "@/lib/time/getNow";
+import { PARISH_TIMEZONE, parseParishDateTime } from "@/lib/time/parish";
 
 export type CalendarRange = {
   start: Date;
@@ -13,17 +15,21 @@ type RangeOptions = {
 
 export function getWeekRange({ now, getNow }: RangeOptions = {}): CalendarRange {
   const resolveNow = now ?? (getNow ?? defaultGetNow)();
-  const start = getWeekStartMonday(resolveNow);
-  const end = getWeekEnd(start);
+  const parishNow = toZonedTime(resolveNow, PARISH_TIMEZONE);
+  const startLocal = getWeekStartMonday(parishNow);
+  const endLocal = getWeekEnd(startLocal);
+  const start = parseParishDateTime(formatDateInput(startLocal), "00:00:00");
+  const end = parseParishDateTime(formatDateInput(endLocal), "00:00:00");
   return { start, end };
 }
 
 export function getMonthRange({ now, getNow }: RangeOptions = {}): CalendarRange {
   const resolveNow = now ?? (getNow ?? defaultGetNow)();
-  const start = new Date(resolveNow.getFullYear(), resolveNow.getMonth(), 1);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(resolveNow.getFullYear(), resolveNow.getMonth() + 1, 1);
-  end.setHours(0, 0, 0, 0);
+  const parishNow = toZonedTime(resolveNow, PARISH_TIMEZONE);
+  const startLocal = new Date(parishNow.getFullYear(), parishNow.getMonth(), 1);
+  const endLocal = new Date(parishNow.getFullYear(), parishNow.getMonth() + 1, 1);
+  const start = parseParishDateTime(formatDateInput(startLocal), "00:00:00");
+  const end = parseParishDateTime(formatDateInput(endLocal), "00:00:00");
   return { start, end };
 }
 
@@ -54,6 +60,13 @@ export function getMonthGridDays(start: Date, end: Date): Date[] {
 }
 
 export function getDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function formatDateInput(date: Date) {
   const year = date.getFullYear();
   const month = `${date.getMonth() + 1}`.padStart(2, "0");
   const day = `${date.getDate()}`.padStart(2, "0");
