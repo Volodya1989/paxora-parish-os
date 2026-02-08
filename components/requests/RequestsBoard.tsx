@@ -12,6 +12,7 @@ import Input from "@/components/ui/Input";
 import Textarea from "@/components/ui/Textarea";
 import Badge from "@/components/ui/Badge";
 import { Card, CardDescription, CardTitle } from "@/components/ui/Card";
+import { useToast } from "@/components/ui/Toast";
 import { formatMessageTime } from "@/lib/time/messageTime";
 import FiltersDrawer from "@/components/app/filters-drawer";
 import {
@@ -29,7 +30,8 @@ import {
   scheduleRequest,
   sendRequestInfoEmailAction,
   updateRequestStatus,
-  updateRequestVisibility
+  updateRequestVisibility,
+  type RequestActionResult
 } from "@/server/actions/requests";
 import { parseRequestDetails } from "@/lib/requests/details";
 
@@ -69,6 +71,7 @@ type RequestEmailDialog = "schedule" | "need-info" | "cannot-schedule";
 export default function RequestsBoard({ requests, assignees }: RequestsBoardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { addToast } = useToast();
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [emailDialog, setEmailDialog] = useState<RequestEmailDialog | null>(null);
   const [emailNote, setEmailNote] = useState("");
@@ -219,44 +222,45 @@ export default function RequestsBoard({ requests, assignees }: RequestsBoardProp
     setStatusMessage(null);
 
     startTransition(async () => {
+      let result: RequestActionResult | null = null;
       if (emailDialog === "need-info") {
-        const result = await sendRequestInfoEmailAction({
+        result = await sendRequestInfoEmailAction({
           requestId: selectedRequest.id,
           note: emailNote || undefined
         });
-        if (result.status === "error") {
-          setStatusMessage(result.message ?? "Unable to send email.");
-          return;
-        }
       }
 
       if (emailDialog === "cannot-schedule") {
-        const result = await cancelRequest({
+        result = await cancelRequest({
           requestId: selectedRequest.id,
           note: emailNote || undefined
         });
-        if (result.status === "error") {
-          setStatusMessage(result.message ?? "Unable to cancel request.");
-          return;
-        }
       }
 
       if (emailDialog === "schedule") {
-        const result = await scheduleRequest({
+        result = await scheduleRequest({
           requestId: selectedRequest.id,
           date: scheduleDate,
           startTime: scheduleStartTime,
           endTime: scheduleEndTime,
           note: emailNote || undefined
         });
-        if (result.status === "error") {
-          setStatusMessage(result.message ?? "Unable to schedule request.");
-          return;
-        }
+      }
+
+      if (result?.status === "error") {
+        const message = result.message ?? "Something went wrong.";
+        setStatusMessage(message);
+        addToast({ title: message, status: "error" });
+        return;
       }
 
       closeEmailDialog();
       router.refresh();
+      if (result) {
+        const message = result.message ?? "Email sent.";
+        const status = message.toLowerCase().includes("failed") ? "warning" : "success";
+        addToast({ title: message, status });
+      }
     });
   };
 

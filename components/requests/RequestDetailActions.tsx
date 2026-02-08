@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { RequestStatus } from "@prisma/client";
 import Button from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
 import {
   cancelOwnRequest,
   respondToScheduledRequest
@@ -23,14 +24,18 @@ export default function RequestDetailActions({
   scheduledEnd
 }: RequestDetailActionsProps) {
   const router = useRouter();
+  const { addToast } = useToast();
   const [isPending, startTransition] = useTransition();
 
   const handleRespond = (response: "ACCEPT" | "REJECT") => {
     startTransition(async () => {
       const result = await respondToScheduledRequest({ requestId, response });
       if (result.status === "success") {
+        addToast({ title: result.message ?? "Request updated.", status: "success" });
         router.refresh();
+        return;
       }
+      addToast({ title: result.message ?? "Unable to update request.", status: "error" });
     });
   };
 
@@ -38,8 +43,11 @@ export default function RequestDetailActions({
     startTransition(async () => {
       const result = await cancelOwnRequest({ requestId });
       if (result.status === "success") {
+        addToast({ title: result.message ?? "Request canceled.", status: "success" });
         router.refresh();
+        return;
       }
+      addToast({ title: result.message ?? "Unable to cancel request.", status: "error" });
     });
   };
 
@@ -87,4 +95,3 @@ export default function RequestDetailActions({
     </div>
   );
 }
-

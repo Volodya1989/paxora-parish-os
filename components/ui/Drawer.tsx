@@ -19,6 +19,11 @@ export type DrawerProps = {
 export function Drawer({ open, onClose, title, children, footer }: DrawerProps) {
   const titleId = useId();
   const drawerRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) {
@@ -32,7 +37,7 @@ export function Drawer({ open, onClose, title, children, footer }: DrawerProps) 
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        onClose();
+        onCloseRef.current();
       }
       if (event.key === "Tab" && drawer) {
         trapFocus(drawer, event);
@@ -45,7 +50,7 @@ export function Drawer({ open, onClose, title, children, footer }: DrawerProps) 
       document.removeEventListener("keydown", handleKeyDown);
       previousActive?.focus();
     };
-  }, [onClose, open]);
+  }, [open]);
 
   if (!open) {
     return null;

@@ -1,4 +1,4 @@
-import { sendEmailIfAllowed } from "@/lib/email/emailService";
+import { sendEmail } from "@/lib/email/emailService";
 import { getAppUrl } from "@/lib/email/utils";
 import {
   renderRequestCancellationEmail,
@@ -11,7 +11,6 @@ type RequestRecipient = {
   userId: string;
   email: string;
   name: string | null;
-  notifyEmailEnabled: boolean;
   role: "ADMIN" | "SHEPHERD" | "MEMBER";
 };
 
@@ -49,8 +48,8 @@ export async function sendRequestScheduleEmail(input: {
     note: input.note
   });
 
-  const result = await sendEmailIfAllowed({
-    type: "NOTIFICATION",
+  const result = await sendEmail({
+    type: "TRANSACTIONAL",
     template: "requestSchedule",
     toEmail: input.requester.email,
     subject,
@@ -63,10 +62,6 @@ export async function sendRequestScheduleEmail(input: {
       parishId: input.parishId,
       userId: input.requester.userId,
       toEmail: input.requester.email
-    },
-    prefs: {
-      notifyEmailEnabled: input.requester.notifyEmailEnabled,
-      weeklyDigestEnabled: false
     }
   });
 
@@ -93,8 +88,8 @@ export async function sendRequestInfoEmail(input: {
     note: input.note
   });
 
-  const result = await sendEmailIfAllowed({
-    type: "NOTIFICATION",
+  const result = await sendEmail({
+    type: "TRANSACTIONAL",
     template: "requestNeedInfo",
     toEmail: input.requester.email,
     subject,
@@ -107,10 +102,6 @@ export async function sendRequestInfoEmail(input: {
       parishId: input.parishId,
       userId: input.requester.userId,
       toEmail: input.requester.email
-    },
-    prefs: {
-      notifyEmailEnabled: input.requester.notifyEmailEnabled,
-      weeklyDigestEnabled: false
     }
   });
 
@@ -137,8 +128,8 @@ export async function sendRequestUnableToScheduleEmail(input: {
     note: input.note
   });
 
-  const result = await sendEmailIfAllowed({
-    type: "NOTIFICATION",
+  const result = await sendEmail({
+    type: "TRANSACTIONAL",
     template: "requestCannotSchedule",
     toEmail: input.requester.email,
     subject,
@@ -151,10 +142,6 @@ export async function sendRequestUnableToScheduleEmail(input: {
       parishId: input.parishId,
       userId: input.requester.userId,
       toEmail: input.requester.email
-    },
-    prefs: {
-      notifyEmailEnabled: input.requester.notifyEmailEnabled,
-      weeklyDigestEnabled: false
     }
   });
 
@@ -181,8 +168,8 @@ export async function sendRequestCancellationEmail(input: {
     note: input.note
   });
 
-  const result = await sendEmailIfAllowed({
-    type: "NOTIFICATION",
+  const result = await sendEmail({
+    type: "TRANSACTIONAL",
     template: "requestCanceled",
     toEmail: input.requester.email,
     subject,
@@ -195,13 +182,8 @@ export async function sendRequestCancellationEmail(input: {
       parishId: input.parishId,
       userId: input.requester.userId,
       toEmail: input.requester.email
-    },
-    prefs: {
-      notifyEmailEnabled: input.requester.notifyEmailEnabled,
-      weeklyDigestEnabled: false
     }
   });
 
   return { status: result.status, subject };
 }
-

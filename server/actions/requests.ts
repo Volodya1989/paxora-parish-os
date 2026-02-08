@@ -396,16 +396,6 @@ export async function sendRequestInfoEmailAction(input: {
     return { status: "error", message: "Requester email is missing." };
   }
 
-  const membership = await prisma.membership.findUnique({
-    where: {
-      parishId_userId: {
-        parishId,
-        userId: request.createdBy.id
-      }
-    },
-    select: { notifyEmailEnabled: true, weeklyDigestEnabled: true }
-  });
-
   const email = await sendRequestInfoEmail({
     parishId,
     parishName: parish?.name ?? "Your parish",
@@ -416,11 +406,14 @@ export async function sendRequestInfoEmailAction(input: {
       userId: request.createdBy.id,
       name: requesterName,
       email: requesterEmail,
-      notifyEmailEnabled: membership?.notifyEmailEnabled ?? true,
       role: "MEMBER"
     },
     note: parsed.data.note
   });
+
+  if (email.status !== "SENT") {
+    return { status: "error", message: "Email failed to send." };
+  }
 
   if (email.status === "SENT") {
     const historyEntry = {
@@ -522,14 +515,6 @@ export async function scheduleRequest(input: {
     select: { id: true }
   });
 
-  await prisma.eventRsvp.create({
-    data: {
-      eventId: event.id,
-      userId: request.createdByUserId,
-      response: "MAYBE"
-    }
-  });
-
   if (request.assignedToUserId) {
     await prisma.eventRsvp.upsert({
       where: { eventId_userId: { eventId: event.id, userId: request.assignedToUserId } },
@@ -558,18 +543,10 @@ export async function scheduleRequest(input: {
 
   const requesterName = details.requesterName ?? request.createdBy.name ?? null;
   const requesterEmail = details.requesterEmail ?? request.createdBy.email;
+  const hasRequesterEmail = Boolean(requesterEmail);
+  let emailStatus: "SENT" | "FAILED" | "SKIPPED" | null = null;
 
   if (requesterEmail) {
-    const membership = await prisma.membership.findUnique({
-      where: {
-        parishId_userId: {
-          parishId,
-          userId: request.createdBy.id
-        }
-      },
-      select: { notifyEmailEnabled: true, weeklyDigestEnabled: true }
-    });
-
     const email = await sendRequestScheduleEmail({
       parishId,
       parishName: parish?.name ?? "Your parish",
@@ -580,12 +557,13 @@ export async function scheduleRequest(input: {
         userId: request.createdBy.id,
         name: requesterName,
         email: requesterEmail,
-        notifyEmailEnabled: membership?.notifyEmailEnabled ?? true,
         role: "MEMBER"
       },
       scheduleWindow: `${startsAt.toLocaleString()} - ${endsAt.toLocaleTimeString()}`,
       note: parsed.data.note
     });
+
+    emailStatus = email.status;
 
     if (email.status === "SENT") {
       const historyEntry = {
@@ -606,7 +584,15 @@ export async function scheduleRequest(input: {
   revalidatePath("/requests");
   revalidatePath("/calendar");
 
-  return { status: "success" };
+  if (!hasRequesterEmail) {
+    return { status: "success", message: "Scheduled, but the requester email is missing." };
+  }
+
+  if (emailStatus && emailStatus !== "SENT") {
+    return { status: "success", message: "Scheduled, but the email failed to send." };
+  }
+
+  return { status: "success", message: "Schedule email sent." };
 }
 
 export async function cancelRequest(input: {
@@ -655,9 +641,11 @@ export async function cancelRequest(input: {
     await prisma.event.delete({ where: { id: scheduleEventId } }).catch(() => null);
   }
 
+  const { schedule: _schedule, ...detailsWithoutSchedule } = details ?? {};
+
   await prisma.request.update({
     where: { id: request.id },
-    data: { status: "CANCELED" }
+    data: { status: "CANCELED", details: details ? detailsWithoutSchedule : request.details }
   });
 
   const parish = await prisma.parish.findUnique({
@@ -667,18 +655,10 @@ export async function cancelRequest(input: {
 
   const requesterName = details?.requesterName ?? request.createdBy.name ?? null;
   const requesterEmail = details?.requesterEmail ?? request.createdBy.email;
+  const hasRequesterEmail = Boolean(requesterEmail);
+  let emailStatus: "SENT" | "FAILED" | "SKIPPED" | null = null;
 
   if (requesterEmail) {
-    const membership = await prisma.membership.findUnique({
-      where: {
-        parishId_userId: {
-          parishId,
-          userId: request.createdBy.id
-        }
-      },
-      select: { notifyEmailEnabled: true, weeklyDigestEnabled: true }
-    });
-
     const email = await sendRequestUnableToScheduleEmail({
       parishId,
       parishName: parish?.name ?? "Your parish",
@@ -689,11 +669,12 @@ export async function cancelRequest(input: {
         userId: request.createdBy.id,
         name: requesterName,
         email: requesterEmail,
-        notifyEmailEnabled: membership?.notifyEmailEnabled ?? true,
         role: "MEMBER"
       },
       note: parsed.data.note
     });
+
+    emailStatus = email.status;
 
     if (email.status === "SENT") {
       const historyEntry = {
@@ -714,7 +695,15 @@ export async function cancelRequest(input: {
   revalidatePath("/requests");
   revalidatePath("/calendar");
 
-  return { status: "success" };
+  if (!hasRequesterEmail) {
+    return { status: "success", message: "Request canceled, but the requester email is missing." };
+  }
+
+  if (emailStatus && emailStatus !== "SENT") {
+    return { status: "success", message: "Request canceled, but the email failed to send." };
+  }
+
+  return { status: "success", message: "Cancellation email sent." };
 }
 
 export async function respondToScheduledRequest(input: {
@@ -775,14 +764,17 @@ export async function respondToScheduledRequest(input: {
     });
 
     revalidatePath("/requests");
+    revalidatePath(`/requests/${request.id}`);
     revalidatePath("/calendar");
 
-    return { status: "success" };
+    return { status: "success", message: "Schedule confirmed." };
   }
+
+  const { schedule: _schedule, ...detailsWithoutSchedule } = details ?? {};
 
   await prisma.request.update({
     where: { id: request.id },
-    data: { status: "CANCELED" }
+    data: { status: "CANCELED", details: details ? detailsWithoutSchedule : request.details }
   });
 
   await prisma.event.delete({ where: { id: scheduleEventId } }).catch(() => null);
@@ -794,18 +786,10 @@ export async function respondToScheduledRequest(input: {
 
   const requesterName = details?.requesterName ?? request.createdBy.name ?? null;
   const requesterEmail = details?.requesterEmail ?? request.createdBy.email;
+  const hasRequesterEmail = Boolean(requesterEmail);
+  let emailStatus: "SENT" | "FAILED" | "SKIPPED" | null = null;
 
   if (requesterEmail) {
-    const membership = await prisma.membership.findUnique({
-      where: {
-        parishId_userId: {
-          parishId,
-          userId: request.createdBy.id
-        }
-      },
-      select: { notifyEmailEnabled: true, weeklyDigestEnabled: true }
-    });
-
     const email = await sendRequestCancellationEmail({
       parishId,
       parishName: parish?.name ?? "Your parish",
@@ -816,11 +800,12 @@ export async function respondToScheduledRequest(input: {
         userId: request.createdBy.id,
         name: requesterName,
         email: requesterEmail,
-        notifyEmailEnabled: membership?.notifyEmailEnabled ?? true,
         role: "MEMBER"
       },
       note: "We received your cancellation. If you still need this, please call the office."
     });
+
+    emailStatus = email.status;
 
     if (email.status === "SENT") {
       const historyEntry = {
@@ -837,10 +822,19 @@ export async function respondToScheduledRequest(input: {
   }
 
   revalidatePath("/requests");
+  revalidatePath(`/requests/${request.id}`);
   revalidatePath("/admin/requests");
   revalidatePath("/calendar");
 
-  return { status: "success" };
+  if (!hasRequesterEmail) {
+    return { status: "success", message: "Request canceled, but the requester email is missing." };
+  }
+
+  if (emailStatus && emailStatus !== "SENT") {
+    return { status: "success", message: "Request canceled, but the email failed to send." };
+  }
+
+  return { status: "success", message: "Request canceled." };
 }
 
 export async function cancelOwnRequest(input: {
@@ -891,9 +885,11 @@ export async function cancelOwnRequest(input: {
     await prisma.event.delete({ where: { id: scheduleEventId } }).catch(() => null);
   }
 
+  const { schedule: _schedule, ...detailsWithoutSchedule } = details ?? {};
+
   await prisma.request.update({
     where: { id: request.id },
-    data: { status: "CANCELED" }
+    data: { status: "CANCELED", details: details ? detailsWithoutSchedule : request.details }
   });
 
   const parish = await prisma.parish.findUnique({
@@ -903,18 +899,10 @@ export async function cancelOwnRequest(input: {
 
   const requesterName = details?.requesterName ?? request.createdBy.name ?? null;
   const requesterEmail = details?.requesterEmail ?? request.createdBy.email;
+  const hasRequesterEmail = Boolean(requesterEmail);
+  let emailStatus: "SENT" | "FAILED" | "SKIPPED" | null = null;
 
   if (requesterEmail) {
-    const membership = await prisma.membership.findUnique({
-      where: {
-        parishId_userId: {
-          parishId,
-          userId: request.createdBy.id
-        }
-      },
-      select: { notifyEmailEnabled: true, weeklyDigestEnabled: true }
-    });
-
     const email = await sendRequestCancellationEmail({
       parishId,
       parishName: parish?.name ?? "Your parish",
@@ -925,11 +913,12 @@ export async function cancelOwnRequest(input: {
         userId: request.createdBy.id,
         name: requesterName,
         email: requesterEmail,
-        notifyEmailEnabled: membership?.notifyEmailEnabled ?? true,
         role: "MEMBER"
       },
       note: "We received your cancellation. If you still need this, please call the office."
     });
+
+    emailStatus = email.status;
 
     if (email.status === "SENT") {
       const historyEntry = {
@@ -946,8 +935,17 @@ export async function cancelOwnRequest(input: {
   }
 
   revalidatePath("/requests");
+  revalidatePath(`/requests/${request.id}`);
   revalidatePath("/admin/requests");
   revalidatePath("/calendar");
 
-  return { status: "success" };
+  if (!hasRequesterEmail) {
+    return { status: "success", message: "Request canceled, but the requester email is missing." };
+  }
+
+  if (emailStatus && emailStatus !== "SENT") {
+    return { status: "success", message: "Request canceled, but the email failed to send." };
+  }
+
+  return { status: "success", message: "Request canceled." };
 }

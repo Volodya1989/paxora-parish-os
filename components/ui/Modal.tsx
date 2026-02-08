@@ -19,6 +19,11 @@ export type ModalProps = {
 export function Modal({ open, onClose, title, children, footer }: ModalProps) {
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     if (!open) {
@@ -32,7 +37,7 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        onClose();
+        onCloseRef.current();
       }
       if (event.key === "Tab" && dialog) {
         trapFocus(dialog, event);
@@ -45,7 +50,7 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
       document.removeEventListener("keydown", handleKeyDown);
       previousActive?.focus();
     };
-  }, [onClose, open]);
+  }, [open]);
 
   if (!open) {
     return null;
