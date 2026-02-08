@@ -7,7 +7,8 @@ import type {
   EventRecurrenceFrequency,
   EventRsvpResponse,
   EventType,
-  EventVisibility
+  EventVisibility,
+  Prisma
 } from "@prisma/client";
 
 type EventGroup = {
@@ -148,9 +149,7 @@ function buildVisibilityFilter(context: EventViewerContext) {
     return undefined;
   }
 
-  const filters: Array<{ visibility: EventVisibility; groupId?: { in: string[] } }> = [
-    { visibility: "PUBLIC" }
-  ];
+  const filters: Prisma.EventWhereInput[] = [{ visibility: "PUBLIC" }];
 
   if (context.groupIds.length > 0) {
     filters.push({ visibility: "GROUP", groupId: { in: context.groupIds } });
