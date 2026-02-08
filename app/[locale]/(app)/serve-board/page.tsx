@@ -5,10 +5,12 @@ import { getParishMembership } from "@/server/db/groups";
 import { getOrCreateCurrentWeek } from "@/domain/week";
 import { getNow } from "@/lib/time/getNow";
 import { listTasks } from "@/lib/queries/tasks";
+import { getProfileSettings } from "@/lib/queries/profile";
 import { isParishLeader } from "@/lib/permissions";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
+import VolunteerHoursSummary from "@/components/profile/VolunteerHoursSummary";
 import ServeBoardView from "@/components/serve-board/ServeBoardView";
-import { HandHeartIcon, HeartIcon } from "@/components/icons/ParishIcons";
+import { HandHeartIcon } from "@/components/icons/ParishIcons";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -33,7 +35,7 @@ export default async function ServeBoardPage() {
   const week = await getOrCreateCurrentWeek(parishId, getNow());
   const isLeader = isParishLeader(membership.role);
 
-  const [taskList, members, parish] = await Promise.all([
+  const [taskList, members, parish, profile] = await Promise.all([
     listTasks({
       parishId,
       actorUserId: session.user.id,
@@ -56,7 +58,8 @@ export default async function ServeBoardPage() {
     prisma.parish.findUnique({
       where: { id: parishId },
       select: { name: true }
-    })
+    }),
+    getProfileSettings({ userId: session.user.id, parishId })
   ]);
 
   const memberOptions = members.map((member) => {
@@ -77,6 +80,9 @@ export default async function ServeBoardPage() {
       gradientClass="from-sky-500 via-sky-400 to-cyan-500"
       icon={<HandHeartIcon className="h-6 w-6 text-white" />}
     >
+      <div className="w-full md:ml-auto md:max-w-sm">
+        <VolunteerHoursSummary ytdHours={profile.ytdHours} />
+      </div>
       <ServeBoardView
         tasks={taskList.tasks}
         memberOptions={memberOptions}
