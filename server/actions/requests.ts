@@ -425,7 +425,7 @@ export async function sendRequestInfoEmailAction(input: {
     const updatedDetails = appendRequestHistory(request.details, historyEntry);
     await prisma.request.update({
       where: { id: request.id },
-      data: { details: updatedDetails }
+      data: { details: updatedDetails as Prisma.InputJsonValue }
     });
   }
 
@@ -537,8 +537,15 @@ export async function scheduleRequest(input: {
     where: { id: request.id },
     data: {
       status: "SCHEDULED",
-      details: detailsWithSchedule
+      details: detailsWithSchedule as Prisma.InputJsonValue
     }
+  });
+
+  // Create RSVP for requester so the event is visible on their calendar
+  await prisma.eventRsvp.upsert({
+    where: { eventId_userId: { eventId: event.id, userId: request.createdByUserId } },
+    update: { response: "MAYBE" },
+    create: { eventId: event.id, userId: request.createdByUserId, response: "MAYBE" }
   });
 
   const requesterName = details.requesterName ?? request.createdBy.name ?? null;
@@ -575,7 +582,7 @@ export async function scheduleRequest(input: {
       const updatedDetails = appendRequestHistory(detailsWithSchedule, historyEntry);
       await prisma.request.update({
         where: { id: request.id },
-        data: { details: updatedDetails }
+        data: { details: updatedDetails as Prisma.InputJsonValue }
       });
     }
   }
@@ -645,7 +652,12 @@ export async function cancelRequest(input: {
 
   await prisma.request.update({
     where: { id: request.id },
-    data: { status: "CANCELED", details: details ? detailsWithoutSchedule : request.details }
+    data: {
+      status: "CANCELED",
+      details: details
+        ? (detailsWithoutSchedule as Prisma.InputJsonValue)
+        : undefined
+    }
   });
 
   const parish = await prisma.parish.findUnique({
@@ -686,7 +698,7 @@ export async function cancelRequest(input: {
       const updatedDetails = appendRequestHistory(request.details, historyEntry);
       await prisma.request.update({
         where: { id: request.id },
-        data: { details: updatedDetails }
+        data: { details: updatedDetails as Prisma.InputJsonValue }
       });
     }
   }
@@ -733,6 +745,7 @@ export async function respondToScheduledRequest(input: {
       status: true,
       details: true,
       createdByUserId: true,
+      assignedToUserId: true,
       createdBy: { select: { id: true, name: true, email: true } }
     }
   });
@@ -772,9 +785,15 @@ export async function respondToScheduledRequest(input: {
 
   const { schedule: _schedule, ...detailsWithoutSchedule } = details ?? {};
 
+  // Move back to ACKNOWLEDGED so admin can propose a new time
   await prisma.request.update({
     where: { id: request.id },
-    data: { status: "CANCELED", details: details ? detailsWithoutSchedule : request.details }
+    data: {
+      status: "ACKNOWLEDGED",
+      details: details
+        ? (detailsWithoutSchedule as Prisma.InputJsonValue)
+        : undefined
+    }
   });
 
   await prisma.event.delete({ where: { id: scheduleEventId } }).catch(() => null);
@@ -784,40 +803,33 @@ export async function respondToScheduledRequest(input: {
     select: { name: true }
   });
 
-  const requesterName = details?.requesterName ?? request.createdBy.name ?? null;
-  const requesterEmail = details?.requesterEmail ?? request.createdBy.email;
-  const hasRequesterEmail = Boolean(requesterEmail);
-  let emailStatus: "SENT" | "FAILED" | "SKIPPED" | null = null;
+  // Record the rejection in email history
+  const historyEntry = {
+    sentAt: new Date().toISOString(),
+    template: "REQUESTER_REJECT" as const,
+    subject: `Declined: ${request.title}`,
+    note: "The requester declined the proposed time."
+  };
+  const detailsAfterHistory = appendRequestHistory(
+    details ? detailsWithoutSchedule : request.details,
+    historyEntry
+  );
+  await prisma.request.update({
+    where: { id: request.id },
+    data: { details: detailsAfterHistory as Prisma.InputJsonValue }
+  });
 
-  if (requesterEmail) {
-    const email = await sendRequestCancellationEmail({
-      parishId,
-      parishName: parish?.name ?? "Your parish",
-      requestId: request.id,
-      requestTitle: request.title,
-      requestTypeLabel: getRequestTypeLabel(request.type),
-      requester: {
-        userId: request.createdBy.id,
-        name: requesterName,
-        email: requesterEmail,
-        role: "MEMBER"
-      },
-      note: "We received your cancellation. If you still need this, please call the office."
-    });
-
-    emailStatus = email.status;
-
-    if (email.status === "SENT") {
-      const historyEntry = {
-        sentAt: new Date().toISOString(),
-        template: "REQUESTER_REJECT" as const,
-        subject: email.subject
-      };
-      const updatedDetails = appendRequestHistory(request.details, historyEntry);
-      await prisma.request.update({
-        where: { id: request.id },
-        data: { details: updatedDetails }
+  // Notify the assigned admin/clergy about the rejection via push notification
+  if (request.assignedToUserId) {
+    try {
+      await notifyRequestAssigned({
+        requestId: request.id,
+        requestTitle: `Declined: ${request.title}`,
+        parishId,
+        assigneeId: request.assignedToUserId
       });
+    } catch (error) {
+      console.error("Failed to send reject push notification to assignee", error);
     }
   }
 
@@ -826,15 +838,7 @@ export async function respondToScheduledRequest(input: {
   revalidatePath("/admin/requests");
   revalidatePath("/calendar");
 
-  if (!hasRequesterEmail) {
-    return { status: "success", message: "Request canceled, but the requester email is missing." };
-  }
-
-  if (emailStatus && emailStatus !== "SENT") {
-    return { status: "success", message: "Request canceled, but the email failed to send." };
-  }
-
-  return { status: "success", message: "Request canceled." };
+  return { status: "success", message: "Proposed time declined. The parish will be notified." };
 }
 
 export async function cancelOwnRequest(input: {
@@ -889,7 +893,12 @@ export async function cancelOwnRequest(input: {
 
   await prisma.request.update({
     where: { id: request.id },
-    data: { status: "CANCELED", details: details ? detailsWithoutSchedule : request.details }
+    data: {
+      status: "CANCELED",
+      details: details
+        ? (detailsWithoutSchedule as Prisma.InputJsonValue)
+        : undefined
+    }
   });
 
   const parish = await prisma.parish.findUnique({
@@ -926,10 +935,13 @@ export async function cancelOwnRequest(input: {
         template: "REQUESTER_CANCEL" as const,
         subject: email.subject
       };
-      const updatedDetails = appendRequestHistory(request.details, historyEntry);
+      const updatedDetails = appendRequestHistory(
+        details ? detailsWithoutSchedule : request.details,
+        historyEntry
+      );
       await prisma.request.update({
         where: { id: request.id },
-        data: { details: updatedDetails }
+        data: { details: updatedDetails as Prisma.InputJsonValue }
       });
     }
   }
