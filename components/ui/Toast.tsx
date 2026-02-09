@@ -11,7 +11,7 @@ export type ToastData = {
   actionLabel?: string;
   onAction?: () => void;
   duration?: number;
-  status?: "success" | "error" | "warning" | "info";
+  status?: "success" | "error" | "warning" | "info" | "neutral";
 };
 
 type ToastContextValue = {

@@ -15,6 +15,7 @@ const messages = [
     editedAt: null,
     deletedAt: null,
     replyCount: 0,
+    attachments: [],
     reactions: [],
     author: childAuthor,
     parentMessage: {
