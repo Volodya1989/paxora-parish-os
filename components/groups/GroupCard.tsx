@@ -53,6 +53,7 @@ type GroupCardProps = {
   onEdit: () => void;
   onArchive: () => void;
   onRestore: () => void;
+  onDelete: () => void;
   onManageMembers: () => void;
   onJoin: () => void;
   onRequestJoin: () => void;
@@ -70,6 +71,7 @@ export default function GroupCard({
   onEdit,
   onArchive,
   onRestore,
+  onDelete,
   onManageMembers,
   onJoin,
   onRequestJoin,
@@ -254,7 +256,15 @@ export default function GroupCard({
                 {canManageGroup ? <DropdownItem onClick={onEdit}>Edit</DropdownItem> : null}
                 {canManageGroup ? (
                   isArchived ? (
-                    <DropdownItem onClick={onRestore}>Restore</DropdownItem>
+                    <>
+                      <DropdownItem onClick={onRestore}>Restore</DropdownItem>
+                      <DropdownItem
+                        onClick={onDelete}
+                        className="text-rose-600 hover:bg-rose-50 focus-visible:bg-rose-50"
+                      >
+                        Delete permanently
+                      </DropdownItem>
+                    </>
                   ) : (
                     <DropdownItem onClick={onArchive}>Archive</DropdownItem>
                   )
