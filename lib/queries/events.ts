@@ -1,6 +1,8 @@
+import { toZonedTime, fromZonedTime } from "date-fns-tz";
 import { prisma } from "@/server/db/prisma";
 import { getMonthRange, getWeekRange } from "@/lib/date/calendar";
 import { getNow as defaultGetNow } from "@/lib/time/getNow";
+import { PARISH_TIMEZONE } from "@/lib/time/parish";
 import { isParishLeader } from "@/lib/permissions";
 import { getParishMembership } from "@/server/db/groups";
 import type {
@@ -89,14 +91,9 @@ type EventViewerContext = {
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-function startOfDay(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
-function addDays(date: Date, days: number) {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
+function getParishDayStamp(date: Date) {
+  const parishDate = toZonedTime(date, PARISH_TIMEZONE);
+  return Date.UTC(parishDate.getFullYear(), parishDate.getMonth(), parishDate.getDate());
 }
 
 function buildInstanceId(eventId: string, startsAt: Date) {
@@ -194,20 +191,21 @@ function expandRecurringEvent(
     return [];
   }
 
-  const baseDay = startOfDay(event.startsAt);
-  const rangeCursorStart = startOfDay(rangeStart);
-  const rangeCursorEnd = startOfDay(rangeEnd);
+  const eventLocal = toZonedTime(event.startsAt, PARISH_TIMEZONE);
+  const baseDay = getParishDayStamp(event.startsAt);
+  const rangeCursorStart = getParishDayStamp(rangeStart);
+  const rangeCursorEnd = getParishDayStamp(rangeEnd);
   const durationMs = event.endsAt.getTime() - event.startsAt.getTime();
   const allowedDays =
     event.recurrenceFreq === "WEEKLY" && event.recurrenceByWeekday.length > 0
       ? event.recurrenceByWeekday
-      : [event.startsAt.getDay()];
+      : [eventLocal.getDay()];
   const interval = Math.max(event.recurrenceInterval || 1, 1);
 
   const instances: Array<{ startsAt: Date; endsAt: Date }> = [];
 
-  for (let cursor = rangeCursorStart; cursor < rangeCursorEnd; cursor = addDays(cursor, 1)) {
-    const diffDays = Math.floor((cursor.getTime() - baseDay.getTime()) / MS_PER_DAY);
+  for (let cursor = rangeCursorStart; cursor < rangeCursorEnd; cursor += MS_PER_DAY) {
+    const diffDays = Math.floor((cursor - baseDay) / MS_PER_DAY);
     if (diffDays < 0) {
       continue;
     }
@@ -221,20 +219,23 @@ function expandRecurringEvent(
       if (diffWeeks % interval !== 0) {
         continue;
       }
-      if (!allowedDays.includes(cursor.getDay())) {
+      const cursorDay = new Date(cursor).getUTCDay();
+      if (!allowedDays.includes(cursorDay)) {
         continue;
       }
     }
 
-    const occurrenceStart = new Date(
-      cursor.getFullYear(),
-      cursor.getMonth(),
-      cursor.getDate(),
-      event.startsAt.getHours(),
-      event.startsAt.getMinutes(),
-      event.startsAt.getSeconds(),
-      event.startsAt.getMilliseconds()
+    const cursorDate = new Date(cursor);
+    const occurrenceLocal = new Date(
+      cursorDate.getUTCFullYear(),
+      cursorDate.getUTCMonth(),
+      cursorDate.getUTCDate(),
+      eventLocal.getHours(),
+      eventLocal.getMinutes(),
+      eventLocal.getSeconds(),
+      eventLocal.getMilliseconds()
     );
+    const occurrenceStart = fromZonedTime(occurrenceLocal, PARISH_TIMEZONE);
 
     if (occurrenceStart < rangeStart || occurrenceStart >= rangeEnd) {
       continue;
