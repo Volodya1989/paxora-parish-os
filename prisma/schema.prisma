@@ -13,6 +13,15 @@ enum ParishRole {
   MEMBER
 }
 
+enum PlatformRole {
+  SUPERADMIN
+}
+
+enum AuditAction {
+  IMPERSONATION_START
+  IMPERSONATION_END
+}
+
 enum GroupRole {
   COORDINATOR
   PARISHIONER
@@ -198,6 +207,10 @@ model Parish {
   id                        String                  @id @default(cuid())
   name                      String
   slug                      String                  @unique
+  address                   String?
+  timezone                  String                  @default("UTC")
+  logoUrl                   String?
+  defaultLocale             String                  @default("en")
   createdAt                 DateTime                @default(now())
   emailFromName             String?
   emailFromAddress          String?
@@ -228,6 +241,8 @@ model Parish {
   heroNominations HeroNomination[]
   parishInvites   ParishInvite[]
   hubItems        ParishHubItem[]
+  impersonatedUsers User[]                 @relation("ImpersonatedParish")
+  auditLogs       AuditLog[]              @relation("ParishAuditLogs")
 }
 
 model ParishHubItem {
@@ -257,6 +272,8 @@ model User {
   name                 String?
   passwordHash         String
   activeParishId       String?
+  impersonatedParishId String?
+  platformRole         PlatformRole?
   emailVerifiedAt      DateTime?
   notificationsEnabled Boolean   @default(true)
   weeklyDigestEnabled  Boolean   @default(true)
@@ -310,6 +327,22 @@ model User {
   decidedEventRequests     EventRequest[]           @relation("EventRequestDecisionBy")
   requestsCreated          Request[]                @relation("RequestCreatedBy")
   requestsAssigned         Request[]                @relation("RequestAssignedTo")
+  impersonatedParish       Parish?                  @relation("ImpersonatedParish", fields: [impersonatedParishId], references: [id], onDelete: SetNull)
+  auditLogs                AuditLog[]               @relation("AuditActor")
+}
+
+model AuditLog {
+  id             String      @id @default(cuid())
+  actorUserId    String
+  targetParishId String
+  action         AuditAction
+  createdAt      DateTime    @default(now())
+
+  actorUser      User        @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: Cascade)
+  targetParish   Parish      @relation("ParishAuditLogs", fields: [targetParishId], references: [id], onDelete: Cascade)
+
+  @@index([actorUserId, createdAt])
+  @@index([targetParishId, createdAt])
 }
 
 model Membership {

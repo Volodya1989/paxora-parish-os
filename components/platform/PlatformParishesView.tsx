@@ -1,0 +1,281 @@
+"use client";
+
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import Button from "@/components/ui/Button";
+import Card, { CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
+import SectionTitle from "@/components/ui/SectionTitle";
+import Input from "@/components/ui/Input";
+import Textarea from "@/components/ui/Textarea";
+import Label from "@/components/ui/Label";
+import Select from "@/components/ui/Select";
+import Badge from "@/components/ui/Badge";
+import { Drawer } from "@/components/ui/Drawer";
+import { Modal } from "@/components/ui/Modal";
+import { useToast } from "@/components/ui/Toast";
+import type { PlatformParishRecord } from "@/lib/queries/platformParishes";
+import { locales } from "@/lib/i18n/config";
+import { createPlatformParish, updatePlatformParish } from "@/app/actions/platformParishes";
+import { startImpersonation } from "@/app/actions/platformImpersonation";
+import type { PlatformParishActionState } from "@/lib/types/platformParishes";
+
+type PlatformParishesViewProps = {
+  parishes: PlatformParishRecord[];
+  impersonatedParishId?: string | null;
+};
+
+type ParishFormState = {
+  name: string;
+  address: string;
+  timezone: string;
+  logoUrl: string;
+  defaultLocale: string;
+};
+
+const emptyForm: ParishFormState = {
+  name: "",
+  address: "",
+  timezone: "UTC",
+  logoUrl: "",
+  defaultLocale: locales[0]
+};
+
+export default function PlatformParishesView({
+  parishes,
+  impersonatedParishId
+}: PlatformParishesViewProps) {
+  const { addToast } = useToast();
+  const router = useRouter();
+  const [isCreateOpen, setCreateOpen] = useState(false);
+  const [editingParish, setEditingParish] = useState<PlatformParishRecord | null>(null);
+  const [formState, setFormState] = useState<ParishFormState>(emptyForm);
+  const [isPending, startTransition] = useTransition();
+  const [isImpersonating, startImpersonationTransition] = useTransition();
+
+  const sortedParishes = useMemo(() => parishes, [parishes]);
+
+  const openCreate = () => {
+    setFormState(emptyForm);
+    setEditingParish(null);
+    setCreateOpen(true);
+  };
+
+  const openEdit = (parish: PlatformParishRecord) => {
+    setFormState({
+      name: parish.name,
+      address: parish.address ?? "",
+      timezone: parish.timezone,
+      logoUrl: parish.logoUrl ?? "",
+      defaultLocale: parish.defaultLocale
+    });
+    setCreateOpen(false);
+    setEditingParish(parish);
+  };
+
+  const closeForm = () => {
+    setCreateOpen(false);
+    setEditingParish(null);
+  };
+
+  const handleChange = (field: keyof ParishFormState) => (value: string) => {
+    setFormState((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleResult = (result: PlatformParishActionState, successTitle: string) => {
+    if (result.status === "error") {
+      addToast({
+        title: "Update failed",
+        description: result.message,
+        status: "error"
+      });
+      return;
+    }
+    addToast({
+      title: successTitle,
+      description: result.message,
+      status: "success"
+    });
+    router.refresh();
+    closeForm();
+  };
+
+  const handleSubmit = () => {
+    startTransition(async () => {
+      const actionResult = editingParish
+        ? await updatePlatformParish({ parishId: editingParish.id, ...formState })
+        : await createPlatformParish(formState);
+      handleResult(actionResult, editingParish ? "Parish updated" : "Parish created");
+    });
+  };
+
+  const handleImpersonate = (parishId: string, parishName: string) => {
+    startImpersonationTransition(async () => {
+      const result = await startImpersonation(parishId);
+      if (result.status === "error") {
+        addToast({
+          title: "Unable to impersonate",
+          description: result.message,
+          status: "error"
+        });
+        return;
+      }
+      addToast({
+        title: "Impersonation started",
+        description: `You are now viewing ${parishName}.`,
+        status: "success"
+      });
+      router.refresh();
+    });
+  };
+
+  const formContent = (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="parish-name">Parish name</Label>
+        <Input
+          id="parish-name"
+          value={formState.name}
+          onChange={(event) => handleChange("name")(event.target.value)}
+          placeholder="Holy Family Parish"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="parish-address">Address</Label>
+        <Textarea
+          id="parish-address"
+          value={formState.address}
+          onChange={(event) => handleChange("address")(event.target.value)}
+          placeholder="123 Main St, City, State"
+          rows={3}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="parish-timezone">Timezone</Label>
+        <Input
+          id="parish-timezone"
+          value={formState.timezone}
+          onChange={(event) => handleChange("timezone")(event.target.value)}
+          placeholder="America/New_York"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="parish-logo">Logo URL</Label>
+        <Input
+          id="parish-logo"
+          value={formState.logoUrl}
+          onChange={(event) => handleChange("logoUrl")(event.target.value)}
+          placeholder="https://cdn.example.com/parish-logo.png"
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="parish-locale">Default locale</Label>
+        <Select
+          id="parish-locale"
+          value={formState.defaultLocale}
+          onChange={(event) => handleChange("defaultLocale")(event.target.value)}
+        >
+          {locales.map((locale) => (
+            <option key={locale} value={locale}>
+              {locale.toUpperCase()}
+            </option>
+          ))}
+        </Select>
+      </div>
+    </div>
+  );
+
+  const formFooter = (
+    <>
+      <Button type="button" variant="secondary" onClick={closeForm}>
+        Cancel
+      </Button>
+      <Button type="button" onClick={handleSubmit} isLoading={isPending}>
+        {editingParish ? "Save changes" : "Create parish"}
+      </Button>
+    </>
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <SectionTitle
+          title="Platform parishes"
+          subtitle="Manage parish profiles, defaults, and impersonation contexts."
+        />
+        <Button type="button" onClick={openCreate}>
+          Add parish
+        </Button>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>All parishes</CardTitle>
+          <CardDescription>
+            {sortedParishes.length
+              ? "Select a parish to edit details or impersonate."
+              : "Create your first parish to get started."}
+          </CardDescription>
+        </CardHeader>
+        <div className="space-y-4 px-6 pb-6">
+          {sortedParishes.length === 0 ? (
+            <div className="rounded-card border border-dashed border-mist-200 bg-white px-6 py-6 text-sm text-ink-500">
+              No parishes yet.
+            </div>
+          ) : (
+            sortedParishes.map((parish) => {
+              const isImpersonated = parish.id === impersonatedParishId;
+              return (
+                <div
+                  key={parish.id}
+                  className="flex flex-col gap-3 rounded-card border border-mist-200 bg-white px-4 py-4 shadow-sm"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-ink-900">{parish.name}</p>
+                      <p className="text-xs text-ink-500">Slug: {parish.slug}</p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge tone="neutral">{parish.defaultLocale.toUpperCase()}</Badge>
+                      <Badge tone="neutral">{parish.timezone}</Badge>
+                      {isImpersonated ? <Badge tone="warning">Impersonating</Badge> : null}
+                    </div>
+                  </div>
+                  <div className="text-xs text-ink-600">
+                    <p>{parish.address || "No address set."}</p>
+                    <p className="mt-1">
+                      Logo:{" "}
+                      <span className="text-ink-500">
+                        {parish.logoUrl ? parish.logoUrl : "Not provided"}
+                      </span>
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button type="button" variant="secondary" size="sm" onClick={() => openEdit(parish)}>
+                      Edit
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={isImpersonated ? "ghost" : "primary"}
+                      onClick={() => handleImpersonate(parish.id, parish.name)}
+                      disabled={isImpersonating || isImpersonated}
+                    >
+                      {isImpersonated ? "Impersonating" : "Impersonate"}
+                    </Button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </Card>
+
+      <Drawer open={isCreateOpen || Boolean(editingParish)} onClose={closeForm} title={editingParish ? "Edit parish" : "Create parish"} footer={formFooter}>
+        {formContent}
+      </Drawer>
+      <Modal open={isCreateOpen || Boolean(editingParish)} onClose={closeForm} title={editingParish ? "Edit parish" : "Create parish"} footer={formFooter}>
+        {formContent}
+      </Modal>
+    </div>
+  );
+}

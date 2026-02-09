@@ -8,13 +8,19 @@ import Sidebar from "@/components/navigation/Sidebar";
 import NotificationProvider from "@/components/notifications/NotificationProvider";
 import { ToastProvider, ToastViewport, useToast } from "@/components/ui/Toast";
 import PushRegistration from "@/components/push/PushRegistration";
+import ImpersonationBanner from "@/components/platform/ImpersonationBanner";
 
 type AppShellProps = {
   children: ReactNode;
   parishRole?: "ADMIN" | "SHEPHERD" | "MEMBER" | null;
+  platformRole?: "SUPERADMIN" | null;
+  impersonation?: {
+    parishId: string;
+    parishName: string | null;
+  } | null;
 };
 
-export function AppShell({ children, parishRole }: AppShellProps) {
+export function AppShell({ children, parishRole, platformRole, impersonation }: AppShellProps) {
   const pathname = usePathname();
 
   return (
@@ -23,10 +29,13 @@ export function AppShell({ children, parishRole }: AppShellProps) {
         <PushRegistration />
         <InviteToastListener />
         <div className="flex min-h-screen w-full">
-          <Sidebar currentPath={pathname} parishRole={parishRole} />
+          <Sidebar currentPath={pathname} parishRole={parishRole} platformRole={platformRole} />
           <div className="flex min-h-screen flex-1 flex-col">
+            {impersonation ? (
+              <ImpersonationBanner parishName={impersonation.parishName} />
+            ) : null}
             {children}
-            <MobileTabs currentPath={pathname} parishRole={parishRole} />
+            <MobileTabs currentPath={pathname} parishRole={parishRole} platformRole={platformRole} />
           </div>
         </div>
         <ToastViewport />

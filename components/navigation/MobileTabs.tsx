@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { useState } from "react";
 import MoreDrawer from "@/components/navigation/MoreDrawer";
-import { getPrimaryNavItems, type NavRole } from "@/components/navigation/navItems";
+import { getPrimaryNavItems, type NavRole, type PlatformNavRole } from "@/components/navigation/navItems";
 import { stripLocale } from "@/lib/i18n/routing";
 import { useTranslations } from "@/lib/i18n/provider";
 
@@ -15,6 +15,7 @@ type MobileTabsProps = {
   onMoreOpenChange?: (open: boolean) => void;
   onSignOut?: () => Promise<void> | void;
   parishRole?: NavRole;
+  platformRole?: PlatformNavRole;
 };
 
 export function MobileTabs({
@@ -23,7 +24,8 @@ export function MobileTabs({
   isMoreOpen,
   onMoreOpenChange,
   onSignOut,
-  parishRole
+  parishRole,
+  platformRole
 }: MobileTabsProps) {
   const t = useTranslations();
   const [internalOpen, setInternalOpen] = useState(false);
@@ -111,6 +113,7 @@ export function MobileTabs({
         onClose={handleClose}
         onSignOut={onSignOut}
         parishRole={parishRole}
+        platformRole={platformRole}
       />
     </>
   );

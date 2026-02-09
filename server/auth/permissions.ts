@@ -1,5 +1,6 @@
 import type { Session } from "next-auth";
 import { getParishMembership } from "@/server/db/groups";
+import { prisma } from "@/server/db/prisma";
 
 export function assertActiveSession(session: Session | null) {
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -26,4 +27,17 @@ export async function requireAdminOrShepherd(userId: string, parishId: string) {
   }
 
   return membership;
+}
+
+export async function requirePlatformAdmin(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { platformRole: true }
+  });
+
+  if (!user?.platformRole || user.platformRole !== "SUPERADMIN") {
+    throw new Error("Forbidden");
+  }
+
+  return user;
 }

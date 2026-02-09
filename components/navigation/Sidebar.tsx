@@ -19,6 +19,7 @@ type SidebarProps = {
   onCollapseChange?: (collapsed: boolean) => void;
   onSignOut?: () => Promise<void> | void;
   parishRole?: NavRole;
+  platformRole?: "SUPERADMIN" | null;
 };
 
 export function Sidebar({
@@ -27,7 +28,8 @@ export function Sidebar({
   initialCollapsed = false,
   onCollapseChange,
   onSignOut,
-  parishRole
+  parishRole,
+  platformRole
 }: SidebarProps) {
   const t = useTranslations();
   const [internalCollapsed, setInternalCollapsed] = useState(initialCollapsed);
@@ -63,13 +65,25 @@ export function Sidebar({
 
   const baseItems = getPrimaryNavItems(parishRole);
   // Add Requests + People for ADMIN/SHEPHERD on desktop only
-  const items = (parishRole === "ADMIN" || parishRole === "SHEPHERD")
-    ? [
-        ...baseItems,
-        { labelKey: "nav.requests", href: routes.adminRequests, icon: "RQ", testId: "requests" },
-        { labelKey: "nav.people", href: routes.adminPeople, icon: "PE", testId: "people" }
-      ]
-    : baseItems;
+  const items = [
+    ...baseItems,
+    ...(parishRole === "ADMIN" || parishRole === "SHEPHERD"
+      ? [
+          { labelKey: "nav.requests", href: routes.adminRequests, icon: "RQ", testId: "requests" },
+          { labelKey: "nav.people", href: routes.adminPeople, icon: "PE", testId: "people" }
+        ]
+      : []),
+    ...(platformRole === "SUPERADMIN"
+      ? [
+          {
+            labelKey: "nav.platformParishes",
+            href: routes.platformParishes,
+            icon: "PF",
+            testId: "platform-parishes"
+          }
+        ]
+      : [])
+  ];
 
   return (
     <aside

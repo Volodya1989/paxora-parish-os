@@ -30,6 +30,7 @@ export function getPageTitleKey(pathname: string) {
   if (normalized.startsWith("/announcements")) return "nav.announcements";
   if (normalized.startsWith("/admin/people")) return "nav.people";
   if (normalized.startsWith("/admin/requests")) return "nav.requests";
+  if (normalized.startsWith("/platform/parishes")) return "nav.platformParishes";
   if (normalized.startsWith("/requests")) return "nav.requests";
   if (normalized.startsWith("/profile")) return "nav.profile";
   return "nav.thisWeek";

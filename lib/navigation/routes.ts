@@ -8,5 +8,6 @@ export const routes = {
   parish: "/parish",
   requests: "/requests",
   adminRequests: "/admin/requests",
-  adminPeople: "/admin/people"
+  adminPeople: "/admin/people",
+  platformParishes: "/platform/parishes"
 } as const;
