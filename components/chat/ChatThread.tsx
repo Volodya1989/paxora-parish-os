@@ -244,10 +244,12 @@ export default function ChatThread({
 
   return (
     <div
-      className="relative rounded-card border border-mist-100 bg-emerald-50/30 p-3 shadow-sm touch-manipulation"
+      className="relative min-h-full rounded-card border border-mist-100 bg-emerald-50/30 p-3 shadow-sm touch-manipulation"
       style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg width='80' height='80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%2310b981' fill-opacity='0.06'%3E%3Ccircle cx='10' cy='10' r='1.5'/%3E%3Ccircle cx='50' cy='30' r='1.5'/%3E%3Ccircle cx='30' cy='60' r='1.5'/%3E%3Ccircle cx='70' cy='70' r='1.5'/%3E%3Cpath d='M38 8l2 4 2-4M38 12l2-4 2 4' stroke='%2310b981' stroke-opacity='0.06' stroke-width='0.8' fill='none'/%3E%3Cpath d='M8 38l2 4 2-4M8 42l2-4 2 4' stroke='%2310b981' stroke-opacity='0.06' stroke-width='0.8' fill='none'/%3E%3Cpath d='M58 48l2 4 2-4M58 52l2-4 2 4' stroke='%2310b981' stroke-opacity='0.06' stroke-width='0.8' fill='none'/%3E%3Cpath d='M24 24h4M26 22v4' stroke='%2310b981' stroke-opacity='0.05' stroke-width='0.8'/%3E%3Cpath d='M64 14h4M66 12v4' stroke='%2310b981' stroke-opacity='0.05' stroke-width='0.8'/%3E%3Cpath d='M14 54h4M16 52v4' stroke='%2310b981' stroke-opacity='0.05' stroke-width='0.8'/%3E%3C/g%3E%3C/svg%3E")`,
-        backgroundRepeat: "repeat"
+        backgroundImage: "url('/chat-background.png')",
+        backgroundRepeat: "no-repeat",
+        backgroundSize: "cover",
+        backgroundPosition: "center"
       }}
       onClick={() => {
         if (contextMenuMessageId !== null) {
