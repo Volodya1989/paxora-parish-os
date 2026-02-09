@@ -12,6 +12,7 @@ function serializeMessage(message: Awaited<ReturnType<typeof listMessages>>[numb
     deletedAt: message.deletedAt ? message.deletedAt.toISOString() : null,
     replyCount: message.replyCount,
     reactions: message.reactions,
+    attachments: message.attachments,
     parentMessage: message.parentMessage
       ? {
           ...message.parentMessage,
@@ -47,6 +48,7 @@ function serializePinned(pinned: Awaited<ReturnType<typeof getPinnedMessage>>) {
       deletedAt: pinned.message.deletedAt ? pinned.message.deletedAt.toISOString() : null,
       replyCount: pinned.message.replyCount,
       reactions: pinned.message.reactions,
+      attachments: pinned.message.attachments,
       parentMessage: pinned.message.parentMessage
         ? {
             ...pinned.message.parentMessage,

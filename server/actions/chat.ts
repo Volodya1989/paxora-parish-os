@@ -18,10 +18,23 @@ import {
 } from "@/lib/permissions";
 import { getNow as defaultGetNow } from "@/lib/time/getNow";
 import { REACTION_EMOJIS } from "@/lib/chat/reactions";
+import {
+  CHAT_ATTACHMENT_MIME_TYPES,
+  MAX_CHAT_ATTACHMENT_SIZE,
+  MAX_CHAT_ATTACHMENTS
+} from "@/lib/chat/attachments";
 import { notifyChatMessage } from "@/lib/push/notify";
 
 const MESSAGE_EDIT_WINDOW_MS = 15 * 60 * 1000;
 const REACTION_SET = new Set(REACTION_EMOJIS);
+
+type ChatAttachmentInput = {
+  url: string;
+  mimeType: string;
+  size: number;
+  width?: number | null;
+  height?: number | null;
+};
 
 function assertSession(session: Session | null) {
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -127,6 +140,35 @@ function assertMessageBody(body: string) {
   return trimmed;
 }
 
+function assertMessageInput(body: string, attachments: ChatAttachmentInput[]) {
+  const trimmed = body.trim();
+  if (!trimmed && attachments.length === 0) {
+    throw new Error("Message cannot be empty");
+  }
+  if (trimmed.length > 1000) {
+    throw new Error("Message is too long");
+  }
+  return trimmed;
+}
+
+function assertAttachments(attachments: ChatAttachmentInput[]) {
+  if (attachments.length > MAX_CHAT_ATTACHMENTS) {
+    throw new Error("Too many attachments");
+  }
+
+  for (const attachment of attachments) {
+    if (!attachment.url) {
+      throw new Error("Attachment URL is required");
+    }
+    if (!CHAT_ATTACHMENT_MIME_TYPES.includes(attachment.mimeType)) {
+      throw new Error("Invalid attachment type");
+    }
+    if (attachment.size <= 0 || attachment.size > MAX_CHAT_ATTACHMENT_SIZE) {
+      throw new Error("Attachment file size is invalid");
+    }
+  }
+}
+
 async function buildReactionSummary(messageId: string, userId: string) {
   const [counts, reacted] = await Promise.all([
     prisma.chatReaction.groupBy({
@@ -182,16 +224,31 @@ async function requireModerationAccess(userId: string, parishId: string, channel
 export async function postMessage(
   channelId: string,
   body: string,
-  parentMessageIdOrGetNow?: string | (() => Date),
+  parentMessageIdOrGetNow?:
+    | string
+    | (() => Date)
+    | { parentMessageId?: string; attachments?: ChatAttachmentInput[]; getNow?: () => Date },
   getNow?: () => Date
 ) {
   const session = await getServerSession(authOptions);
   const { userId, parishId } = assertSession(session);
 
   const parentMessageId =
-    typeof parentMessageIdOrGetNow === "string" ? parentMessageIdOrGetNow : undefined;
+    typeof parentMessageIdOrGetNow === "string"
+      ? parentMessageIdOrGetNow
+      : parentMessageIdOrGetNow && typeof parentMessageIdOrGetNow === "object"
+        ? parentMessageIdOrGetNow.parentMessageId
+        : undefined;
+  const attachments =
+    parentMessageIdOrGetNow && typeof parentMessageIdOrGetNow === "object"
+      ? parentMessageIdOrGetNow.attachments ?? []
+      : [];
   const resolveNow =
-    typeof parentMessageIdOrGetNow === "function" ? parentMessageIdOrGetNow : getNow;
+    typeof parentMessageIdOrGetNow === "function"
+      ? parentMessageIdOrGetNow
+      : parentMessageIdOrGetNow && typeof parentMessageIdOrGetNow === "object"
+        ? parentMessageIdOrGetNow.getNow ?? getNow
+        : getNow;
 
   const { channel, parishMembership, groupMembership } = await requireChannelAccess(
     userId,
@@ -203,7 +260,8 @@ export async function postMessage(
     throw new Error("Channel is locked");
   }
 
-  const trimmed = assertMessageBody(body);
+  assertAttachments(attachments);
+  const trimmed = assertMessageInput(body, attachments);
 
   if (channel.type === "ANNOUNCEMENT") {
     const isCoordinator = await isCoordinatorInParish(parishId, userId);
@@ -241,6 +299,17 @@ export async function postMessage(
       authorId: userId,
       parentMessageId: parentMessage?.id ?? null,
       body: trimmed,
+      attachments: attachments.length
+        ? {
+            create: attachments.map((attachment) => ({
+              url: attachment.url,
+              mimeType: attachment.mimeType,
+              size: attachment.size,
+              width: attachment.width ?? null,
+              height: attachment.height ?? null
+            }))
+          }
+        : undefined,
       createdAt: now
     },
     select: {
@@ -252,6 +321,16 @@ export async function postMessage(
       _count: {
         select: {
           replies: true
+        }
+      },
+      attachments: {
+        select: {
+          id: true,
+          url: true,
+          mimeType: true,
+          size: true,
+          width: true,
+          height: true
         }
       },
       parentMessage: {
@@ -286,6 +365,14 @@ export async function postMessage(
     editedAt: message.editedAt,
     deletedAt: message.deletedAt,
     replyCount: message._count.replies ?? 0,
+    attachments: message.attachments.map((attachment) => ({
+      id: attachment.id,
+      url: attachment.url,
+      mimeType: attachment.mimeType,
+      size: attachment.size,
+      width: attachment.width ?? null,
+      height: attachment.height ?? null
+    })),
     reactions: [],
     author: {
       id: message.author.id,
@@ -315,7 +402,7 @@ export async function postMessage(
     authorName: message.author.name ?? message.author.email ?? "Parish member",
     channelName: channel.type === "GROUP" ? "Group Chat" : "Parish Chat",
     parishId,
-    messageBody: trimmed
+    messageBody: trimmed || "Shared an image"
   }).catch(() => {});
 
   return result;
@@ -444,6 +531,16 @@ export async function editMessage(messageId: string, body: string, getNow?: () =
           replies: true
         }
       },
+      attachments: {
+        select: {
+          id: true,
+          url: true,
+          mimeType: true,
+          size: true,
+          width: true,
+          height: true
+        }
+      },
       parentMessage: {
         select: {
           id: true,
@@ -479,6 +576,14 @@ export async function editMessage(messageId: string, body: string, getNow?: () =
     deletedAt: updated.deletedAt,
     replyCount: updated._count.replies ?? 0,
     reactions,
+    attachments: updated.attachments.map((attachment) => ({
+      id: attachment.id,
+      url: attachment.url,
+      mimeType: attachment.mimeType,
+      size: attachment.size,
+      width: attachment.width ?? null,
+      height: attachment.height ?? null
+    })),
     author: {
       id: updated.author.id,
       name: updated.author.name ?? updated.author.email ?? "Parish member"

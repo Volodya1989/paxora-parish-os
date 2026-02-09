@@ -9,6 +9,7 @@ import Composer from "@/components/chat/Composer";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 import { Drawer } from "@/components/ui/Drawer";
+import { useToast } from "@/components/ui/Toast";
 import type {
   ChatChannelMember,
   ChatChannelSummary,
@@ -58,7 +59,8 @@ function parseMessage(message: any): ChatMessage {
     editedAt: message.editedAt ? new Date(message.editedAt) : null,
     parentMessage,
     replyCount: message.replyCount ?? 0,
-    reactions: message.reactions ?? []
+    reactions: message.reactions ?? [],
+    attachments: message.attachments ?? []
   } as ChatMessage;
 }
 
@@ -109,6 +111,7 @@ export default function ChatView({
   const [threadRoot, setThreadRoot] = useState<ChatMessage | null>(null);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const router = useRouter();
+  const { addToast } = useToast();
 
   const messagesRef = useRef(messages);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -247,46 +250,94 @@ export default function ChatView({
     setThreadRoot(null);
   }, [channel.id]);
 
-  const handleSend = async (body: string) => {
-    if (editingMessage) {
-      const updated = await editMessage(editingMessage.id, body);
-      setMessages((prev) =>
-        prev.map((message) =>
-          message.id === updated.id
-            ? {
-                ...message,
-                ...parseMessage(updated),
-                reactions: message.reactions,
-                replyCount: message.replyCount
-              }
-            : message
-        )
-      );
-      setEditingMessage(null);
-      return;
+  const uploadAttachments = async (files: File[]) => {
+    if (files.length === 0) return [];
+
+    const formData = new FormData();
+    files.forEach((file) => formData.append("files", file));
+    const response = await fetch(`/api/chat/${channel.id}/attachments`, {
+      method: "POST",
+      body: formData
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error?.error ?? "Unable to upload images.");
     }
 
-    const created = await postMessage(channel.id, body);
-    justSentRef.current = true;
-    setMessages((prev) => {
-      const next = [...prev, parseMessage(created)];
-      return sortMessages(next);
-    });
+    const data = await response.json();
+    return data.attachments ?? [];
   };
 
-  const handleSendThread = async (body: string) => {
+  const handleSend = async (body: string, files: File[]) => {
+    try {
+      if (editingMessage) {
+        if (files.length > 0) {
+          addToast({
+            title: "Attachments not supported while editing",
+            description: "Remove attachments to save your edit.",
+            status: "neutral"
+          });
+          return;
+        }
+        const updated = await editMessage(editingMessage.id, body);
+        setMessages((prev) =>
+          prev.map((message) =>
+            message.id === updated.id
+              ? {
+                  ...message,
+                  ...parseMessage(updated),
+                  reactions: message.reactions,
+                  replyCount: message.replyCount
+                }
+              : message
+          )
+        );
+        setEditingMessage(null);
+        return;
+      }
+
+      const attachments = await uploadAttachments(files);
+      const created = await postMessage(channel.id, body, { attachments });
+      justSentRef.current = true;
+      setMessages((prev) => {
+        const next = [...prev, parseMessage(created)];
+        return sortMessages(next);
+      });
+    } catch (error) {
+      addToast({
+        title: "Unable to send message",
+        description: error instanceof Error ? error.message : "Please try again.",
+        status: "neutral"
+      });
+    }
+  };
+
+  const handleSendThread = async (body: string, files: File[]) => {
     if (!threadRoot) return;
-    const created = await postMessage(channel.id, body, threadRoot.id);
-    setMessages((prev) => {
-      const next = [...prev, parseMessage(created)];
-      return sortMessages(
-        next.map((message) =>
-          message.id === threadRoot.id
-            ? { ...message, replyCount: Math.max(0, message.replyCount + 1) }
-            : message
-        )
-      );
-    });
+    try {
+      const attachments = await uploadAttachments(files);
+      const created = await postMessage(channel.id, body, {
+        parentMessageId: threadRoot.id,
+        attachments
+      });
+      setMessages((prev) => {
+        const next = [...prev, parseMessage(created)];
+        return sortMessages(
+          next.map((message) =>
+            message.id === threadRoot.id
+              ? { ...message, replyCount: Math.max(0, message.replyCount + 1) }
+              : message
+          )
+        );
+      });
+    } catch (error) {
+      addToast({
+        title: "Unable to send reply",
+        description: error instanceof Error ? error.message : "Please try again.",
+        status: "neutral"
+      });
+    }
   };
 
   const handleDelete = async (messageId: string) => {
