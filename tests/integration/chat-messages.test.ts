@@ -97,12 +97,25 @@ dbTest("post, delete, pin/unpin, lock/unlock chat messages", async () => {
   const firstNow = new Date("2024-04-01T08:00:00.000Z");
   const secondNow = new Date("2024-04-01T09:00:00.000Z");
 
-  const firstMessage = await actions.postMessage(channel.id, "Hello parish", () => firstNow);
+  const firstMessage = await actions.postMessage(channel.id, "Hello parish", {
+    attachments: [
+      {
+        url: "https://cdn.paxora.dev/chat/test-image.jpg",
+        mimeType: "image/jpeg",
+        size: 1024,
+        width: 800,
+        height: 600
+      }
+    ],
+    getNow: () => firstNow
+  });
   await actions.postMessage(channel.id, "Second note", () => secondNow);
 
   const messages = await listMessages({ channelId: channel.id });
   assert.equal(messages.length, 2);
   assert.equal(messages[0]?.id, firstMessage.id);
+  assert.equal(messages[0]?.attachments.length, 1);
+  assert.equal(messages[0]?.attachments[0]?.url, "https://cdn.paxora.dev/chat/test-image.jpg");
 
   await actions.deleteMessage(firstMessage.id, () => new Date("2024-04-01T10:00:00.000Z"));
   const deleted = await prisma.chatMessage.findUnique({ where: { id: firstMessage.id } });

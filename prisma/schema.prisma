@@ -568,12 +568,28 @@ model ChatMessage {
   author        User               @relation(fields: [authorId], references: [id], onDelete: Cascade)
   parentMessage ChatMessage?       @relation("ChatMessageReplies", fields: [parentMessageId], references: [id], onDelete: SetNull)
   replies       ChatMessage[]      @relation("ChatMessageReplies")
+  attachments   ChatMessageAttachment[]
   pinned        ChatPinnedMessage?
   reactions     ChatReaction[]
   poll          ChatPoll?
 
   @@index([channelId, createdAt, id])
   @@index([parentMessageId])
+}
+
+model ChatMessageAttachment {
+  id        String   @id @default(cuid())
+  messageId String
+  url       String
+  mimeType  String
+  size      Int
+  width     Int?
+  height    Int?
+  createdAt DateTime @default(now())
+
+  message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
 }
 
 model ChatChannelMembership {

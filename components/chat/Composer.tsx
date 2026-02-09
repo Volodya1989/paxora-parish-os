@@ -2,8 +2,20 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import PollComposer from "@/components/chat/PollComposer";
+import { useToast } from "@/components/ui/Toast";
+import {
+  CHAT_ATTACHMENT_MIME_TYPES,
+  MAX_CHAT_ATTACHMENT_SIZE,
+  MAX_CHAT_ATTACHMENTS
+} from "@/lib/chat/attachments";
 
 const MAX_LENGTH = 1000;
+
+type AttachmentDraft = {
+  id: string;
+  file: File;
+  previewUrl: string;
+};
 
 export default function Composer({
   disabled,
@@ -16,7 +28,7 @@ export default function Composer({
   onCreatePoll
 }: {
   disabled: boolean;
-  onSend: (body: string) => Promise<void> | void;
+  onSend: (body: string, files: File[]) => Promise<void> | void;
   replyTo?: { id: string; authorName: string; body: string; deletedAt: Date | null } | null;
   onCancelReply?: () => void;
   editingMessage?: { id: string; body: string } | null;
@@ -29,11 +41,18 @@ export default function Composer({
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [showPollComposer, setShowPollComposer] = useState(false);
   const [plusMenuOpen, setPlusMenuOpen] = useState(false);
+  const [attachments, setAttachments] = useState<AttachmentDraft[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { addToast } = useToast();
 
   useEffect(() => {
     if (editingMessage) {
       setMessage(editingMessage.body);
+      setAttachments((current) => {
+        current.forEach((attachment) => URL.revokeObjectURL(attachment.previewUrl));
+        return [];
+      });
       return;
     }
     setMessage("");
@@ -51,18 +70,25 @@ export default function Composer({
   const remaining = MAX_LENGTH - message.length;
   const isDisabled = disabled || isPending;
   const isEditing = Boolean(editingMessage);
-  const canSend = !isDisabled && message.trim().length > 0;
+  const canSend = !isDisabled && (message.trim().length > 0 || attachments.length > 0);
 
   const handleSend = useCallback(() => {
     if (isDisabled) return;
     const trimmed = message.trim();
-    if (!trimmed) return;
+    if (!trimmed && attachments.length === 0) return;
 
     startTransition(async () => {
-      await onSend(trimmed);
+      await onSend(
+        trimmed,
+        attachments.map((attachment) => attachment.file)
+      );
       setMessage("");
+      setAttachments((current) => {
+        current.forEach((attachment) => URL.revokeObjectURL(attachment.previewUrl));
+        return [];
+      });
     });
-  }, [isDisabled, message, onSend]);
+  }, [attachments, isDisabled, message, onSend]);
 
   /** Auto-resize the textarea to fit content */
   const adjustHeight = useCallback(() => {
@@ -94,6 +120,65 @@ export default function Composer({
     setMessage((prev) => prev.replace(/@[\w-]*$/, `@${name.replace(/\s+/g, " ")} `));
     setMentionQuery(null);
     textareaRef.current?.focus();
+  };
+
+  const handleAddAttachments = (files: FileList | null) => {
+    if (!files) return;
+
+    const selected = Array.from(files);
+    const availableSlots = Math.max(0, MAX_CHAT_ATTACHMENTS - attachments.length);
+    if (availableSlots === 0) {
+      addToast({
+        title: "Attachment limit reached",
+        description: `You can add up to ${MAX_CHAT_ATTACHMENTS} images.`,
+        status: "neutral"
+      });
+      return;
+    }
+
+    const nextAttachments: AttachmentDraft[] = [];
+    for (const file of selected) {
+      if (nextAttachments.length >= availableSlots) {
+        break;
+      }
+      if (!CHAT_ATTACHMENT_MIME_TYPES.includes(file.type)) {
+        addToast({
+          title: "Unsupported file type",
+          description: "Please choose a JPG, PNG, GIF, or WebP image.",
+          status: "neutral"
+        });
+        continue;
+      }
+      if (file.size > MAX_CHAT_ATTACHMENT_SIZE) {
+        addToast({
+          title: "Image too large",
+          description: "Images must be 5MB or smaller.",
+          status: "neutral"
+        });
+        continue;
+      }
+
+      nextAttachments.push({
+        id: crypto.randomUUID(),
+        file,
+        previewUrl: URL.createObjectURL(file)
+      });
+    }
+
+    if (nextAttachments.length > 0) {
+      setAttachments((current) => [...current, ...nextAttachments]);
+    }
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachments((current) => {
+      const next = current.filter((attachment) => attachment.id !== id);
+      const removed = current.find((attachment) => attachment.id === id);
+      if (removed) {
+        URL.revokeObjectURL(removed.previewUrl);
+      }
+      return next;
+    });
   };
 
   return (
@@ -169,6 +254,19 @@ export default function Composer({
 
       {/* Input row */}
       <div className="flex items-end gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={CHAT_ATTACHMENT_MIME_TYPES.join(",")}
+          multiple
+          className="hidden"
+          onChange={(event) => {
+            handleAddAttachments(event.target.files);
+            if (event.target) {
+              event.target.value = "";
+            }
+          }}
+        />
         {/* Plus button with menu */}
         <div className="relative">
           <button
@@ -196,6 +294,29 @@ export default function Composer({
                 onClick={() => setPlusMenuOpen(false)}
               />
               <div className="absolute bottom-full left-0 z-[50] mb-2 w-44 rounded-xl border border-mist-200 bg-white py-1 shadow-lg">
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-ink-700 hover:bg-mist-50 active:bg-mist-100"
+                  disabled={isEditing}
+                  onClick={() => {
+                    setPlusMenuOpen(false);
+                    if (isEditing) {
+                      addToast({
+                        title: "Attachments disabled while editing",
+                        description: "Finish editing before adding images.",
+                        status: "neutral"
+                      });
+                      return;
+                    }
+                    fileInputRef.current?.click();
+                  }}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-ink-400" aria-hidden="true">
+                    <path d="M4 3.75A1.75 1.75 0 015.75 2h8.5A1.75 1.75 0 0116 3.75v12.5A1.75 1.75 0 0114.25 18h-8.5A1.75 1.75 0 014 16.25V3.75zm1.75-.25a.25.25 0 00-.25.25v12.5c0 .138.112.25.25.25h8.5a.25.25 0 00.25-.25V3.75a.25.25 0 00-.25-.25h-8.5z" />
+                    <path d="M6.75 7a.75.75 0 00-.75.75v3.5a.75.75 0 001.5 0v-3.5A.75.75 0 006.75 7zm6.5 0a.75.75 0 00-.75.75v3.5a.75.75 0 001.5 0v-3.5A.75.75 0 0013.25 7zM10 9a.75.75 0 00-.75.75v2.5a.75.75 0 001.5 0v-2.5A.75.75 0 0010 9z" />
+                  </svg>
+                  Add photos
+                </button>
                 {onCreatePoll ? (
                   <button
                     type="button"
@@ -263,6 +384,31 @@ export default function Composer({
           </svg>
         </button>
       </div>
+
+      {attachments.length > 0 ? (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {attachments.map((attachment) => (
+            <div
+              key={attachment.id}
+              className="relative h-20 w-20 overflow-hidden rounded-lg border border-mist-200"
+            >
+              <img
+                src={attachment.previewUrl}
+                alt={attachment.file.name}
+                className="h-full w-full object-cover"
+              />
+              <button
+                type="button"
+                className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-xs text-ink-600 shadow hover:bg-white"
+                aria-label={`Remove ${attachment.file.name}`}
+                onClick={() => removeAttachment(attachment.id)}
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : null}
 
       {/* Character count */}
       {remaining < 100 ? (
