@@ -18,7 +18,7 @@ import {
   MAX_CHAT_ATTACHMENT_SIZE,
   MAX_CHAT_ATTACHMENTS
 } from "@/lib/chat/attachments";
-import { getR2Config, signR2PutUrl } from "@/lib/storage/r2";
+import { signR2PutUrl } from "@/lib/storage/r2";
 
 function assertSession(session: Session | null) {
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -171,7 +171,6 @@ export async function POST(
       return NextResponse.json({ error: "Too many attachments" }, { status: 400 });
     }
 
-    const { publicUrl } = getR2Config();
     const attachments = [];
 
     for (const entry of fileEntries) {
@@ -217,7 +216,7 @@ export async function POST(
       }
 
       attachments.push({
-        url: `${publicUrl}/${key}`,
+        url: `/api/chat/images/${key}`,
         mimeType: file.type,
         size: file.size,
         width: null,

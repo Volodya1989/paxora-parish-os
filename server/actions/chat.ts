@@ -23,7 +23,6 @@ import {
   MAX_CHAT_ATTACHMENT_SIZE,
   MAX_CHAT_ATTACHMENTS
 } from "@/lib/chat/attachments";
-import { getR2Config } from "@/lib/storage/r2";
 import { notifyChatMessage } from "@/lib/push/notify";
 
 const MESSAGE_EDIT_WINDOW_MS = 15 * 60 * 1000;
@@ -152,24 +151,19 @@ function assertMessageInput(body: string, attachments: ChatAttachmentInput[]) {
   return trimmed;
 }
 
+const ATTACHMENT_URL_PREFIX = "/api/chat/images/chat/";
+
 function assertAttachmentUrl(url: string) {
   if (!url) {
     throw new Error("Attachment URL is required");
   }
 
-  let parsed: URL;
-  try {
-    parsed = new URL(url);
-  } catch {
+  if (!url.startsWith(ATTACHMENT_URL_PREFIX)) {
     throw new Error("Invalid attachment URL");
   }
 
-  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
-    throw new Error("Invalid attachment URL");
-  }
-
-  const { publicUrl } = getR2Config();
-  if (!url.startsWith(publicUrl + "/")) {
+  // Ensure no path traversal
+  if (url.includes("..")) {
     throw new Error("Invalid attachment URL");
   }
 }

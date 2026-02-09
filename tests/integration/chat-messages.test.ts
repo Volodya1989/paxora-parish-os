@@ -114,7 +114,7 @@ dbTest("post, delete, pin/unpin, lock/unlock chat messages", async () => {
   const firstMessage = await actions.postMessage(channel.id, "Hello parish", {
     attachments: [
       {
-        url: "https://cdn.paxora.dev/chat/test-image.jpg",
+        url: "/api/chat/images/chat/test-image.jpg",
         mimeType: "image/jpeg",
         size: 1024,
         width: 800,
@@ -129,7 +129,7 @@ dbTest("post, delete, pin/unpin, lock/unlock chat messages", async () => {
   assert.equal(messages.length, 2);
   assert.equal(messages[0]?.id, firstMessage.id);
   assert.equal(messages[0]?.attachments.length, 1);
-  assert.equal(messages[0]?.attachments[0]?.url, "https://cdn.paxora.dev/chat/test-image.jpg");
+  assert.equal(messages[0]?.attachments[0]?.url, "/api/chat/images/chat/test-image.jpg");
 
   await actions.deleteMessage(firstMessage.id, () => new Date("2024-04-01T10:00:00.000Z"));
   const deleted = await prisma.chatMessage.findUnique({ where: { id: firstMessage.id } });
@@ -259,7 +259,7 @@ dbTest("rejects attachment with invalid MIME type", async () => {
       actions.postMessage(channel.id, "test", {
         attachments: [
           {
-            url: "https://cdn.paxora.dev/chat/test.svg",
+            url: "/api/chat/images/chat/test.svg",
             mimeType: "image/svg+xml",
             size: 1024
           }
@@ -296,7 +296,7 @@ dbTest("rejects attachment exceeding size limit", async () => {
       actions.postMessage(channel.id, "test", {
         attachments: [
           {
-            url: "https://cdn.paxora.dev/chat/large.jpg",
+            url: "/api/chat/images/chat/large.jpg",
             mimeType: "image/jpeg",
             size: 10 * 1024 * 1024
           }
@@ -331,7 +331,7 @@ dbTest("allows message with empty body when attachments are provided", async () 
   const message = await actions.postMessage(channel.id, "", {
     attachments: [
       {
-        url: "https://cdn.paxora.dev/chat/photo.jpg",
+        url: "/api/chat/images/chat/photo.jpg",
         mimeType: "image/jpeg",
         size: 2048,
         width: 640,
@@ -370,7 +370,7 @@ dbTest("deleted messages exclude attachments from listMessages", async () => {
   const msg = await actions.postMessage(channel.id, "photo message", {
     attachments: [
       {
-        url: "https://cdn.paxora.dev/chat/del-photo.jpg",
+        url: "/api/chat/images/chat/del-photo.jpg",
         mimeType: "image/jpeg",
         size: 1024,
         width: 800,
