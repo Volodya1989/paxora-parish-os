@@ -8,7 +8,10 @@ import GroupCard from "@/components/groups/GroupCard";
 import GroupCreateDialog from "@/components/groups/GroupCreateDialog";
 import GroupEditDialog from "@/components/groups/GroupEditDialog";
 import GroupFilters, { type GroupFilterTab } from "@/components/groups/GroupFilters";
-import { archiveGroup, approveGroupRequest, rejectGroupRequest, restoreGroup } from "@/server/actions/groups";
+import { archiveGroup, approveGroupRequest, deleteGroup, rejectGroupRequest, restoreGroup } from "@/server/actions/groups";
+import { Modal } from "@/components/ui/Modal";
+import { Drawer } from "@/components/ui/Drawer";
+import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 import { acceptInvite, declineInvite, joinGroup, leaveGroup, requestToJoin } from "@/app/actions/members";
 import type { MemberActionState } from "@/lib/types/members";
 import type { GroupListItem } from "@/lib/queries/groups";
@@ -44,8 +47,10 @@ export default function GroupsView({
   const [query, setQuery] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+  const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
   const [pendingGroupId, setPendingGroupId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const counts = useMemo(
     () => ({
@@ -147,6 +152,33 @@ export default function GroupsView({
       addToast({
         title: "Group restored",
         description: "This group is back in the active list.",
+        status: "success"
+      });
+    });
+  };
+
+  const handleDeleteRequest = (groupId: string) => {
+    if (!canManageGroups) {
+      addToast({
+        title: "Not enough access",
+        description: LIMITED_ACCESS_MESSAGE,
+        status: "warning"
+      });
+      return;
+    }
+    setDeletingGroupId(groupId);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingGroupId) return;
+    const groupId = deletingGroupId;
+    setDeletingGroupId(null);
+
+    await runGroupAction(groupId, async () => {
+      await deleteGroup({ parishId, actorUserId, groupId });
+      addToast({
+        title: "Group deleted",
+        description: "The group and its memberships have been permanently removed.",
         status: "success"
       });
     });
@@ -427,6 +459,7 @@ export default function GroupsView({
                 onEdit={() => handleEdit(group.id)}
                 onArchive={() => handleArchive(group.id)}
                 onRestore={() => handleRestore(group.id)}
+                onDelete={() => handleDeleteRequest(group.id)}
                 onManageMembers={() => router.push(`/groups/${group.id}/members`)}
                 onJoin={() =>
                   void handleMemberResult(
@@ -478,6 +511,61 @@ export default function GroupsView({
         isRequest={!canManageGroups}
         onCreated={refreshList}
       />
+
+      {/* Delete confirmation dialog */}
+      {(() => {
+        const deletingGroup = deletingGroupId
+          ? groups.find((g) => g.id === deletingGroupId)
+          : null;
+        const dialogOpen = Boolean(deletingGroup);
+        const dialogTitle = "Delete group permanently";
+        const dialogBody = (
+          <div className="space-y-3">
+            <p>
+              Are you sure you want to permanently delete{" "}
+              <span className="font-semibold">{deletingGroup?.name}</span>?
+            </p>
+            <p>
+              This will remove all memberships and chat history. Tasks, events, and
+              volunteer hours will be preserved but unlinked from this group.
+            </p>
+            <p className="font-medium text-rose-600">This action cannot be undone.</p>
+          </div>
+        );
+        const dialogFooter = (
+          <>
+            <Button variant="secondary" onClick={() => setDeletingGroupId(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => void handleDeleteConfirm()}
+            >
+              Delete permanently
+            </Button>
+          </>
+        );
+
+        return isDesktop ? (
+          <Modal
+            open={dialogOpen}
+            onClose={() => setDeletingGroupId(null)}
+            title={dialogTitle}
+            footer={dialogFooter}
+          >
+            {dialogBody}
+          </Modal>
+        ) : (
+          <Drawer
+            open={dialogOpen}
+            onClose={() => setDeletingGroupId(null)}
+            title={dialogTitle}
+            footer={dialogFooter}
+          >
+            {dialogBody}
+          </Drawer>
+        );
+      })()}
 
       {editingGroupId ? (
         (() => {

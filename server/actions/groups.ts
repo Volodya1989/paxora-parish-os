@@ -10,6 +10,7 @@ import {
   createGroupSchema,
   getGroupDetailSchema,
   groupArchiveSchema,
+  groupDeleteSchema,
   updateGroupSchema,
   updateGroupMembershipSchema
 } from "@/lib/validation/groups";
@@ -368,6 +369,45 @@ export async function restoreGroup(input: {
   if (result.count === 0) {
     throw new Error("Not found");
   }
+
+  revalidatePath("/groups");
+}
+
+export async function deleteGroup(input: {
+  parishId: string;
+  actorUserId: string;
+  groupId: string;
+}) {
+  const session = await getServerSession(authOptions);
+  const { parishId, userId } = assertActorContext(session, input);
+
+  const parsed = groupDeleteSchema.safeParse({ groupId: input.groupId });
+  if (!parsed.success) {
+    throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
+  }
+
+  await requireParishLeader(userId, parishId);
+
+  const group = await prisma.group.findFirst({
+    where: { id: parsed.data.groupId, parishId },
+    select: { id: true, archivedAt: true }
+  });
+
+  if (!group) {
+    throw new Error("Not found");
+  }
+
+  if (!group.archivedAt) {
+    throw new Error("Only archived groups can be deleted.");
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.groupMembership.deleteMany({ where: { groupId: group.id } });
+    await tx.task.updateMany({ where: { groupId: group.id }, data: { groupId: null } });
+    await tx.event.updateMany({ where: { groupId: group.id }, data: { groupId: null } });
+    await tx.hoursEntry.updateMany({ where: { groupId: group.id }, data: { groupId: null } });
+    await tx.group.delete({ where: { id: group.id } });
+  });
 
   revalidatePath("/groups");
 }

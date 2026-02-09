@@ -32,3 +32,7 @@ export const updateGroupSchema = createGroupSchema.extend({
 export const groupArchiveSchema = z.object({
   groupId: z.string().min(1)
 });
+
+export const groupDeleteSchema = z.object({
+  groupId: z.string().min(1)
+});
