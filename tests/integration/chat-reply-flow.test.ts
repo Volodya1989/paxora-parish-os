@@ -21,6 +21,20 @@ mock.module("next-auth", {
   }
 });
 
+mock.module("@/lib/storage/r2", {
+  namedExports: {
+    getR2Config: () => ({
+      accountId: "test-account",
+      bucket: "test-bucket",
+      accessKeyId: "test-key",
+      secretAccessKey: "test-secret",
+      endpoint: "https://r2.test",
+      publicUrl: "https://cdn.paxora.dev"
+    }),
+    signR2PutUrl: () => "https://r2.test/signed-url"
+  }
+});
+
 async function resetDatabase() {
   await prisma.chatPinnedMessage.deleteMany();
   await prisma.chatChannelMembership.deleteMany();

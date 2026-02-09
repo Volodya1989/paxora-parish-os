@@ -253,18 +253,14 @@ export default function ChatView({
   const uploadAttachments = async (files: File[]) => {
     if (files.length === 0) return [];
 
+    const formData = new FormData();
+    for (const file of files) {
+      formData.append("files", file);
+    }
+
     const response = await fetch(`/api/chat/${channel.id}/attachments`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        files: files.map((file) => ({
-          name: file.name,
-          type: file.type,
-          size: file.size
-        }))
-      })
+      body: formData
     });
 
     if (!response.ok) {
@@ -273,46 +269,7 @@ export default function ChatView({
     }
 
     const data = await response.json();
-    const uploads = data.attachments ?? [];
-
-    const results = await Promise.allSettled(
-      uploads.map(async (upload: { uploadUrl: string }, index: number) => {
-        const file = files[index];
-        if (!file) throw new Error("File missing");
-        const uploadResponse = await fetch(upload.uploadUrl, {
-          method: "PUT",
-          headers: {
-            "Content-Type": file.type
-          },
-          body: file
-        });
-        if (!uploadResponse.ok) {
-          throw new Error("Upload failed");
-        }
-        return upload;
-      })
-    );
-
-    const successful = results
-      .filter(
-        (result): result is PromiseFulfilledResult<{ uploadUrl: string; attachment: any }> =>
-          result.status === "fulfilled"
-      )
-      .map((result) => result.value.attachment);
-
-    if (successful.length === 0 && files.length > 0) {
-      throw new Error("Unable to upload images. Please try again.");
-    }
-
-    if (successful.length < files.length) {
-      addToast({
-        title: "Some images failed to upload",
-        description: `${successful.length} of ${files.length} images uploaded.`,
-        status: "neutral"
-      });
-    }
-
-    return successful;
+    return data.attachments ?? [];
   };
 
   const handleSend = async (body: string, files: File[]) => {
