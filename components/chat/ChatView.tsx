@@ -253,11 +253,18 @@ export default function ChatView({
   const uploadAttachments = async (files: File[]) => {
     if (files.length === 0) return [];
 
-    const formData = new FormData();
-    files.forEach((file) => formData.append("files", file));
     const response = await fetch(`/api/chat/${channel.id}/attachments`, {
       method: "POST",
-      body: formData
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        files: files.map((file) => ({
+          name: file.name,
+          type: file.type,
+          size: file.size
+        }))
+      })
     });
 
     if (!response.ok) {
@@ -266,7 +273,26 @@ export default function ChatView({
     }
 
     const data = await response.json();
-    return data.attachments ?? [];
+    const uploads = data.attachments ?? [];
+
+    await Promise.all(
+      uploads.map(async (upload: { uploadUrl: string }, index: number) => {
+        const file = files[index];
+        if (!file) return;
+        const uploadResponse = await fetch(upload.uploadUrl, {
+          method: "PUT",
+          headers: {
+            "Content-Type": file.type
+          },
+          body: file
+        });
+        if (!uploadResponse.ok) {
+          throw new Error("Unable to upload images.");
+        }
+      })
+    );
+
+    return uploads.map((upload: { attachment: any }) => upload.attachment);
   };
 
   const handleSend = async (body: string, files: File[]) => {

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { randomUUID } from "crypto";
-import { promises as fs } from "fs";
-import path from "path";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
 import {
@@ -20,6 +20,7 @@ import {
   MAX_CHAT_ATTACHMENT_SIZE,
   MAX_CHAT_ATTACHMENTS
 } from "@/lib/chat/attachments";
+import { createR2Client, getR2Config } from "@/lib/storage/r2";
 
 function assertSession(session: Awaited<ReturnType<typeof getServerSession>>) {
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -116,14 +117,20 @@ async function requireChannelAccess(userId: string, parishId: string, channelId:
 
 function getExtensionFromMime(mimeType: string) {
   const map: Record<string, string> = {
-    "image/jpeg": ".jpg",
-    "image/png": ".png",
-    "image/webp": ".webp",
-    "image/gif": ".gif"
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif"
   };
 
   return map[mimeType] ?? "";
 }
+
+type AttachmentRequest = {
+  name: string;
+  type: string;
+  size: number;
+};
 
 export async function POST(
   request: Request,
@@ -158,8 +165,8 @@ export async function POST(
       }
     }
 
-    const formData = await request.formData();
-    const files = formData.getAll("files").filter((value): value is File => value instanceof File);
+    const body = (await request.json().catch(() => null)) as { files?: AttachmentRequest[] } | null;
+    const files = body?.files ?? [];
 
     if (files.length === 0) {
       return NextResponse.json({ error: "No files provided" }, { status: 400 });
@@ -169,9 +176,8 @@ export async function POST(
       return NextResponse.json({ error: "Too many attachments" }, { status: 400 });
     }
 
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "chat");
-    await fs.mkdir(uploadDir, { recursive: true });
-
+    const { bucket, publicUrl } = getR2Config();
+    const r2Client = createR2Client();
     const attachments = [];
 
     for (const file of files) {
@@ -182,18 +188,26 @@ export async function POST(
         return NextResponse.json({ error: "File too large" }, { status: 400 });
       }
 
-      const extension = getExtensionFromMime(file.type) || path.extname(file.name);
-      const filename = `${randomUUID()}${extension}`;
-      const filepath = path.join(uploadDir, filename);
-      const buffer = Buffer.from(await file.arrayBuffer());
-      await fs.writeFile(filepath, buffer);
+      const extension =
+        getExtensionFromMime(file.type) || file.name.split(".").pop()?.toLowerCase();
+      const key = `chat/${channelId}/${randomUUID()}${extension ? `.${extension}` : ""}`;
+      const command = new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        ContentType: file.type,
+        ContentLength: file.size
+      });
+      const uploadUrl = await getSignedUrl(r2Client, command, { expiresIn: 60 * 5 });
 
       attachments.push({
-        url: `/uploads/chat/${filename}`,
-        mimeType: file.type,
-        size: file.size,
-        width: null,
-        height: null
+        uploadUrl,
+        attachment: {
+          url: `${publicUrl}/${key}`,
+          mimeType: file.type,
+          size: file.size,
+          width: null,
+          height: null
+        }
       });
     }
 
