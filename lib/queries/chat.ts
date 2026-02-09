@@ -39,6 +39,15 @@ export type ChatPollItem = {
   myVoteOptionId: string | null;
 };
 
+export type ChatAttachmentItem = {
+  id: string;
+  url: string;
+  mimeType: string;
+  size: number;
+  width: number | null;
+  height: number | null;
+};
+
 export type ChatMessageItem = {
   id: string;
   body: string;
@@ -46,6 +55,7 @@ export type ChatMessageItem = {
   editedAt?: Date | null;
   deletedAt: Date | null;
   replyCount: number;
+  attachments: ChatAttachmentItem[];
   reactions: {
     emoji: string;
     count: number;
@@ -444,6 +454,16 @@ export async function listMessages({
           }
         }
       },
+      attachments: {
+        select: {
+          id: true,
+          url: true,
+          mimeType: true,
+          size: true,
+          width: true,
+          height: true
+        }
+      },
       author: {
         select: {
           id: true,
@@ -532,6 +552,16 @@ export async function listMessages({
             }
           }
         : null,
+      attachments: message.deletedAt
+        ? []
+        : message.attachments.map((attachment) => ({
+            id: attachment.id,
+            url: attachment.url,
+            mimeType: attachment.mimeType,
+            size: attachment.size,
+            width: attachment.width ?? null,
+            height: attachment.height ?? null
+          })),
       poll
     };
   }) as ChatMessageItem[];
@@ -580,6 +610,16 @@ export async function getPinnedMessage(channelId: string, userId?: string) {
               }
             }
           },
+          attachments: {
+            select: {
+              id: true,
+              url: true,
+              mimeType: true,
+              size: true,
+              width: true,
+              height: true
+            }
+          },
           author: {
             select: {
               id: true,
@@ -618,6 +658,16 @@ export async function getPinnedMessage(channelId: string, userId?: string) {
         id: pinned.message.author.id,
         name: pinned.message.author.name ?? pinned.message.author.email ?? "Parish member"
       },
+      attachments: pinned.message.deletedAt
+        ? []
+        : pinned.message.attachments.map((attachment) => ({
+            id: attachment.id,
+            url: attachment.url,
+            mimeType: attachment.mimeType,
+            size: attachment.size,
+            width: attachment.width ?? null,
+            height: attachment.height ?? null
+          })),
       parentMessage: pinned.message.parentMessage
         ? {
             id: pinned.message.parentMessage.id,

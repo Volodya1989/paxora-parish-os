@@ -28,6 +28,15 @@ export type ChatPollData = {
   myVoteOptionId: string | null;
 };
 
+export type ChatAttachment = {
+  id: string;
+  url: string;
+  mimeType: string;
+  size: number;
+  width: number | null;
+  height: number | null;
+};
+
 export type ChatMessage = {
   id: string;
   body: string;
@@ -35,6 +44,7 @@ export type ChatMessage = {
   editedAt?: Date | null;
   deletedAt: Date | null;
   replyCount: number;
+  attachments: ChatAttachment[];
   reactions: {
     emoji: string;
     count: number;

@@ -210,6 +210,9 @@ export default function ChatThread({
   const [contextMenuMessageId, setContextMenuMessageId] = useState<string | null>(
     initialReactionMenuMessageId ?? null
   );
+  const [lightboxImage, setLightboxImage] = useState<{ url: string; alt: string } | null>(
+    null
+  );
 
   const grouped = useMemo(() => {
     const groups: {
@@ -281,6 +284,9 @@ export default function ChatThread({
                   contextMenuOpen={contextMenuMessageId === message.id}
                   onOpenContextMenu={() => setContextMenuMessageId(message.id)}
                   onCloseContextMenu={() => setContextMenuMessageId(null)}
+                  onOpenAttachment={(attachment) =>
+                    setLightboxImage({ url: attachment.url, alt: "Chat image attachment" })
+                  }
                   onReply={onReply}
                   onEdit={onEdit}
                   onPin={onPin}
@@ -302,6 +308,32 @@ export default function ChatThread({
           </div>
         ))}
       </div>
+
+      {lightboxImage ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <button
+            type="button"
+            className="absolute inset-0"
+            aria-label="Close image preview"
+            onClick={() => setLightboxImage(null)}
+          />
+          <div className="relative z-10 max-h-full max-w-3xl">
+            <img
+              src={lightboxImage.url}
+              alt={lightboxImage.alt}
+              className="max-h-[85vh] w-auto rounded-lg object-contain shadow-xl"
+            />
+            <button
+              type="button"
+              className="absolute -right-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white text-lg text-ink-600 shadow"
+              aria-label="Close image preview"
+              onClick={() => setLightboxImage(null)}
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -316,6 +348,7 @@ function MessageRow({
   contextMenuOpen,
   onOpenContextMenu,
   onCloseContextMenu,
+  onOpenAttachment,
   onReply,
   onEdit,
   onPin,
@@ -334,6 +367,7 @@ function MessageRow({
   contextMenuOpen: boolean;
   onOpenContextMenu: () => void;
   onCloseContextMenu: () => void;
+  onOpenAttachment: (attachment: ChatMessage["attachments"][number]) => void;
   onReply: (message: ChatMessage) => void;
   onEdit: (message: ChatMessage) => void;
   onPin: (messageId: string) => void;
@@ -540,18 +574,44 @@ function MessageRow({
           ) : null}
 
           {/* Message body */}
-          <p
-            className={cn(
-              "whitespace-pre-wrap text-sm [overflow-wrap:anywhere] [word-break:break-word]",
-              isDeleted
-                ? "italic text-ink-400"
-                : isMine
-                  ? "text-ink-700"
-                  : "text-ink-800"
-            )}
-          >
-            {isDeleted ? "This message was deleted." : message.body}
-          </p>
+          {isDeleted || message.body ? (
+            <p
+              className={cn(
+                "whitespace-pre-wrap text-sm [overflow-wrap:anywhere] [word-break:break-word]",
+                isDeleted
+                  ? "italic text-ink-400"
+                  : isMine
+                    ? "text-ink-700"
+                    : "text-ink-800"
+              )}
+            >
+              {isDeleted ? "This message was deleted." : message.body}
+            </p>
+          ) : null}
+
+          {/* Attachments */}
+          {!isDeleted && message.attachments.length > 0 ? (
+            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {message.attachments.map((attachment) => (
+                <button
+                  key={attachment.id}
+                  type="button"
+                  className="group relative overflow-hidden rounded-lg border border-mist-100 bg-mist-50"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onOpenAttachment(attachment);
+                  }}
+                >
+                  <img
+                    src={attachment.url}
+                    alt="Chat attachment"
+                    className="h-28 w-full object-cover transition group-hover:scale-105"
+                    loading="lazy"
+                  />
+                </button>
+              ))}
+            </div>
+          ) : null}
 
           {/* Poll card (rendered inside the bubble for poll messages) */}
           {!isDeleted && message.poll && onVotePoll ? (
@@ -703,6 +763,7 @@ function MessageRow({
             </div>
           </>
         ) : null}
+
       </div>
     </div>
   );
