@@ -103,3 +103,55 @@ export function signR2PutUrl({
 
   return `${endpoint.replace(/\/$/, "")}${canonicalUri}?${query.toString()}`;
 }
+
+export function signR2GetUrl({
+  key,
+  expiresInSeconds
+}: {
+  key: string;
+  expiresInSeconds: number;
+}) {
+  const { bucket, accessKeyId, secretAccessKey, endpoint } = getR2Config();
+  const url = new URL(endpoint);
+  const host = url.host;
+  const method = "GET";
+  const { amzDate, dateStamp } = toAmzDate(new Date());
+  const credentialScope = `${dateStamp}/auto/s3/aws4_request`;
+
+  const canonicalUri = `/${bucket}/${encodePath(key)}`;
+  const signedHeaders = "host";
+  const query = new URLSearchParams({
+    "X-Amz-Algorithm": "AWS4-HMAC-SHA256",
+    "X-Amz-Credential": `${accessKeyId}/${credentialScope}`,
+    "X-Amz-Date": amzDate,
+    "X-Amz-Expires": String(expiresInSeconds),
+    "X-Amz-SignedHeaders": signedHeaders
+  });
+
+  const canonicalHeaders = `host:${host}\n`;
+  const canonicalRequest = [
+    method,
+    canonicalUri,
+    query.toString(),
+    canonicalHeaders,
+    signedHeaders,
+    "UNSIGNED-PAYLOAD"
+  ].join("\n");
+
+  const stringToSign = [
+    "AWS4-HMAC-SHA256",
+    amzDate,
+    credentialScope,
+    sha256(canonicalRequest)
+  ].join("\n");
+
+  const signingKey = hmac(
+    hmac(hmac(hmac(`AWS4${secretAccessKey}`, dateStamp), "auto"), "s3"),
+    "aws4_request"
+  );
+  const signature = createHmac("sha256", signingKey).update(stringToSign).digest("hex");
+
+  query.set("X-Amz-Signature", signature);
+
+  return `${endpoint.replace(/\/$/, "")}${canonicalUri}?${query.toString()}`;
+}

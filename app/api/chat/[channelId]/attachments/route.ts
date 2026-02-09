@@ -18,7 +18,7 @@ import {
   MAX_CHAT_ATTACHMENT_SIZE,
   MAX_CHAT_ATTACHMENTS
 } from "@/lib/chat/attachments";
-import { getR2Config, signR2PutUrl } from "@/lib/storage/r2";
+import { signR2PutUrl } from "@/lib/storage/r2";
 
 function assertSession(session: Session | null) {
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -124,12 +124,6 @@ function getExtensionFromMime(mimeType: string) {
   return map[mimeType] ?? "";
 }
 
-type AttachmentRequest = {
-  name: string;
-  type: string;
-  size: number;
-};
-
 export async function POST(
   request: Request,
   ctx: { params: Promise<{ channelId: string }> }
@@ -163,46 +157,70 @@ export async function POST(
       }
     }
 
-    const body = (await request.json().catch(() => null)) as { files?: AttachmentRequest[] } | null;
-    const files = body?.files ?? [];
+    const formData = await request.formData().catch(() => null);
+    if (!formData) {
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    }
 
-    if (files.length === 0) {
+    const fileEntries = formData.getAll("files");
+    if (fileEntries.length === 0) {
       return NextResponse.json({ error: "No files provided" }, { status: 400 });
     }
 
-    if (files.length > MAX_CHAT_ATTACHMENTS) {
+    if (fileEntries.length > MAX_CHAT_ATTACHMENTS) {
       return NextResponse.json({ error: "Too many attachments" }, { status: 400 });
     }
 
-    const { publicUrl } = getR2Config();
     const attachments = [];
 
-    for (const file of files) {
-      if (!CHAT_ATTACHMENT_MIME_TYPES.includes(file.type)) {
+    for (const entry of fileEntries) {
+      if (!(entry instanceof File)) {
+        return NextResponse.json({ error: "Invalid file entry" }, { status: 400 });
+      }
+
+      const file = entry;
+
+      if (!file.type || !CHAT_ATTACHMENT_MIME_TYPES.includes(file.type)) {
         return NextResponse.json({ error: "Unsupported file type" }, { status: 400 });
       }
-      if (file.size > MAX_CHAT_ATTACHMENT_SIZE) {
+      if (file.size <= 0 || file.size > MAX_CHAT_ATTACHMENT_SIZE) {
         return NextResponse.json({ error: "File too large" }, { status: 400 });
       }
 
-      const extension =
-        getExtensionFromMime(file.type) || file.name.split(".").pop()?.toLowerCase();
-      const key = `chat/${channelId}/${randomUUID()}${extension ? `.${extension}` : ""}`;
+      const extension = getExtensionFromMime(file.type);
+      if (!extension) {
+        return NextResponse.json({ error: "Unsupported file type" }, { status: 400 });
+      }
+
+      const key = `chat/${channelId}/${randomUUID()}.${extension}`;
       const uploadUrl = signR2PutUrl({
         key,
         contentType: file.type,
         expiresInSeconds: 60 * 5
       });
 
+      const fileBuffer = await file.arrayBuffer();
+      const r2Response = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type
+        },
+        body: fileBuffer
+      });
+
+      if (!r2Response.ok) {
+        return NextResponse.json(
+          { error: "Failed to upload file to storage" },
+          { status: 502 }
+        );
+      }
+
       attachments.push({
-        uploadUrl,
-        attachment: {
-          url: `${publicUrl}/${key}`,
-          mimeType: file.type,
-          size: file.size,
-          width: null,
-          height: null
-        }
+        url: `/api/chat/images/${key}`,
+        mimeType: file.type,
+        size: file.size,
+        width: null,
+        height: null
       });
     }
 

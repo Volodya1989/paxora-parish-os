@@ -151,15 +151,30 @@ function assertMessageInput(body: string, attachments: ChatAttachmentInput[]) {
   return trimmed;
 }
 
+const ATTACHMENT_URL_PREFIX = "/api/chat/images/chat/";
+
+function assertAttachmentUrl(url: string) {
+  if (!url) {
+    throw new Error("Attachment URL is required");
+  }
+
+  if (!url.startsWith(ATTACHMENT_URL_PREFIX)) {
+    throw new Error("Invalid attachment URL");
+  }
+
+  // Ensure no path traversal
+  if (url.includes("..")) {
+    throw new Error("Invalid attachment URL");
+  }
+}
+
 function assertAttachments(attachments: ChatAttachmentInput[]) {
   if (attachments.length > MAX_CHAT_ATTACHMENTS) {
     throw new Error("Too many attachments");
   }
 
   for (const attachment of attachments) {
-    if (!attachment.url) {
-      throw new Error("Attachment URL is required");
-    }
+    assertAttachmentUrl(attachment.url);
     if (!CHAT_ATTACHMENT_MIME_TYPES.includes(attachment.mimeType)) {
       throw new Error("Invalid attachment type");
     }
@@ -922,6 +937,7 @@ export async function createPoll(
     deletedAt: message.deletedAt,
     replyCount: message._count.replies ?? 0,
     reactions: [],
+    attachments: [],
     author: {
       id: message.author.id,
       name: message.author.name ?? message.author.email ?? "Parish member"

@@ -552,14 +552,16 @@ export async function listMessages({
             }
           }
         : null,
-      attachments: message.attachments.map((attachment) => ({
-        id: attachment.id,
-        url: attachment.url,
-        mimeType: attachment.mimeType,
-        size: attachment.size,
-        width: attachment.width ?? null,
-        height: attachment.height ?? null
-      })),
+      attachments: message.deletedAt
+        ? []
+        : message.attachments.map((attachment) => ({
+            id: attachment.id,
+            url: attachment.url,
+            mimeType: attachment.mimeType,
+            size: attachment.size,
+            width: attachment.width ?? null,
+            height: attachment.height ?? null
+          })),
       poll
     };
   }) as ChatMessageItem[];
@@ -656,14 +658,16 @@ export async function getPinnedMessage(channelId: string, userId?: string) {
         id: pinned.message.author.id,
         name: pinned.message.author.name ?? pinned.message.author.email ?? "Parish member"
       },
-      attachments: pinned.message.attachments.map((attachment) => ({
-        id: attachment.id,
-        url: attachment.url,
-        mimeType: attachment.mimeType,
-        size: attachment.size,
-        width: attachment.width ?? null,
-        height: attachment.height ?? null
-      })),
+      attachments: pinned.message.deletedAt
+        ? []
+        : pinned.message.attachments.map((attachment) => ({
+            id: attachment.id,
+            url: attachment.url,
+            mimeType: attachment.mimeType,
+            size: attachment.size,
+            width: attachment.width ?? null,
+            height: attachment.height ?? null
+          })),
       parentMessage: pinned.message.parentMessage
         ? {
             id: pinned.message.parentMessage.id,
