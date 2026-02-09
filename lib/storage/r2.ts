@@ -13,9 +13,14 @@ export function getR2Config() {
   const bucket = requireEnv("CLOUDFLARE_R2_BUCKET");
   const accessKeyId = requireEnv("CLOUDFLARE_R2_ACCESS_KEY_ID");
   const secretAccessKey = requireEnv("CLOUDFLARE_R2_SECRET_ACCESS_KEY");
-  const endpoint = requireEnv("CLOUDFLARE_R2_ENDPOINT");
-  const publicUrl =
-    process.env.CLOUDFLARE_R2_PUBLIC_URL ?? `${endpoint.replace(/\/$/, "")}/${bucket}`;
+  const endpoint = requireEnv("CLOUDFLARE_R2_ENDPOINT").replace(/\/$/, "");
+  const endpointUrl = new URL(endpoint);
+  const endpointHasBucket =
+    endpointUrl.hostname.startsWith(`${bucket}.`) ||
+    endpointUrl.pathname === `/${bucket}` ||
+    endpointUrl.pathname.startsWith(`/${bucket}/`);
+  const defaultPublicUrl = endpointHasBucket ? endpoint : `${endpoint}/${bucket}`;
+  const publicUrl = process.env.CLOUDFLARE_R2_PUBLIC_URL ?? defaultPublicUrl;
 
   return {
     accountId,
@@ -23,7 +28,8 @@ export function getR2Config() {
     accessKeyId,
     secretAccessKey,
     endpoint,
-    publicUrl
+    publicUrl,
+    endpointHasBucket
   };
 }
 
@@ -59,14 +65,20 @@ export function signR2PutUrl({
   contentType: string;
   expiresInSeconds: number;
 }) {
-  const { bucket, accessKeyId, secretAccessKey, endpoint } = getR2Config();
+  const { bucket, accessKeyId, secretAccessKey, endpoint, endpointHasBucket } =
+    getR2Config();
   const url = new URL(endpoint);
   const host = url.host;
   const method = "PUT";
   const { amzDate, dateStamp } = toAmzDate(new Date());
   const credentialScope = `${dateStamp}/auto/s3/aws4_request`;
-
-  const canonicalUri = `/${bucket}/${encodePath(key)}`;
+  const basePath =
+    endpointHasBucket && url.pathname !== "/"
+      ? url.pathname.replace(/\/$/, "")
+      : endpointHasBucket
+        ? ""
+        : `/${bucket}`;
+  const canonicalUri = `${basePath}/${encodePath(key)}`;
   const signedHeaders = "content-type;host";
   const query = new URLSearchParams({
     "X-Amz-Algorithm": "AWS4-HMAC-SHA256",
@@ -101,5 +113,5 @@ export function signR2PutUrl({
 
   query.set("X-Amz-Signature", signature);
 
-  return `${endpoint.replace(/\/$/, "")}${canonicalUri}?${query.toString()}`;
+  return `${url.origin}${canonicalUri}?${query.toString()}`;
 }
