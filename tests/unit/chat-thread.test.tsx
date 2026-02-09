@@ -14,6 +14,7 @@ const messages = [
     editedAt: null,
     deletedAt: null,
     replyCount: 0,
+    attachments: [],
     reactions: [],
     author: baseAuthor,
     parentMessage: null
@@ -25,6 +26,7 @@ const messages = [
     editedAt: null,
     deletedAt: null,
     replyCount: 1,
+    attachments: [],
     reactions: [
       {
         emoji: "👍",
@@ -42,6 +44,7 @@ const messages = [
     editedAt: null,
     deletedAt: null,
     replyCount: 0,
+    attachments: [],
     reactions: [],
     author: baseAuthor,
     parentMessage: null
@@ -60,6 +63,7 @@ const pinnedMessage = {
     editedAt: null,
     deletedAt: null,
     replyCount: 0,
+    attachments: [],
     reactions: [],
     author: baseAuthor,
     parentMessage: null
@@ -123,6 +127,7 @@ test("ChatThread wraps long message text", () => {
     editedAt: null,
     deletedAt: null,
     replyCount: 0,
+    attachments: [],
     reactions: [],
     author: baseAuthor,
     parentMessage: null
