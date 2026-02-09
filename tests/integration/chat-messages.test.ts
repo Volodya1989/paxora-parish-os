@@ -21,7 +21,7 @@ mock.module("next-auth", {
   }
 });
 
-mock.module("@/lib/storage/r2", {
+mock.module("../../lib/storage/r2", {
   namedExports: {
     getR2Config: () => ({
       accountId: "test-account",
