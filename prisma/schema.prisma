@@ -241,6 +241,8 @@ model Parish {
   heroNominations HeroNomination[]
   parishInvites   ParishInvite[]
   hubItems        ParishHubItem[]
+  impersonatedUsers User[]                 @relation("ImpersonatedParish")
+  auditLogs       AuditLog[]              @relation("ParishAuditLogs")
 }
 
 model ParishHubItem {
@@ -325,7 +327,7 @@ model User {
   decidedEventRequests     EventRequest[]           @relation("EventRequestDecisionBy")
   requestsCreated          Request[]                @relation("RequestCreatedBy")
   requestsAssigned         Request[]                @relation("RequestAssignedTo")
-  impersonatedParish       Parish?                  @relation(fields: [impersonatedParishId], references: [id], onDelete: SetNull)
+  impersonatedParish       Parish?                  @relation("ImpersonatedParish", fields: [impersonatedParishId], references: [id], onDelete: SetNull)
   auditLogs                AuditLog[]               @relation("AuditActor")
 }
 
@@ -337,7 +339,7 @@ model AuditLog {
   createdAt      DateTime    @default(now())
 
   actorUser      User        @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: Cascade)
-  targetParish   Parish      @relation(fields: [targetParishId], references: [id], onDelete: Cascade)
+  targetParish   Parish      @relation("ParishAuditLogs", fields: [targetParishId], references: [id], onDelete: Cascade)
 
   @@index([actorUserId, createdAt])
   @@index([targetParishId, createdAt])
