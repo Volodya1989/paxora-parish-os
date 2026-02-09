@@ -23,6 +23,7 @@ import {
   MAX_CHAT_ATTACHMENT_SIZE,
   MAX_CHAT_ATTACHMENTS
 } from "@/lib/chat/attachments";
+import { getR2Config } from "@/lib/storage/r2";
 import { notifyChatMessage } from "@/lib/push/notify";
 
 const MESSAGE_EDIT_WINDOW_MS = 15 * 60 * 1000;
@@ -151,15 +152,35 @@ function assertMessageInput(body: string, attachments: ChatAttachmentInput[]) {
   return trimmed;
 }
 
+function assertAttachmentUrl(url: string) {
+  if (!url) {
+    throw new Error("Attachment URL is required");
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error("Invalid attachment URL");
+  }
+
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    throw new Error("Invalid attachment URL");
+  }
+
+  const { publicUrl } = getR2Config();
+  if (!url.startsWith(publicUrl + "/")) {
+    throw new Error("Invalid attachment URL");
+  }
+}
+
 function assertAttachments(attachments: ChatAttachmentInput[]) {
   if (attachments.length > MAX_CHAT_ATTACHMENTS) {
     throw new Error("Too many attachments");
   }
 
   for (const attachment of attachments) {
-    if (!attachment.url) {
-      throw new Error("Attachment URL is required");
-    }
+    assertAttachmentUrl(attachment.url);
     if (!CHAT_ATTACHMENT_MIME_TYPES.includes(attachment.mimeType)) {
       throw new Error("Invalid attachment type");
     }
@@ -922,6 +943,7 @@ export async function createPoll(
     deletedAt: message.deletedAt,
     replyCount: message._count.replies ?? 0,
     reactions: [],
+    attachments: [],
     author: {
       id: message.author.id,
       name: message.author.name ?? message.author.email ?? "Parish member"

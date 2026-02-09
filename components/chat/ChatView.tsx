@@ -275,10 +275,10 @@ export default function ChatView({
     const data = await response.json();
     const uploads = data.attachments ?? [];
 
-    await Promise.all(
+    const results = await Promise.allSettled(
       uploads.map(async (upload: { uploadUrl: string }, index: number) => {
         const file = files[index];
-        if (!file) return;
+        if (!file) throw new Error("File missing");
         const uploadResponse = await fetch(upload.uploadUrl, {
           method: "PUT",
           headers: {
@@ -287,12 +287,32 @@ export default function ChatView({
           body: file
         });
         if (!uploadResponse.ok) {
-          throw new Error("Unable to upload images.");
+          throw new Error("Upload failed");
         }
+        return upload;
       })
     );
 
-    return uploads.map((upload: { attachment: any }) => upload.attachment);
+    const successful = results
+      .filter(
+        (result): result is PromiseFulfilledResult<{ uploadUrl: string; attachment: any }> =>
+          result.status === "fulfilled"
+      )
+      .map((result) => result.value.attachment);
+
+    if (successful.length === 0 && files.length > 0) {
+      throw new Error("Unable to upload images. Please try again.");
+    }
+
+    if (successful.length < files.length) {
+      addToast({
+        title: "Some images failed to upload",
+        description: `${successful.length} of ${files.length} images uploaded.`,
+        status: "neutral"
+      });
+    }
+
+    return successful;
   };
 
   const handleSend = async (body: string, files: File[]) => {

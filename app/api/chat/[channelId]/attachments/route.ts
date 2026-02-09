@@ -178,6 +178,12 @@ export async function POST(
     const attachments = [];
 
     for (const file of files) {
+      if (!file.type || typeof file.type !== "string") {
+        return NextResponse.json({ error: "File type is required" }, { status: 400 });
+      }
+      if (!file.size || typeof file.size !== "number" || file.size <= 0) {
+        return NextResponse.json({ error: "File size is required" }, { status: 400 });
+      }
       if (!CHAT_ATTACHMENT_MIME_TYPES.includes(file.type)) {
         return NextResponse.json({ error: "Unsupported file type" }, { status: 400 });
       }
@@ -185,9 +191,11 @@ export async function POST(
         return NextResponse.json({ error: "File too large" }, { status: 400 });
       }
 
-      const extension =
-        getExtensionFromMime(file.type) || file.name.split(".").pop()?.toLowerCase();
-      const key = `chat/${channelId}/${randomUUID()}${extension ? `.${extension}` : ""}`;
+      const extension = getExtensionFromMime(file.type);
+      if (!extension) {
+        return NextResponse.json({ error: "Unsupported file type" }, { status: 400 });
+      }
+      const key = `chat/${channelId}/${randomUUID()}.${extension}`;
       const uploadUrl = signR2PutUrl({
         key,
         contentType: file.type,
