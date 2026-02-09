@@ -14,9 +14,20 @@ END $$;
 -- Parish columns (idempotent)
 ALTER TABLE "Parish"
   ADD COLUMN IF NOT EXISTS "address" TEXT,
-  ADD COLUMN IF NOT EXISTS "timezone" TEXT NOT NULL DEFAULT 'UTC',
+  ADD COLUMN IF NOT EXISTS "timezone" TEXT,
   ADD COLUMN IF NOT EXISTS "logoUrl" TEXT,
-  ADD COLUMN IF NOT EXISTS "defaultLocale" TEXT NOT NULL DEFAULT 'en';
+  ADD COLUMN IF NOT EXISTS "defaultLocale" TEXT;
+
+-- Backfill NULLs for rows created before this migration
+UPDATE "Parish" SET "timezone" = 'UTC' WHERE "timezone" IS NULL;
+UPDATE "Parish" SET "defaultLocale" = 'en' WHERE "defaultLocale" IS NULL;
+
+-- Now apply NOT NULL + DEFAULT constraints
+ALTER TABLE "Parish"
+  ALTER COLUMN "timezone" SET NOT NULL,
+  ALTER COLUMN "timezone" SET DEFAULT 'UTC',
+  ALTER COLUMN "defaultLocale" SET NOT NULL,
+  ALTER COLUMN "defaultLocale" SET DEFAULT 'en';
 
 -- User columns (idempotent)
 ALTER TABLE "User"
