@@ -55,13 +55,21 @@ export const authOptions: NextAuthOptions = {
       if (user && "activeParishId" in user) {
         token.activeParishId = (user as { activeParishId?: string | null }).activeParishId ?? null;
       }
+      if (user && "platformRole" in user) {
+        token.platformRole = (user as { platformRole?: string | null }).platformRole ?? null;
+      }
+      if (user && "impersonatedParishId" in user) {
+        token.impersonatedParishId = (user as { impersonatedParishId?: string | null }).impersonatedParishId ?? null;
+      }
 
-      if (!token.activeParishId && token.sub) {
+      if (token.sub) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.sub },
-          select: { activeParishId: true }
+          select: { activeParishId: true, platformRole: true, impersonatedParishId: true }
         });
         token.activeParishId = dbUser?.activeParishId ?? null;
+        token.platformRole = dbUser?.platformRole ?? null;
+        token.impersonatedParishId = dbUser?.impersonatedParishId ?? null;
       }
 
       return token;
@@ -69,7 +77,13 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.sub ?? "";
-        session.user.activeParishId = (token.activeParishId as string | null) ?? null;
+        session.user.impersonatedParishId = (token.impersonatedParishId as string | null) ?? null;
+        session.user.platformRole = (token.platformRole as typeof session.user.platformRole) ?? null;
+        const resolvedParishId =
+          (token.impersonatedParishId as string | null) ??
+          (token.activeParishId as string | null) ??
+          null;
+        session.user.activeParishId = resolvedParishId;
       }
       return session;
     }
