@@ -15,6 +15,7 @@ import type {
   PlatformParishActionState
 } from "@/lib/types/platformParishes";
 import { createDefaultParishHubItems } from "@/server/db/parish-hub";
+import { Prisma } from "@prisma/client";
 
 function buildError(message: string, error: PlatformParishActionError): PlatformParishActionState {
   return { status: "error", message, error };
@@ -60,33 +61,53 @@ export async function createPlatformParish(input: {
   logoUrl?: string;
   defaultLocale: string;
 }): Promise<PlatformParishActionState> {
-  const parsed = platformParishSchema.safeParse(input);
-
-  if (!parsed.success) {
-    return buildError(parsed.error.errors[0]?.message ?? "Invalid input.", "VALIDATION_ERROR");
-  }
-
   try {
     await requirePlatformSession();
   } catch (error) {
     return buildError("You do not have permission to create parishes.", "NOT_AUTHORIZED");
   }
 
+  const parsed = platformParishSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return buildError(parsed.error.errors[0]?.message ?? "Invalid input.", "VALIDATION_ERROR");
+  }
+
   const baseSlug = slugify(parsed.data.name);
   const slug = await ensureUniqueSlug(baseSlug);
 
-  const parish = await prisma.parish.create({
-    data: {
-      name: parsed.data.name.trim(),
-      slug,
-      address: normalizeOptional(parsed.data.address),
-      timezone: parsed.data.timezone.trim(),
-      logoUrl: normalizeOptional(parsed.data.logoUrl),
-      defaultLocale: parsed.data.defaultLocale
-    }
-  });
+  try {
+    const parish = await prisma.parish.create({
+      data: {
+        name: parsed.data.name.trim(),
+        slug,
+        address: normalizeOptional(parsed.data.address),
+        timezone: parsed.data.timezone.trim(),
+        logoUrl: normalizeOptional(parsed.data.logoUrl),
+        defaultLocale: parsed.data.defaultLocale
+      }
+    });
 
-  await createDefaultParishHubItems(parish.id);
+    await createDefaultParishHubItems(parish.id);
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      // Slug collision from race condition – retry with a UUID suffix
+      const retrySlug = `${baseSlug}-${randomUUID().slice(0, 8)}`;
+      const parish = await prisma.parish.create({
+        data: {
+          name: parsed.data.name.trim(),
+          slug: retrySlug,
+          address: normalizeOptional(parsed.data.address),
+          timezone: parsed.data.timezone.trim(),
+          logoUrl: normalizeOptional(parsed.data.logoUrl),
+          defaultLocale: parsed.data.defaultLocale
+        }
+      });
+      await createDefaultParishHubItems(parish.id);
+    } else {
+      throw error;
+    }
+  }
 
   revalidatePath("/platform/parishes");
 
@@ -101,16 +122,16 @@ export async function updatePlatformParish(input: {
   logoUrl?: string;
   defaultLocale: string;
 }): Promise<PlatformParishActionState> {
-  const parsed = updatePlatformParishSchema.safeParse(input);
-
-  if (!parsed.success) {
-    return buildError(parsed.error.errors[0]?.message ?? "Invalid input.", "VALIDATION_ERROR");
-  }
-
   try {
     await requirePlatformSession();
   } catch (error) {
     return buildError("You do not have permission to update parishes.", "NOT_AUTHORIZED");
+  }
+
+  const parsed = updatePlatformParishSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return buildError(parsed.error.errors[0]?.message ?? "Invalid input.", "VALIDATION_ERROR");
   }
 
   const parish = await prisma.parish.findUnique({

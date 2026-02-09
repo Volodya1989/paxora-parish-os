@@ -1,5 +1,6 @@
 "use server";
 
+import { z } from "zod";
 import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
 import { authOptions } from "@/server/auth/options";
@@ -9,6 +10,8 @@ import { prisma } from "@/server/db/prisma";
 export type ImpersonationActionState =
   | { status: "success"; message: string }
   | { status: "error"; message: string };
+
+const parishIdSchema = z.string().trim().min(1, "Parish ID is required.");
 
 async function requirePlatformSession() {
   const session = await getServerSession(authOptions);
@@ -20,67 +23,78 @@ async function requirePlatformSession() {
 }
 
 export async function startImpersonation(parishId: string): Promise<ImpersonationActionState> {
+  let userId: string;
   try {
-    const userId = await requirePlatformSession();
-    const parish = await prisma.parish.findUnique({
-      where: { id: parishId },
-      select: { id: true }
-    });
+    userId = await requirePlatformSession();
+  } catch (error) {
+    return { status: "error", message: "You do not have permission to impersonate." };
+  }
 
-    if (!parish) {
-      return { status: "error", message: "Parish not found." };
-    }
+  const parsed = parishIdSchema.safeParse(parishId);
+  if (!parsed.success) {
+    return { status: "error", message: "Invalid parish ID." };
+  }
 
-    await prisma.user.update({
+  const parish = await prisma.parish.findUnique({
+    where: { id: parsed.data },
+    select: { id: true }
+  });
+
+  if (!parish) {
+    return { status: "error", message: "Parish not found." };
+  }
+
+  await prisma.$transaction([
+    prisma.user.update({
       where: { id: userId },
       data: { impersonatedParishId: parish.id }
-    });
-
-    await prisma.auditLog.create({
+    }),
+    prisma.auditLog.create({
       data: {
         actorUserId: userId,
         targetParishId: parish.id,
         action: "IMPERSONATION_START"
       }
-    });
+    })
+  ]);
 
-    revalidatePath("/platform/parishes");
+  revalidatePath("/platform/parishes");
 
-    return { status: "success", message: "Impersonation started." };
-  } catch (error) {
-    return { status: "error", message: "You do not have permission to impersonate." };
-  }
+  return { status: "success", message: "Impersonation started." };
 }
 
 export async function stopImpersonation(): Promise<ImpersonationActionState> {
+  let userId: string;
   try {
-    const userId = await requirePlatformSession();
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { impersonatedParishId: true }
-    });
+    userId = await requirePlatformSession();
+  } catch (error) {
+    return { status: "error", message: "Unable to end impersonation." };
+  }
 
-    if (!user?.impersonatedParishId) {
-      return { status: "success", message: "Impersonation already stopped." };
-    }
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { impersonatedParishId: true }
+  });
 
-    await prisma.user.update({
+  if (!user?.impersonatedParishId) {
+    return { status: "success", message: "Impersonation already stopped." };
+  }
+
+  await prisma.$transaction([
+    prisma.user.update({
       where: { id: userId },
       data: { impersonatedParishId: null }
-    });
-
-    await prisma.auditLog.create({
+    }),
+    prisma.auditLog.create({
       data: {
         actorUserId: userId,
         targetParishId: user.impersonatedParishId,
         action: "IMPERSONATION_END"
       }
-    });
+    })
+  ]);
 
-    revalidatePath("/platform/parishes");
+  revalidatePath("/platform/parishes");
 
-    return { status: "success", message: "Impersonation ended." };
-  } catch (error) {
-    return { status: "error", message: "Unable to end impersonation." };
-  }
+  return { status: "success", message: "Impersonation ended." };
 }
