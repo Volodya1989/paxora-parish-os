@@ -56,7 +56,8 @@ export const authOptions: NextAuthOptions = {
         token.activeParishId = (user as { activeParishId?: string | null }).activeParishId ?? null;
       }
       if (user && "platformRole" in user) {
-        token.platformRole = (user as { platformRole?: string | null }).platformRole ?? null;
+        token.platformRole =
+          (user as { platformRole?: typeof token.platformRole }).platformRole ?? null;
       }
       if (user && "impersonatedParishId" in user) {
         token.impersonatedParishId = (user as { impersonatedParishId?: string | null }).impersonatedParishId ?? null;
