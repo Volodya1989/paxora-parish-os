@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
-import { getMoreNavItems, type NavRole } from "@/components/navigation/navItems";
+import { getMoreNavItems, type NavRole, type PlatformNavRole } from "@/components/navigation/navItems";
 import { SignOutButton } from "@/components/navigation/SignOutButton";
 import { useTranslations } from "@/lib/i18n/provider";
 
@@ -12,12 +12,13 @@ type MoreDrawerProps = {
   onClose: () => void;
   onSignOut?: () => Promise<void> | void;
   parishRole?: NavRole;
+  platformRole?: PlatformNavRole;
 };
 
-export function MoreDrawer({ open, onClose, onSignOut, parishRole }: MoreDrawerProps) {
+export function MoreDrawer({ open, onClose, onSignOut, parishRole, platformRole }: MoreDrawerProps) {
   const t = useTranslations();
   const firstItemRef = useRef<HTMLAnchorElement | null>(null);
-  const items = getMoreNavItems(parishRole);
+  const items = getMoreNavItems(parishRole, platformRole);
 
   useEffect(() => {
     if (!open) {

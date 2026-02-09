@@ -17,6 +17,7 @@ export const primaryNavItems: NavItem[] = [
 ];
 
 export type NavRole = "ADMIN" | "SHEPHERD" | "MEMBER" | null | undefined;
+export type PlatformNavRole = "SUPERADMIN" | null | undefined;
 
 export function getPrimaryNavItems(_role?: NavRole) {
   // People is always in the More drawer, not in the primary nav
@@ -28,21 +29,31 @@ const baseMoreNavItems: NavItem[] = [
   { labelKey: "nav.profile", href: "/profile", icon: "PR", testId: "profile" }
 ];
 
-export function getMoreNavItems(role?: NavRole) {
+export function getMoreNavItems(role?: NavRole, platformRole?: PlatformNavRole) {
   const requestItem: NavItem = {
     labelKey: "nav.requests",
     href: role === "ADMIN" || role === "SHEPHERD" ? routes.adminRequests : routes.requests,
     icon: "RQ",
     testId: "requests"
   };
+  const platformItem: NavItem | null =
+    platformRole === "SUPERADMIN"
+      ? {
+          labelKey: "nav.platformParishes",
+          href: routes.platformParishes,
+          icon: "PF",
+          testId: "platform-parishes"
+        }
+      : null;
 
   if (role === "ADMIN" || role === "SHEPHERD") {
     return [
       baseMoreNavItems[0],
       requestItem,
+      ...(platformItem ? [platformItem] : []),
       { labelKey: "nav.people", href: routes.adminPeople, icon: "PE", testId: "people" },
       baseMoreNavItems[1]
     ];
   }
-  return [baseMoreNavItems[0], requestItem, baseMoreNavItems[1]];
+  return [baseMoreNavItems[0], requestItem, ...(platformItem ? [platformItem] : []), baseMoreNavItems[1]];
 }

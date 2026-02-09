@@ -62,6 +62,7 @@ export default async function AppLayout({
   return (
     <AppShell
       parishRole={membership?.role ?? null}
+      platformRole={session.user.platformRole ?? null}
       impersonation={
         impersonatedParish
           ? {
