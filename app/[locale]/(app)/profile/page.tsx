@@ -17,6 +17,8 @@ import ParishHubAdminPanel from "@/components/parish-hub/ParishHubAdminPanel";
 import type { ParishHubAdminItem } from "@/components/parish-hub/ParishHubReorderList";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
 import { SparklesIcon } from "@/components/icons/ParishIcons";
+import { getLocaleFromParam } from "@/lib/i18n/routing";
+import { getTranslator } from "@/lib/i18n/translator";
 
 /**
  * Findings: /profile is the existing account surface with session-gated reads and
@@ -26,7 +28,11 @@ import { SparklesIcon } from "@/components/icons/ParishIcons";
  * server action on this page. V2: admin-managed profiles, greeting automation,
  * and explicit leap-year behavior for Feb 29.
  */
-export default async function ProfilePage() {
+export default async function ProfilePage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale: localeParam } = await params;
+  const locale = getLocaleFromParam(localeParam);
+  const t = getTranslator(locale);
+
   const session = await getServerSession(authOptions);
 
   if (!session?.user) {
@@ -73,10 +79,10 @@ export default async function ProfilePage() {
 
   return (
     <ParishionerPageLayout
-      pageTitle="Profile"
-      parishName={parish?.name ?? "My Parish"}
+      pageTitle={t("nav.profile")}
+      parishName={parish?.name ?? t("serve.myParish")}
       parishLogoUrl={parish?.logoUrl ?? null}
-      subtitle="Manage your account and personal preferences"
+      subtitle={t("profile.subtitle")}
       gradientClass="from-primary-600 via-primary-500 to-emerald-500"
       icon={<SparklesIcon className="h-6 w-6 text-white" />}
     >
@@ -84,21 +90,21 @@ export default async function ProfilePage() {
         <Card>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-medium text-ink-900">Quick actions</p>
-              <p className="text-sm text-ink-500">Jump to your most-used profile controls.</p>
+              <p className="text-sm font-medium text-ink-900">{t("profile.quickActions")}</p>
+              <p className="text-sm text-ink-500">{t("profile.quickActionsDescription")}</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <a
                 href="#notification-settings"
                 className="inline-flex items-center justify-center rounded-button border border-mist-200 bg-white px-3 py-1.5 text-xs font-medium text-ink-900 transition hover:border-mist-300 hover:bg-mist-50 focus-ring"
               >
-                Notification settings
+                {t("profile.notificationSettings")}
               </a>
               <a
                 href="#important-dates"
                 className="inline-flex items-center justify-center rounded-button border border-mist-200 bg-white px-3 py-1.5 text-xs font-medium text-ink-900 transition hover:border-mist-300 hover:bg-mist-50 focus-ring"
               >
-                Important dates
+                {t("profile.importantDates")}
               </a>
             </div>
           </div>

@@ -5,6 +5,7 @@ import { MapPinIcon } from "@/components/icons/ParishIcons";
 import { getDateKey } from "@/lib/date/calendar";
 import type { CalendarEvent } from "@/lib/queries/events";
 import { formatTime } from "@/lib/this-week/formatters";
+import { useTranslations } from "@/lib/i18n/provider";
 
 type CalendarDayListProps = {
   days: Date[];
@@ -15,8 +16,8 @@ type CalendarDayListProps = {
   monthEnd?: Date;
 };
 
-function formatDayLabel(date: Date, isToday: boolean) {
-  if (isToday) return "Today";
+function formatDayLabel(date: Date, isToday: boolean, todayLabel: string) {
+  if (isToday) return todayLabel;
   return date.toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
@@ -82,6 +83,7 @@ export default function CalendarDayList({
   monthStart,
   monthEnd
 }: CalendarDayListProps) {
+  const t = useTranslations();
   const [showPast, setShowPast] = useState(false);
   const todayKey = getDateKey(today);
 
@@ -112,17 +114,17 @@ export default function CalendarDayList({
         {/* Day header */}
         <div className="flex items-center justify-between gap-3">
           <span className="rounded-full bg-mist-100 px-2.5 py-1 text-[0.7rem] font-semibold uppercase tracking-wide text-ink-700">
-            {formatDayLabel(day, isToday)}
+            {formatDayLabel(day, isToday, t("calendar.today"))}
           </span>
           <span className="text-xs text-ink-400">
-            {events.length} scheduled
+            {events.length} {t("calendar.scheduled")}
           </span>
         </div>
 
         {/* Event cards */}
         {events.length === 0 ? (
           <div className="rounded-card border border-mist-100 bg-mist-50 px-4 py-3 text-xs text-ink-500">
-            No events scheduled.
+            {t("calendar.noEventsScheduled")}
           </div>
         ) : (
           <div className="space-y-3">
@@ -149,7 +151,7 @@ export default function CalendarDayList({
           className="text-xs font-semibold uppercase tracking-wide text-primary-700"
           onClick={() => setShowPast((prev) => !prev)}
         >
-          {showPast ? "Hide past events" : "Show past events"} ({pastEventCount})
+          {showPast ? t("calendar.hidePastEvents") : t("calendar.showPastEvents")} ({pastEventCount})
         </button>
       )}
 
@@ -162,7 +164,7 @@ export default function CalendarDayList({
       ) : (
         !showPast && pastDays.length > 0 ? (
           <div className="rounded-card border border-mist-100 bg-mist-50 px-4 py-3 text-sm text-ink-500">
-            No more events scheduled. Check back next week!
+            {t("calendar.noMoreEvents")}
           </div>
         ) : null
       )}

@@ -70,7 +70,7 @@ function MapPinIcon({ className }: { className?: string }) {
 
 function ServeRow({ item, t }: { item: TaskPreview; t: (key: string) => string }) {
   const statusTone = item.status === "DONE" ? "success" as const : item.status === "IN_PROGRESS" ? "warning" as const : "neutral" as const;
-  const statusLabel = item.status === "DONE" ? "Completed" : item.status === "IN_PROGRESS" ? t("common.inProgress") : t("common.todo");
+  const statusLabel = item.status === "DONE" ? t("common.done") : item.status === "IN_PROGRESS" ? t("common.inProgress") : t("common.todo");
   const dueLabel = item.dueBy ? formatShortDate(item.dueBy) : null;
 
   return (
@@ -120,7 +120,7 @@ function EventRow({ event }: { event: EventPreview }) {
   );
 }
 
-function AnnouncementRow({ item }: { item: AnnouncementPreview }) {
+function AnnouncementRow({ item, t }: { item: AnnouncementPreview; t: (key: string) => string }) {
   const isPublished = Boolean(item.publishedAt);
   return (
     <Link
@@ -129,7 +129,7 @@ function AnnouncementRow({ item }: { item: AnnouncementPreview }) {
     >
       <p className="min-w-0 truncate text-sm font-semibold text-ink-900">{item.title}</p>
       <Badge tone={isPublished ? "success" : "warning"} className="shrink-0 text-[10px]">
-        {isPublished ? "Live" : "Draft"}
+        {isPublished ? t("thisWeek.live") : t("common.draft")}
       </Badge>
     </Link>
   );
@@ -137,12 +137,12 @@ function AnnouncementRow({ item }: { item: AnnouncementPreview }) {
 
 /* ---------- section header ---------- */
 
-function SectionHeader({ title, count, countLabel, href, linkLabel = "View all" }: {
+function SectionHeader({ title, count, countLabel, href, linkLabel }: {
   title: string;
   count: number;
   countLabel: string;
   href: string;
-  linkLabel?: string;
+  linkLabel: string;
 }) {
   return (
     <div className="flex items-baseline justify-between">
@@ -163,7 +163,7 @@ export default async function ThisWeekAdminView({
   data,
   viewToggle,
   spotlightAdmin,
-  parishName = "Mother of God Ukrainian Catholic Church",
+  parishName,
   parishLogoUrl,
   userName
 }: ThisWeekAdminViewProps) {
@@ -175,10 +175,10 @@ export default async function ThisWeekAdminView({
     data.pendingTaskApprovals > 0
       ? {
           id: "task-approvals",
-          title: `${data.pendingTaskApprovals} approval${data.pendingTaskApprovals === 1 ? "" : "s"} needed`,
-          description: "Review member-submitted serve items awaiting approval.",
+          title: `${data.pendingTaskApprovals} ${t("thisWeek.approvalsNeeded")}`,
+          description: t("thisWeek.approvalsDescription"),
           actionHref: `${routes.serve}?view=opportunities`,
-          actionLabel: "Review now",
+          actionLabel: t("thisWeek.reviewNow"),
           tone: "accent" as const,
           icon: <AlertCircleIcon className="h-4 w-4" />
         }
@@ -186,10 +186,10 @@ export default async function ThisWeekAdminView({
     data.pendingAccessRequests > 0
       ? {
           id: "access-requests",
-          title: `${data.pendingAccessRequests} access request${data.pendingAccessRequests === 1 ? "" : "s"} pending`,
-          description: "Review parish access requests waiting for approval.",
+          title: `${data.pendingAccessRequests} ${t("thisWeek.accessRequestsPending")}`,
+          description: t("thisWeek.accessRequestsDescription"),
           actionHref: routes.serve,
-          actionLabel: "Review now",
+          actionLabel: t("thisWeek.reviewNow"),
           tone: "info" as const,
           icon: <UserPlusIcon className="h-4 w-4" />
         }
@@ -197,10 +197,10 @@ export default async function ThisWeekAdminView({
     data.pendingEventRequests > 0
       ? {
           id: "event-requests",
-          title: `${data.pendingEventRequests} event request${data.pendingEventRequests === 1 ? "" : "s"} pending`,
-          description: "Review calendar event requests awaiting approval.",
+          title: `${data.pendingEventRequests} ${t("thisWeek.eventRequestsPending")}`,
+          description: t("thisWeek.eventRequestsDescription"),
           actionHref: routes.calendar,
-          actionLabel: "Review now",
+          actionLabel: t("thisWeek.reviewNow"),
           tone: "accent" as const,
           icon: <AlertCircleIcon className="h-4 w-4" />
         }
@@ -244,21 +244,21 @@ export default async function ThisWeekAdminView({
 
   const announcementsSummary =
     publishedAnnouncements.length > 0
-      ? `Latest: ${publishedAnnouncements[0]?.title ?? "Parish update"}`
+      ? `${t("thisWeek.latestPrefix")}: ${publishedAnnouncements[0]?.title ?? t("thisWeek.parishUpdate")}`
       : t("empty.noAnnouncements");
   const servicesSummary =
     upcomingEvents.length > 0
-      ? `Next: ${formatDayDate(upcomingEvents[0].startsAt)}`
+      ? `${t("thisWeek.nextPrefix")}: ${formatDayDate(upcomingEvents[0].startsAt)}`
       : t("empty.nothingScheduled");
   const communitySummary =
     data.memberGroups.length > 0
-      ? `${data.memberGroups.length} group${data.memberGroups.length === 1 ? "" : "s"} joined`
-      : "Find your community";
+      ? `${data.memberGroups.length} ${t("thisWeek.groupsJoined")}`
+      : t("thisWeek.findYourCommunity");
 
   const opportunitiesSummary =
     data.tasks.length > 0
       ? `\u{1F7E2} ${tasksDone}  \u00B7  \u{1F7E1} ${tasksInProgress}  \u00B7  \u{1F535} ${tasksOpen}`
-      : "Ways to help";
+      : t("thisWeek.waysToHelp");
 
   const hasGratitudeItems =
     data.gratitudeSpotlight.enabled && data.gratitudeSpotlight.items.length > 0;
@@ -269,13 +269,13 @@ export default async function ThisWeekAdminView({
     <div className="space-y-6 overflow-x-hidden">
       {/* Warm hero header — shared with parishioner, with quick-add "+" for leaders */}
       <ParishionerHeader
-        parishName={parishName}
+        parishName={parishName ?? t("common.myParishNameFallback")}
         parishLogoUrl={parishLogoUrl}
         userName={userName}
         actions={viewToggle}
         showQuickAdd
-        quote="Be watchful, stand firm in the faith, act like men, be strong."
-        quoteSource="1 Corinthians 16:13"
+        quote={t("thisWeek.adminHeaderQuote")}
+        quoteSource={t("thisWeek.adminHeaderQuoteSource")}
       />
 
       {/* Quick blocks — identical to parishioner view */}
@@ -283,7 +283,7 @@ export default async function ThisWeekAdminView({
         blocks={[
           {
             id: "announcements",
-            label: "Announcements",
+            label: t("nav.announcements"),
             href: routes.announcements,
             summary: announcementsSummary,
             count: publishedAnnouncements.length,
@@ -292,7 +292,7 @@ export default async function ThisWeekAdminView({
           },
           {
             id: "services",
-            label: "Services",
+            label: t("thisWeek.services"),
             href: routes.calendar,
             summary: servicesSummary,
             count: upcomingEvents.length,
@@ -301,7 +301,7 @@ export default async function ThisWeekAdminView({
           },
           {
             id: "community",
-            label: "Community",
+            label: t("thisWeek.community"),
             href: routes.groups,
             summary: communitySummary,
             count: data.memberGroups.length,
@@ -310,7 +310,7 @@ export default async function ThisWeekAdminView({
           },
           {
             id: "opportunities",
-            label: "Opportunities",
+            label: t("thisWeek.opportunities"),
             href: `${routes.serve}?view=opportunities`,
             summary: opportunitiesSummary,
             count: data.tasks.length,
@@ -334,10 +334,11 @@ export default async function ThisWeekAdminView({
       {/* Serve */}
       <section className="space-y-2">
         <SectionHeader
-          title="Serve"
+          title={t("nav.serve")}
           count={activeTaskCount}
-          countLabel="active"
+          countLabel={t("thisWeek.active")}
           href={routes.serve}
+          linkLabel={t("landing.viewAll")}
         />
         {activeTasks.length > 0 ? (
           <div className="space-y-2">
@@ -354,15 +355,15 @@ export default async function ThisWeekAdminView({
               <HandHeartIcon className="h-5 w-5" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-rose-800">Create a serve item</p>
-              <p className="text-xs text-rose-600">Add tasks for your ministry team this week.</p>
+              <p className="text-sm font-semibold text-rose-800">{t("thisWeek.createServeItem")}</p>
+              <p className="text-xs text-rose-600">{t("thisWeek.createServeItemDescription")}</p>
             </div>
             <span className="text-sm text-rose-400">&rarr;</span>
           </Link>
         )}
         {activeTasks.length > 3 && (
           <Link href={routes.serve} className="block pt-1 text-center text-xs font-medium text-primary-600 hover:text-primary-700">
-            +{activeTasks.length - 3} more
+            +{activeTasks.length - 3} {t("thisWeek.more")}
           </Link>
         )}
       </section>
@@ -370,10 +371,11 @@ export default async function ThisWeekAdminView({
       {/* Events */}
       <section className="space-y-2">
         <SectionHeader
-          title="Events"
+          title={t("thisWeek.events")}
           count={upcomingEvents.length}
-          countLabel="upcoming"
+          countLabel={t("thisWeek.upcoming")}
           href={routes.calendar}
+          linkLabel={t("landing.viewAll")}
         />
         {upcomingEvents.length > 0 ? (
           <div className="space-y-2">
@@ -390,15 +392,15 @@ export default async function ThisWeekAdminView({
               <CalendarIcon className="h-5 w-5" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-emerald-800">Schedule an event</p>
-              <p className="text-xs text-emerald-600">Add services, rehearsals, or gatherings.</p>
+              <p className="text-sm font-semibold text-emerald-800">{t("thisWeek.scheduleEvent")}</p>
+              <p className="text-xs text-emerald-600">{t("thisWeek.scheduleEventDescription")}</p>
             </div>
             <span className="text-sm text-emerald-400">&rarr;</span>
           </Link>
         )}
         {upcomingEvents.length > 3 && (
           <Link href={routes.calendar} className="block pt-1 text-center text-xs font-medium text-primary-600 hover:text-primary-700">
-            +{upcomingEvents.length - 3} more
+            +{upcomingEvents.length - 3} {t("thisWeek.more")}
           </Link>
         )}
       </section>
@@ -406,15 +408,16 @@ export default async function ThisWeekAdminView({
       {/* Announcements */}
       <section className="space-y-2">
         <SectionHeader
-          title="Announcements"
+          title={t("nav.announcements")}
           count={data.announcements.length}
-          countLabel={data.announcements.length === 1 ? "announcement" : "announcements"}
+          countLabel={data.announcements.length === 1 ? t("thisWeek.announcement") : t("nav.announcements").toLowerCase()}
           href={routes.announcements}
+          linkLabel={t("landing.viewAll")}
         />
         {data.announcements.length > 0 ? (
           <div className="space-y-2">
             {data.announcements.slice(0, 3).map((item) => (
-              <AnnouncementRow key={item.id} item={item} />
+              <AnnouncementRow key={item.id} item={item} t={t} />
             ))}
           </div>
         ) : (
@@ -426,8 +429,8 @@ export default async function ThisWeekAdminView({
               <MegaphoneIcon className="h-5 w-5" />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-amber-800">Create an announcement</p>
-              <p className="text-xs text-amber-600">Share updates, news, or reminders with your parish.</p>
+              <p className="text-sm font-semibold text-amber-800">{t("thisWeek.createAnnouncement")}</p>
+              <p className="text-xs text-amber-600">{t("thisWeek.createAnnouncementDescription")}</p>
             </div>
             <span className="text-sm text-amber-400">&rarr;</span>
           </Link>

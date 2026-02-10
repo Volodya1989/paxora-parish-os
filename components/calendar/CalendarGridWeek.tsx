@@ -7,6 +7,7 @@ import { formatRecurrenceSummary } from "@/lib/events/recurrence";
 import type { CalendarEvent } from "@/lib/queries/events";
 import EventChip from "@/components/calendar/EventChip";
 import { formatTime } from "@/lib/this-week/formatters";
+import { useTranslations } from "@/lib/i18n/provider";
 
 type CalendarGridWeekProps = {
   days: Date[];
@@ -25,6 +26,7 @@ export default function CalendarGridWeek({
   selectedEventId,
   onSelectEvent
 }: CalendarGridWeekProps) {
+  const t = useTranslations();
   const todayKey = getDateKey(today);
 
   const dayEntries = days.map((day, index) => ({
@@ -78,7 +80,7 @@ export default function CalendarGridWeek({
                 </div>
                 {isToday ? (
                   <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                    Today
+                    {t("calendar.today")}
                   </span>
                 ) : null}
               </div>

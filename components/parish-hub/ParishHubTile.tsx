@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { SVGProps } from "react";
 import { cn } from "@/lib/ui/cn";
+import { useTranslations } from "@/lib/i18n/provider";
 import {
   BulletinIcon,
   MassTimesIcon,
@@ -150,8 +151,10 @@ const iconConfigMap: Record<ParishHubIcon, IconConfig> = {
 };
 
 export default function ParishHubTile({ item }: ParishHubTileProps) {
+  const t = useTranslations();
   const config = iconConfigMap[item.icon] ?? iconConfigMap.BULLETIN;
   const { Icon, bgColor, iconColor, hoverBg, borderColor } = config;
+  const label = t(`parishHub.icons.${item.icon}`);
 
   const tileContent = (
     <div
@@ -176,7 +179,7 @@ export default function ParishHubTile({ item }: ParishHubTileProps) {
 
       {/* Label */}
       <span className="line-clamp-2 text-sm font-medium text-ink-700 transition-colors group-hover:text-ink-900">
-        {item.label}
+        {label === `parishHub.icons.${item.icon}` ? item.label : label}
       </span>
 
       {/* Subtle accent line at bottom on hover */}

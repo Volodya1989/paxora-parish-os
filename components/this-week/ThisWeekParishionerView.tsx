@@ -36,12 +36,13 @@ type ThisWeekParishionerViewProps = {
 export default async function ThisWeekParishionerView({
   data,
   viewToggle,
-  parishName = "Mother of God Ukrainian Catholic Church",
+  parishName,
   parishLogoUrl,
   userName
 }: ThisWeekParishionerViewProps) {
   const locale = await getLocaleFromCookies();
   const t = getTranslations(locale);
+  const resolvedParishName = parishName ?? t("common.myParishNameFallback");
 
   // Filter and sort announcements
   const publishedAnnouncements = [...data.announcements]
@@ -72,16 +73,16 @@ export default async function ThisWeekParishionerView({
   // Generate summaries for quick blocks
   const announcementsSummary =
     publishedAnnouncements.length > 0
-      ? `Latest: ${publishedAnnouncements[0]?.title ?? "Parish update"}`
+      ? `${t("thisWeek.latestPrefix")}: ${publishedAnnouncements[0]?.title ?? t("thisWeek.parishUpdate")}`
       : t("empty.noAnnouncements");
   const servicesSummary =
     upcomingEvents.length > 0
-      ? `Next: ${formatDayDate(upcomingEvents[0].startsAt)}`
+      ? `${t("thisWeek.nextPrefix")}: ${formatDayDate(upcomingEvents[0].startsAt)}`
       : t("empty.nothingScheduled");
   const communitySummary =
     data.memberGroups.length > 0
-      ? `${data.memberGroups.length} group${data.memberGroups.length === 1 ? "" : "s"} joined`
-      : "Find your community";
+      ? `${data.memberGroups.length} ${t("thisWeek.groupsJoined")}`
+      : t("thisWeek.findYourCommunity");
 
   // Opportunities: count by status
   const tasksDone = sortedTasks.filter((t) => t.status === "DONE").length;
@@ -90,7 +91,7 @@ export default async function ThisWeekParishionerView({
   const opportunitiesSummary =
     sortedTasks.length > 0
       ? `🟢 ${tasksDone}  ·  🟡 ${tasksInProgress}  ·  🔵 ${tasksOpen}`
-      : "Ways to help";
+      : t("thisWeek.waysToHelp");
 
   // Check if gratitude spotlight has actual content
   const hasGratitudeItems = data.gratitudeSpotlight.enabled && data.gratitudeSpotlight.items.length > 0;
@@ -98,13 +99,13 @@ export default async function ThisWeekParishionerView({
   return (
     <div className="space-y-6 overflow-x-hidden">
       {/* Clean, welcoming header with personalized greeting */}
-      <ParishionerHeader
-        parishName={parishName}
+        <ParishionerHeader
+        parishName={resolvedParishName}
         parishLogoUrl={parishLogoUrl}
         userName={userName}
         actions={viewToggle}
-        quote="Teach us to number our days, that we may gain a heart of wisdom."
-        quoteSource="Psalm 90:12"
+        quote={t("thisWeek.headerQuote")}
+        quoteSource={t("thisWeek.headerQuoteSource")}
       />
 
       {/* Hero Section: Four Main Action Tiles */}
@@ -112,7 +113,7 @@ export default async function ThisWeekParishionerView({
         blocks={[
           {
             id: "announcements",
-            label: "Announcements",
+            label: t("nav.announcements"),
             href: routes.announcements,
             summary: announcementsSummary,
             count: publishedAnnouncements.length,
@@ -121,7 +122,7 @@ export default async function ThisWeekParishionerView({
           },
           {
             id: "services",
-            label: "Services",
+            label: t("thisWeek.services"),
             href: routes.calendar,
             summary: servicesSummary,
             count: upcomingEvents.length,
@@ -130,7 +131,7 @@ export default async function ThisWeekParishionerView({
           },
           {
             id: "community",
-            label: "Community",
+            label: t("thisWeek.community"),
             href: routes.groups,
             summary: communitySummary,
             count: data.memberGroups.length,
@@ -139,7 +140,7 @@ export default async function ThisWeekParishionerView({
           },
           {
             id: "opportunities",
-            label: "Opportunities",
+            label: t("thisWeek.opportunities"),
             href: `${routes.serve}?view=opportunities`,
             summary: opportunitiesSummary,
             count: sortedTasks.length,
@@ -154,18 +155,17 @@ export default async function ThisWeekParishionerView({
         <Card className="flex flex-wrap items-center justify-between gap-4 border-amber-200 bg-amber-50/70">
           <div className="space-y-0.5">
             <p className="font-medium text-amber-800">
-              {data.pendingTaskApprovals} approval
-              {data.pendingTaskApprovals === 1 ? "" : "s"} needed
+              {data.pendingTaskApprovals} {t("thisWeek.approvalsNeeded")}
             </p>
             <p className="text-sm text-amber-700">
-              Review member-submitted serve items awaiting approval.
+              {t("thisWeek.approvalsDescription")}
             </p>
           </div>
           <Link
             href={`${routes.serve}?view=opportunities`}
             className="rounded-button bg-amber-200 px-3 py-1.5 text-sm font-medium text-amber-900 transition-colors hover:bg-amber-300"
           >
-            Review now
+            {t("thisWeek.reviewNow")}
           </Link>
         </Card>
       )}

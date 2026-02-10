@@ -1,6 +1,7 @@
 import React from "react";
 import Card, { CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { SignOutButton } from "@/components/navigation/SignOutButton";
+import { useTranslations } from "@/lib/i18n/provider";
 
 type ProfileCardProps = {
   name: string | null;
@@ -8,42 +9,40 @@ type ProfileCardProps = {
   role?: string | null;
 };
 
-const roleLabels: Record<string, string> = {
-  ADMIN: "Admin",
-  SHEPHERD: "Clergy",
-  MEMBER: "Parishioner"
-};
-
-const formatRole = (role?: string | null) => {
+const formatRole = (role: string | null | undefined, t: (key: string) => string) => {
   if (!role) return null;
-  return roleLabels[role] ?? role;
+  if (role === "ADMIN") return t("profile.roles.admin");
+  if (role === "SHEPHERD") return t("profile.roles.clergy");
+  if (role === "MEMBER") return t("profile.roles.parishioner");
+  return role;
 };
 
 export function ProfileCard({ name, email, role }: ProfileCardProps) {
-  const displayRole = formatRole(role);
+  const t = useTranslations();
+  const displayRole = formatRole(role, t);
 
   return (
     <Card>
       <div className="space-y-6">
         <CardHeader>
-          <CardTitle>Account overview</CardTitle>
+          <CardTitle>{t("profile.accountOverview")}</CardTitle>
           <CardDescription>
-            Review your identity and sign-in details for this parish.
+            {t("profile.accountOverviewDescription")}
           </CardDescription>
         </CardHeader>
 
         <dl className="grid gap-4 sm:grid-cols-2">
           <div>
-            <dt className="text-sm text-ink-500">Name</dt>
-            <dd className="text-sm font-medium text-ink-900">{name ?? "Unnamed member"}</dd>
+            <dt className="text-sm text-ink-500">{t("profile.name")}</dt>
+            <dd className="text-sm font-medium text-ink-900">{name ?? t("profile.unnamedMember")}</dd>
           </div>
           <div>
-            <dt className="text-sm text-ink-500">Email</dt>
+            <dt className="text-sm text-ink-500">{t("profile.email")}</dt>
             <dd className="break-all text-sm font-medium text-ink-900">{email}</dd>
           </div>
           {displayRole ? (
             <div>
-              <dt className="text-sm text-ink-500">Parish role</dt>
+              <dt className="text-sm text-ink-500">{t("profile.parishRole")}</dt>
               <dd className="text-sm font-medium text-ink-900">{displayRole}</dd>
             </div>
           ) : null}
@@ -51,8 +50,8 @@ export function ProfileCard({ name, email, role }: ProfileCardProps) {
 
         <div className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-mist-200 bg-mist-50/60 p-4">
           <div>
-            <p className="text-sm font-medium text-ink-900">Sign out of this device</p>
-            <p className="text-sm text-ink-500">You can sign in again anytime.</p>
+            <p className="text-sm font-medium text-ink-900">{t("profile.signOutDevice")}</p>
+            <p className="text-sm text-ink-500">{t("profile.signOutDeviceDescription")}</p>
           </div>
           <div className="w-full sm:w-40">
             <SignOutButton />

@@ -106,7 +106,7 @@ export default function GroupsSection({ groups, hasPublicGroups, className }: Gr
               href={routes.groups}
               className="block py-2 text-center text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline"
             >
-              +{groups.length - 4} more groups
+              +{groups.length - 4} {t("thisWeek.moreGroups")}
             </Link>
           )}
         </div>

@@ -15,13 +15,13 @@ const visibilityTone: Record<CalendarEvent["visibility"], "neutral" | "warning">
   PRIVATE: "warning"
 };
 
-function formatDayLabel(date: Date, now: Date) {
+function formatDayLabel(date: Date, now: Date, t: (key: string) => string) {
   const todayKey = getDateKey(now);
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
   const dateKey = getDateKey(date);
-  if (dateKey === todayKey) return "Today";
-  if (dateKey === getDateKey(tomorrow)) return "Tomorrow";
+  if (dateKey === todayKey) return t("calendar.today");
+  if (dateKey === getDateKey(tomorrow)) return t("calendar.tomorrow");
   return date.toLocaleDateString("en-US", {
     weekday: "long",
     month: "short",
@@ -73,10 +73,10 @@ function ScheduleDaySection({
       {/* Day header */}
       <div className="flex items-center justify-between gap-3">
         <span className="rounded-full bg-mist-100 px-2.5 py-1 text-[0.7rem] font-semibold uppercase tracking-wide text-ink-700">
-          {formatDayLabel(dayDate, now)}
+          {formatDayLabel(dayDate, now, t)}
         </span>
         <span className="text-xs text-ink-400">
-          {dayEvents.length} scheduled
+          {dayEvents.length} {t("calendar.scheduled")}
         </span>
       </div>
 
@@ -107,17 +107,17 @@ function ScheduleDaySection({
                           : "bg-sky-50 text-sky-700"
                       }
                     >
-                      {event.type === "SERVICE" ? "Service" : "Event"}
+                      {event.type === "SERVICE" ? t("calendar.service") : t("calendar.event")}
                     </Badge>
                     {event.recurrenceFreq !== "NONE" ? (
-                      <Badge tone="neutral">Repeats</Badge>
+                      <Badge tone="neutral">{t("calendar.repeats")}</Badge>
                     ) : null}
                     {isEditor ? (
                       <Badge tone={visibilityTone[event.visibility]}>
                         {event.visibility === "PUBLIC"
                           ? t("common.public")
                           : event.visibility === "GROUP"
-                            ? "Group"
+                            ? t("calendar.group")
                             : t("common.private")}
                       </Badge>
                     ) : event.visibility !== "PUBLIC" ? (
@@ -125,13 +125,13 @@ function ScheduleDaySection({
                         className="text-xs text-ink-400"
                         title={
                           event.visibility === "GROUP"
-                            ? "Group-only"
-                            : "Private to leaders"
+                            ? t("calendar.groupOnly")
+                            : t("calendar.privateToLeaders")
                         }
                         aria-label={
                           event.visibility === "GROUP"
-                            ? "Group-only"
-                            : "Private to leaders"
+                            ? t("calendar.groupOnly")
+                            : t("calendar.privateToLeaders")
                         }
                       >
                         ●
@@ -168,7 +168,7 @@ function ScheduleDaySection({
                   ) : null}
                   {(event.rsvpTotalCount ?? 0) > 0 ? (
                     <span>
-                      {event.rsvpTotalCount} {event.rsvpTotalCount === 1 ? "RSVP" : "RSVPs"}
+                      {event.rsvpTotalCount} {event.rsvpTotalCount === 1 ? t("calendar.rsvp") : t("calendar.rsvps")}
                     </span>
                   ) : null}
                 </div>
@@ -213,7 +213,7 @@ export default function ScheduleView({ events, now, isEditor, onSelectEvent }: S
           className="text-xs font-semibold uppercase tracking-wide text-primary-700"
           onClick={() => setShowPast((prev) => !prev)}
         >
-          {showPast ? "Hide past events" : "Show past events"} ({pastEventCount})
+          {showPast ? t("calendar.hidePastEvents") : t("calendar.showPastEvents")} ({pastEventCount})
         </button>
       )}
 
@@ -249,7 +249,7 @@ export default function ScheduleView({ events, now, isEditor, onSelectEvent }: S
       ) : (
         !showPast && pastKeys.length > 0 ? (
           <div className="rounded-card border border-mist-100 bg-mist-50 px-4 py-3 text-sm text-ink-500">
-            No more events scheduled. Check back next week!
+            {t("calendar.noMoreEvents")}
           </div>
         ) : null
       )}

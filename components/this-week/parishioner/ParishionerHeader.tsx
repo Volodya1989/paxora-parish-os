@@ -50,13 +50,18 @@ export default function ParishionerHeader({
 
   // Use state to prevent hydration mismatch - start with generic greeting
   // then update to time-based greeting on client
-  const [greeting, setGreeting] = useState("Welcome");
+  const [greeting, setGreeting] = useState(t("thisWeek.greetingFallback"));
 
   useEffect(() => {
     const hour = new Date().getHours();
-    const timeGreeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+    const timeGreeting =
+      hour < 12
+        ? t("thisWeek.goodMorning")
+        : hour < 17
+          ? t("thisWeek.goodAfternoon")
+          : t("thisWeek.goodEvening");
     setGreeting(timeGreeting);
-  }, []);
+  }, [t]);
 
   return (
     <>
@@ -86,7 +91,7 @@ export default function ParishionerHeader({
                 type="button"
                 onClick={() => setQuickAddOpen(true)}
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm transition hover:bg-white/30"
-                aria-label="Quick add"
+                aria-label={t("thisWeek.quickAdd")}
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5" aria-hidden="true">
                   <path d="M12 5v14" />
@@ -129,15 +134,15 @@ export default function ParishionerHeader({
       {/* Quick-add modal/drawer for leaders */}
       {showQuickAdd && (
         <>
-          <Modal open={quickAddOpen} onClose={() => setQuickAddOpen(false)} title="Quick add">
+          <Modal open={quickAddOpen} onClose={() => setQuickAddOpen(false)} title={t("thisWeek.quickAdd")}>
             <p className="mb-4 text-sm text-ink-500">
-              Create something new without leaving the weekly overview.
+              {t("thisWeek.quickAddDescription")}
             </p>
             <QuickActions onSelect={() => setQuickAddOpen(false)} />
           </Modal>
-          <Drawer open={quickAddOpen} onClose={() => setQuickAddOpen(false)} title="Quick add">
+          <Drawer open={quickAddOpen} onClose={() => setQuickAddOpen(false)} title={t("thisWeek.quickAdd")}>
             <p className="mb-4 text-sm text-ink-500">
-              Create something new without leaving the weekly overview.
+              {t("thisWeek.quickAddDescription")}
             </p>
             <QuickActions onSelect={() => setQuickAddOpen(false)} />
           </Drawer>
