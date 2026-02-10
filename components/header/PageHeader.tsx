@@ -97,6 +97,11 @@ export default function PageHeader({
               </svg>
             </button>
           ) : null}
+          <img
+            src="/icon.png"
+            alt="Paxora logo"
+            className="h-6 w-6 md:h-8 md:w-8"
+          />
           <span>{parishName}</span>
         </div>
         <div className="flex items-center gap-1.5">

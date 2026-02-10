@@ -60,9 +60,16 @@ export function AppHeader({ parishRole }: AppHeaderProps) {
 
   return (
     <header className="flex flex-wrap items-center justify-between gap-4 border-b border-mist-200 bg-white/70 px-4 py-4 shadow-card md:px-8">
-      <div className="space-y-1">
-        <p className="text-caption uppercase tracking-wide text-ink-400">{t("header.appTitle")}</p>
-        <h1 className="text-h2">{t(getPageTitleKey(pathname))}</h1>
+      <div className="flex items-center gap-3">
+        <img
+          src="/icon.png"
+          alt="Paxora logo"
+          className="h-6 w-6 md:h-8 md:w-8"
+        />
+        <div className="space-y-1">
+          <p className="text-caption uppercase tracking-wide text-ink-400">{t("header.appTitle")}</p>
+          <h1 className="text-h2">{t(getPageTitleKey(pathname))}</h1>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">

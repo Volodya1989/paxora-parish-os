@@ -11,6 +11,7 @@ type SignOutButtonProps = {
   className?: string;
   label?: string;
   onSignOut?: () => Promise<void> | void;
+  onBeforeSignOut?: () => void;
   icon?: string;
   compact?: boolean;
 };
@@ -37,6 +38,7 @@ export function SignOutButton({
   className = "",
   label,
   onSignOut,
+  onBeforeSignOut,
   icon = "SO",
   compact = false
 }: SignOutButtonProps) {
@@ -50,6 +52,7 @@ export function SignOutButton({
       return;
     }
 
+    onBeforeSignOut?.();
     setIsLoading(true);
     try {
       const handler = buildSignOutHandler(onSignOut, () => defaultSignOut(locale));

@@ -64,9 +64,16 @@ export default function ParishionerHeader({
 
         {/* Top bar with controls */}
         <div className="relative mb-2 flex items-center justify-between">
-          <div className="flex items-center gap-2 rounded-full bg-white/20 px-2.5 py-1 backdrop-blur-sm">
-            <SparklesIcon className="h-3 w-3" />
-            <span className="text-xs font-medium">{t("landing.welcome")}</span>
+          <div className="flex items-center gap-2">
+            <img
+              src="/icon.png"
+              alt="Paxora logo"
+              className="h-6 w-6 md:h-8 md:w-8"
+            />
+            <div className="flex items-center gap-2 rounded-full bg-white/20 px-2.5 py-1 backdrop-blur-sm">
+              <SparklesIcon className="h-3 w-3" />
+              <span className="text-xs font-medium">{t("landing.welcome")}</span>
+            </div>
           </div>
           <div className="flex items-center gap-1.5">
             {showQuickAdd && (

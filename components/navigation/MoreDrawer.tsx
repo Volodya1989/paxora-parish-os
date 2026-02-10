@@ -67,6 +67,7 @@ export function MoreDrawer({ open, onClose, onSignOut, parishRole, platformRole 
               key={item.href}
               href={item.href}
               ref={index === 0 ? firstItemRef : undefined}
+              onClick={onClose}
               className="flex items-center justify-between rounded-card border border-mist-200 bg-mist-50 px-4 py-3 text-sm font-medium text-ink-800 shadow-card transition hover:bg-mist-100 focus-ring"
             >
               <span>{t(item.labelKey)}</span>
@@ -75,7 +76,7 @@ export function MoreDrawer({ open, onClose, onSignOut, parishRole, platformRole 
               </span>
             </Link>
           ))}
-          <SignOutButton onSignOut={onSignOut} className="bg-white" />
+          <SignOutButton onSignOut={onSignOut} onBeforeSignOut={onClose} className="bg-white" />
         </div>
       </div>
     </div>
