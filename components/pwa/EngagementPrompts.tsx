@@ -67,8 +67,10 @@ export default function EngagementPrompts() {
 
     const handleAppInstalled = () => {
       markInstalledAt();
-      setIsStandalone(true);
       setA2hsOpen(false);
+      // Do not set isStandalone here — the user is still in the browser tab.
+      // isRunningStandalone() will return true on the next launch from the
+      // home screen, which is when we should prompt for notifications.
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);

@@ -428,7 +428,9 @@ export async function postMessage(
     channelName: channel.type === "GROUP" ? "Group Chat" : "Parish Chat",
     parishId,
     messageBody: trimmed || "Shared an image"
-  }).catch(() => {});
+  }).catch((error) => {
+    console.error("[chat] Failed to create in-app notification:", error);
+  });
 
   return result;
 }

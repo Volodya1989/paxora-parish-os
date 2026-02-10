@@ -156,7 +156,9 @@ export async function setAnnouncementPublished(input: {
         title: announcement.title,
         parishId,
         publisherId: userId
-      }).catch(() => {});
+      }).catch((error) => {
+        console.error("[announcements] Failed to create in-app notification:", error);
+      });
     }
   }
 
@@ -284,7 +286,9 @@ export async function createAnnouncement(input: {
       title: parsed.data.title,
       parishId,
       publisherId: userId
-    }).catch(() => {});
+    }).catch((error) => {
+      console.error("[announcements] Failed to create in-app notification:", error);
+    });
   }
 
   revalidatePath("/announcements");

@@ -155,7 +155,16 @@ export function shouldShowA2HS(sessionCount: number, isStandalone: boolean): boo
     return false;
   }
 
+  // Don't prompt on the very first visit; let the user explore first
+  if (sessionCount < 2) {
+    return false;
+  }
+
   const state = readState(A2HS_PROMPT_KEY);
+  if (state.neverAskAgain) {
+    return false;
+  }
+
   if (!state.lastShownAt) {
     return true;
   }
