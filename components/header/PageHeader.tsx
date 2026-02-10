@@ -104,7 +104,8 @@ export default function PageHeader({
           <img
             src={logoSrc}
             alt={`${parishName} logo`}
-            className="h-6 w-6 md:h-8 md:w-8"
+            className="h-6 w-6 object-contain md:h-8 md:w-8"
+            onError={(e) => { e.currentTarget.src = "/icon.png"; }}
           />
           <span>{parishName}</span>
         </div>

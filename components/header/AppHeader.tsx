@@ -66,7 +66,8 @@ export function AppHeader({ parishRole, parishLogoUrl }: AppHeaderProps) {
         <img
           src={logoSrc}
           alt="Parish logo"
-          className="h-6 w-6 md:h-8 md:w-8"
+          className="h-6 w-6 object-contain md:h-8 md:w-8"
+          onError={(e) => { e.currentTarget.src = "/icon.png"; }}
         />
         <div className="space-y-1">
           <p className="text-caption uppercase tracking-wide text-ink-400">{t("header.appTitle")}</p>
