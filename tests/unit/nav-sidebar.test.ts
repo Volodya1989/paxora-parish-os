@@ -17,7 +17,7 @@ test("Sidebar renders primary nav with This Week first and active state", () => 
   assert.match(markup, /<nav[^>]*aria-label="Primary"/);
   assert.match(
     markup,
-    /href="\/this-week"[^>]*aria-current="page"|aria-current="page"[^>]*href="\/this-week"/
+    /href="\/(?:[a-z]{2}\/)?this-week"[^>]*aria-current="page"|aria-current="page"[^>]*href="\/(?:[a-z]{2}\/)?this-week"/
   );
   assert.match(markup, /Profile/);
   assert.match(markup, /Sign out/);
