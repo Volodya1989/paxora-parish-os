@@ -67,15 +67,15 @@ export default function ParishionerHeader({
         <div className="absolute right-1/3 top-1/2 h-8 w-8 rounded-full bg-white/5" />
 
         {/* Top bar with controls */}
-        <div className="relative mb-2 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="relative mb-2 flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <img
               src={logoSrc}
               alt={`${parishName} logo`}
-              className="h-6 w-6 object-contain md:h-8 md:w-8"
+              className="h-10 w-10 shrink-0 object-contain md:h-12 md:w-12"
               onError={(e) => { e.currentTarget.src = "/icon.png"; }}
             />
-            <div className="flex items-center gap-2 rounded-full bg-white/20 px-2.5 py-1 backdrop-blur-sm">
+            <div className="flex min-w-0 items-center gap-2 rounded-full bg-white/20 px-2.5 py-1 backdrop-blur-sm">
               <SparklesIcon className="h-3 w-3" />
               <span className="text-xs font-medium">{t("landing.welcome")}</span>
             </div>
