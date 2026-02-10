@@ -72,7 +72,8 @@ export default function ParishionerHeader({
             <img
               src={logoSrc}
               alt={`${parishName} logo`}
-              className="h-6 w-6 md:h-8 md:w-8"
+              className="h-6 w-6 object-contain md:h-8 md:w-8"
+              onError={(e) => { e.currentTarget.src = "/icon.png"; }}
             />
             <div className="flex items-center gap-2 rounded-full bg-white/20 px-2.5 py-1 backdrop-blur-sm">
               <SparklesIcon className="h-3 w-3" />
