@@ -23,10 +23,12 @@ import {
   formatTime,
 } from "@/lib/this-week/formatters";
 import { getNow } from "@/lib/time/getNow";
-import { getLocaleFromCookies, getTranslations } from "@/lib/i18n/server";
+import { getTranslations } from "@/lib/i18n/server";
+import type { Locale } from "@/lib/i18n/config";
 
 type ThisWeekAdminViewProps = {
   data: ThisWeekData;
+  locale: Locale;
   viewToggle?: ReactNode;
   spotlightAdmin?: {
     settings: {
@@ -161,13 +163,13 @@ function SectionHeader({ title, count, countLabel, href, linkLabel = "View all" 
 
 export default async function ThisWeekAdminView({
   data,
+  locale,
   viewToggle,
   spotlightAdmin,
   parishName = "Mother of God Ukrainian Catholic Church",
   parishLogoUrl,
   userName
 }: ThisWeekAdminViewProps) {
-  const locale = await getLocaleFromCookies();
   const t = getTranslations(locale);
 
   // Build alerts for pending admin actions
@@ -244,21 +246,18 @@ export default async function ThisWeekAdminView({
 
   const announcementsSummary =
     publishedAnnouncements.length > 0
-      ? `Latest: ${publishedAnnouncements[0]?.title ?? "Parish update"}`
-      : t("empty.noAnnouncements");
+      ? `${t("thisWeek.latestPrefix")} ${publishedAnnouncements[0]?.title ?? t("thisWeek.announcements")}`
+      : t("thisWeek.allRead");
   const servicesSummary =
     upcomingEvents.length > 0
-      ? `Next: ${formatDayDate(upcomingEvents[0].startsAt)}`
+      ? `${t("thisWeek.nextPrefix")} ${formatDayDate(upcomingEvents[0].startsAt, locale)}`
       : t("empty.nothingScheduled");
-  const communitySummary =
-    data.memberGroups.length > 0
-      ? `${data.memberGroups.length} group${data.memberGroups.length === 1 ? "" : "s"} joined`
-      : "Find your community";
+  const communitySummary = getJoinedGroupsSummary({ count: data.memberGroups.length, locale, t });
 
   const opportunitiesSummary =
     data.tasks.length > 0
       ? `\u{1F7E2} ${tasksDone}  \u00B7  \u{1F7E1} ${tasksInProgress}  \u00B7  \u{1F535} ${tasksOpen}`
-      : "Ways to help";
+      : t("thisWeek.waysToHelp");
 
   const hasGratitudeItems =
     data.gratitudeSpotlight.enabled && data.gratitudeSpotlight.items.length > 0;
@@ -274,8 +273,8 @@ export default async function ThisWeekAdminView({
         userName={userName}
         actions={viewToggle}
         showQuickAdd
-        quote="Be watchful, stand firm in the faith, act like men, be strong."
-        quoteSource="1 Corinthians 16:13"
+        quote={t("thisWeek.quote")}
+        quoteSource={t("thisWeek.quoteSource")}
       />
 
       {/* Quick blocks — identical to parishioner view */}
@@ -283,7 +282,7 @@ export default async function ThisWeekAdminView({
         blocks={[
           {
             id: "announcements",
-            label: "Announcements",
+            label: t("thisWeek.announcements"),
             href: routes.announcements,
             summary: announcementsSummary,
             count: publishedAnnouncements.length,
@@ -292,7 +291,7 @@ export default async function ThisWeekAdminView({
           },
           {
             id: "services",
-            label: "Services",
+            label: t("thisWeek.services"),
             href: routes.calendar,
             summary: servicesSummary,
             count: upcomingEvents.length,
@@ -301,7 +300,7 @@ export default async function ThisWeekAdminView({
           },
           {
             id: "community",
-            label: "Community",
+            label: t("thisWeek.community"),
             href: routes.groups,
             summary: communitySummary,
             count: data.memberGroups.length,
@@ -310,7 +309,7 @@ export default async function ThisWeekAdminView({
           },
           {
             id: "opportunities",
-            label: "Opportunities",
+            label: t("thisWeek.opportunities"),
             href: `${routes.serve}?view=opportunities`,
             summary: opportunitiesSummary,
             count: data.tasks.length,
@@ -444,4 +443,33 @@ export default async function ThisWeekAdminView({
       )}
     </div>
   );
+}
+
+
+function getJoinedGroupsSummary({
+  count,
+  locale,
+  t
+}: {
+  count: number;
+  locale: Locale;
+  t: (key: string) => string;
+}) {
+  if (count <= 0) {
+    return t("thisWeek.findCommunity");
+  }
+
+  if (locale === "uk") {
+    const mod10 = count % 10;
+    const mod100 = count % 100;
+    const suffix =
+      mod10 === 1 && mod100 !== 11
+        ? t("thisWeek.groupsJoinedOne")
+        : mod10 >= 2 && mod10 <= 4 && !(mod100 >= 12 && mod100 <= 14)
+          ? t("thisWeek.groupsJoinedFew")
+          : t("thisWeek.groupsJoinedMany");
+    return `${count} ${suffix}`;
+  }
+
+  return `${count} ${count === 1 ? t("thisWeek.groupsJoinedOne") : t("thisWeek.groupsJoinedMany")}`;
 }

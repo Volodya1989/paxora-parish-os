@@ -164,7 +164,14 @@
     "reviewNow": "Review now",
     "quickAdd": "Quick add",
     "quickAddDesc": "Create something new without leaving the weekly overview.",
-    "parishionerView": "Parishioner view"
+    "parishionerView": "Parishioner view",
+    "allRead": "All read",
+    "nextPrefix": "Next:",
+    "groupsJoinedOne": "group joined",
+    "groupsJoinedFew": "groups joined",
+    "groupsJoinedMany": "groups joined",
+    "adminView": "Admin view",
+    "latestPrefix": "Latest:"
   },
   "announcements": {
     "title": "Announcements",

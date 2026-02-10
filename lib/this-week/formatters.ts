@@ -1,12 +1,17 @@
 import { PARISH_TIMEZONE } from "@/lib/time/parish";
 
-export function formatDateRange(startsOn: Date, endsOn: Date) {
-  const start = startsOn.toLocaleDateString("en-US", {
+function toDateLocale(locale?: string) {
+  return locale === "uk" ? "uk-UA" : "en-US";
+}
+
+export function formatDateRange(startsOn: Date, endsOn: Date, locale?: string) {
+  const resolvedLocale = toDateLocale(locale);
+  const start = startsOn.toLocaleDateString(resolvedLocale, {
     month: "short",
     day: "numeric",
     timeZone: PARISH_TIMEZONE
   });
-  const end = new Date(endsOn.getTime() - 1).toLocaleDateString("en-US", {
+  const end = new Date(endsOn.getTime() - 1).toLocaleDateString(resolvedLocale, {
     month: "short",
     day: "numeric",
     timeZone: PARISH_TIMEZONE
@@ -14,8 +19,8 @@ export function formatDateRange(startsOn: Date, endsOn: Date) {
   return `${start} – ${end}`;
 }
 
-export function formatUpdatedLabel(now: Date) {
-  const time = now.toLocaleTimeString("en-US", {
+export function formatUpdatedLabel(now: Date, locale?: string) {
+  const time = now.toLocaleTimeString(toDateLocale(locale), {
     hour: "numeric",
     minute: "2-digit",
     timeZone: "UTC"
@@ -23,12 +28,13 @@ export function formatUpdatedLabel(now: Date) {
   return `Updated ${time}`;
 }
 
-export function formatEventTime(event: { startsAt: Date }) {
-  const date = event.startsAt.toLocaleDateString("en-US", {
+export function formatEventTime(event: { startsAt: Date }, locale?: string) {
+  const resolvedLocale = toDateLocale(locale);
+  const date = event.startsAt.toLocaleDateString(resolvedLocale, {
     weekday: "short",
     timeZone: PARISH_TIMEZONE
   });
-  const time = event.startsAt.toLocaleTimeString("en-US", {
+  const time = event.startsAt.toLocaleTimeString(resolvedLocale, {
     hour: "numeric",
     minute: "2-digit",
     timeZone: PARISH_TIMEZONE
@@ -36,16 +42,16 @@ export function formatEventTime(event: { startsAt: Date }) {
   return `${date} ${time}`;
 }
 
-export function formatShortDate(date: Date) {
-  return date.toLocaleDateString("en-US", {
+export function formatShortDate(date: Date, locale?: string) {
+  return date.toLocaleDateString(toDateLocale(locale), {
     month: "short",
     day: "numeric",
     timeZone: PARISH_TIMEZONE
   });
 }
 
-export function formatDayDate(date: Date) {
-  return date.toLocaleDateString("en-US", {
+export function formatDayDate(date: Date, locale?: string) {
+  return date.toLocaleDateString(toDateLocale(locale), {
     weekday: "short",
     month: "short",
     day: "numeric",
@@ -53,8 +59,8 @@ export function formatDayDate(date: Date) {
   });
 }
 
-export function formatTime(date: Date) {
-  return date.toLocaleTimeString("en-US", {
+export function formatTime(date: Date, locale?: string) {
+  return date.toLocaleTimeString(toDateLocale(locale), {
     hour: "numeric",
     minute: "2-digit",
     timeZone: PARISH_TIMEZONE

@@ -66,6 +66,7 @@ export default async function ThisWeekPage({
   return viewMode === "admin" ? (
     <ThisWeekAdminView
       data={data}
+      locale={locale}
       viewToggle={viewToggle}
       spotlightAdmin={spotlightAdmin}
       parishName={parishName}
@@ -75,6 +76,7 @@ export default async function ThisWeekPage({
   ) : (
     <ThisWeekParishionerView
       data={data}
+      locale={locale}
       weekSelection={weekSelection}
       now={now}
       viewToggle={viewToggle}
