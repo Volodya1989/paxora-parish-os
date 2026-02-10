@@ -24,6 +24,8 @@ export default function SignInPage() {
   const verifySent = searchParams.get("verify") === "sent";
   const verifySuccess = searchParams.get("verify") === "success";
   const returnTo = searchParams.get("returnTo");
+  const parishNameParam = searchParams.get("parishName");
+  const parishName = parishNameParam?.trim() ? parishNameParam.trim() : null;
 
   const safeReturnTo =
     returnTo && returnTo.startsWith("/") && !returnTo.includes("://") ? returnTo : null;
@@ -54,11 +56,20 @@ export default function SignInPage() {
         <img
           src="/icon.png"
           alt="Paxora logo"
-          className="mx-auto mb-5 h-24 w-24 object-contain md:h-28 md:w-28"
+          className="mx-auto mb-5 h-28 w-28 object-contain md:h-32 md:w-32"
         />
-        <SectionTitle title={t("nav.signIn")} subtitle="Welcome back to Paxora." />
+        <SectionTitle
+          title={t("nav.signIn")}
+          subtitle={
+            parishName
+              ? `Welcome back to your Paxora Parish Center — ${parishName}.`
+              : "Welcome back to your Paxora Parish Center."
+          }
+        />
         <p className="mt-3 text-sm text-ink-500">
-          Enter your parish account details to continue.
+          {parishName
+            ? `Enter your ${parishName} parish account details to continue.`
+            : "Enter your parish account details to continue."}
         </p>
         <form className="mt-6 space-y-5" onSubmit={onSubmit}>
           <div className="space-y-2">
@@ -161,7 +172,11 @@ export default function SignInPage() {
             className="text-ink-900 underline"
             href={buildLocalePathname(
               locale,
-              safeReturnTo ? `/sign-up?returnTo=${encodeURIComponent(safeReturnTo)}` : "/sign-up"
+              safeReturnTo
+                ? `/sign-up?returnTo=${encodeURIComponent(safeReturnTo)}${
+                    parishName ? `&parishName=${encodeURIComponent(parishName)}` : ""
+                  }`
+                : `/sign-up${parishName ? `?parishName=${encodeURIComponent(parishName)}` : ""}`
             )}
           >
             Create an account
