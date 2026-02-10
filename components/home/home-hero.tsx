@@ -10,11 +10,11 @@ import type {
 
 const MAX_HIGHLIGHTS = 2;
 
-function formatEventTime(event: HomeEventPreview) {
-  const day = event.startsAt.toLocaleDateString("en-US", {
+function formatEventTime(event: HomeEventPreview, locale: string) {
+  const day = event.startsAt.toLocaleDateString(locale, {
     weekday: "short"
   });
-  const time = event.startsAt.toLocaleTimeString("en-US", {
+  const time = event.startsAt.toLocaleTimeString(locale, {
     hour: "numeric",
     minute: "2-digit"
   });
@@ -22,12 +22,14 @@ function formatEventTime(event: HomeEventPreview) {
 }
 
 export type HomeHeroProps = {
+  locale: string;
   weekCompletion: HomeWeekCompletion;
   nextEvents: HomeEventPreview[];
   announcements: HomeAnnouncementPreview[];
 };
 
 export default function HomeHero({
+  locale,
   weekCompletion,
   nextEvents,
   announcements
@@ -49,7 +51,7 @@ export default function HomeHero({
           {showHighlights ? (
             <div className="space-y-1 text-xs text-ink-500">
               {highlightEvents.map((event) => (
-                <p key={event.id}>{`Next: ${event.title} · ${formatEventTime(event)}`}</p>
+                <p key={event.id}>{`Next: ${event.title} · ${formatEventTime(event, locale)}`}</p>
               ))}
               {highlightAnnouncements.map((announcement) => (
                 <p key={announcement.id}>{`Latest announcement: ${announcement.title}`}</p>

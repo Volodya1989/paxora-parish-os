@@ -13,6 +13,7 @@ const weekCompletion = {
 test("Home hero renders progress ring and completion chip", () => {
   const markup = renderToStaticMarkup(
     createElement(HomeHero, {
+      locale: "en",
       weekCompletion,
       nextEvents: [],
       announcements: []

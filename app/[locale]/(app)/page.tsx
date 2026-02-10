@@ -9,7 +9,8 @@ import HomeQuickNav from "@/components/home/home-quick-nav";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default async function HomePage() {
+export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
   const now = getNow();
   const [summary, rooms] = await Promise.all([
     getHomeSummary({ now }),
@@ -42,6 +43,7 @@ export default async function HomePage() {
 
         <section id="highlights" className="scroll-mt-24">
           <HomeHero
+            locale={locale}
             weekCompletion={summary.weekCompletion}
             nextEvents={summary.nextEvents}
             announcements={summary.announcements}
