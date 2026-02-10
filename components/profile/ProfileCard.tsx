@@ -26,31 +26,33 @@ export function ProfileCard({ name, email, role }: ProfileCardProps) {
     <Card>
       <div className="space-y-6">
         <CardHeader>
-          <CardTitle>Profile summary</CardTitle>
-          <CardDescription>Manage your account details and parish role.</CardDescription>
+          <CardTitle>Account overview</CardTitle>
+          <CardDescription>
+            Review your identity and sign-in details for this parish.
+          </CardDescription>
         </CardHeader>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <dl className="grid gap-4 sm:grid-cols-2">
           <div>
-            <p className="text-sm text-ink-500">Name</p>
-            <p className="text-sm font-medium text-ink-900">{name ?? "Unnamed member"}</p>
+            <dt className="text-sm text-ink-500">Name</dt>
+            <dd className="text-sm font-medium text-ink-900">{name ?? "Unnamed member"}</dd>
           </div>
           <div>
-            <p className="text-sm text-ink-500">Email</p>
-            <p className="text-sm font-medium text-ink-900">{email}</p>
+            <dt className="text-sm text-ink-500">Email</dt>
+            <dd className="break-all text-sm font-medium text-ink-900">{email}</dd>
           </div>
           {displayRole ? (
             <div>
-              <p className="text-sm text-ink-500">Parish role</p>
-              <p className="text-sm font-medium text-ink-900">{displayRole}</p>
+              <dt className="text-sm text-ink-500">Parish role</dt>
+              <dd className="text-sm font-medium text-ink-900">{displayRole}</dd>
             </div>
           ) : null}
-        </div>
+        </dl>
 
         <div className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-mist-200 bg-mist-50/60 p-4">
           <div>
-            <p className="text-sm font-medium text-ink-900">Sign out</p>
-            <p className="text-sm text-ink-500">End your current session on this device.</p>
+            <p className="text-sm font-medium text-ink-900">Sign out of this device</p>
+            <p className="text-sm text-ink-500">You can sign in again anytime.</p>
           </div>
           <div className="w-full sm:w-40">
             <SignOutButton />
