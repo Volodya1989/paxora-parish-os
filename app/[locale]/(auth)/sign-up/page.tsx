@@ -19,25 +19,42 @@ export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo");
+  const parishNameParam = searchParams.get("parishName");
+  const parishName = parishNameParam?.trim() ? parishNameParam.trim() : null;
   const safeReturnTo =
     returnTo && returnTo.startsWith("/") && !returnTo.includes("://") ? returnTo : null;
 
   useEffect(() => {
     if (state?.success) {
       const base = "/sign-in?verify=sent";
-      const nextPath = safeReturnTo
-        ? `${base}&returnTo=${encodeURIComponent(safeReturnTo)}`
-        : base;
+      const withReturnTo = safeReturnTo ? `${base}&returnTo=${encodeURIComponent(safeReturnTo)}` : base;
+      const nextPath = parishName
+        ? `${withReturnTo}&parishName=${encodeURIComponent(parishName)}`
+        : withReturnTo;
       router.push(buildLocalePathname(locale, nextPath));
     }
-  }, [locale, router, safeReturnTo, state?.success]);
+  }, [locale, parishName, router, safeReturnTo, state?.success]);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-mist-50/60 px-4 py-12">
       <Card className="w-full max-w-md">
-        <SectionTitle title="Create account" subtitle="Start with a simple parish setup." />
+        <img
+          src="/icon.png"
+          alt="Paxora logo"
+          className="mx-auto mb-5 h-28 w-28 object-contain md:h-32 md:w-32"
+        />
+        <SectionTitle
+          title="Create account"
+          subtitle={
+            parishName
+              ? `Welcome to your Paxora Parish Center — ${parishName}.`
+              : "Start with a simple parish setup."
+          }
+        />
         <p className="mt-3 text-sm text-ink-500">
-          Create your account to begin setting up your parish workspace.
+          {parishName
+            ? `Create your account to begin setting up ${parishName} in Paxora.`
+            : "Create your account to begin setting up your parish workspace."}
         </p>
         <form className="mt-6 space-y-5" action={formAction}>
           <div className="space-y-2">
@@ -118,7 +135,11 @@ export default function SignUpPage() {
             className="text-ink-900 underline"
             href={buildLocalePathname(
               locale,
-              safeReturnTo ? `/sign-in?returnTo=${encodeURIComponent(safeReturnTo)}` : "/sign-in"
+              safeReturnTo
+                ? `/sign-in?returnTo=${encodeURIComponent(safeReturnTo)}${
+                    parishName ? `&parishName=${encodeURIComponent(parishName)}` : ""
+                  }`
+                : `/sign-in${parishName ? `?parishName=${encodeURIComponent(parishName)}` : ""}`
             )}
           >
             Sign in
