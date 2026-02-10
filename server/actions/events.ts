@@ -276,7 +276,9 @@ export async function createEvent(
     creatorId: userId,
     visibility: parsed.data.visibility,
     groupId: parsed.data.visibility === "GROUP" ? group?.id : null
-  }).catch(() => {});
+  }).catch((error) => {
+    console.error("[events] Failed to create in-app notification:", error);
+  });
 
   revalidatePath("/calendar");
   revalidatePath("/this-week");

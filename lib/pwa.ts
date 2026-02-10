@@ -51,5 +51,14 @@ export function isIOSDevice(): boolean {
     return false;
   }
 
-  return /iPad|iPhone|iPod/.test(navigator.userAgent);
+  if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+    return true;
+  }
+
+  // iPadOS 13+ reports as Macintosh; detect via touch + Mac combo
+  return (
+    navigator.userAgent.includes("Macintosh") &&
+    typeof navigator.maxTouchPoints === "number" &&
+    navigator.maxTouchPoints > 1
+  );
 }

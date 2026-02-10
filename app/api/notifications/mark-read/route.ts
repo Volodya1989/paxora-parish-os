@@ -59,22 +59,10 @@ export async function POST(request: NextRequest) {
           where: { id: notificationId },
           data: { readAt: now }
         });
-
-        const mappedCategory = notification.type
-          ? ({
-              [NotificationType.TASK]: "task",
-              [NotificationType.ANNOUNCEMENT]: "announcement",
-              [NotificationType.EVENT]: "event",
-              [NotificationType.REQUEST]: "request",
-              [NotificationType.MESSAGE]: "message"
-            } as const)[notification.type]
-          : null;
-
-        if (mappedCategory === "task") updateData.lastSeenTasksAt = now;
-        if (mappedCategory === "announcement") updateData.lastSeenAnnouncementsAt = now;
-        if (mappedCategory === "event") updateData.lastSeenEventsAt = now;
-        if (mappedCategory === "request") updateData.lastSeenRequestsAt = now;
       }
+      // Do NOT update lastSeen* timestamps for individual notifications.
+      // Per-item readAt is sufficient; bumping lastSeen here would mark all
+      // legacy items of that category as seen, which is incorrect.
     }
 
     if (markAll) {
