@@ -11,7 +11,9 @@ import { isParishLeader } from "@/lib/permissions";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
 import ServeBoardView from "@/components/serve-board/ServeBoardView";
 import VolunteerHoursSummary from "@/components/serve-board/VolunteerHoursSummary";
-import { HandHeartIcon, HeartIcon } from "@/components/icons/ParishIcons";
+import { HandHeartIcon } from "@/components/icons/ParishIcons";
+import { getTranslator } from "@/lib/i18n/translator";
+import { getLocaleFromParam } from "@/lib/i18n/routing";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -20,7 +22,14 @@ function getDisplayName(name: string | null, email: string | null) {
   return name ?? email?.split("@")[0] ?? "Member";
 }
 
-export default async function ServeBoardPage() {
+export default async function ServeBoardPage({
+  params
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale: localeParam } = await params;
+  const locale = getLocaleFromParam(localeParam);
+  const t = getTranslator(locale);
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -81,11 +90,11 @@ export default async function ServeBoardPage() {
 
   return (
     <ParishionerPageLayout
-      pageTitle="Serve"
-      parishName={parish?.name ?? "My Parish"}
+      pageTitle={t("nav.serve")}
+      parishName={parish?.name ?? t("serve.myParish")}
       parishLogoUrl={parish?.logoUrl ?? null}
       isLeader={isLeader}
-      subtitle="Find opportunities to live your faith in action"
+      subtitle={t("serve.subtitle")}
       gradientClass="from-sky-500 via-sky-400 to-cyan-500"
       icon={<HandHeartIcon className="h-6 w-6 text-white" />}
     >

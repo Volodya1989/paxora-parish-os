@@ -7,12 +7,14 @@ import Input from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { createTask } from "@/server/actions/tasks";
 import { initialTaskActionState, type TaskActionState } from "@/server/actions/taskState";
+import { useTranslations } from "@/lib/i18n/provider";
 
 type TaskQuickAddProps = {
   weekId: string;
 };
 
 export default function TaskQuickAdd({ weekId }: TaskQuickAddProps) {
+  const t = useTranslations();
   const [state, formAction] = useActionState<TaskActionState, FormData>(
     createTask,
     initialTaskActionState
@@ -31,20 +33,20 @@ export default function TaskQuickAdd({ weekId }: TaskQuickAddProps) {
       setLocalError(null);
       lastSubmittedTitle.current = "";
       addToast({
-        title: "Task added",
-        description: state.message ?? "Your task is ready.",
+        title: t("tasks.quickAdd.added"),
+        description: state.message ?? t("tasks.quickAdd.ready"),
         status: "success"
       });
       router.refresh();
     }
-  }, [addToast, router, state]);
+  }, [addToast, router, state, t]);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     const trimmedTitle = title.trim();
     lastSubmittedTitle.current = trimmedTitle;
     if (!trimmedTitle) {
       event.preventDefault();
-      setLocalError("Add a task title to continue.");
+      setLocalError(t("tasks.quickAdd.addTitle"));
       return;
     }
     setLocalError(null);
@@ -55,7 +57,7 @@ export default function TaskQuickAdd({ weekId }: TaskQuickAddProps) {
     localError ??
     (state.status === "error" && lastSubmittedTitle.current === trimmedTitle
       ? state.message?.includes("Expected string")
-        ? "Add a task title to continue."
+        ? t("tasks.quickAdd.addTitle")
         : state.message
       : null);
 
@@ -71,15 +73,15 @@ export default function TaskQuickAdd({ weekId }: TaskQuickAddProps) {
       <input type="hidden" name="volunteersNeeded" value="1" />
       <Input
         name="title"
-        placeholder="Quick add a task..."
-        aria-label="Quick add a task"
+        placeholder={t("tasks.quickAdd.placeholder")}
+        aria-label={t("tasks.quickAdd.aria")}
         required
         className="flex-1"
         value={title}
         onKeyDown={(event) => {
           if (event.key === "Enter" && !trimmedTitle) {
             event.preventDefault();
-            setLocalError("Add a task title to continue.");
+            setLocalError(t("tasks.quickAdd.addTitle"));
           }
         }}
         onChange={(event) => {
@@ -94,7 +96,7 @@ export default function TaskQuickAdd({ weekId }: TaskQuickAddProps) {
         }}
       />
       <Button type="submit" disabled={!title.trim()} className="h-9 shrink-0 px-3 text-sm">
-        + Add
+        {t("header.addButton")}
       </Button>
       {errorMessage ? (
         <p className="text-xs text-rose-600">{errorMessage}</p>

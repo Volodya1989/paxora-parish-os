@@ -15,6 +15,8 @@ import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayou
 import VolunteerHoursSummary from "@/components/serve-board/VolunteerHoursSummary";
 import { isParishLeader } from "@/lib/permissions";
 import { HandHeartIcon } from "@/components/icons/ParishIcons";
+import { getTranslator } from "@/lib/i18n/translator";
+import { getLocaleFromParam } from "@/lib/i18n/routing";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -87,10 +89,16 @@ function getDisplayName(name: string | null, email: string | null) {
 }
 
 export default async function TasksPage({
+  params,
   searchParams
 }: {
+  params: Promise<{ locale: string }>;
   searchParams?: Promise<TaskSearchParams | undefined>;
 }) {
+  const { locale: localeParam } = await params;
+  const locale = getLocaleFromParam(localeParam);
+  const t = getTranslator(locale);
+
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -167,11 +175,11 @@ export default async function TasksPage({
 
   return (
     <ParishionerPageLayout
-      pageTitle="Serve"
-      parishName={parish?.name ?? "My Parish"}
+      pageTitle={t("nav.serve")}
+      parishName={parish?.name ?? t("serve.myParish")}
       parishLogoUrl={parish?.logoUrl ?? null}
       isLeader={isLeader}
-      subtitle="Opportunities to help and make a difference"
+      subtitle={t("serve.subtitle")}
       gradientClass="from-sky-500 via-sky-400 to-cyan-500"
       icon={<HandHeartIcon className="h-6 w-6 text-white" />}
     >

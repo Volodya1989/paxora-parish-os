@@ -20,7 +20,10 @@
     "discoverGroups": "Знайти групи",
     "noGroupsYet": "Ви ще не приєдналися до жодної групи",
     "noGroupsDesc": "Групи допомагають спілкуватися з парафіянами зі схожими інтересами.",
-    "viewAll": "Переглянути всі"
+    "viewAll": "Переглянути всі",
+    "goodMorning": "Доброго ранку",
+    "goodAfternoon": "Доброго дня",
+    "goodEvening": "Доброго вечора"
   },
   "header": {
     "appTitle": "Paxora Parish OS",
@@ -36,7 +39,7 @@
     "addGroup": "Додати групу",
     "language": "Мова",
     "more": "Більше",
-    "moreAbbrev": "БІЛЬШЕ",
+    "moreAbbrev": "...",
     "closeMoreMenu": "Закрити меню «Більше»"
   },
   "buttons": {
@@ -86,5 +89,152 @@
   },
   "auth": {
     "signingOut": "Вихід..."
+  },
+  "serve": {
+    "myParish": "Моя парафія",
+    "subtitle": "Можливості допомагати та робити добрі справи",
+    "myHours": "Мої години",
+    "hoursAbbrev": "год",
+    "tiers": {
+      "growing": "Зростання",
+      "bronze": "Бронзовий",
+      "silver": "Срібний",
+      "gold": "Золотий"
+    },
+    "quote": "Кожен служіть один одному тим даром, який отримав.",
+    "quoteSource": "1 Петра 4:10",
+    "requestOpportunity": "Запропонувати можливість",
+    "requestOpportunityDesc": "Маєте ідею волонтерської справи? Поділіться нею з керівництвом парафії та допоможіть розвивати нашу спільноту служіння.",
+    "requestOpportunitySuccess": "Дякуємо! Вашу пропозицію передано керівництву парафії. Ми її розглянемо та створимо можливість, якщо вона відповідає потребам парафії.",
+    "filters": {
+      "all": "Усі",
+      "mine": "Мої"
+    },
+    "searchPlaceholder": "Пошук завдань...",
+    "empty": {
+      "title": "Невдовзі з’являться нові можливості",
+      "description": "Завітайте пізніше, щоб знайти, де ви можете послужити своїм часом і талантами."
+    },
+    "volunteersWelcome": "Запрошуються волонтери",
+    "volunteer": "Волонтер",
+    "noVolunteerYet": "Поки нікого — станьте першим!",
+    "full": "Заповнено",
+    "join": "Долучитися",
+    "leave": "Вийти",
+    "stepBack": "Відмовитися",
+    "volunteerAction": "Взятися",
+    "unassigned": "Не призначено",
+    "noCoordinator": "Без координатора",
+    "openToVolunteers": "Відкрити для волонтерів",
+    "closeToVolunteers": "Закрити для волонтерів",
+    "status": {
+      "helpNeeded": "Потрібна допомога",
+      "inProgress": "У процесі",
+      "completed": "Завершено"
+    },
+    "requestForm": {
+      "title": "Назва можливості",
+      "titlePlaceholder": "Напр., допомога з репетицією хору",
+      "category": "Категорія",
+      "selectCategory": "Оберіть категорію",
+      "categoryService": "Служіння",
+      "categoryCommunity": "Спільнота",
+      "categoryLearning": "Навчання",
+      "categoryOther": "Інше",
+      "description": "Опис",
+      "descriptionPlaceholder": "Розкажіть, чому ця можливість потрібна та що вона передбачає",
+      "timeCommitment": "Часова участь",
+      "selectTimeCommitment": "Оберіть зайнятість",
+      "timeFlexible": "Гнучко",
+      "time1To2": "1-2 години",
+      "time2To3": "2-3 години",
+      "time4Plus": "4+ годин",
+      "yourName": "Ваше ім’я",
+      "yourNamePlaceholder": "Щоб керівництво могло з вами зв’язатися",
+      "email": "Електронна пошта",
+      "emailPlaceholder": "you@example.com",
+      "notes": "Додаткові нотатки (необов’язково)",
+      "notesPlaceholder": "Будь-які деталі, які можуть бути корисними"
+    },
+    "toasts": {
+      "updateFailed": "Не вдалося оновити",
+      "updateFailedDescription": "Не вдалося оновити це завдання. Спробуйте ще раз.",
+      "markedComplete": "Позначено як виконане",
+      "assignedToYou": "Призначено вам",
+      "unassigned": "Призначення знято",
+      "assignmentUpdated": "Призначення оновлено",
+      "coordinatorUpdated": "Координатора оновлено",
+      "openToVolunteers": "Відкрито для волонтерів",
+      "closedToVolunteers": "Закрито для волонтерів",
+      "addedToVolunteers": "Додано до волонтерів",
+      "leftVolunteerList": "Вас вилучено зі списку волонтерів",
+      "taskDeleted": "Завдання видалено"
+    }
+  },
+  "tasks": {
+    "view": {
+      "all": "Усі",
+      "opportunities": "Можливості",
+      "myCommitments": "Мої зобов’язання"
+    },
+    "filters": {
+      "title": "Фільтри",
+      "tip": "Звузьте список служінь за статусом, групою або пошуком.",
+      "searchOpportunities": "Пошук можливостей",
+      "searchServeItems": "Пошук служінь або нотаток",
+      "status": "Статус",
+      "ownership": "Належність",
+      "mine": "Мої",
+      "group": "Група",
+      "allGroups": "Усі групи",
+      "search": "Пошук",
+      "searchButton": "Шукати"
+    },
+    "hoursBoard": "Дошка годин і вдячності",
+    "quickAdd": {
+      "added": "Завдання додано",
+      "ready": "Ваше завдання готове.",
+      "addTitle": "Додайте назву завдання, щоб продовжити.",
+      "placeholder": "Швидко додати завдання...",
+      "aria": "Швидко додати завдання"
+    }
+  },
+  "groups": {
+    "myParish": "Моя парафія",
+    "subtitle": "Знайдіть своїх людей",
+    "quote": "Бо де двоє або троє зібрані в Моє ім’я, там Я серед них.",
+    "quoteSource": "Мт. 18:20",
+    "startGroup": "Створити групу",
+    "suggestGroup": "Запропонувати групу",
+    "memberSingular": "учасник",
+    "memberPlural": "учасники",
+    "joined": "У групі",
+    "invited": "Запрошено",
+    "requestPending": "Запит очікує",
+    "accept": "Прийняти",
+    "decline": "Відхилити",
+    "inviteOnly": "Лише за запрошенням",
+    "join": "Долучитися",
+    "requestToJoin": "Подати запит",
+    "viewDetails": "Деталі",
+    "viewMembers": "Учасники",
+    "menuFor": "Меню {name}",
+    "optionsFor": "Опції для {name}",
+    "groupInvites": "Запрошення до груп",
+    "inviteAccepted": "Запрошення прийнято",
+    "inviteDeclined": "Запрошення відхилено",
+    "limitedAccessMessage": "Лише лідери парафії можуть керувати групами.",
+    "filters": {
+      "title": "Фільтри",
+      "active": "Активні",
+      "archived": "Архів",
+      "search": "Пошук груп"
+    },
+    "empty": {
+      "startMessage": "Створіть групу, щоб об’єднати людей навколо спільних інтересів і віри.",
+      "requestMessage": "Маєте ідею для групи? Подайте запит і почніть об’єднувати парафіян.",
+      "noArchived": "Немає архівних груп",
+      "noArchivedDesc": "Архівних груп немає — усі групи активні та відкриті."
+    }
   }
 }

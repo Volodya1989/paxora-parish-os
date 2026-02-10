@@ -48,7 +48,7 @@ export default function LanguageSwitcher() {
       return;
     }
 
-    document.cookie = `${localeCookie}=${nextLocale}; path=/; max-age=31536000`;
+    document.cookie = `${localeCookie}=${nextLocale}; path=/; max-age=31536000; samesite=lax`;
 
     const targetPath = buildLocaleSwitchPath(
       pathname,

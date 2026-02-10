@@ -21,7 +21,7 @@ export default function TaskFilters({
   filters,
   groupOptions,
   showOwnership = true,
-  searchPlaceholder = "Search serve items or notes",
+  searchPlaceholder,
   layout = "inline"
 }: TaskFiltersProps) {
   const t = useTranslations();
@@ -60,6 +60,8 @@ export default function TaskFilters({
     updateParam("q", queryValue.trim() ? queryValue.trim() : undefined);
   };
 
+  const resolvedSearchPlaceholder = searchPlaceholder ?? t("tasks.filters.searchServeItems");
+
   return (
     <form
       onSubmit={handleSearchSubmit}
@@ -70,13 +72,13 @@ export default function TaskFilters({
       }
     >
       <div className="space-y-2">
-        <Label htmlFor={statusId}>Status</Label>
+        <Label htmlFor={statusId}>{t("tasks.filters.status")}</Label>
         <SelectMenu
           id={statusId}
           value={filters.status}
           onValueChange={(value) => updateParam("status", value)}
           options={[
-            { value: "all", label: "All" },
+            { value: "all", label: t("tasks.view.all") },
             { value: "open", label: t("common.todo") },
             { value: "in-progress", label: t("common.inProgress") },
             { value: "done", label: t("common.done") }
@@ -86,45 +88,45 @@ export default function TaskFilters({
 
       {showOwnership ? (
         <div className="space-y-2">
-          <Label htmlFor={ownerId}>Ownership</Label>
+          <Label htmlFor={ownerId}>{t("tasks.filters.ownership")}</Label>
           <SelectMenu
             id={ownerId}
             value={filters.ownership}
             onValueChange={(value) => updateParam("owner", value)}
             options={[
-              { value: "all", label: "All" },
-              { value: "mine", label: "Mine" }
+              { value: "all", label: t("tasks.view.all") },
+              { value: "mine", label: t("tasks.filters.mine") }
             ]}
           />
         </div>
       ) : null}
 
       <div className="space-y-2">
-        <Label htmlFor={groupId}>Group</Label>
+        <Label htmlFor={groupId}>{t("tasks.filters.group")}</Label>
         <SelectMenu
           id={groupId}
           value={filters.groupId ?? "all"}
           onValueChange={(value) => updateParam("group", value)}
           options={[
-            { value: "all", label: "All groups" },
+            { value: "all", label: t("tasks.filters.allGroups") },
             ...groupOptions.map((group) => ({ value: group.id, label: group.name }))
           ]}
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor={searchId}>Search</Label>
+        <Label htmlFor={searchId}>{t("tasks.filters.search")}</Label>
         <Input
           id={searchId}
           value={queryValue}
           onChange={(event) => setQueryValue(event.target.value)}
-          placeholder={searchPlaceholder}
+          placeholder={resolvedSearchPlaceholder}
         />
       </div>
 
       <div className="flex items-end">
         <Button type="submit" variant="secondary">
-          Search
+          {t("tasks.filters.searchButton")}
         </Button>
       </div>
     </form>

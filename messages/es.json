@@ -20,10 +20,7 @@
     "discoverGroups": "Discover groups",
     "noGroupsYet": "You haven't joined any groups yet",
     "noGroupsDesc": "Groups help you connect with fellow parishioners who share your interests.",
-    "viewAll": "View all",
-    "goodMorning": "Good morning",
-    "goodAfternoon": "Good afternoon",
-    "goodEvening": "Good evening"
+    "viewAll": "View all"
   },
   "header": {
     "appTitle": "Paxora Parish OS",
@@ -39,7 +36,7 @@
     "addGroup": "Add group",
     "language": "Language",
     "more": "More",
-    "moreAbbrev": "...",
+    "moreAbbrev": "MORE",
     "closeMoreMenu": "Close more menu"
   },
   "buttons": {
@@ -169,72 +166,6 @@
       "addedToVolunteers": "Added to volunteers",
       "leftVolunteerList": "Left volunteer list",
       "taskDeleted": "Task deleted"
-    }
-  },
-  "tasks": {
-    "view": {
-      "all": "All",
-      "opportunities": "Opportunities",
-      "myCommitments": "My commitments"
-    },
-    "filters": {
-      "title": "Filters",
-      "tip": "Narrow down your serve list by status, group, or search.",
-      "searchOpportunities": "Search opportunities",
-      "searchServeItems": "Search serve items or notes",
-      "status": "Status",
-      "ownership": "Ownership",
-      "mine": "Mine",
-      "group": "Group",
-      "allGroups": "All groups",
-      "search": "Search",
-      "searchButton": "Search"
-    },
-    "hoursBoard": "Hours & Gratitude Board",
-    "quickAdd": {
-      "added": "Task added",
-      "ready": "Your task is ready.",
-      "addTitle": "Add a task title to continue.",
-      "placeholder": "Quick add a task...",
-      "aria": "Quick add a task"
-    }
-  },
-  "groups": {
-    "myParish": "My Parish",
-    "subtitle": "Find your people",
-    "quote": "For where two or three gather in my name, there am I with them.",
-    "quoteSource": "Matthew 18:20",
-    "startGroup": "Start a group",
-    "suggestGroup": "Suggest a group",
-    "memberSingular": "member",
-    "memberPlural": "members",
-    "joined": "Joined",
-    "invited": "Invited",
-    "requestPending": "Request pending",
-    "accept": "Accept",
-    "decline": "Decline",
-    "inviteOnly": "Invite only",
-    "join": "Join",
-    "requestToJoin": "Request to join",
-    "viewDetails": "View details",
-    "viewMembers": "View members",
-    "menuFor": "{name} menu",
-    "optionsFor": "Options for {name}",
-    "groupInvites": "Group invites",
-    "inviteAccepted": "Invite accepted",
-    "inviteDeclined": "Invite declined",
-    "limitedAccessMessage": "Only parish leaders can manage groups.",
-    "filters": {
-      "title": "Filters",
-      "active": "Active",
-      "archived": "Archived",
-      "search": "Search groups"
-    },
-    "empty": {
-      "startMessage": "Start a group to bring people together around shared interests and faith.",
-      "requestMessage": "Have an idea for a group? Request one and start connecting with fellow parishioners.",
-      "noArchived": "No archived groups",
-      "noArchivedDesc": "No archived groups — all groups are active and welcoming."
     }
   }
 }

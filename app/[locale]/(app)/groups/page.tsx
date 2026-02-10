@@ -7,8 +7,18 @@ import { isParishLeader } from "@/lib/permissions";
 import { prisma } from "@/server/db/prisma";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
 import { UsersIcon } from "@/components/icons/ParishIcons";
+import { getLocaleFromParam } from "@/lib/i18n/routing";
+import { getTranslator } from "@/lib/i18n/translator";
 
-export default async function GroupsPage() {
+export default async function GroupsPage({
+  params
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale: localeParam } = await params;
+  const locale = getLocaleFromParam(localeParam);
+  const t = getTranslator(locale);
+
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -35,11 +45,11 @@ export default async function GroupsPage() {
 
   return (
     <ParishionerPageLayout
-      pageTitle="Groups"
-      parishName={parish?.name ?? "My Parish"}
+      pageTitle={t("nav.groups")}
+      parishName={parish?.name ?? t("groups.myParish")}
       parishLogoUrl={parish?.logoUrl ?? null}
       isLeader={isLeader}
-      subtitle="Find your people"
+      subtitle={t("groups.subtitle")}
       gradientClass="from-primary-600 via-primary-500 to-emerald-500"
       icon={<UsersIcon className="h-6 w-6 text-white" />}
     >

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "@/lib/i18n/provider";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import SelectMenu from "@/components/ui/SelectMenu";
@@ -27,9 +28,9 @@ import type { TaskListItem } from "@/lib/queries/tasks";
 import { cn } from "@/lib/ui/cn";
 
 const statusColumns = [
-  { id: "OPEN", label: "Help needed", tone: "bg-sky-50 text-sky-700" },
-  { id: "IN_PROGRESS", label: "In progress", tone: "bg-amber-50 text-amber-700" },
-  { id: "DONE", label: "Completed", tone: "bg-emerald-50 text-emerald-700" }
+  { id: "OPEN", labelKey: "serve.status.helpNeeded", tone: "bg-sky-50 text-sky-700" },
+  { id: "IN_PROGRESS", labelKey: "serve.status.inProgress", tone: "bg-amber-50 text-amber-700" },
+  { id: "DONE", labelKey: "serve.status.completed", tone: "bg-emerald-50 text-emerald-700" }
 ] as const;
 
 type TaskStatus = (typeof statusColumns)[number]["id"];
@@ -41,9 +42,9 @@ type ServeBoardViewProps = {
   isLeader: boolean;
 };
 
-function formatDueDate(value: string) {
+function formatDueDate(value: string, locale: string) {
   const date = new Date(value);
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString(locale, {
     month: "short",
     day: "numeric",
     timeZone: "UTC"
@@ -69,6 +70,8 @@ export default function ServeBoardView({
 }: ServeBoardViewProps) {
   const { addToast } = useToast();
   const router = useRouter();
+  const t = useTranslations();
+  const locale = useLocale();
   const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
   const [ownershipFilter, setOwnershipFilter] = useState<"all" | "mine">("all");
   const [visibilityFilter, setVisibilityFilter] = useState<"all" | "public" | "private">("all");
@@ -206,8 +209,8 @@ export default function ServeBoardView({
       }
     } catch (error) {
       addToast({
-        title: "Update failed",
-        description: "We couldn't update that task. Please try again.",
+        title: t("serve.toasts.updateFailed"),
+        description: t("serve.toasts.updateFailedDescription"),
         status: "error"
       });
     } finally {
@@ -236,42 +239,42 @@ export default function ServeBoardView({
     await runTaskAction(
       taskId,
       () => updateTaskStatus({ taskId, status: "DONE", hoursMode, manualHours }),
-      "Marked complete"
+      t("serve.toasts.markedComplete")
     );
     setCompleteTaskId(null);
   };
 
   const handleClaim = (taskId: string) =>
-    runTaskAction(taskId, () => claimTask({ taskId }), "Assigned to you");
+    runTaskAction(taskId, () => claimTask({ taskId }), t("serve.toasts.assignedToYou"));
 
   const handleUnclaim = (taskId: string) =>
-    runTaskAction(taskId, () => unclaimTask({ taskId }), "Unassigned");
+    runTaskAction(taskId, () => unclaimTask({ taskId }), t("serve.toasts.unassigned"));
 
   const handleAssign = (taskId: string, ownerId: string | null) => {
     if (!ownerId) {
       return handleUnclaim(taskId);
     }
-    return runTaskAction(taskId, () => claimTask({ taskId, ownerId }), "Assignment updated");
+    return runTaskAction(taskId, () => claimTask({ taskId, ownerId }), t("serve.toasts.assignmentUpdated"));
   };
 
   const handleCoordinatorChange = (taskId: string, coordinatorId: string | null) =>
-    runTaskAction(taskId, () => updateCoordinator({ taskId, coordinatorId }), "Coordinator updated");
+    runTaskAction(taskId, () => updateCoordinator({ taskId, coordinatorId }), t("serve.toasts.coordinatorUpdated"));
 
   const handleOpenToggle = (taskId: string, openToVolunteers: boolean) =>
     runTaskAction(
       taskId,
       () => updateOpenToVolunteers({ taskId, openToVolunteers }),
-      openToVolunteers ? "Open to volunteers" : "Closed to volunteers"
+      openToVolunteers ? t("serve.toasts.openToVolunteers") : t("serve.toasts.closedToVolunteers")
     );
 
   const handleVolunteer = (taskId: string) =>
-    runTaskAction(taskId, () => volunteerForTask({ taskId }), "Added to volunteers");
+    runTaskAction(taskId, () => volunteerForTask({ taskId }), t("serve.toasts.addedToVolunteers"));
 
   const handleLeaveVolunteer = (taskId: string) =>
-    runTaskAction(taskId, () => leaveTaskVolunteer({ taskId }), "Left volunteer list");
+    runTaskAction(taskId, () => leaveTaskVolunteer({ taskId }), t("serve.toasts.leftVolunteerList"));
 
   const handleDelete = (taskId: string) =>
-    runTaskAction(taskId, () => deleteTask({ taskId }), "Task deleted");
+    runTaskAction(taskId, () => deleteTask({ taskId }), t("serve.toasts.taskDeleted"));
 
   const updateOrderForStatus = (status: TaskStatus, order: string[]) => {
     setTaskOrderByStatus((prev) => {
@@ -344,8 +347,8 @@ export default function ServeBoardView({
   return (
     <div className="section-gap">
       <QuoteCard
-        quote="Each of you should use whatever gift you have received to serve others."
-        source="1 Peter 4:10"
+        quote={t("serve.quote")}
+        source={t("serve.quoteSource")}
         tone="sky"
       />
 
@@ -355,28 +358,28 @@ export default function ServeBoardView({
           onClick={() => setRequestOpen(true)}
           className="h-10 px-4 text-sm"
         >
-          Request an opportunity
+          {t("serve.requestOpportunity")}
         </Button>
-        {renderFilterButton("All", ownershipFilter === "all", () => setOwnershipFilter("all"))}
-        {renderFilterButton("Mine", ownershipFilter === "mine", () => setOwnershipFilter("mine"))}
+        {renderFilterButton(t("serve.filters.all"), ownershipFilter === "all", () => setOwnershipFilter("all"))}
+        {renderFilterButton(t("serve.filters.mine"), ownershipFilter === "mine", () => setOwnershipFilter("mine"))}
         <input
           type="search"
           value={searchQuery}
           onChange={(event) => setSearchQuery(event.target.value)}
-          placeholder="Search tasks..."
+          placeholder={t("serve.searchPlaceholder")}
           className="h-8 w-40 rounded-full border border-mist-200 bg-white px-3 text-xs text-ink-700 placeholder:text-ink-400 focus:border-primary-300 focus:outline-none focus:ring-1 focus:ring-primary-300 sm:w-52"
         />
       </div>
 
       {totalOpportunities === 0 ? (
         <ListEmptyState
-          title="New opportunities coming soon"
-          description="Check back to find ways you can contribute your time and talents to our parish community."
+          title={t("serve.empty.title")}
+          description={t("serve.empty.description")}
           icon={<HeartIcon className="h-6 w-6" />}
           variant="friendly"
           action={
             <Button onClick={() => setRequestOpen(true)}>
-              Request an opportunity
+              {t("serve.requestOpportunity")}
             </Button>
           }
         />
@@ -402,7 +405,7 @@ export default function ServeBoardView({
               onDrop={() => handleDropOnTask(column.id)}
             >
               <div className="mb-3 flex items-center justify-between text-xs font-semibold text-ink-500">
-                <span className={cn("rounded-full px-2 py-1", column.tone)}>{column.label}</span>
+                <span className={cn("rounded-full px-2 py-1", column.tone)}>{t(column.labelKey)}</span>
                 <span>{columnTasks.length}</span>
               </div>
               <div className="space-y-3">
@@ -473,7 +476,7 @@ export default function ServeBoardView({
                                 tone="success"
                                 className="bg-emerald-50 text-emerald-700"
                               >
-                                Volunteers welcome
+                                {t("serve.volunteersWelcome")}
                               </Badge>
                             ) : null}
                             {task.group ? (
@@ -487,7 +490,7 @@ export default function ServeBoardView({
                               </span>
                             ) : null}
                             <span className="rounded-full bg-mist-100 px-1.5 py-0.5 text-ink-500">
-                              {formatDueDate(task.dueAt)}
+                              {formatDueDate(task.dueAt, locale)}
                             </span>
                           </div>
                         </div>
@@ -500,11 +503,11 @@ export default function ServeBoardView({
                               {ownerCompactName}
                             </span>
                             <span className="font-medium text-ink-700" title={task.owner?.name}>
-                              {task.owner?.name ?? "Volunteer"}
+                              {task.owner?.name ?? t("serve.volunteer")}
                             </span>
                           </div>
                         ) : (
-                          <div className="text-ink-400">No one yet — be the first!</div>
+                          <div className="text-ink-400">{t("serve.noVolunteerYet")}</div>
                         )}
                         {isMultiVolunteer ? (
                           <div className="flex items-center gap-1.5">
@@ -540,7 +543,7 @@ export default function ServeBoardView({
                             }}
                             options={statusColumns.map((status) => ({
                               value: status.id,
-                              label: status.label
+                              label: t(status.labelKey)
                             }))}
                           />
                         ) : null}
@@ -548,7 +551,7 @@ export default function ServeBoardView({
                         <div className="flex flex-wrap gap-2">
                           {canClaim && !hasOwner && !isMultiVolunteer ? (
                             <Button type="button" size="sm" onClick={() => handleClaim(task.id)}>
-                              Volunteer
+                              {t("serve.volunteerAction")}
                             </Button>
                           ) : null}
                           {canJoinVolunteer ? (
@@ -558,17 +561,17 @@ export default function ServeBoardView({
                               onClick={() => handleVolunteer(task.id)}
                               disabled={volunteersFull}
                             >
-                              {volunteersFull ? "Full" : "Join"}
+                              {volunteersFull ? t("serve.full") : t("serve.join")}
                             </Button>
                           ) : null}
                           {canLeaveVolunteer ? (
                             <Button type="button" variant="secondary" size="sm" onClick={() => handleLeaveVolunteer(task.id)}>
-                              Leave
+                              {t("serve.leave")}
                             </Button>
                           ) : null}
                           {canUnclaim && !isMultiVolunteer ? (
                             <Button type="button" variant="secondary" size="sm" onClick={() => handleUnclaim(task.id)}>
-                              Step back
+                              {t("serve.stepBack")}
                             </Button>
                           ) : null}
                         </div>
@@ -580,7 +583,7 @@ export default function ServeBoardView({
                               void handleAssign(task.id, next || null);
                             }}
                             options={[
-                              { value: "", label: "Unassigned" },
+                              { value: "", label: t("serve.unassigned") },
                               ...memberOptions.map((member) => ({
                                 value: member.id,
                                 label: member.label ?? member.name
@@ -596,7 +599,7 @@ export default function ServeBoardView({
                               void handleCoordinatorChange(task.id, next || null);
                             }}
                             options={[
-                              { value: "", label: "No coordinator" },
+                              { value: "", label: t("serve.noCoordinator") },
                               ...memberOptions.map((member) => ({
                                 value: member.id,
                                 label: member.label ?? member.name
@@ -612,7 +615,7 @@ export default function ServeBoardView({
                             variant="ghost"
                             onClick={() => handleOpenToggle(task.id, !task.openToVolunteers)}
                           >
-                            {task.openToVolunteers ? "Close to volunteers" : "Open to volunteers"}
+                            {task.openToVolunteers ? t("serve.closeToVolunteers") : t("serve.openToVolunteers")}
                           </Button>
                         ) : null}
 
@@ -623,7 +626,7 @@ export default function ServeBoardView({
                             variant="danger"
                             onClick={() => handleDelete(task.id)}
                           >
-                            Delete
+                            {t("buttons.delete")}
                           </Button>
                         ) : null}
                       </div>

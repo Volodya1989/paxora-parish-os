@@ -19,6 +19,7 @@ import TaskQuickAdd from "@/components/tasks/TaskQuickAdd";
 import { cn } from "@/lib/ui/cn";
 import Link from "next/link";
 import { routes } from "@/lib/navigation/routes";
+import { useTranslations } from "@/lib/i18n/provider";
 
 function PlusIcon() {
   return (
@@ -70,6 +71,7 @@ export default function TasksView({
   viewMode = "all",
   canManageTasks = true
 }: TasksViewProps) {
+  const t = useTranslations();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -173,13 +175,13 @@ export default function TasksView({
   /* ─── View toggle (unified for both roles) ─── */
   const viewOptions = canManageTasks
     ? [
-        { value: "all" as const, label: "All" },
-        { value: "opportunities" as const, label: "Opportunities" },
-        { value: "mine" as const, label: "My commitments" }
+        { value: "all" as const, label: t("tasks.view.all") },
+        { value: "opportunities" as const, label: t("tasks.view.opportunities") },
+        { value: "mine" as const, label: t("tasks.view.myCommitments") }
       ]
     : [
-        { value: "opportunities" as const, label: "Opportunities" },
-        { value: "mine" as const, label: "My commitments" }
+        { value: "opportunities" as const, label: t("tasks.view.opportunities") },
+        { value: "mine" as const, label: t("tasks.view.myCommitments") }
       ];
 
   const renderViewToggle = (className?: string) => (
@@ -243,8 +245,8 @@ export default function TasksView({
   return (
     <div className="section-gap">
       <QuoteCard
-        quote="Each of you should use whatever gift you have received to serve others."
-        source="1 Peter 4:10"
+        quote={t("serve.quote")}
+        source={t("serve.quoteSource")}
         tone="sky"
       />
 
@@ -293,12 +295,10 @@ export default function TasksView({
 
         {/* Filters drawer (mobile only) */}
         <div className="md:hidden">
-          <FiltersDrawer title="Filters" className="shrink-0">
+          <FiltersDrawer title={t("tasks.filters.title")} className="shrink-0">
             <div className="space-y-4">
               <div className="rounded-xl border-l-4 border-l-sky-400 bg-sky-50/60 px-4 py-3">
-                <p className="text-xs text-sky-700">
-                  Narrow down your serve list by status, group, or search.
-                </p>
+                <p className="text-xs text-sky-700">{t("tasks.filters.tip")}</p>
               </div>
               {renderViewToggle()}
               <TaskFilters
@@ -306,7 +306,9 @@ export default function TasksView({
                 groupOptions={groupOptions}
                 showOwnership={viewMode !== "opportunities"}
                 layout="stacked"
-                searchPlaceholder={viewMode === "opportunities" ? "Search opportunities" : undefined}
+                searchPlaceholder={
+                  viewMode === "opportunities" ? t("tasks.filters.searchOpportunities") : undefined
+                }
               />
             </div>
           </FiltersDrawer>
@@ -318,7 +320,7 @@ export default function TasksView({
             href={routes.gratitudeBoard}
             className="hidden rounded-full border border-mist-200 bg-white px-3 py-1.5 text-xs font-medium text-ink-600 transition hover:bg-mist-50 sm:inline-flex"
           >
-            Hours &amp; Gratitude Board
+            {t("tasks.hoursBoard")}
           </Link>
         )}
       </div>
@@ -330,7 +332,9 @@ export default function TasksView({
           groupOptions={groupOptions}
           showOwnership={viewMode !== "opportunities"}
           layout="inline"
-          searchPlaceholder={viewMode === "opportunities" ? "Search opportunities" : undefined}
+          searchPlaceholder={
+            viewMode === "opportunities" ? t("tasks.filters.searchOpportunities") : undefined
+          }
         />
       </div>
 

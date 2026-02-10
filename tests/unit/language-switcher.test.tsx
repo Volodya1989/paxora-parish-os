@@ -23,3 +23,8 @@ test("buildLocaleSwitchPath preserves path and query", () => {
   const nextPath = buildLocaleSwitchPath("/en/tasks", "view=opportunities", "uk");
   assert.equal(nextPath, "/uk/tasks?view=opportunities");
 });
+
+test("buildLocaleSwitchPath strips a leading question mark from search", () => {
+  const nextPath = buildLocaleSwitchPath("/en/this-week", "?view=parishioner", "uk");
+  assert.equal(nextPath, "/uk/this-week?view=parishioner");
+});

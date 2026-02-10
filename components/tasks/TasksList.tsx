@@ -287,7 +287,7 @@ export default function TasksList({
             className="text-xs font-semibold uppercase tracking-wide text-primary-700"
             onClick={() => setShowCompleted((current) => !current)}
           >
-            {showCompleted ? "Hide completed work" : "Show completed work"} ({doneTasks.length})
+            {showCompleted ? t("tasks.completed.hide") : t("tasks.completed.show")} ({doneTasks.length})
           </button>
           {showCompleted ? (
             <div className="space-y-3">

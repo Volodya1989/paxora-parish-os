@@ -1,15 +1,16 @@
 "use client";
 
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { GlobeIcon } from "@/components/icons/ParishIcons";
 import { useLocale } from "@/lib/i18n/provider";
-import { localeCookie } from "@/lib/i18n/config";
+import { localeCookie, locales, type Locale } from "@/lib/i18n/config";
 import { cn } from "@/lib/ui/cn";
+import { buildLocaleSwitchPath } from "@/lib/i18n/routing";
 
-const localeData = [
+const localeData: Array<{ code: Locale; label: string; name: string }> = [
   { code: "en", label: "EN", name: "English" },
   { code: "uk", label: "УК", name: "Українська" }
-] as const;
+];
 
 /**
  * Compact icon-based language toggle for the parishioner header.
@@ -18,6 +19,7 @@ const localeData = [
 export default function LanguageIconToggle() {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const currentLocale = useLocale();
 
   const currentIndex = localeData.findIndex((l) => l.code === currentLocale);
@@ -25,15 +27,18 @@ export default function LanguageIconToggle() {
   const next = localeData[(currentIndex + 1) % localeData.length];
 
   const handleToggle = () => {
-    // Set cookie for persistence
-    document.cookie = `${localeCookie}=${next.code}; path=/; max-age=31536000`;
-
-    // Replace locale in pathname
-    const segments = pathname.split("/");
-    if (segments[1] === "en" || segments[1] === "uk") {
-      segments[1] = next.code;
+    if (!locales.includes(next.code)) {
+      return;
     }
-    router.push(segments.join("/"));
+
+    document.cookie = `${localeCookie}=${next.code}; path=/; max-age=31536000; samesite=lax`;
+
+    const targetPath = buildLocaleSwitchPath(
+      pathname,
+      searchParams?.toString() ?? "",
+      next.code
+    );
+    router.push(targetPath);
   };
 
   return (

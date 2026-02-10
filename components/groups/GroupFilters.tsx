@@ -2,6 +2,7 @@
 
 import Input from "@/components/ui/Input";
 import { cn } from "@/lib/ui/cn";
+import { useTranslations } from "@/lib/i18n/provider";
 
 export type GroupFilterTab = "active" | "archived";
 
@@ -25,6 +26,8 @@ export default function GroupFilters({
   counts,
   layout = "inline"
 }: GroupFiltersProps) {
+  const t = useTranslations();
+
   return (
     <div
       className={cn(
@@ -47,7 +50,7 @@ export default function GroupFilters({
                 : "text-ink-500 hover:text-ink-700"
             )}
           >
-            {tab === "active" ? "Active" : "Archived"}
+            {tab === "active" ? t("groups.filters.active") : t("groups.filters.archived")}
             <span className="ml-2 text-xs text-ink-400">
               {tab === "active" ? counts.active : counts.archived}
             </span>
@@ -58,7 +61,8 @@ export default function GroupFilters({
       <div className={cn("w-full", layout === "inline" && "md:max-w-xs")}>
         <Input
           type="search"
-          placeholder="Search groups"
+          aria-label={t("groups.filters.search")}
+          placeholder={t("groups.filters.search")}
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
         />
