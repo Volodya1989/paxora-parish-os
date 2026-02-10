@@ -58,7 +58,7 @@ export default async function ServeBoardPage() {
     }),
     prisma.parish.findUnique({
       where: { id: parishId },
-      select: { name: true, bronzeHours: true, silverHours: true, goldHours: true }
+      select: { name: true, logoUrl: true, bronzeHours: true, silverHours: true, goldHours: true }
     }),
     getUserYtdHours({ parishId, userId: session.user.id })
   ]);
@@ -83,6 +83,7 @@ export default async function ServeBoardPage() {
     <ParishionerPageLayout
       pageTitle="Serve"
       parishName={parish?.name ?? "My Parish"}
+      parishLogoUrl={parish?.logoUrl ?? null}
       isLeader={isLeader}
       subtitle="Find opportunities to live your faith in action"
       gradientClass="from-sky-500 via-sky-400 to-cyan-500"

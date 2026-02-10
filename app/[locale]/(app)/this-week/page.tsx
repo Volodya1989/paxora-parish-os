@@ -38,6 +38,7 @@ export default async function ThisWeekPage({
 
   // Fetch parish name and user name for the header (both views use same header now)
   let parishName = "Mother of God Ukrainian Catholic Church"; // MVP default
+  let parishLogoUrl: string | null = null;
   let userName: string | undefined;
   const session = await getServerSession(authOptions);
   if (session?.user) {
@@ -46,11 +47,12 @@ export default async function ThisWeekPage({
     if (session.user.activeParishId) {
       const parish = await prisma.parish.findUnique({
         where: { id: session.user.activeParishId },
-        select: { name: true }
+        select: { name: true, logoUrl: true }
       });
       if (parish?.name) {
         parishName = parish.name;
       }
+      parishLogoUrl = parish?.logoUrl ?? null;
     }
   }
 
@@ -60,6 +62,7 @@ export default async function ThisWeekPage({
       viewToggle={viewToggle}
       spotlightAdmin={spotlightAdmin}
       parishName={parishName}
+      parishLogoUrl={parishLogoUrl}
       userName={userName}
     />
   ) : (
@@ -69,6 +72,7 @@ export default async function ThisWeekPage({
       now={now}
       viewToggle={viewToggle}
       parishName={parishName}
+      parishLogoUrl={parishLogoUrl}
       userName={userName}
     />
   );

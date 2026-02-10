@@ -12,6 +12,8 @@ type PageHeaderProps = {
   pageTitle: string;
   /** Parish name to display */
   parishName: string;
+  /** Optional parish logo URL (falls back to Paxora logo) */
+  parishLogoUrl?: string | null;
   /** Optional subtitle/description */
   subtitle?: string;
   /** Optional right-aligned actions */
@@ -42,6 +44,7 @@ type PageHeaderProps = {
 export default function PageHeader({
   pageTitle,
   parishName,
+  parishLogoUrl,
   subtitle,
   actions,
   gradientClass = "from-primary-600 via-primary-500 to-emerald-500",
@@ -52,6 +55,7 @@ export default function PageHeader({
 }: PageHeaderProps) {
   const { count } = useNotificationContext();
   const router = useRouter();
+  const logoSrc = parishLogoUrl?.trim() ? parishLogoUrl : "/icon.png";
 
   const handleBack = useCallback(() => {
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -73,8 +77,8 @@ export default function PageHeader({
       <div className="absolute -bottom-2 left-1/4 h-12 w-12 rounded-full bg-white/5" />
 
       {/* Top bar with breadcrumb and actions */}
-      <div className="relative mb-2 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm font-semibold text-white">
+      <div className="relative mb-2 flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3 text-sm font-semibold text-white">
           {backHref ? (
             <button
               type="button"
@@ -97,7 +101,13 @@ export default function PageHeader({
               </svg>
             </button>
           ) : null}
-          <span>{parishName}</span>
+          <img
+            src={logoSrc}
+            alt={`${parishName} logo`}
+            className="h-10 w-10 shrink-0 rounded-md object-contain md:h-12 md:w-12"
+            onError={(e) => { e.currentTarget.src = "/icon.png"; }}
+          />
+          <span className="min-w-0 truncate">{parishName}</span>
         </div>
         <div className="flex items-center gap-1.5">
           {actions}

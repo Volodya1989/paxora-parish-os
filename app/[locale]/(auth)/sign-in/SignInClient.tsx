@@ -51,6 +51,11 @@ export default function SignInPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-mist-50/60 px-4 py-12">
       <Card className="w-full max-w-md">
+        <img
+          src="/icon.png"
+          alt="Paxora logo"
+          className="mx-auto mb-5 h-20 w-20 object-contain md:h-24 md:w-24"
+        />
         <SectionTitle title={t("nav.signIn")} subtitle="Welcome back to Paxora." />
         <p className="mt-3 text-sm text-ink-500">
           Enter your parish account details to continue.

@@ -44,7 +44,7 @@ export default async function AdminRequestsPage({
     getPeopleList(session.user.activeParishId),
     prisma.parish.findUnique({
       where: { id: session.user.activeParishId },
-      select: { name: true }
+      select: { name: true, logoUrl: true }
     })
   ]);
 
@@ -58,6 +58,7 @@ export default async function AdminRequestsPage({
     <ParishionerPageLayout
       pageTitle="Requests"
       parishName={parish?.name ?? "My Parish"}
+      parishLogoUrl={parish?.logoUrl ?? null}
       subtitle="Manage and follow up on parish requests"
     >
       <RequestsBoard requests={requests} assignees={assignees} />

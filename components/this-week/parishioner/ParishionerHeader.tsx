@@ -13,6 +13,8 @@ import { Drawer } from "@/components/ui/Drawer";
 type ParishionerHeaderProps = {
   /** Parish name to display */
   parishName: string;
+  /** Optional parish logo URL (falls back to Paxora logo) */
+  parishLogoUrl?: string | null;
   /** User's first name for personalized greeting */
   userName?: string;
   /** Optional right-aligned actions (e.g., view toggle for users who can switch views) */
@@ -34,6 +36,7 @@ type ParishionerHeaderProps = {
  */
 export default function ParishionerHeader({
   parishName,
+  parishLogoUrl,
   userName,
   actions,
   showQuickAdd,
@@ -43,6 +46,7 @@ export default function ParishionerHeader({
   const t = useTranslations();
   const { count } = useNotificationContext();
   const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const logoSrc = parishLogoUrl?.trim() ? parishLogoUrl : "/icon.png";
 
   // Use state to prevent hydration mismatch - start with generic greeting
   // then update to time-based greeting on client
@@ -63,10 +67,18 @@ export default function ParishionerHeader({
         <div className="absolute right-1/3 top-1/2 h-8 w-8 rounded-full bg-white/5" />
 
         {/* Top bar with controls */}
-        <div className="relative mb-2 flex items-center justify-between">
-          <div className="flex items-center gap-2 rounded-full bg-white/20 px-2.5 py-1 backdrop-blur-sm">
-            <SparklesIcon className="h-3 w-3" />
-            <span className="text-xs font-medium">{t("landing.welcome")}</span>
+        <div className="relative mb-2 flex items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <img
+              src={logoSrc}
+              alt={`${parishName} logo`}
+              className="h-10 w-10 shrink-0 rounded-md object-contain md:h-12 md:w-12"
+              onError={(e) => { e.currentTarget.src = "/icon.png"; }}
+            />
+            <div className="flex min-w-0 items-center gap-2 rounded-full bg-white/20 px-2.5 py-1 backdrop-blur-sm">
+              <SparklesIcon className="h-3 w-3" />
+              <span className="text-xs font-medium">{t("landing.welcome")}</span>
+            </div>
           </div>
           <div className="flex items-center gap-1.5">
             {showQuickAdd && (

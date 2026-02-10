@@ -14,7 +14,7 @@ export default async function NewRequestPage() {
   const [parish, user] = await Promise.all([
     prisma.parish.findUnique({
       where: { id: session.user.activeParishId },
-      select: { name: true }
+      select: { name: true, logoUrl: true }
     }),
     prisma.user.findUnique({
       where: { id: session.user.id },
@@ -26,6 +26,7 @@ export default async function NewRequestPage() {
     <ParishionerPageLayout
       pageTitle="Make a Request"
       parishName={parish?.name ?? "My Parish"}
+      parishLogoUrl={parish?.logoUrl ?? null}
       subtitle="Share a need or ask for support"
       backHref="/parish"
     >

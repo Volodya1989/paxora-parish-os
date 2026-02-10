@@ -6,6 +6,8 @@ type ParishionerPageLayoutProps = {
   pageTitle: string;
   /** Parish name to display */
   parishName: string;
+  /** Optional parish logo URL (falls back to Paxora logo) */
+  parishLogoUrl?: string | null;
   /** @deprecated No longer used — both roles see PageHeader now */
   isLeader?: boolean;
   /** Optional subtitle for the page */
@@ -34,6 +36,7 @@ type ParishionerPageLayoutProps = {
 export default function ParishionerPageLayout({
   pageTitle,
   parishName,
+  parishLogoUrl,
   subtitle,
   quote,
   quoteSource,
@@ -48,6 +51,7 @@ export default function ParishionerPageLayout({
       <PageHeader
         pageTitle={pageTitle}
         parishName={parishName}
+        parishLogoUrl={parishLogoUrl}
         subtitle={subtitle}
         quote={quote}
         quoteSource={quoteSource}

@@ -42,6 +42,7 @@ type ThisWeekAdminViewProps = {
     memberOptions: Array<{ id: string; name: string; label?: string }>;
   } | null;
   parishName?: string;
+  parishLogoUrl?: string | null;
   userName?: string;
 };
 
@@ -163,6 +164,7 @@ export default async function ThisWeekAdminView({
   viewToggle,
   spotlightAdmin,
   parishName = "Mother of God Ukrainian Catholic Church",
+  parishLogoUrl,
   userName
 }: ThisWeekAdminViewProps) {
   const locale = await getLocaleFromCookies();
@@ -268,6 +270,7 @@ export default async function ThisWeekAdminView({
       {/* Warm hero header — shared with parishioner, with quick-add "+" for leaders */}
       <ParishionerHeader
         parishName={parishName}
+        parishLogoUrl={parishLogoUrl}
         userName={userName}
         actions={viewToggle}
         showQuickAdd

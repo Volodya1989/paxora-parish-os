@@ -18,7 +18,7 @@ export default async function MyRequestsPage() {
     listMyRequests(session.user.activeParishId, session.user.id),
     prisma.parish.findUnique({
       where: { id: session.user.activeParishId },
-      select: { name: true }
+      select: { name: true, logoUrl: true }
     })
   ]);
 
@@ -26,6 +26,7 @@ export default async function MyRequestsPage() {
     <ParishionerPageLayout
       pageTitle="My Requests"
       parishName={parish?.name ?? "My Parish"}
+      parishLogoUrl={parish?.logoUrl ?? null}
       subtitle="Track updates and follow-ups"
       backHref="/parish"
       actions={

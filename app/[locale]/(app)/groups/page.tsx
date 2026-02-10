@@ -22,7 +22,7 @@ export default async function GroupsPage() {
     getParishMembership(parishId, actorUserId),
     prisma.parish.findUnique({
       where: { id: parishId },
-      select: { name: true }
+      select: { name: true, logoUrl: true }
     })
   ]);
 
@@ -37,6 +37,7 @@ export default async function GroupsPage() {
     <ParishionerPageLayout
       pageTitle="Groups"
       parishName={parish?.name ?? "My Parish"}
+      parishLogoUrl={parish?.logoUrl ?? null}
       isLeader={isLeader}
       subtitle="Find your people"
       gradientClass="from-primary-600 via-primary-500 to-emerald-500"
