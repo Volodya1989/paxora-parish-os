@@ -20,7 +20,11 @@
     "discoverGroups": "Discover groups",
     "noGroupsYet": "You haven't joined any groups yet",
     "noGroupsDesc": "Groups help you connect with fellow parishioners who share your interests.",
-    "viewAll": "View all"
+    "viewAll": "View all",
+    "goodMorning": "Good morning",
+    "goodAfternoon": "Good afternoon",
+    "goodEvening": "Good evening",
+    "moreGroups": "{count} more groups"
   },
   "header": {
     "appTitle": "Paxora Parish OS",
@@ -36,7 +40,7 @@
     "addGroup": "Add group",
     "language": "Language",
     "more": "More",
-    "moreAbbrev": "MORE",
+    "moreAbbrev": "...",
     "closeMoreMenu": "Close more menu"
   },
   "buttons": {
@@ -48,7 +52,9 @@
     "back": "Back",
     "next": "Next",
     "submit": "Submit",
-    "close": "Close"
+    "close": "Close",
+    "approve": "Approve",
+    "reject": "Reject"
   },
   "empty": {
     "noTasks": "All clear for now",
@@ -86,6 +92,87 @@
   },
   "auth": {
     "signingOut": "Signing out..."
+  },
+  "profile": {
+    "title": "Profile",
+    "subtitle": "Manage your account and personal preferences",
+    "quickActions": "Quick actions",
+    "quickActionsDesc": "Jump to your most-used profile controls.",
+    "notificationSettings": "Notification settings",
+    "importantDates": "Important dates",
+    "parishHub": "Parish Hub",
+    "parishHubDesc": "Configure the parish hub grid for quick access to resources.",
+    "accessRequests": "Access requests",
+    "accessRequestsDesc": "Review and approve incoming parish access requests.",
+    "selectRole": "Select role",
+    "parishioner": "Parishioner",
+    "clergy": "Clergy",
+    "admin": "Admin",
+    "requested": "Requested"
+  },
+  "calendar": {
+    "title": "Calendar",
+    "subtitle": "Stay connected to parish life",
+    "quote": "For everything there is a season, and a time for every matter under heaven.",
+    "quoteSource": "Ecclesiastes 3:1",
+    "week": "Week",
+    "month": "Month",
+    "addEvent": "Add event",
+    "addService": "Add a service",
+    "requestEvent": "Request an event",
+    "scheduleFilters": "Schedule filters",
+    "filters": "Filters",
+    "comingUp": "Coming up",
+    "comingUpDesc": "Services and events, day by day.",
+    "publicEventsNote": "Showing public events. Join a group to see their schedules too.",
+    "thisWeekRange": "This week",
+    "nextWeekRange": "Next week",
+    "thisMonth": "This month",
+    "allVisibility": "All visibility",
+    "allGroups": "All groups",
+    "myGroups": "My groups",
+    "emptyWeek": "A quiet week ahead",
+    "emptyWeekDesc": "No services or events are scheduled this week. Check back soon!",
+    "emptyMonth": "Nothing on the calendar this month",
+    "emptyMonthDesc": "Events and services will appear here once they're scheduled.",
+    "emptySchedule": "Nothing scheduled yet",
+    "emptyScheduleDesc": "New services and events will show up here as they're added."
+  },
+  "parish": {
+    "title": "Parish Hub",
+    "subtitle": "Quick links to parish resources and information",
+    "needSomething": "Need something from the parish?",
+    "needSomethingDesc": "Confession, blessing, meeting, or prayer",
+    "request": "Request",
+    "bulletinReady": "This Week's Bulletin Is Ready",
+    "featured": "Featured",
+    "bulletinDesc": "Stay informed with parish updates, Mass intentions, and upcoming events. Read the latest bulletin to see what's happening this week.",
+    "readBulletin": "Read Bulletin"
+  },
+  "thisWeek": {
+    "quote": "Teach us to number our days, that we may gain a heart of wisdom.",
+    "quoteSource": "Psalm 90:12",
+    "announcements": "Announcements",
+    "services": "Services",
+    "community": "Community",
+    "opportunities": "Opportunities",
+    "findCommunity": "Find your community",
+    "waysToHelp": "Ways to help",
+    "approvalsNeeded": "{count} approval needed",
+    "approvalsNeededPlural": "{count} approvals needed",
+    "reviewApprovals": "Review member-submitted serve items awaiting approval.",
+    "reviewNow": "Review now",
+    "quickAdd": "Quick add",
+    "quickAddDesc": "Create something new without leaving the weekly overview.",
+    "parishionerView": "Parishioner view"
+  },
+  "announcements": {
+    "title": "Announcements",
+    "subtitle": "Stay informed with the latest parish news"
+  },
+  "invite": {
+    "accepted": "Invite accepted",
+    "welcomeMessage": "Welcome to your parish community."
   },
   "serve": {
     "myParish": "My Parish",
@@ -166,6 +253,72 @@
       "addedToVolunteers": "Added to volunteers",
       "leftVolunteerList": "Left volunteer list",
       "taskDeleted": "Task deleted"
+    }
+  },
+  "tasks": {
+    "view": {
+      "all": "All",
+      "opportunities": "Opportunities",
+      "myCommitments": "My commitments"
+    },
+    "filters": {
+      "title": "Filters",
+      "tip": "Narrow down your serve list by status, group, or search.",
+      "searchOpportunities": "Search opportunities",
+      "searchServeItems": "Search serve items or notes",
+      "status": "Status",
+      "ownership": "Ownership",
+      "mine": "Mine",
+      "group": "Group",
+      "allGroups": "All groups",
+      "search": "Search",
+      "searchButton": "Search"
+    },
+    "hoursBoard": "Hours & Gratitude Board",
+    "quickAdd": {
+      "added": "Task added",
+      "ready": "Your task is ready.",
+      "addTitle": "Add a task title to continue.",
+      "placeholder": "Quick add a task...",
+      "aria": "Quick add a task"
+    }
+  },
+  "groups": {
+    "myParish": "My Parish",
+    "subtitle": "Find your people",
+    "quote": "For where two or three gather in my name, there am I with them.",
+    "quoteSource": "Matthew 18:20",
+    "startGroup": "Start a group",
+    "suggestGroup": "Suggest a group",
+    "memberSingular": "member",
+    "memberPlural": "members",
+    "joined": "Joined",
+    "invited": "Invited",
+    "requestPending": "Request pending",
+    "accept": "Accept",
+    "decline": "Decline",
+    "inviteOnly": "Invite only",
+    "join": "Join",
+    "requestToJoin": "Request to join",
+    "viewDetails": "View details",
+    "viewMembers": "View members",
+    "menuFor": "{name} menu",
+    "optionsFor": "Options for {name}",
+    "groupInvites": "Group invites",
+    "inviteAccepted": "Invite accepted",
+    "inviteDeclined": "Invite declined",
+    "limitedAccessMessage": "Only parish leaders can manage groups.",
+    "filters": {
+      "title": "Filters",
+      "active": "Active",
+      "archived": "Archived",
+      "search": "Search groups"
+    },
+    "empty": {
+      "startMessage": "Start a group to bring people together around shared interests and faith.",
+      "requestMessage": "Have an idea for a group? Request one and start connecting with fellow parishioners.",
+      "noArchived": "No archived groups",
+      "noArchivedDesc": "No archived groups — all groups are active and welcoming."
     }
   }
 }

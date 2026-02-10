@@ -7,14 +7,18 @@ import type {
   HomeEventPreview,
   HomeWeekCompletion
 } from "@/lib/queries/home";
+import type { Locale } from "@/lib/i18n/config";
+import { buildLocalePathname } from "@/lib/i18n/routing";
+import { getTranslator } from "@/lib/i18n/translator";
 
 const MAX_HIGHLIGHTS = 2;
 
-function formatEventTime(event: HomeEventPreview) {
-  const day = event.startsAt.toLocaleDateString("en-US", {
+function formatEventTime(event: HomeEventPreview, locale: Locale) {
+  const dateLocale = locale === "uk" ? "uk-UA" : "en-US";
+  const day = event.startsAt.toLocaleDateString(dateLocale, {
     weekday: "short"
   });
-  const time = event.startsAt.toLocaleTimeString("en-US", {
+  const time = event.startsAt.toLocaleTimeString(dateLocale, {
     hour: "numeric",
     minute: "2-digit"
   });
@@ -25,14 +29,17 @@ export type HomeHeroProps = {
   weekCompletion: HomeWeekCompletion;
   nextEvents: HomeEventPreview[];
   announcements: HomeAnnouncementPreview[];
+  locale: Locale;
 };
 
 export default function HomeHero({
   weekCompletion,
   nextEvents,
-  announcements
+  announcements,
+  locale
 }: HomeHeroProps) {
-  const completionLabel = `${weekCompletion.completedCount}/${weekCompletion.totalCount} complete`;
+  const t = getTranslator(locale);
+  const completionLabel = `${weekCompletion.completedCount}/${weekCompletion.totalCount}`;
   const highlightEvents = nextEvents.slice(0, MAX_HIGHLIGHTS);
   const highlightAnnouncements = announcements.slice(0, MAX_HIGHLIGHTS - highlightEvents.length);
   const showHighlights = highlightEvents.length + highlightAnnouncements.length > 0;
@@ -42,31 +49,31 @@ export default function HomeHero({
       <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">This Week</p>
-            <h2 className="text-h2">This Week</h2>
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">{t("nav.thisWeek")}</p>
+            <h2 className="text-h2">{t("nav.thisWeek")}</h2>
           </div>
-          <p className="text-sm text-ink-500">Keep going — small faithful steps.</p>
+          <p className="text-sm text-ink-500">{t("thisWeek.quote")}</p>
           {showHighlights ? (
             <div className="space-y-1 text-xs text-ink-500">
               {highlightEvents.map((event) => (
-                <p key={event.id}>{`Next: ${event.title} · ${formatEventTime(event)}`}</p>
+                <p key={event.id}>{`${event.title} · ${formatEventTime(event, locale)}`}</p>
               ))}
               {highlightAnnouncements.map((announcement) => (
-                <p key={announcement.id}>{`Latest announcement: ${announcement.title}`}</p>
+                <p key={announcement.id}>{`${t("thisWeek.announcements")}: ${announcement.title}`}</p>
               ))}
             </div>
           ) : null}
-          <Link className="text-sm font-medium text-ink-700 underline" href="/this-week">
-            View This Week
+          <Link className="text-sm font-medium text-ink-700 underline" href={buildLocalePathname(locale, "/this-week")}>
+            {t("nav.thisWeek")}
           </Link>
         </div>
 
         <div className="flex items-center gap-4 rounded-card border border-emerald-100 bg-white/70 px-4 py-3">
           <ProgressRing percent={weekCompletion.percent} />
           <div className="space-y-1">
-            <p className="text-xs uppercase tracking-wide text-ink-400">Completion</p>
+            <p className="text-xs uppercase tracking-wide text-ink-400">{completionLabel}</p>
             <Badge tone={weekCompletion.percent >= 100 ? "success" : "neutral"}>
-              {completionLabel}
+              {weekCompletion.percent}%
             </Badge>
           </div>
         </div>
