@@ -113,14 +113,18 @@ export async function createTask({
       creatorName: creator?.name ?? creator?.email ?? "Someone",
       ownerId
     }).catch(() => {});
-    notifyTaskCreatedInApp({
-      taskId: task.id,
-      taskTitle: title,
-      parishId,
-      createdById,
-      creatorName: creator?.name ?? creator?.email ?? "Someone",
-      ownerId
-    }).catch(() => {});
+    try {
+      await notifyTaskCreatedInApp({
+        taskId: task.id,
+        taskTitle: title,
+        parishId,
+        createdById,
+        creatorName: creator?.name ?? creator?.email ?? "Someone",
+        ownerId
+      });
+    } catch (error) {
+      console.error("[tasks] Failed to create in-app task notification:", error);
+    }
   }
 
   return task;
@@ -1047,14 +1051,18 @@ export async function assignTaskToUser({
       actorName: actor?.name ?? actor?.email ?? "Someone",
       ownerId
     }).catch(() => {});
-    notifyTaskAssignedInApp({
-      taskId,
-      taskTitle: updated.title,
-      parishId,
-      actorId: actorUserId,
-      actorName: actor?.name ?? actor?.email ?? "Someone",
-      ownerId
-    }).catch(() => {});
+    try {
+      await notifyTaskAssignedInApp({
+        taskId,
+        taskTitle: updated.title,
+        parishId,
+        actorId: actorUserId,
+        actorName: actor?.name ?? actor?.email ?? "Someone",
+        ownerId
+      });
+    } catch (error) {
+      console.error("[tasks] Failed to create in-app task assignment notification:", error);
+    }
   }
 
   return updated;

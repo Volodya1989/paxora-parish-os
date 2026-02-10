@@ -9,6 +9,7 @@ import NotificationProvider from "@/components/notifications/NotificationProvide
 import { ToastProvider, ToastViewport, useToast } from "@/components/ui/Toast";
 import PushRegistration from "@/components/push/PushRegistration";
 import ImpersonationBanner from "@/components/platform/ImpersonationBanner";
+import EngagementPrompts from "@/components/pwa/EngagementPrompts";
 
 type AppShellProps = {
   children: ReactNode;
@@ -27,6 +28,7 @@ export function AppShell({ children, parishRole, platformRole, impersonation }: 
     <ToastProvider>
       <NotificationProvider>
         <PushRegistration />
+        <EngagementPrompts />
         <InviteToastListener />
         <div className="flex min-h-screen w-full">
           <Sidebar currentPath={pathname} parishRole={parishRole} platformRole={platformRole} />
