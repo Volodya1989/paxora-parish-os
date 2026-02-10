@@ -245,6 +245,7 @@ model Parish {
   announcements   Announcement[]
   chatChannels    ChatChannel[]
   emailLogs       EmailLog[]
+  notifications   Notification[]
   hoursEntries    HoursEntry[]
   heroNominations HeroNomination[]
   parishInvites   ParishInvite[]
