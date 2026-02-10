@@ -1,3 +1,6 @@
+
+import { isRunningStandalone, requestNotificationPermission } from "@/lib/pwa";
+
 /**
  * Service worker registration + push subscription management (client-side).
  *
@@ -40,11 +43,7 @@ export function isPushSupported(): boolean {
  * Check if the app is running as an installed PWA (standalone mode).
  */
 export function isInstalledPWA(): boolean {
-  return (
-    window.matchMedia("(display-mode: standalone)").matches ||
-    // iOS Safari standalone check
-    ("standalone" in navigator && (navigator as unknown as { standalone: boolean }).standalone === true)
-  );
+  return isRunningStandalone();
 }
 
 /**
@@ -61,12 +60,7 @@ export function getNotificationPermission(): NotificationPermission | "unsupport
  * Request notification permission from the user.
  * Must be called from a user gesture (click/tap handler).
  */
-export async function requestNotificationPermission(): Promise<NotificationPermission> {
-  if (!("Notification" in window)) {
-    return "denied";
-  }
-  return Notification.requestPermission();
-}
+export { requestNotificationPermission };
 
 /**
  * Subscribe the user to push notifications and register with the server.
