@@ -17,6 +17,14 @@ enum PlatformRole {
   SUPERADMIN
 }
 
+enum NotificationType {
+  MESSAGE
+  TASK
+  ANNOUNCEMENT
+  EVENT
+  REQUEST
+}
+
 enum AuditAction {
   IMPERSONATION_START
   IMPERSONATION_END
@@ -237,6 +245,7 @@ model Parish {
   announcements   Announcement[]
   chatChannels    ChatChannel[]
   emailLogs       EmailLog[]
+  notifications   Notification[]
   hoursEntries    HoursEntry[]
   heroNominations HeroNomination[]
   parishInvites   ParishInvite[]
@@ -289,6 +298,7 @@ model User {
   lastSeenRequestsAt       DateTime?
   createdAt                DateTime  @default(now())
 
+  notifications            Notification[]
   pushSubscriptions        PushSubscription[]
   memberships              Membership[]
   accessRequests           AccessRequest[]
@@ -329,6 +339,25 @@ model User {
   requestsAssigned         Request[]                @relation("RequestAssignedTo")
   impersonatedParish       Parish?                  @relation("ImpersonatedParish", fields: [impersonatedParishId], references: [id], onDelete: SetNull)
   auditLogs                AuditLog[]               @relation("AuditActor")
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  userId      String
+  parishId    String
+  type        NotificationType
+  title       String
+  description String?
+  href        String
+  createdAt   DateTime         @default(now())
+  readAt      DateTime?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parish Parish @relation(fields: [parishId], references: [id], onDelete: Cascade)
+
+  @@index([userId, parishId, createdAt])
+  @@index([userId, parishId, readAt])
+  @@index([userId, type, createdAt])
 }
 
 model AuditLog {

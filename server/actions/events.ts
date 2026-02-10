@@ -16,6 +16,7 @@ import { getGroupMembership, getParishMembership } from "@/server/db/groups";
 import { prisma } from "@/server/db/prisma";
 import type { EventActionState } from "@/server/actions/eventState";
 import { notifyEventCreated } from "@/lib/push/notify";
+import { notifyEventCreatedInApp } from "@/lib/notifications/notify";
 
 function assertSession(session: Session | null) {
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -268,6 +269,16 @@ export async function createEvent(
     visibility: parsed.data.visibility,
     groupId: parsed.data.visibility === "GROUP" ? group?.id : null
   }).catch(() => {});
+  notifyEventCreatedInApp({
+    eventId: createdEvent.id,
+    eventTitle: parsed.data.title,
+    parishId,
+    creatorId: userId,
+    visibility: parsed.data.visibility,
+    groupId: parsed.data.visibility === "GROUP" ? group?.id : null
+  }).catch((error) => {
+    console.error("[events] Failed to create in-app notification:", error);
+  });
 
   revalidatePath("/calendar");
   revalidatePath("/this-week");

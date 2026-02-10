@@ -1,5 +1,5 @@
 import { prisma } from "@/server/db/prisma";
-import { Prisma } from "@prisma/client";
+import { Prisma, NotificationType } from "@prisma/client";
 import { getParishMembership } from "@/server/db/groups";
 import { isParishLeader } from "@/lib/permissions";
 import { canViewRequest } from "@/lib/requests/access";
@@ -15,12 +15,54 @@ export type NotificationItem = {
   description: string;
   href: string;
   timestamp: string;
+  readAt?: string | null;
 };
 
 export type NotificationsResult = {
   items: NotificationItem[];
   count: number;
 };
+
+const notificationTypeMap: Record<NotificationType, NotificationCategory> = {
+  MESSAGE: "message",
+  TASK: "task",
+  ANNOUNCEMENT: "announcement",
+  EVENT: "event",
+  REQUEST: "request"
+};
+
+function toNotificationCategory(type: NotificationType): NotificationCategory {
+  return notificationTypeMap[type];
+}
+
+async function getStoredNotificationItems(
+  userId: string,
+  parishId: string
+): Promise<NotificationsResult> {
+  const [notifications, unreadCount] = await Promise.all([
+    prisma.notification.findMany({
+      where: { userId, parishId },
+      orderBy: { createdAt: "desc" },
+      take: 50
+    }),
+    prisma.notification.count({
+      where: { userId, parishId, readAt: null }
+    })
+  ]);
+
+  return {
+    items: notifications.map((notification) => ({
+      id: notification.id,
+      type: toNotificationCategory(notification.type),
+      title: notification.title,
+      description: notification.description ?? "",
+      href: notification.href,
+      timestamp: notification.createdAt.toISOString(),
+      readAt: notification.readAt?.toISOString() ?? null
+    })),
+    count: unreadCount
+  };
+}
 
 /**
  * Aggregate all notification items for a user within a parish.
@@ -35,6 +77,12 @@ export async function getNotificationItems(
   userId: string,
   parishId: string
 ): Promise<NotificationsResult> {
+  const stored = await getStoredNotificationItems(userId, parishId);
+
+  if (stored.items.length > 0) {
+    return stored;
+  }
+
   const [messages, tasks, announcements, events, pendingRequests, requestUpdates] = await Promise.all([
     getUnreadMessageItems(userId, parishId),
     getNewTaskItems(userId, parishId),

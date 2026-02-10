@@ -2,10 +2,24 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
+import { NotificationType } from "@prisma/client";
+
+type NotificationCategory = "task" | "announcement" | "event" | "message" | "request";
+
+const categoryToNotificationType: Record<NotificationCategory, NotificationType> = {
+  task: NotificationType.TASK,
+  announcement: NotificationType.ANNOUNCEMENT,
+  event: NotificationType.EVENT,
+  message: NotificationType.MESSAGE,
+  request: NotificationType.REQUEST
+};
 
 /**
  * POST /api/notifications/mark-read
- * Body: { category: "task" | "announcement" | "event" | "message" | "request" | "all" }
+ * Body:
+ *  - { notificationId: string }
+ *  - { category: "task" | "announcement" | "event" | "message" | "request" }
+ *  - { all: true }
  *
  * Marks notifications as read by updating the user's "last seen" timestamps.
  * Chat messages are marked read via the existing markRoomRead server action.
@@ -19,26 +33,73 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const category = body.category as string;
+    const rawCategory = body.category as string | undefined;
+    const category =
+      rawCategory && rawCategory !== "all"
+        ? (rawCategory as NotificationCategory)
+        : undefined;
+    const notificationId = body.notificationId as string | undefined;
+    const markAll = body.all === true || rawCategory === "all";
     const now = new Date();
     const userId = session.user.id;
 
     const updateData: Record<string, Date> = {};
 
-    if (category === "task" || category === "all") {
+    if (notificationId) {
+      const notification = await prisma.notification.findFirst({
+        where: {
+          id: notificationId,
+          userId,
+          parishId: session.user.activeParishId
+        }
+      });
+
+      if (notification) {
+        await prisma.notification.update({
+          where: { id: notificationId },
+          data: { readAt: now }
+        });
+      }
+      // Do NOT update lastSeen* timestamps for individual notifications.
+      // Per-item readAt is sufficient; bumping lastSeen here would mark all
+      // legacy items of that category as seen, which is incorrect.
+    }
+
+    if (markAll) {
+      await prisma.notification.updateMany({
+        where: {
+          userId,
+          parishId: session.user.activeParishId,
+          readAt: null
+        },
+        data: { readAt: now }
+      });
+    } else if (category) {
+      await prisma.notification.updateMany({
+        where: {
+          userId,
+          parishId: session.user.activeParishId,
+          type: categoryToNotificationType[category],
+          readAt: null
+        },
+        data: { readAt: now }
+      });
+    }
+
+    if (category === "task" || markAll) {
       updateData.lastSeenTasksAt = now;
     }
-    if (category === "announcement" || category === "all") {
+    if (category === "announcement" || markAll) {
       updateData.lastSeenAnnouncementsAt = now;
     }
-    if (category === "event" || category === "all") {
+    if (category === "event" || markAll) {
       updateData.lastSeenEventsAt = now;
     }
-    if (category === "request" || category === "all") {
+    if (category === "request" || markAll) {
       updateData.lastSeenRequestsAt = now;
     }
 
-    if (category === "all" || category === "message") {
+    if (markAll || category === "message") {
       // Also mark all chat rooms as read
       const channels = await prisma.chatChannel.findMany({
         where: { parishId: session.user.activeParishId },

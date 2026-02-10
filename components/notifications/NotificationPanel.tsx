@@ -11,6 +11,7 @@ type NotificationPanelProps = {
   items: NotificationItem[];
   onMarkAllRead: () => void;
   onMarkCategoryRead: (category: NotificationCategory) => void;
+  onMarkNotificationRead: (notificationId: string) => void;
 };
 
 const categoryIcons: Record<NotificationCategory, string> = {
@@ -47,16 +48,18 @@ function formatTimestamp(iso: string): string {
 function NotificationRow({
   item,
   onClose,
-  onMarkCategoryRead
+  onMarkNotificationRead
 }: {
   item: NotificationItem;
   onClose: () => void;
-  onMarkCategoryRead: (category: NotificationCategory) => void;
+  onMarkNotificationRead: (notificationId: string) => void;
 }) {
   const handleClick = () => {
-    onMarkCategoryRead(item.type);
+    onMarkNotificationRead(item.id);
     onClose();
   };
+
+  const isUnread = !item.readAt;
 
   return (
     <Link
@@ -71,7 +74,14 @@ function NotificationRow({
         {categoryIcons[item.type]}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-ink-900">{item.title}</p>
+        <div className="flex items-center gap-2">
+          <p
+            className={`truncate text-sm font-medium ${isUnread ? "text-ink-900" : "text-ink-600"}`}
+          >
+            {item.title}
+          </p>
+          {isUnread && <span className="h-1.5 w-1.5 rounded-full bg-primary-600" />}
+        </div>
         {item.description && (
           <p className="mt-0.5 truncate text-xs text-ink-500">{item.description}</p>
         )}
@@ -91,7 +101,8 @@ export function NotificationPanel({
   onClose,
   items,
   onMarkAllRead,
-  onMarkCategoryRead
+  onMarkCategoryRead,
+  onMarkNotificationRead
 }: NotificationPanelProps) {
   const t = useTranslations();
   const panelRef = useRef<HTMLDivElement>(null);
@@ -132,6 +143,8 @@ export function NotificationPanel({
   // Group items by category for category-level mark-read
   const categories = Array.from(new Set(items.map((i) => i.type)));
 
+  const hasUnread = items.some((item) => !item.readAt);
+
   const handleMarkAll = () => {
     onMarkAllRead();
     onClose();
@@ -143,7 +156,7 @@ export function NotificationPanel({
       <div className="flex items-center justify-between border-b border-mist-200 px-4 py-3">
         <h2 className="text-sm font-semibold text-ink-900">{t("notifications.title")}</h2>
         <div className="flex items-center gap-2">
-          {items.length > 0 && (
+          {hasUnread && (
             <button
               type="button"
               onClick={handleMarkAll}
@@ -177,7 +190,7 @@ export function NotificationPanel({
                 key={item.id}
                 item={item}
                 onClose={onClose}
-                onMarkCategoryRead={onMarkCategoryRead}
+                onMarkNotificationRead={onMarkNotificationRead}
               />
             ))}
           </div>

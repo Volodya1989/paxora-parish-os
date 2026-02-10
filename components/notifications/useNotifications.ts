@@ -34,10 +34,19 @@ export function useNotifications() {
     async (category: NotificationCategory | "all") => {
       setState((prev) => {
         if (category === "all") {
-          return { ...prev, items: [], count: 0 };
+          const updatedItems = prev.items.map((item) => ({
+            ...item,
+            readAt: item.readAt ?? new Date().toISOString()
+          }));
+          return { ...prev, items: updatedItems, count: 0 };
         }
-        const remaining = prev.items.filter((item) => item.type !== category);
-        return { ...prev, items: remaining, count: remaining.length };
+        const updatedItems = prev.items.map((item) =>
+          item.type === category
+            ? { ...item, readAt: item.readAt ?? new Date().toISOString() }
+            : item
+        );
+        const unreadCount = updatedItems.filter((item) => !item.readAt).length;
+        return { ...prev, items: updatedItems, count: unreadCount };
       });
       try {
         await fetch("/api/notifications/mark-read", {
@@ -54,6 +63,31 @@ export function useNotifications() {
   );
 
   const markAllRead = useCallback(() => markCategoryRead("all"), [markCategoryRead]);
+
+  const markNotificationRead = useCallback(
+    async (notificationId: string) => {
+      setState((prev) => {
+        const updatedItems = prev.items.map((item) =>
+          item.id === notificationId
+            ? { ...item, readAt: item.readAt ?? new Date().toISOString() }
+            : item
+        );
+        const unreadCount = updatedItems.filter((item) => !item.readAt).length;
+        return { ...prev, items: updatedItems, count: unreadCount };
+      });
+      try {
+        await fetch("/api/notifications/mark-read", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ notificationId })
+        });
+        await fetchNotifications();
+      } catch {
+        // Silently fail
+      }
+    },
+    [fetchNotifications]
+  );
 
   useEffect(() => {
     fetchNotifications();
@@ -77,6 +111,7 @@ export function useNotifications() {
     loading: state.loading,
     refresh: fetchNotifications,
     markCategoryRead,
-    markAllRead
+    markAllRead,
+    markNotificationRead
   };
 }

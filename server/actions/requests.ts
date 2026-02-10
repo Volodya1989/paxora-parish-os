@@ -21,6 +21,10 @@ import {
 } from "@/lib/requests/utils";
 import { sendRequestAssignmentEmail } from "@/lib/email/requestNotifications";
 import { notifyRequestAssigned } from "@/lib/push/notify";
+import {
+  notifyRequestAssignedInApp,
+  notifyRequestStatusUpdatedInApp
+} from "@/lib/notifications/notify";
 import { getWeekEnd, getWeekLabel, getWeekStartMonday } from "@/lib/date/week";
 import { parseParishDateTime } from "@/lib/time/parish";
 import {
@@ -160,7 +164,7 @@ export async function updateRequestStatus(input: {
 
   const request = await prisma.request.findUnique({
     where: { id: input.requestId },
-    select: { id: true, parishId: true, status: true, details: true }
+    select: { id: true, parishId: true, status: true, title: true, createdByUserId: true, details: true }
   });
 
   if (!request || request.parishId !== parishId) {
@@ -185,6 +189,18 @@ export async function updateRequestStatus(input: {
     where: { id: request.id },
     data: { status: input.status, details: detailsWithActivity as Prisma.InputJsonValue }
   });
+
+  if (request.createdByUserId && request.createdByUserId !== session.user.id) {
+    notifyRequestStatusUpdatedInApp({
+      requestId: request.id,
+      requestTitle: request.title,
+      parishId,
+      requesterId: request.createdByUserId,
+      status: input.status
+    }).catch((error) => {
+      console.error("[requests] Failed to create in-app status notification:", error);
+    });
+  }
 
   revalidatePath("/admin/requests");
   revalidatePath("/requests");
@@ -418,6 +434,15 @@ export async function assignRequest(input: {
     } catch (error) {
       console.error("Failed to send request assignment push", error);
     }
+
+    notifyRequestAssignedInApp({
+      requestId: request.id,
+      requestTitle: request.title,
+      parishId,
+      assigneeId: assignee.userId
+    }).catch((error) => {
+      console.error("[requests] Failed to create in-app assignment notification:", error);
+    });
   }
 
   revalidatePath("/admin/requests");
@@ -833,6 +858,19 @@ export async function cancelRequest(input: {
     }
   });
 
+  // Notify the requester in-app that their request was canceled by admin
+  if (request.createdByUserId && request.createdByUserId !== session.user.id) {
+    notifyRequestStatusUpdatedInApp({
+      requestId: request.id,
+      requestTitle: request.title,
+      parishId,
+      requesterId: request.createdByUserId,
+      status: "CANCELED"
+    }).catch((error) => {
+      console.error("[requests] Failed to create in-app cancellation notification:", error);
+    });
+  }
+
   const parish = await prisma.parish.findUnique({
     where: { id: parishId },
     select: { name: true }
@@ -1053,6 +1091,14 @@ export async function respondToScheduledRequest(input: {
     } catch (error) {
       console.error("Failed to send reject push notification to assignee", error);
     }
+    notifyRequestAssignedInApp({
+      requestId: request.id,
+      requestTitle: `Declined: ${request.title}`,
+      parishId,
+      assigneeId: request.assignedToUserId
+    }).catch((error) => {
+      console.error("[requests] Failed to create in-app decline notification:", error);
+    });
   }
 
   revalidatePath("/requests");
