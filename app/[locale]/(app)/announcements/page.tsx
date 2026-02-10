@@ -6,8 +6,17 @@ import { getParishMembership } from "@/server/db/groups";
 import { isParishLeader } from "@/lib/permissions";
 import { prisma } from "@/server/db/prisma";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
+import { getLocaleFromParam } from "@/lib/i18n/routing";
+import { getTranslator } from "@/lib/i18n/translator";
 
-export default async function AnnouncementsPage() {
+export default async function AnnouncementsPage({
+  params
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale: localeParam } = await params;
+  const locale = getLocaleFromParam(localeParam);
+  const t = getTranslator(locale);
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -35,11 +44,11 @@ export default async function AnnouncementsPage() {
 
   return (
     <ParishionerPageLayout
-      pageTitle="Announcements"
-      parishName={parish?.name ?? "My Parish"}
+      pageTitle={t("announcements.title")}
+      parishName={parish?.name ?? t("serve.myParish")}
       parishLogoUrl={parish?.logoUrl ?? null}
       isLeader={canManage}
-      subtitle="Stay informed with the latest parish news"
+      subtitle={t("announcements.subtitle")}
       gradientClass="from-amber-500 via-amber-400 to-orange-400"
     >
       <AnnouncementsView drafts={drafts} published={published} canManage={canManage} />

@@ -5,11 +5,20 @@ import QuickActions from "@/components/home/quick-actions";
 import RecentUpdates from "@/components/home/recent-updates";
 import CommunityPreview from "@/components/home/community-preview";
 import HomeQuickNav from "@/components/home/home-quick-nav";
+import { getLocaleFromParam } from "@/lib/i18n/routing";
+import { getTranslator } from "@/lib/i18n/translator";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default async function HomePage() {
+export default async function HomePage({
+  params
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale: localeParam } = await params;
+  const locale = getLocaleFromParam(localeParam);
+  const t = getTranslator(locale);
   const now = getNow();
   const [summary, rooms] = await Promise.all([
     getHomeSummary({ now }),
@@ -22,11 +31,11 @@ export default async function HomePage() {
     <div className="section-gap">
       <div className="mx-auto max-w-6xl space-y-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
-          Parish at a glance
+          {t("landing.home")}
         </p>
-        <h1 className="text-h1">Home</h1>
+        <h1 className="text-h1">{t("landing.home")}</h1>
         <p className="text-sm text-ink-500">
-          A steady view of what matters this week, grouped for quick decisions.
+          {t("thisWeek.quote")}
         </p>
       </div>
 
@@ -45,6 +54,7 @@ export default async function HomePage() {
             weekCompletion={summary.weekCompletion}
             nextEvents={summary.nextEvents}
             announcements={summary.announcements}
+            locale={locale}
           />
         </section>
 

@@ -11,8 +11,17 @@ import { listGroupsByParish, getParishMembership } from "@/server/db/groups";
 import { prisma } from "@/server/db/prisma";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
 import { CalendarIcon } from "@/components/icons/ParishIcons";
+import { getLocaleFromParam } from "@/lib/i18n/routing";
+import { getTranslator } from "@/lib/i18n/translator";
 
-export default async function CalendarPage() {
+export default async function CalendarPage({
+  params
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale: localeParam } = await params;
+  const locale = getLocaleFromParam(localeParam);
+  const t = getTranslator(locale);
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
@@ -87,11 +96,11 @@ export default async function CalendarPage() {
 
   return (
     <ParishionerPageLayout
-      pageTitle="Calendar"
-      parishName={parish?.name ?? "My Parish"}
+      pageTitle={t("calendar.title")}
+      parishName={parish?.name ?? t("serve.myParish")}
       parishLogoUrl={parish?.logoUrl ?? null}
       isLeader={isLeader}
-      subtitle="Stay connected to parish life"
+      subtitle={t("calendar.subtitle")}
       gradientClass="from-teal-600 via-teal-500 to-emerald-500"
       icon={<CalendarIcon className="h-6 w-6 text-white" />}
     >

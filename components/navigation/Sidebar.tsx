@@ -6,8 +6,8 @@ import { useEffect, useState } from "react";
 import { getPrimaryNavItems, type NavRole } from "@/components/navigation/navItems";
 import { SignOutButton } from "@/components/navigation/SignOutButton";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
-import { stripLocale } from "@/lib/i18n/routing";
-import { useTranslations } from "@/lib/i18n/provider";
+import { stripLocale, buildLocalePathname } from "@/lib/i18n/routing";
+import { useTranslations, useLocale } from "@/lib/i18n/provider";
 import { routes } from "@/lib/navigation/routes";
 
 const STORAGE_KEY = "paxora.sidebarCollapsed";
@@ -32,6 +32,7 @@ export function Sidebar({
   platformRole
 }: SidebarProps) {
   const t = useTranslations();
+  const locale = useLocale();
   const [internalCollapsed, setInternalCollapsed] = useState(initialCollapsed);
   const isCollapsed = collapsed ?? internalCollapsed;
   const normalizedPath = stripLocale(currentPath);
@@ -115,7 +116,7 @@ export function Sidebar({
           return (
             <Link
               key={item.href}
-              href={item.href}
+              href={buildLocalePathname(locale, item.href)}
               aria-current={isActive ? "page" : undefined}
               title={isCollapsed ? t(item.labelKey) : undefined}
               className={`group relative flex items-center gap-3 rounded-card px-3 py-2 text-sm font-medium transition focus-ring ${
@@ -145,7 +146,7 @@ export function Sidebar({
 
       <div className="mt-6 space-y-2 px-2">
         <Link
-          href="/profile"
+          href={buildLocalePathname(locale, "/profile")}
           className={`flex items-center gap-3 rounded-card px-3 py-2 text-sm font-medium text-ink-700 transition hover:bg-mist-50 focus-ring ${
             isCollapsed ? "justify-center" : ""
           }`}

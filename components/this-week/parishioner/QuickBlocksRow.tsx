@@ -3,6 +3,8 @@
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/ui/cn";
+import { useLocale } from "@/lib/i18n/provider";
+import { buildLocalePathname } from "@/lib/i18n/routing";
 
 export type QuickBlock = {
   id: string;
@@ -20,6 +22,7 @@ type QuickBlocksRowProps = {
 
 export default function QuickBlocksRow({ blocks }: QuickBlocksRowProps) {
   const router = useRouter();
+  const locale = useLocale();
 
   const handleNavigate = (href: string) => {
     if (href.startsWith("#")) {
@@ -29,7 +32,7 @@ export default function QuickBlocksRow({ blocks }: QuickBlocksRowProps) {
       }
       return;
     }
-    router.push(href);
+    router.push(buildLocalePathname(locale, href));
   };
 
   return (

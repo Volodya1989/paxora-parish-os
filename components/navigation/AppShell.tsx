@@ -10,6 +10,7 @@ import { ToastProvider, ToastViewport, useToast } from "@/components/ui/Toast";
 import PushRegistration from "@/components/push/PushRegistration";
 import ImpersonationBanner from "@/components/platform/ImpersonationBanner";
 import EngagementPrompts from "@/components/pwa/EngagementPrompts";
+import { useTranslations } from "@/lib/i18n/provider";
 
 type AppShellProps = {
   children: ReactNode;
@@ -51,20 +52,21 @@ function InviteToastListener() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { addToast } = useToast();
+  const t = useTranslations();
   const inviteToastShown = useRef(false);
 
   useEffect(() => {
     const inviteStatus = searchParams.get("invite");
     if (inviteStatus === "accepted" && !inviteToastShown.current) {
       addToast({
-        title: "Invite accepted",
-        description: "Welcome to your parish community.",
+        title: t("invite.accepted"),
+        description: t("invite.welcomeMessage"),
         status: "success"
       });
       inviteToastShown.current = true;
       router.replace(pathname);
     }
-  }, [addToast, pathname, router, searchParams]);
+  }, [addToast, pathname, router, searchParams, t]);
 
   return null;
 }

@@ -189,7 +189,7 @@ export default function CalendarView({
             setCreateOpen(true);
           }}
         >
-          Add a service
+          {t("calendar.addService")}
         </Button>
       ) : null}
       {!canManageEventRequests && (
@@ -197,7 +197,7 @@ export default function CalendarView({
           variant={canCreateEvents ? "secondary" : "primary"}
           onClick={() => setRequestOpen(true)}
         >
-          Request an event
+          {t("calendar.requestEvent")}
         </Button>
       )}
     </div>
@@ -209,25 +209,25 @@ export default function CalendarView({
         value={scheduleRange}
         onChange={(event) => setScheduleRange(event.target.value as ScheduleRange)}
       >
-        <option value="week">This week</option>
-        <option value="next">Next week</option>
-        <option value="month">This month</option>
+        <option value="week">{t("calendar.thisWeekRange")}</option>
+        <option value="next">{t("calendar.nextWeekRange")}</option>
+        <option value="month">{t("calendar.thisMonth")}</option>
       </Select>
       {isEditor ? (
         <Select
           value={visibilityFilter}
           onChange={(event) => setVisibilityFilter(event.target.value as VisibilityFilter)}
         >
-          <option value="all">All visibility</option>
+          <option value="all">{t("calendar.allVisibility")}</option>
           <option value="PUBLIC">{t("common.public")}</option>
-          <option value="GROUP">Group</option>
+          <option value="GROUP">{t("tasks.filters.group")}</option>
           <option value="PRIVATE">{t("common.private")}</option>
         </Select>
       ) : null}
       {viewerGroupIds.length > 0 ? (
         <Select value={groupFilter} onChange={(event) => setGroupFilter(event.target.value as GroupFilter)}>
-          <option value="all">All groups</option>
-          <option value="mine">My groups</option>
+          <option value="all">{t("calendar.allGroups")}</option>
+          <option value="mine">{t("calendar.myGroups")}</option>
         </Select>
       ) : null}
     </div>
@@ -237,19 +237,19 @@ export default function CalendarView({
     <Tabs value={view} onValueChange={(value) => setView(value)}>
       <div className="section-gap">
         <QuoteCard
-          quote="For everything there is a season, and a time for every matter under heaven."
-          source="Ecclesiastes 3:1"
+          quote={t("calendar.quote")}
+          source={t("calendar.quoteSource")}
           tone="primary"
         />
         {/* Controls: toggle + actions — single compact row */}
         <div className="flex flex-wrap items-center gap-2">
           <TabsList aria-label="Time range" className="flex-wrap">
-            <TabsTrigger value="week">Week</TabsTrigger>
-            <TabsTrigger value="month">Month</TabsTrigger>
+            <TabsTrigger value="week">{t("calendar.week")}</TabsTrigger>
+            <TabsTrigger value="month">{t("calendar.month")}</TabsTrigger>
           </TabsList>
           {surface === "schedule" ? (
             <div className="md:hidden">
-              <FiltersDrawer title="Schedule filters">{scheduleFilters}</FiltersDrawer>
+              <FiltersDrawer title={t("calendar.scheduleFilters")}>{scheduleFilters}</FiltersDrawer>
             </div>
           ) : null}
           {!canManageEventRequests && (
@@ -258,7 +258,7 @@ export default function CalendarView({
               onClick={() => setRequestOpen(true)}
               className="hidden h-9 px-3 text-sm sm:inline-flex"
             >
-              Request an event
+              {t("calendar.requestEvent")}
             </Button>
           )}
           {canCreateEvents && (
@@ -270,7 +270,7 @@ export default function CalendarView({
                   setCreateOpen(true);
                 }}
                 className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 sm:hidden"
-                aria-label="Add event"
+                aria-label={t("calendar.addEvent")}
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
               </button>
@@ -282,7 +282,7 @@ export default function CalendarView({
                 }}
                 className="hidden h-9 px-3 text-sm sm:inline-flex"
               >
-                Add event
+                {t("calendar.addEvent")}
               </Button>
             </>
           )}
@@ -300,7 +300,7 @@ export default function CalendarView({
                 <Card className="space-y-3">
                   <div className="flex items-center gap-2 text-xs font-semibold text-ink-500">
                     <CalendarIcon className="h-4 w-4" />
-                    Filters
+                    {t("calendar.filters")}
                   </div>
                   {scheduleFilters}
                 </Card>
@@ -308,22 +308,22 @@ export default function CalendarView({
               <div className="section-gap">
                 <div>
                   <p className="text-sm font-semibold text-ink-900">
-                    Coming up
+                    {t("calendar.comingUp")}
                   </p>
                   <p className="text-xs text-ink-400">
-                    Services and events, day by day.
+                    {t("calendar.comingUpDesc")}
                   </p>
                 </div>
                 {!isEditor && viewerGroupIds.length === 0 ? (
                   <div className="rounded-card border border-mist-100 bg-mist-50 px-4 py-3 text-xs text-ink-500">
-                    Showing public events. Join a group to see their schedules too.
+                    {t("calendar.publicEventsNote")}
                   </div>
                 ) : null}
                 <div>
                   {scheduleEvents.length === 0 ? (
                     <ListEmptyState
-                      title="Nothing scheduled yet"
-                      description="New services and events will show up here as they're added."
+                      title={t("calendar.emptySchedule")}
+                      description={t("calendar.emptyScheduleDesc")}
                       icon={<CalendarIcon className="h-6 w-6" />}
                       action={renderEmptyActions()}
                       variant="friendly"
@@ -344,8 +344,8 @@ export default function CalendarView({
               <TabsPanel value="week">
                 {weekEvents.length === 0 ? (
                   <ListEmptyState
-                    title="A quiet week ahead"
-                    description="No services or events are scheduled this week. Check back soon!"
+                    title={t("calendar.emptyWeek")}
+                    description={t("calendar.emptyWeekDesc")}
                     icon={<CalendarIcon className="h-6 w-6" />}
                     action={renderEmptyActions()}
                     variant="friendly"
@@ -375,8 +375,8 @@ export default function CalendarView({
               <TabsPanel value="month">
                 {monthEvents.length === 0 ? (
                   <ListEmptyState
-                    title="Nothing on the calendar this month"
-                    description="Events and services will appear here once they're scheduled."
+                    title={t("calendar.emptyMonth")}
+                    description={t("calendar.emptyMonthDesc")}
                     icon={<CalendarIcon className="h-6 w-6" />}
                     action={renderEmptyActions()}
                     variant="friendly"

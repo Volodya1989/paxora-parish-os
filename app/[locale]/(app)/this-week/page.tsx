@@ -10,15 +10,22 @@ import { getGratitudeAdminData } from "@/lib/queries/gratitude";
 import { prisma } from "@/server/db/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/server/auth/options";
+import { getLocaleFromParam } from "@/lib/i18n/routing";
+import { getTranslator } from "@/lib/i18n/translator";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function ThisWeekPage({
+  params,
   searchParams
 }: {
+  params: Promise<{ locale: string }>;
   searchParams?: Promise<{ week?: string | string[]; view?: string | string[] } | undefined>;
 }) {
+  const { locale: localeParam } = await params;
+  const locale = getLocaleFromParam(localeParam);
+  const t = getTranslator(locale);
   const resolvedSearchParams = await searchParams;
   const weekSelection = parseWeekSelection(resolvedSearchParams?.week);
   const now = getNow();
@@ -37,7 +44,7 @@ export default async function ThisWeekPage({
       : null;
 
   // Fetch parish name and user name for the header (both views use same header now)
-  let parishName = "Mother of God Ukrainian Catholic Church"; // MVP default
+  let parishName = t("serve.myParish");
   let parishLogoUrl: string | null = null;
   let userName: string | undefined;
   const session = await getServerSession(authOptions);
