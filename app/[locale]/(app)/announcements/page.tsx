@@ -19,7 +19,7 @@ export default async function AnnouncementsPage() {
     getParishMembership(parishId, session.user.id),
     prisma.parish.findUnique({
       where: { id: parishId },
-      select: { name: true }
+      select: { name: true, logoUrl: true }
     })
   ]);
 
@@ -37,6 +37,7 @@ export default async function AnnouncementsPage() {
     <ParishionerPageLayout
       pageTitle="Announcements"
       parishName={parish?.name ?? "My Parish"}
+      parishLogoUrl={parish?.logoUrl ?? null}
       isLeader={canManage}
       subtitle="Stay informed with the latest parish news"
       gradientClass="from-amber-500 via-amber-400 to-orange-400"
@@ -45,4 +46,3 @@ export default async function AnnouncementsPage() {
     </ParishionerPageLayout>
   );
 }
-

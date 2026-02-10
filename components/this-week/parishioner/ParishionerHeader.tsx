@@ -13,6 +13,8 @@ import { Drawer } from "@/components/ui/Drawer";
 type ParishionerHeaderProps = {
   /** Parish name to display */
   parishName: string;
+  /** Optional parish logo URL (falls back to Paxora logo) */
+  parishLogoUrl?: string | null;
   /** User's first name for personalized greeting */
   userName?: string;
   /** Optional right-aligned actions (e.g., view toggle for users who can switch views) */
@@ -34,6 +36,7 @@ type ParishionerHeaderProps = {
  */
 export default function ParishionerHeader({
   parishName,
+  parishLogoUrl,
   userName,
   actions,
   showQuickAdd,
@@ -43,6 +46,7 @@ export default function ParishionerHeader({
   const t = useTranslations();
   const { count } = useNotificationContext();
   const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const logoSrc = parishLogoUrl?.trim() ? parishLogoUrl : "/icon.png";
 
   // Use state to prevent hydration mismatch - start with generic greeting
   // then update to time-based greeting on client
@@ -66,8 +70,8 @@ export default function ParishionerHeader({
         <div className="relative mb-2 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <img
-              src="/icon.png"
-              alt="Paxora logo"
+              src={logoSrc}
+              alt={`${parishName} logo`}
               className="h-6 w-6 md:h-8 md:w-8"
             />
             <div className="flex items-center gap-2 rounded-full bg-white/20 px-2.5 py-1 backdrop-blur-sm">

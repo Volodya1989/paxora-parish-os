@@ -50,7 +50,7 @@ export default async function CalendarPage() {
     getParishMembership(parishId, userId),
     prisma.parish.findUnique({
       where: { id: parishId },
-      select: { name: true }
+      select: { name: true, logoUrl: true }
     }),
     prisma.groupMembership.findMany({
       where: {
@@ -89,6 +89,7 @@ export default async function CalendarPage() {
     <ParishionerPageLayout
       pageTitle="Calendar"
       parishName={parish?.name ?? "My Parish"}
+      parishLogoUrl={parish?.logoUrl ?? null}
       isLeader={isLeader}
       subtitle="Stay connected to parish life"
       gradientClass="from-teal-600 via-teal-500 to-emerald-500"

@@ -12,6 +12,8 @@ type PageHeaderProps = {
   pageTitle: string;
   /** Parish name to display */
   parishName: string;
+  /** Optional parish logo URL (falls back to Paxora logo) */
+  parishLogoUrl?: string | null;
   /** Optional subtitle/description */
   subtitle?: string;
   /** Optional right-aligned actions */
@@ -42,6 +44,7 @@ type PageHeaderProps = {
 export default function PageHeader({
   pageTitle,
   parishName,
+  parishLogoUrl,
   subtitle,
   actions,
   gradientClass = "from-primary-600 via-primary-500 to-emerald-500",
@@ -52,6 +55,7 @@ export default function PageHeader({
 }: PageHeaderProps) {
   const { count } = useNotificationContext();
   const router = useRouter();
+  const logoSrc = parishLogoUrl?.trim() ? parishLogoUrl : "/icon.png";
 
   const handleBack = useCallback(() => {
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -98,8 +102,8 @@ export default function PageHeader({
             </button>
           ) : null}
           <img
-            src="/icon.png"
-            alt="Paxora logo"
+            src={logoSrc}
+            alt={`${parishName} logo`}
             className="h-6 w-6 md:h-8 md:w-8"
           />
           <span>{parishName}</span>

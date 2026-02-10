@@ -38,7 +38,7 @@ export default async function ParishHubPage() {
     getParishMembership(session.user.activeParishId, session.user.id),
     prisma.parish.findUnique({
       where: { id: session.user.activeParishId },
-      select: { name: true }
+      select: { name: true, logoUrl: true }
     })
   ]);
 
@@ -58,6 +58,7 @@ export default async function ParishHubPage() {
     <ParishionerPageLayout
       pageTitle="Parish Hub"
       parishName={parish?.name ?? "My Parish"}
+      parishLogoUrl={parish?.logoUrl ?? null}
       isLeader={isLeader}
       subtitle="Quick links to parish resources and information"
       gradientClass="from-primary-600 via-primary-500 to-emerald-500"

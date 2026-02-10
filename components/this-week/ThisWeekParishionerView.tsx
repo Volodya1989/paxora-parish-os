@@ -27,6 +27,8 @@ type ThisWeekParishionerViewProps = {
   viewToggle?: ReactNode;
   /** Parish name for the header (MVP default: Mother of God Ukrainian Catholic Church) */
   parishName?: string;
+  /** Optional parish logo URL (falls back to Paxora logo) */
+  parishLogoUrl?: string | null;
   /** User's first name for personalized greeting */
   userName?: string;
 };
@@ -35,6 +37,7 @@ export default async function ThisWeekParishionerView({
   data,
   viewToggle,
   parishName = "Mother of God Ukrainian Catholic Church",
+  parishLogoUrl,
   userName
 }: ThisWeekParishionerViewProps) {
   const locale = await getLocaleFromCookies();
@@ -97,6 +100,7 @@ export default async function ThisWeekParishionerView({
       {/* Clean, welcoming header with personalized greeting */}
       <ParishionerHeader
         parishName={parishName}
+        parishLogoUrl={parishLogoUrl}
         userName={userName}
         actions={viewToggle}
         quote="Teach us to number our days, that we may gain a heart of wisdom."

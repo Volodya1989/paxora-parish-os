@@ -29,6 +29,7 @@ type AppHeaderProps = {
   // Note: parishRole prop is retained for backwards compatibility but not used for filtering.
   // Header visibility is now controlled by the layout level (see /app/[locale]/(app)/layout.tsx).
   parishRole?: "ADMIN" | "SHEPHERD" | "MEMBER" | null;
+  parishLogoUrl?: string | null;
 };
 
 /**
@@ -44,12 +45,13 @@ type AppHeaderProps = {
  * The layout checks the user role and conditionally renders this header.
  * See /components/header/HEADER_STRATEGY.md for strategy documentation.
  */
-export function AppHeader({ parishRole }: AppHeaderProps) {
+export function AppHeader({ parishRole, parishLogoUrl }: AppHeaderProps) {
   const t = useTranslations();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
   const { count } = useNotificationContext();
+  const logoSrc = parishLogoUrl?.trim() ? parishLogoUrl : "/icon.png";
 
   const weekSelection = normalizeWeekSelection(searchParams?.get("week") ?? null);
 
@@ -62,8 +64,8 @@ export function AppHeader({ parishRole }: AppHeaderProps) {
     <header className="flex flex-wrap items-center justify-between gap-4 border-b border-mist-200 bg-white/70 px-4 py-4 shadow-card md:px-8">
       <div className="flex items-center gap-3">
         <img
-          src="/icon.png"
-          alt="Paxora logo"
+          src={logoSrc}
+          alt="Parish logo"
           className="h-6 w-6 md:h-8 md:w-8"
         />
         <div className="space-y-1">

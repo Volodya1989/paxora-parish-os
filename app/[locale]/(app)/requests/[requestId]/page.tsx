@@ -33,7 +33,7 @@ export default async function RequestDetailPage({
     getRequestDetail(session.user.activeParishId, session.user.id, requestId),
     prisma.parish.findUnique({
       where: { id: session.user.activeParishId },
-      select: { name: true }
+      select: { name: true, logoUrl: true }
     })
   ]);
 
@@ -47,6 +47,7 @@ export default async function RequestDetailPage({
     <ParishionerPageLayout
       pageTitle="Request details"
       parishName={parish?.name ?? "My Parish"}
+      parishLogoUrl={parish?.logoUrl ?? null}
       subtitle="Track the latest updates"
       backHref="/requests"
       actions={
