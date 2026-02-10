@@ -50,13 +50,18 @@ export default function ParishionerHeader({
 
   // Use state to prevent hydration mismatch - start with generic greeting
   // then update to time-based greeting on client
-  const [greeting, setGreeting] = useState("Welcome");
+  const [greeting, setGreeting] = useState(t("landing.welcome"));
 
   useEffect(() => {
     const hour = new Date().getHours();
-    const timeGreeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+    const timeGreeting =
+      hour < 12
+        ? t("landing.goodMorning")
+        : hour < 17
+          ? t("landing.goodAfternoon")
+          : t("landing.goodEvening");
     setGreeting(timeGreeting);
-  }, []);
+  }, [t]);
 
   return (
     <>

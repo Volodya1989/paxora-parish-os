@@ -5,7 +5,8 @@ import { UsersIcon } from "@/components/icons/ParishIcons";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { routes } from "@/lib/navigation/routes";
-import { useTranslations } from "@/lib/i18n/provider";
+import { useTranslations, useLocale } from "@/lib/i18n/provider";
+import { buildLocalePathname } from "@/lib/i18n/routing";
 import { cn } from "@/lib/ui/cn";
 import { formatMessageTime } from "@/lib/time/messageTime";
 
@@ -31,6 +32,7 @@ type GroupsSectionProps = {
  */
 export default function GroupsSection({ groups, hasPublicGroups, className }: GroupsSectionProps) {
   const t = useTranslations();
+  const locale = useLocale();
 
   return (
     <section className={cn("space-y-4", className)}>
@@ -40,7 +42,7 @@ export default function GroupsSection({ groups, hasPublicGroups, className }: Gr
         </h2>
         {groups.length > 0 && hasPublicGroups && (
           <Link
-            href={routes.groups}
+            href={buildLocalePathname(locale, routes.groups)}
             className="text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline"
           >
             {t("landing.viewAll")}
@@ -61,7 +63,7 @@ export default function GroupsSection({ groups, hasPublicGroups, className }: Gr
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => (window.location.href = routes.groups)}
+              onClick={() => (window.location.href = buildLocalePathname(locale, routes.groups))}
             >
               {t("landing.discoverGroups")}
             </Button>
@@ -72,7 +74,7 @@ export default function GroupsSection({ groups, hasPublicGroups, className }: Gr
           {groups.slice(0, 4).map((group) => (
             <Link
               key={group.id}
-              href={`/groups/${group.id}/chat`}
+              href={buildLocalePathname(locale, `/groups/${group.id}/chat`)}
               className="group flex items-center gap-3 rounded-xl border border-mist-100 bg-white px-4 py-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-mist-200 hover:shadow-md active:scale-[0.99]"
             >
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-600 transition-colors group-hover:bg-sky-200">
@@ -103,10 +105,10 @@ export default function GroupsSection({ groups, hasPublicGroups, className }: Gr
           ))}
           {groups.length > 4 && (
             <Link
-              href={routes.groups}
+              href={buildLocalePathname(locale, routes.groups)}
               className="block py-2 text-center text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline"
             >
-              +{groups.length - 4} more groups
+              +{t("landing.moreGroups").replace("{count}", String(groups.length - 4))}
             </Link>
           )}
         </div>

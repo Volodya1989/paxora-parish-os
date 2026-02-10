@@ -19,12 +19,9 @@ import FiltersDrawer from "@/components/app/filters-drawer";
 import Card from "@/components/ui/Card";
 import ListEmptyState from "@/components/app/list-empty-state";
 import { useTranslations } from "@/lib/i18n/provider";
+import { useLocale } from "@/lib/i18n/provider";
 import QuoteCard from "@/components/app/QuoteCard";
-
-const EMPTY_GROUPS_MESSAGE = "Start a group to bring people together around shared interests and faith.";
-const REQUEST_GROUP_MESSAGE = "Have an idea for a group? Request one and start connecting with fellow parishioners.";
-const NO_ARCHIVED_MESSAGE = "No archived groups — all groups are active and welcoming.";
-const LIMITED_ACCESS_MESSAGE = "Only parish leaders can manage groups.";
+import { buildLocalePathname } from "@/lib/i18n/routing";
 
 type GroupsViewProps = {
   groups: GroupListItem[];
@@ -40,6 +37,7 @@ export default function GroupsView({
   canManageGroups
 }: GroupsViewProps) {
   const t = useTranslations();
+  const locale = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { addToast } = useToast();
@@ -115,7 +113,7 @@ export default function GroupsView({
     if (!canManageGroups) {
       addToast({
         title: "Not enough access",
-        description: LIMITED_ACCESS_MESSAGE,
+        description: t("groups.limitedAccessMessage"),
         status: "warning"
       });
       return;
@@ -141,7 +139,7 @@ export default function GroupsView({
     if (!canManageGroups) {
       addToast({
         title: "Not enough access",
-        description: LIMITED_ACCESS_MESSAGE,
+        description: t("groups.limitedAccessMessage"),
         status: "warning"
       });
       return;
@@ -161,7 +159,7 @@ export default function GroupsView({
     if (!canManageGroups) {
       addToast({
         title: "Not enough access",
-        description: LIMITED_ACCESS_MESSAGE,
+        description: t("groups.limitedAccessMessage"),
         status: "warning"
       });
       return;
@@ -188,7 +186,7 @@ export default function GroupsView({
     if (!canManageGroups) {
       addToast({
         title: "Not enough access",
-        description: LIMITED_ACCESS_MESSAGE,
+        description: t("groups.limitedAccessMessage"),
         status: "warning"
       });
       return;
@@ -243,10 +241,10 @@ export default function GroupsView({
       return (
         <ListEmptyState
           title={t("empty.noGroups")}
-          description={canManageGroups ? EMPTY_GROUPS_MESSAGE : REQUEST_GROUP_MESSAGE}
+          description={canManageGroups ? t("groups.empty.startMessage") : t("groups.empty.requestMessage")}
           action={
             <Button onClick={openCreateDialog}>
-              {canManageGroups ? "Start a group" : "Suggest a group"}
+              {canManageGroups ? t("groups.startGroup") : t("groups.suggestGroup")}
             </Button>
           }
           variant="friendly"
@@ -255,7 +253,7 @@ export default function GroupsView({
     }
 
     if (activeTab === "archived" && counts.archived === 0) {
-      return <ListEmptyState title="No archived groups" description={NO_ARCHIVED_MESSAGE} />;
+      return <ListEmptyState title={t("groups.empty.noArchived")} description={t("groups.empty.noArchivedDesc")} />;
     }
 
     return (
@@ -269,8 +267,8 @@ export default function GroupsView({
   return (
     <div className="section-gap">
       <QuoteCard
-        quote="For where two or three gather in my name, there am I with them."
-        source="Matthew 18:20"
+        quote={t("groups.quote")}
+        source={t("groups.quoteSource")}
         tone="primary"
       />
 
@@ -280,15 +278,15 @@ export default function GroupsView({
           type="button"
           onClick={openCreateDialog}
           className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 sm:hidden"
-          aria-label={canManageGroups ? "Start a group" : "Suggest a group"}
+          aria-label={canManageGroups ? t("groups.startGroup") : t("groups.suggestGroup")}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
         </button>
         <Button onClick={openCreateDialog} className="hidden h-9 px-3 text-sm sm:inline-flex">
-          {canManageGroups ? "Start a group" : "Suggest a group"}
+          {canManageGroups ? t("groups.startGroup") : t("groups.suggestGroup")}
         </Button>
         <div className="md:hidden">
-          <FiltersDrawer title="Filters">
+          <FiltersDrawer title={t("groups.filters.title")}>
             <GroupFilters
               activeTab={activeTab}
               onTabChange={setActiveTab}
@@ -315,7 +313,7 @@ export default function GroupsView({
       {myInvites.length > 0 ? (
         <Card className="border-primary-200 bg-primary-50/40">
           <div className="mb-3 text-sm font-semibold text-ink-900">
-            Group invites ({myInvites.length})
+            {t("groups.groupInvites")} ({myInvites.length})
           </div>
           <div className="space-y-3">
             {myInvites.map((group) => (
@@ -337,12 +335,12 @@ export default function GroupsView({
                       void handleMemberResult(
                         group.id,
                         () => acceptInvite({ groupId: group.id }),
-                        "Invite accepted"
+                        t("groups.inviteAccepted")
                       )
                     }
                     disabled={pendingGroupId === group.id}
                   >
-                    Accept
+                    {t("groups.accept")}
                   </Button>
                   <Button
                     type="button"
@@ -352,12 +350,12 @@ export default function GroupsView({
                       void handleMemberResult(
                         group.id,
                         () => declineInvite({ groupId: group.id }),
-                        "Invite declined"
+                        t("groups.inviteDeclined")
                       )
                     }
                     disabled={pendingGroupId === group.id}
                   >
-                    Decline
+                    {t("groups.decline")}
                   </Button>
                 </div>
               </div>
@@ -460,7 +458,9 @@ export default function GroupsView({
                 onArchive={() => handleArchive(group.id)}
                 onRestore={() => handleRestore(group.id)}
                 onDelete={() => handleDeleteRequest(group.id)}
-                onManageMembers={() => router.push(`/groups/${group.id}/members`)}
+                onManageMembers={() =>
+                  router.push(buildLocalePathname(locale, `/groups/${group.id}/members`))
+                }
                 onJoin={() =>
                   void handleMemberResult(
                     group.id,

@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useState } from "react";
 import MoreDrawer from "@/components/navigation/MoreDrawer";
 import { getPrimaryNavItems, type NavRole, type PlatformNavRole } from "@/components/navigation/navItems";
-import { stripLocale } from "@/lib/i18n/routing";
-import { useTranslations } from "@/lib/i18n/provider";
+import { buildLocalePathname, stripLocale } from "@/lib/i18n/routing";
+import { useLocale, useTranslations } from "@/lib/i18n/provider";
 
 type MobileTabsProps = {
   currentPath?: string;
@@ -28,6 +28,7 @@ export function MobileTabs({
   platformRole
 }: MobileTabsProps) {
   const t = useTranslations();
+  const locale = useLocale();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = isMoreOpen ?? internalOpen;
   const normalizedPath = stripLocale(currentPath);
@@ -55,15 +56,16 @@ export function MobileTabs({
       >
         <div className="flex items-center justify-around px-2 py-2">
           {items.map((item) => {
+            const localizedHref = buildLocalePathname(locale, item.href);
             const isActive = normalizedPath === item.href;
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={localizedHref}
                 aria-current={isActive ? "page" : undefined}
                 data-testid={`tab-${item.testId}`}
                 onClick={() => {
-                  onNavigate?.(item.href);
+                  onNavigate?.(localizedHref);
                   setOpen(false);
                 }}
                 className={`flex min-w-0 flex-col items-center gap-1 rounded-button px-1.5 py-1 text-xs font-medium transition focus-ring ${

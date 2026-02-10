@@ -14,7 +14,8 @@ import {
 } from "@/components/ui/Dropdown";
 import type { GroupListItem } from "@/lib/queries/groups";
 import { cn } from "@/lib/ui/cn";
-import { useTranslations } from "@/lib/i18n/provider";
+import { useLocale, useTranslations } from "@/lib/i18n/provider";
+import { buildLocalePathname } from "@/lib/i18n/routing";
 
 const placeholderNames = ["Alex", "Jordan", "Casey", "Morgan", "Riley", "Quinn", "Harper"];
 
@@ -82,6 +83,7 @@ export default function GroupCard({
   forceMenuOpen
 }: GroupCardProps) {
   const t = useTranslations();
+  const locale = useLocale();
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
   const isArchived = Boolean(group.archivedAt);
@@ -96,7 +98,9 @@ export default function GroupCard({
 
   const memberCountLabel = group.memberCount ?? "—";
   const memberSuffix =
-    typeof group.memberCount === "number" && group.memberCount === 1 ? "member" : "members";
+    typeof group.memberCount === "number" && group.memberCount === 1
+      ? t("groups.memberSingular")
+      : t("groups.memberPlural");
   const isMember = group.viewerMembershipStatus === "ACTIVE";
   const canOpenChat = isMember && !isArchived && group.status === "ACTIVE";
   const isInvited = group.viewerMembershipStatus === "INVITED";
@@ -123,14 +127,14 @@ export default function GroupCard({
     if (interactiveTarget && interactiveTarget !== event.currentTarget) {
       return;
     }
-    router.push(`/groups/${group.id}/chat`);
+    router.push(buildLocalePathname(locale, `/groups/${group.id}/chat`));
   };
 
   const handleCardKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (!canOpenChat) return;
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      router.push(`/groups/${group.id}/chat`);
+      router.push(buildLocalePathname(locale, `/groups/${group.id}/chat`));
     }
   };
 
@@ -175,13 +179,13 @@ export default function GroupCard({
               <span>{memberCountLabel === "—" ? "—" : `${memberCountLabel} ${memberSuffix}`}</span>
             </div>
             {isMember ? (
-              <span className="font-medium text-primary-600">Joined</span>
+              <span className="font-medium text-primary-600">{t("groups.joined")}</span>
             ) : null}
             {isInvited ? (
-              <span className="font-medium text-amber-600">Invited</span>
+              <span className="font-medium text-amber-600">{t("groups.invited")}</span>
             ) : null}
             {isRequested ? (
-              <span className="font-medium text-amber-600">Request pending</span>
+              <span className="font-medium text-amber-600">{t("groups.requestPending")}</span>
             ) : null}
           </div>
         </div>
@@ -196,7 +200,7 @@ export default function GroupCard({
                 onClick={(e) => { e.stopPropagation(); onAcceptInvite(); }}
                 disabled={isBusy}
               >
-                Accept
+                {t("groups.accept")}
               </Button>
               <Button
                 type="button"
@@ -205,7 +209,7 @@ export default function GroupCard({
                 onClick={(e) => { e.stopPropagation(); onDeclineInvite(); }}
                 disabled={isBusy}
               >
-                Decline
+                {t("groups.decline")}
               </Button>
             </div>
           ) : null}
@@ -213,14 +217,14 @@ export default function GroupCard({
           {/* Join/Request button — kept visible for discoverability */}
           {showJoinActions ? (
             group.joinPolicy === "INVITE_ONLY" ? (
-              <span className="text-xs font-medium text-ink-400">Invite only</span>
+              <span className="text-xs font-medium text-ink-400">{t("groups.inviteOnly")}</span>
             ) : (
               <Button
                 type="button"
                 size="sm"
                 onClick={(e) => { e.stopPropagation(); joinAction(); }}
               >
-                {group.joinPolicy === "OPEN" ? "Join" : "Request to join"}
+                  {group.joinPolicy === "OPEN" ? t("groups.join") : t("groups.requestToJoin")}
               </Button>
             )
           ) : null}
@@ -235,7 +239,7 @@ export default function GroupCard({
                 }
               }}
             >
-              <DropdownTrigger asChild iconOnly aria-label={`Options for ${group.name}`}>
+                <DropdownTrigger asChild iconOnly aria-label={t("groups.optionsFor").replace("{name}", group.name)}>
                 <Button
                   type="button"
                   variant="ghost"
@@ -246,12 +250,12 @@ export default function GroupCard({
                   ⋯
                 </Button>
               </DropdownTrigger>
-              <DropdownMenu ariaLabel={`${group.name} menu`}>
-                <DropdownItem asChild>
-                  <Link href={`/groups/${group.id}`}>View details</Link>
-                </DropdownItem>
+                <DropdownMenu ariaLabel={t("groups.menuFor").replace("{name}", group.name)}>
+                  <DropdownItem asChild>
+                  <Link href={buildLocalePathname(locale, `/groups/${group.id}`)}>{t("groups.viewDetails")}</Link>
+                  </DropdownItem>
                 {canManageMembers ? (
-                  <DropdownItem onClick={onManageMembers}>View members</DropdownItem>
+                  <DropdownItem onClick={onManageMembers}>{t("groups.viewMembers")}</DropdownItem>
                 ) : null}
                 {canManageGroup ? <DropdownItem onClick={onEdit}>Edit</DropdownItem> : null}
                 {canManageGroup ? (

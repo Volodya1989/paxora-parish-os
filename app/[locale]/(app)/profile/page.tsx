@@ -17,6 +17,8 @@ import ParishHubAdminPanel from "@/components/parish-hub/ParishHubAdminPanel";
 import type { ParishHubAdminItem } from "@/components/parish-hub/ParishHubReorderList";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
 import { SparklesIcon } from "@/components/icons/ParishIcons";
+import { getLocaleFromParam } from "@/lib/i18n/routing";
+import { getTranslator } from "@/lib/i18n/translator";
 
 /**
  * Findings: /profile is the existing account surface with session-gated reads and
@@ -26,7 +28,14 @@ import { SparklesIcon } from "@/components/icons/ParishIcons";
  * server action on this page. V2: admin-managed profiles, greeting automation,
  * and explicit leap-year behavior for Feb 29.
  */
-export default async function ProfilePage() {
+export default async function ProfilePage({
+  params
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale: localeParam } = await params;
+  const locale = getLocaleFromParam(localeParam);
+  const t = getTranslator(locale);
   const session = await getServerSession(authOptions);
 
   if (!session?.user) {
@@ -73,10 +82,10 @@ export default async function ProfilePage() {
 
   return (
     <ParishionerPageLayout
-      pageTitle="Profile"
-      parishName={parish?.name ?? "My Parish"}
+      pageTitle={t("profile.title")}
+      parishName={parish?.name ?? t("serve.myParish")}
       parishLogoUrl={parish?.logoUrl ?? null}
-      subtitle="Manage your account and personal preferences"
+      subtitle={t("profile.subtitle")}
       gradientClass="from-primary-600 via-primary-500 to-emerald-500"
       icon={<SparklesIcon className="h-6 w-6 text-white" />}
     >
@@ -84,21 +93,21 @@ export default async function ProfilePage() {
         <Card>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-sm font-medium text-ink-900">Quick actions</p>
-              <p className="text-sm text-ink-500">Jump to your most-used profile controls.</p>
+              <p className="text-sm font-medium text-ink-900">{t("profile.quickActions")}</p>
+              <p className="text-sm text-ink-500">{t("profile.quickActionsDesc")}</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <a
                 href="#notification-settings"
                 className="inline-flex items-center justify-center rounded-button border border-mist-200 bg-white px-3 py-1.5 text-xs font-medium text-ink-900 transition hover:border-mist-300 hover:bg-mist-50 focus-ring"
               >
-                Notification settings
+                {t("profile.notificationSettings")}
               </a>
               <a
                 href="#important-dates"
                 className="inline-flex items-center justify-center rounded-button border border-mist-200 bg-white px-3 py-1.5 text-xs font-medium text-ink-900 transition hover:border-mist-300 hover:bg-mist-50 focus-ring"
               >
-                Important dates
+                {t("profile.importantDates")}
               </a>
             </div>
           </div>
@@ -139,9 +148,9 @@ export default async function ProfilePage() {
         {isAdmin && session.user.activeParishId && (
           <Card>
             <CardHeader>
-              <CardTitle>Parish Hub</CardTitle>
+              <CardTitle>{t("profile.parishHub")}</CardTitle>
               <p className="text-sm text-ink-500">
-                Configure the parish hub grid for quick access to resources.
+                {t("profile.parishHubDesc")}
               </p>
             </CardHeader>
             <CardContent>
@@ -159,9 +168,9 @@ export default async function ProfilePage() {
         {pendingRequests.length ? (
           <Card>
             <CardHeader>
-              <CardTitle>Access requests</CardTitle>
+              <CardTitle>{t("profile.accessRequests")}</CardTitle>
               <p className="text-sm text-ink-500">
-                Review and approve incoming parish access requests.
+                {t("profile.accessRequestsDesc")}
               </p>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -172,12 +181,12 @@ export default async function ProfilePage() {
                 >
                   <div>
                     <div className="text-sm font-medium text-ink-800">
-                      {request.userName ?? "Parishioner"}
+                      {request.userName ?? t("profile.parishioner")}
                     </div>
                     <div className="text-xs text-ink-500">{request.userEmail}</div>
                   </div>
                   <div className="text-xs text-ink-400">
-                    Requested {request.requestedAt.toLocaleDateString()}
+                    {t("profile.requested")} {request.requestedAt.toLocaleDateString(locale === "uk" ? "uk-UA" : undefined)}
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <form className="flex items-center gap-2" action={approveParishAccess}>
@@ -190,21 +199,21 @@ export default async function ProfilePage() {
                         className="w-[160px] rounded-button border border-mist-200 bg-white px-3 py-2 text-sm text-ink-700 shadow-card transition focus-ring"
                       >
                         <option value="" disabled>
-                          Select role
+                          {t("profile.selectRole")}
                         </option>
-                        <option value="MEMBER">Parishioner</option>
-                        <option value="SHEPHERD">Clergy</option>
-                        <option value="ADMIN">Admin</option>
+                        <option value="MEMBER">{t("profile.parishioner")}</option>
+                        <option value="SHEPHERD">{t("profile.clergy")}</option>
+                        <option value="ADMIN">{t("profile.admin")}</option>
                       </select>
                       <Button type="submit" size="sm">
-                        Approve
+                        {t("buttons.approve")}
                       </Button>
                     </form>
                     <form action={rejectParishAccess}>
                       <input type="hidden" name="parishId" value={request.parishId} />
                       <input type="hidden" name="userId" value={request.userId} />
                       <Button type="submit" size="sm" variant="secondary">
-                        Reject
+                        {t("buttons.reject")}
                       </Button>
                     </form>
                   </div>

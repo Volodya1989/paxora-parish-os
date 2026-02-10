@@ -11,19 +11,27 @@ import FeaturedPanel from "@/components/parish-hub/FeaturedPanel";
 import type { FeaturedPanelConfig } from "@/components/parish-hub/FeaturedPanel";
 import type { ParishHubItemData } from "@/components/parish-hub/ParishHubTile";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
+import { getLocaleFromParam } from "@/lib/i18n/routing";
+import { getTranslator } from "@/lib/i18n/translator";
 
-/* ── Static featured-panel configuration ─────────────────────────── */
-const featuredConfig: FeaturedPanelConfig = {
-  title: "This Week's Bulletin Is Ready",
-  meta: "Featured",
-  description:
-    "Stay informed with parish updates, Mass intentions, and upcoming events. Read the latest bulletin to see what's happening this week.",
-  ctaLabel: "Read Bulletin",
-  ctaHref: "/parish/bulletin",
-  ctaExternal: false,
-};
+export default async function ParishHubPage({
+  params
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale: localeParam } = await params;
+  const locale = getLocaleFromParam(localeParam);
+  const t = getTranslator(locale);
 
-export default async function ParishHubPage() {
+  /* ── Static featured-panel configuration ─────────────────────────── */
+  const featuredConfig: FeaturedPanelConfig = {
+    title: t("parish.bulletinReady"),
+    meta: t("parish.featured"),
+    description: t("parish.bulletinDesc"),
+    ctaLabel: t("parish.readBulletin"),
+    ctaHref: "/parish/bulletin",
+    ctaExternal: false,
+  };
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -56,11 +64,11 @@ export default async function ParishHubPage() {
 
   return (
     <ParishionerPageLayout
-      pageTitle="Parish Hub"
-      parishName={parish?.name ?? "My Parish"}
+      pageTitle={t("parish.title")}
+      parishName={parish?.name ?? t("serve.myParish")}
       parishLogoUrl={parish?.logoUrl ?? null}
       isLeader={isLeader}
-      subtitle="Quick links to parish resources and information"
+      subtitle={t("parish.subtitle")}
       gradientClass="from-primary-600 via-primary-500 to-emerald-500"
     >
       {/* Quick-action panel: Make a Request */}
@@ -71,14 +79,14 @@ export default async function ParishHubPage() {
           </svg>
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-ink-800">Need something from the parish?</p>
-          <p className="text-xs text-ink-500">Confession, blessing, meeting, or prayer</p>
+          <p className="text-sm font-medium text-ink-800">{t("parish.needSomething")}</p>
+          <p className="text-xs text-ink-500">{t("parish.needSomethingDesc")}</p>
         </div>
         <Link
           href="/requests/new"
           className="shrink-0 rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2"
         >
-          Request
+          {t("parish.request")}
         </Link>
       </div>
 

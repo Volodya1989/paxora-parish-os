@@ -78,6 +78,6 @@ export function buildLocaleSwitchPath(
   nextLocale: Locale
 ) {
   const normalizedPath = stripLocale(currentPath);
-  const query = search ? search.replace(/^\\?/, "") : "";
+  const query = search ? search.replace(/^\?/, "") : "";
   return buildLocalePathname(nextLocale, query ? `${normalizedPath}?${query}` : normalizedPath);
 }

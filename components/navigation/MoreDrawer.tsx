@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { getMoreNavItems, type NavRole, type PlatformNavRole } from "@/components/navigation/navItems";
 import { SignOutButton } from "@/components/navigation/SignOutButton";
-import { useTranslations } from "@/lib/i18n/provider";
+import { useLocale, useTranslations } from "@/lib/i18n/provider";
+import { buildLocalePathname } from "@/lib/i18n/routing";
 
 type MoreDrawerProps = {
   open: boolean;
@@ -17,6 +18,7 @@ type MoreDrawerProps = {
 
 export function MoreDrawer({ open, onClose, onSignOut, parishRole, platformRole }: MoreDrawerProps) {
   const t = useTranslations();
+  const locale = useLocale();
   const firstItemRef = useRef<HTMLAnchorElement | null>(null);
   const items = getMoreNavItems(parishRole, platformRole);
 
@@ -65,7 +67,7 @@ export function MoreDrawer({ open, onClose, onSignOut, parishRole, platformRole 
           {items.map((item, index) => (
             <Link
               key={item.href}
-              href={item.href}
+              href={buildLocalePathname(locale, item.href)}
               ref={index === 0 ? firstItemRef : undefined}
               onClick={onClose}
               className="flex items-center justify-between rounded-card border border-mist-200 bg-mist-50 px-4 py-3 text-sm font-medium text-ink-800 shadow-card transition hover:bg-mist-100 focus-ring"
