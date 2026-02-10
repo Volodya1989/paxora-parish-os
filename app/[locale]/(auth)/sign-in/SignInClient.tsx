@@ -54,7 +54,7 @@ export default function SignInPage() {
         <img
           src="/icon.png"
           alt="Paxora logo"
-          className="mx-auto mb-5 h-20 w-20 object-contain md:h-24 md:w-24"
+          className="mx-auto mb-5 h-24 w-24 object-contain md:h-28 md:w-28"
         />
         <SectionTitle title={t("nav.signIn")} subtitle="Welcome back to Paxora." />
         <p className="mt-3 text-sm text-ink-500">
