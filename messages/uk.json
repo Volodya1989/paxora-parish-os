@@ -170,7 +170,8 @@
     "groupsJoinedOne": "група приєднана",
     "groupsJoinedFew": "групи приєднано",
     "groupsJoinedMany": "груп приєднано",
-    "adminView": "Режим адміністратора"
+    "adminView": "Режим адміністратора",
+    "latestPrefix": "Останнє:"
   },
   "announcements": {
     "title": "Оголошення",

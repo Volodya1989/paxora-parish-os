@@ -170,7 +170,8 @@
     "groupsJoinedOne": "group joined",
     "groupsJoinedFew": "groups joined",
     "groupsJoinedMany": "groups joined",
-    "adminView": "Admin view"
+    "adminView": "Admin view",
+    "latestPrefix": "Latest:"
   },
   "announcements": {
     "title": "Announcements",
