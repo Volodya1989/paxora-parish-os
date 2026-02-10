@@ -15,7 +15,8 @@ test("Home hero renders progress ring and completion chip", () => {
     createElement(HomeHero, {
       weekCompletion,
       nextEvents: [],
-      announcements: []
+      announcements: [],
+      locale: "en"
     })
   );
 
