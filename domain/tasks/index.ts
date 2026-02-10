@@ -4,6 +4,7 @@ import { calculateEstimatedHoursPerParticipant } from "@/lib/hours/allocations";
 import { getGroupMembership, getParishMembership } from "@/server/db/groups";
 import { prisma } from "@/server/db/prisma";
 import { notifyTaskCreated, notifyTaskAssigned } from "@/lib/push/notify";
+import { notifyTaskAssignedInApp, notifyTaskCreatedInApp } from "@/lib/notifications/notify";
 
 type CreateTaskInput = {
   parishId: string;
@@ -105,6 +106,14 @@ export async function createTask({
       select: { name: true, email: true }
     });
     notifyTaskCreated({
+      taskId: task.id,
+      taskTitle: title,
+      parishId,
+      createdById,
+      creatorName: creator?.name ?? creator?.email ?? "Someone",
+      ownerId
+    }).catch(() => {});
+    notifyTaskCreatedInApp({
       taskId: task.id,
       taskTitle: title,
       parishId,
@@ -1031,6 +1040,14 @@ export async function assignTaskToUser({
       select: { name: true, email: true }
     });
     notifyTaskAssigned({
+      taskId,
+      taskTitle: updated.title,
+      parishId,
+      actorId: actorUserId,
+      actorName: actor?.name ?? actor?.email ?? "Someone",
+      ownerId
+    }).catch(() => {});
+    notifyTaskAssignedInApp({
       taskId,
       taskTitle: updated.title,
       parishId,

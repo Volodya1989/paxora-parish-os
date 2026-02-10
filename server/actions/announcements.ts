@@ -16,6 +16,7 @@ import {
   updateAnnouncementStatusSchema
 } from "@/lib/validation/announcements";
 import { notifyAnnouncementPublished } from "@/lib/push/notify";
+import { notifyAnnouncementPublishedInApp } from "@/lib/notifications/notify";
 import { sanitizeAnnouncementHtml, stripHtmlToText } from "@/lib/sanitize/html";
 import { sendEmail } from "@/lib/email/emailService";
 import { renderAnnouncementEmail } from "@/emails/templates/announcement";
@@ -150,6 +151,12 @@ export async function setAnnouncementPublished(input: {
         parishId,
         publisherId: userId
       }).catch(() => {});
+      notifyAnnouncementPublishedInApp({
+        announcementId: parsed.data.id,
+        title: announcement.title,
+        parishId,
+        publisherId: userId
+      }).catch(() => {});
     }
   }
 
@@ -267,6 +274,12 @@ export async function createAnnouncement(input: {
   // Fire-and-forget push notification when created as published
   if (parsed.data.published) {
     notifyAnnouncementPublished({
+      announcementId: announcement.id,
+      title: parsed.data.title,
+      parishId,
+      publisherId: userId
+    }).catch(() => {});
+    notifyAnnouncementPublishedInApp({
       announcementId: announcement.id,
       title: parsed.data.title,
       parishId,

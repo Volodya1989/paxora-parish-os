@@ -24,6 +24,7 @@ import {
   MAX_CHAT_ATTACHMENTS
 } from "@/lib/chat/attachments";
 import { notifyChatMessage } from "@/lib/push/notify";
+import { notifyChatMessageInApp } from "@/lib/notifications/notify";
 
 const MESSAGE_EDIT_WINDOW_MS = 15 * 60 * 1000;
 const REACTION_SET = new Set(REACTION_EMOJIS);
@@ -412,6 +413,15 @@ export async function postMessage(
 
   // Fire-and-forget push notification
   notifyChatMessage({
+    channelId,
+    authorId: userId,
+    authorName: message.author.name ?? message.author.email ?? "Parish member",
+    channelName: channel.type === "GROUP" ? "Group Chat" : "Parish Chat",
+    parishId,
+    messageBody: trimmed || "Shared an image"
+  }).catch(() => {});
+
+  notifyChatMessageInApp({
     channelId,
     authorId: userId,
     authorName: message.author.name ?? message.author.email ?? "Parish member",

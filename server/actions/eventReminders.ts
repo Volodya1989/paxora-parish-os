@@ -4,6 +4,7 @@ import type { EventRecurrenceFrequency, EventVisibility } from "@prisma/client";
 import { prisma } from "@/server/db/prisma";
 import { getNow } from "@/lib/time/getNow";
 import { notifyEventReminder } from "@/lib/push/notify";
+import { notifyEventReminderInApp } from "@/lib/notifications/notify";
 import { PARISH_TIMEZONE } from "@/lib/time/parish";
 
 const REMINDER_LEAD_MS = 60 * 60 * 1000;
@@ -283,6 +284,13 @@ export async function sendEventReminders() {
     const reminderTime = formatReminderTime(occurrence.startsAt);
 
     await notifyEventReminder({
+      eventId: occurrence.eventId,
+      eventTitle: occurrence.title,
+      parishId: occurrence.parishId,
+      recipientIds: filteredRecipients,
+      startsAtLabel: reminderTime
+    });
+    await notifyEventReminderInApp({
       eventId: occurrence.eventId,
       eventTitle: occurrence.title,
       parishId: occurrence.parishId,
