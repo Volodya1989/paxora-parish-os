@@ -297,15 +297,11 @@ export default function ProfileDates({ initialDates }: ProfileDatesProps) {
             >
               Cancel
             </Button>
-            <p className="text-xs text-ink-400">
-              Dates are stored without a year and can be updated anytime.
-            </p>
           </div>
-        ) : (
-          <p className="text-xs text-ink-400">
-            Dates are stored without a year and can be updated anytime.
-          </p>
-        )}
+        ) : null}
+        <p className="text-xs text-ink-400">
+          Dates are stored without a year and can be updated anytime.
+        </p>
       </div>
     </Card>
   );

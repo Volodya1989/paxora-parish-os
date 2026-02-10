@@ -25,7 +25,7 @@ type ToggleProps = {
 
 function ToggleRow({ label, description, enabled, disabled, onToggle }: ToggleProps) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-mist-200 bg-mist-50/60 p-4">
+    <div className="flex items-start justify-between gap-4 rounded-card border border-mist-200 bg-mist-50/60 p-4">
       <div>
         <p className="text-sm font-medium text-ink-900">{label}</p>
         <p className="text-sm text-ink-500">{description}</p>
@@ -91,8 +91,8 @@ export function ProfileSettings({ initialSettings }: ProfileSettingsProps) {
     <Card>
       <div className="space-y-6">
         <CardHeader>
-          <CardTitle>Notification settings</CardTitle>
-          <CardDescription>Choose how we should keep you informed.</CardDescription>
+          <CardTitle>Notifications & visibility</CardTitle>
+          <CardDescription>Choose how we keep you informed and how your service appears to others.</CardDescription>
         </CardHeader>
         <div className="space-y-3">
           <div className="rounded-card border border-mist-200 bg-mist-50/60 p-4">
