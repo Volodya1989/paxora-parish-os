@@ -2,6 +2,7 @@
 
 import { useCallback, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "@/lib/i18n/provider";
 import type { ThisWeekViewMode } from "@/lib/this-week/viewMode";
 
 type ThisWeekViewToggleProps = {
@@ -21,9 +22,10 @@ export default function ThisWeekViewToggle({ value }: ThisWeekViewToggleProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
+  const t = useTranslations();
 
   const nextValue: ThisWeekViewMode = value === "admin" ? "parishioner" : "admin";
-  const label = value === "admin" ? "Parishioner view" : "Admin view";
+  const label = value === "admin" ? t("thisWeek.parishionerView") : t("thisWeek.adminView");
 
   const handleSwitch = useCallback(() => {
     const params = new URLSearchParams(searchParams?.toString());

@@ -9,6 +9,7 @@ test("Parishioner view renders quick blocks and ordered sections", () => {
   const markup = renderToStaticMarkup(
     withI18n(
       createElement(ThisWeekParishionerView, {
+      locale: "en",
       data: {
         parishId: "parish-1",
         week: {

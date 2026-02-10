@@ -15,13 +15,15 @@ import { routes } from "@/lib/navigation/routes";
 import GratitudeSpotlightCard from "@/components/gratitude/GratitudeSpotlightCard";
 import {
   formatDayDate,
-  formatShortDate
 } from "@/lib/this-week/formatters";
 import { getNow } from "@/lib/time/getNow";
-import { getLocaleFromCookies, getTranslations } from "@/lib/i18n/server";
+import { getTranslations } from "@/lib/i18n/server";
+import type { Locale } from "@/lib/i18n/config";
+import { buildLocalePathname } from "@/lib/i18n/routing";
 
 type ThisWeekParishionerViewProps = {
   data: ThisWeekData;
+  locale: Locale;
   weekSelection: "previous" | "current" | "next";
   now: Date;
   viewToggle?: ReactNode;
@@ -35,12 +37,12 @@ type ThisWeekParishionerViewProps = {
 
 export default async function ThisWeekParishionerView({
   data,
+  locale,
   viewToggle,
   parishName,
   parishLogoUrl,
   userName
 }: ThisWeekParishionerViewProps) {
-  const locale = await getLocaleFromCookies();
   const t = getTranslations(locale);
 
   const resolvedParishName = parishName || t("serve.myParish");
@@ -75,15 +77,12 @@ export default async function ThisWeekParishionerView({
   const announcementsSummary =
     publishedAnnouncements.length > 0
       ? publishedAnnouncements[0]?.title ?? t("thisWeek.announcements")
-      : t("empty.noAnnouncements");
+      : t("thisWeek.allRead");
   const servicesSummary =
     upcomingEvents.length > 0
-      ? formatDayDate(upcomingEvents[0].startsAt)
+      ? `${t("thisWeek.nextPrefix")} ${formatDayDate(upcomingEvents[0].startsAt, locale)}`
       : t("empty.nothingScheduled");
-  const communitySummary =
-    data.memberGroups.length > 0
-      ? `${data.memberGroups.length} ${data.memberGroups.length === 1 ? t("groups.memberSingular") : t("groups.memberPlural")}`
-      : t("thisWeek.findCommunity");
+  const communitySummary = getJoinedGroupsSummary({ count: data.memberGroups.length, locale, t });
 
   // Opportunities: count by status
   const tasksDone = sortedTasks.filter((tk) => tk.status === "DONE").length;
@@ -165,7 +164,7 @@ export default async function ThisWeekParishionerView({
             </p>
           </div>
           <Link
-            href={`${routes.serve}?view=opportunities`}
+            href={buildLocalePathname(locale, `${routes.serve}?view=opportunities`)}
             className="rounded-button bg-amber-200 px-3 py-1.5 text-sm font-medium text-amber-900 transition-colors hover:bg-amber-300"
           >
             {t("thisWeek.reviewNow")}
@@ -190,4 +189,32 @@ export default async function ThisWeekParishionerView({
       )}
     </div>
   );
+}
+
+function getJoinedGroupsSummary({
+  count,
+  locale,
+  t
+}: {
+  count: number;
+  locale: Locale;
+  t: (key: string) => string;
+}) {
+  if (count <= 0) {
+    return t("thisWeek.findCommunity");
+  }
+
+  if (locale === "uk") {
+    const mod10 = count % 10;
+    const mod100 = count % 100;
+    const suffix =
+      mod10 === 1 && mod100 !== 11
+        ? t("thisWeek.groupsJoinedOne")
+        : mod10 >= 2 && mod10 <= 4 && !(mod100 >= 12 && mod100 <= 14)
+          ? t("thisWeek.groupsJoinedFew")
+          : t("thisWeek.groupsJoinedMany");
+    return `${count} ${suffix}`;
+  }
+
+  return `${count} ${count === 1 ? t("thisWeek.groupsJoinedOne") : t("thisWeek.groupsJoinedMany")}`;
 }

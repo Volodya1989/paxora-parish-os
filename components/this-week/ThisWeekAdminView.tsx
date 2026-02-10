@@ -23,10 +23,12 @@ import {
   formatTime,
 } from "@/lib/this-week/formatters";
 import { getNow } from "@/lib/time/getNow";
-import { getLocaleFromCookies, getTranslations } from "@/lib/i18n/server";
+import { getTranslations } from "@/lib/i18n/server";
+import type { Locale } from "@/lib/i18n/config";
 
 type ThisWeekAdminViewProps = {
   data: ThisWeekData;
+  locale: Locale;
   viewToggle?: ReactNode;
   spotlightAdmin?: {
     settings: {
@@ -161,13 +163,13 @@ function SectionHeader({ title, count, countLabel, href, linkLabel = "View all" 
 
 export default async function ThisWeekAdminView({
   data,
+  locale,
   viewToggle,
   spotlightAdmin,
   parishName = "Mother of God Ukrainian Catholic Church",
   parishLogoUrl,
   userName
 }: ThisWeekAdminViewProps) {
-  const locale = await getLocaleFromCookies();
   const t = getTranslations(locale);
 
   // Build alerts for pending admin actions
@@ -248,7 +250,7 @@ export default async function ThisWeekAdminView({
       : t("empty.noAnnouncements");
   const servicesSummary =
     upcomingEvents.length > 0
-      ? `Next: ${formatDayDate(upcomingEvents[0].startsAt)}`
+      ? `${t("thisWeek.nextPrefix")} ${formatDayDate(upcomingEvents[0].startsAt, locale)}`
       : t("empty.nothingScheduled");
   const communitySummary =
     data.memberGroups.length > 0
