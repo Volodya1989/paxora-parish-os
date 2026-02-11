@@ -22,6 +22,11 @@ export type ProfileSettings = {
   notificationsEnabled: boolean;
   weeklyDigestEnabled: boolean;
   volunteerHoursOptIn: boolean;
+  notifyMessageInApp: boolean;
+  notifyTaskInApp: boolean;
+  notifyAnnouncementInApp: boolean;
+  notifyEventInApp: boolean;
+  notifyRequestInApp: boolean;
   ytdHours: number;
   milestoneTier: MilestoneTier;
   bronzeHours: number;
@@ -42,7 +47,12 @@ export async function getProfileSettings({ userId, parishId, getNow }: GetProfil
       select: {
         name: true,
         email: true,
-        volunteerHoursOptIn: true
+        volunteerHoursOptIn: true,
+        notifyMessageInApp: true,
+        notifyTaskInApp: true,
+        notifyAnnouncementInApp: true,
+        notifyEventInApp: true,
+        notifyRequestInApp: true
       }
     }),
     parishId
@@ -96,6 +106,11 @@ export async function getProfileSettings({ userId, parishId, getNow }: GetProfil
     notificationsEnabled: membership?.notifyEmailEnabled ?? true,
     weeklyDigestEnabled: membership?.weeklyDigestEnabled ?? true,
     volunteerHoursOptIn: user.volunteerHoursOptIn,
+    notifyMessageInApp: user.notifyMessageInApp,
+    notifyTaskInApp: user.notifyTaskInApp,
+    notifyAnnouncementInApp: user.notifyAnnouncementInApp,
+    notifyEventInApp: user.notifyEventInApp,
+    notifyRequestInApp: user.notifyRequestInApp,
     ytdHours,
     milestoneTier,
     ...thresholds
