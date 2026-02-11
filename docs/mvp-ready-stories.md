@@ -114,6 +114,50 @@ Source context: `docs/mvp-pilot-readiness-report.md`.
 - Completion flow records hours correctly.
 - Personal hours summary is visible in serve context.
 
+
+### Epic 4 implementation review (current codebase)
+
+#### Story 4.1 — Weekly home drives action
+**Implemented now**
+- `/this-week` renders a role-aware parishioner home with a four-tile quick action row for announcements, services/calendar, community/groups, and opportunities/serve.
+- The page includes role-aware first-week onboarding (`StartThisWeekCard`) and a dedicated groups/community section.
+- Quick action navigation is responsive (`grid-cols-2` on small screens and `sm:grid-cols-4` on larger screens), preserving critical access paths on mobile and desktop.
+
+**Needs improvement for MVP readiness**
+- The parishioner page currently emphasizes quick tiles + groups, but does not yet render dedicated feed sections for announcements, upcoming events, and opportunities with “View all” patterns.
+- Empty-state CTAs are not yet consistently present for each required section (announcements, events, serve, groups).
+- Consider enabling anchor-style in-page quick links (or section jumps) once full section blocks are rendered.
+
+#### Story 4.2 — Announcements are reliable and safe
+**Implemented now**
+- Draft/create/edit/publish/unpublish flows exist with server actions and leader permission checks.
+- Publishing triggers both push and in-app notifications.
+- Announcement HTML is sanitized before persistence/render via `sanitizeAnnouncementHtml`, with text fallback generation.
+
+**Needs improvement for MVP readiness**
+- Add explicit integration coverage for publish/unpublish notifications and HTML sanitization edge cases.
+- Increase i18n coverage in announcements UI strings (several management toasts/messages are still hardcoded English).
+
+#### Story 4.3 — Calendar supports recurring parish life
+**Implemented now**
+- Event create/edit supports recurrence (`NONE`, `DAILY`, `WEEKLY`) including interval, weekday selection, and recurrence end date validation.
+- RSVP flow is implemented (`setRsvp`) and surfaced in event detail/calendar UI components.
+- Group visibility constraints are enforced in creation/update and event queries (non-leaders only see allowed public/group/private-by-RSVP events).
+
+**Needs improvement for MVP readiness**
+- Add stronger end-to-end tests for recurrence expansion (timezone boundaries, weekly weekday rules, recurrence-until behavior).
+- Clarify product behavior for private events + RSVP discoverability to avoid user confusion.
+
+#### Story 4.4 — Serve board encourages participation
+**Implemented now**
+- Serve board supports claiming, unclaiming, volunteering, and status transitions (`OPEN` → `IN_PROGRESS` → `DONE`).
+- Completion flow supports estimated/manual/skip hours logging and persists volunteer hours entries.
+- Personal hours summary is visible at the top of serve board (`VolunteerHoursSummary`).
+
+**Needs improvement for MVP readiness**
+- Expand automated tests around volunteer capacity limits, approval gating, and hours-entry correctness per participant.
+- Improve UX copy consistency in completion dialogs and toasts (some strings remain non-localized/hardcoded).
+
 ---
 
 ## Epic 5 — Chat and Community Communication
