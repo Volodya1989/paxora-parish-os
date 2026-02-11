@@ -49,7 +49,7 @@ export function ProfileCard({ name, email, role }: ProfileCardProps) {
           ) : null}
         </dl>
 
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-mist-200 bg-mist-50/60 p-4">
+        <div className="flex flex-col gap-4 rounded-card border border-mist-200 bg-mist-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-medium text-ink-900">Sign out of this device</p>
             <p className="text-sm text-ink-500">You can sign in again anytime.</p>

@@ -33,7 +33,7 @@ export default async function MyRequestsPage() {
         <Link
           href="/requests/new"
           className={cn(
-            "inline-flex items-center justify-center gap-2 rounded-button border border-white/40 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-white/20 focus-ring"
+            "inline-flex min-h-[2.25rem] items-center justify-center gap-1.5 whitespace-nowrap rounded-button border border-white/40 bg-white/10 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm transition hover:bg-white/20 focus-ring sm:gap-2 sm:px-3 sm:text-xs"
           )}
         >
           Make a Request
