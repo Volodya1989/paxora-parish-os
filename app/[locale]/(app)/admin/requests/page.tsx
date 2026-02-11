@@ -7,11 +7,15 @@ import { getPeopleList } from "@/lib/queries/people";
 import { prisma } from "@/server/db/prisma";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
 import RequestsBoard from "@/components/requests/RequestsBoard";
+import { getTranslations } from "@/lib/i18n/server";
+import { getLocaleFromParam } from "@/lib/i18n/routing";
 
 export default async function AdminRequestsPage({
-  searchParams
+  searchParams,
+  params
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
+  params: Promise<{ locale: string }>;
 }) {
   const session = await getServerSession(authOptions);
 
@@ -21,19 +25,20 @@ export default async function AdminRequestsPage({
 
   await requireAdminOrShepherd(session.user.id, session.user.activeParishId);
 
-  const params = await searchParams;
-  const typeParam = typeof params.type === "string" ? params.type : null;
+  const { locale: localeParam } = await params;
+  const t = getTranslations(getLocaleFromParam(localeParam));
+
+  const query = await searchParams;
+  const typeParam = typeof query.type === "string" ? query.type : null;
   const allowedTypes = ["CONFESSION", "LITURGICAL", "PRAYER", "TALK_TO_PRIEST", "GENERIC"] as const;
-  const type = allowedTypes.includes(typeParam as RequestType)
-    ? (typeParam as RequestType)
-    : null;
-  const assigneeId = typeof params.assignee === "string" ? params.assignee : null;
-  const scopeParam = typeof params.scope === "string" ? params.scope : null;
+  const type = allowedTypes.includes(typeParam as RequestType) ? (typeParam as RequestType) : null;
+  const assigneeId = typeof query.assignee === "string" ? query.assignee : null;
+  const scopeParam = typeof query.scope === "string" ? query.scope : null;
   const visibilityScope = ["CLERGY_ONLY", "ADMIN_ALL", "ADMIN_SPECIFIC"].includes(scopeParam ?? "")
     ? (scopeParam as "CLERGY_ONLY" | "ADMIN_ALL" | "ADMIN_SPECIFIC")
     : null;
-  const overdue = params.overdue === "true";
-  const archived = params.archived === "true";
+  const overdue = query.overdue === "true";
+  const archived = query.archived === "true";
 
   const [requests, people, parish] = await Promise.all([
     listRequestsForBoard(session.user.activeParishId, session.user.id, {
@@ -59,9 +64,9 @@ export default async function AdminRequestsPage({
   return (
     <ParishionerPageLayout
       pageTitle="Requests"
-      parishName={parish?.name ?? "My Parish"}
+      parishName={parish?.name ?? t("common.myParish")}
       parishLogoUrl={parish?.logoUrl ?? null}
-      subtitle="Manage and follow up on parish requests"
+      subtitle={t("requests.admin.subtitle")}
     >
       <RequestsBoard requests={requests} assignees={assignees} />
     </ParishionerPageLayout>

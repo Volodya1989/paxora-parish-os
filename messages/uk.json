@@ -75,7 +75,11 @@
     "inProgress": "У процесі",
     "done": "Готово",
     "loading": "Завантаження",
-    "error": "Помилка"
+    "error": "Помилка",
+    "back": "Назад",
+    "cancel": "Скасувати",
+    "tryAgain": "Спробуйте ще раз.",
+    "myParish": "Моя парафія"
   },
   "notifications": {
     "title": "Сповіщення",
@@ -371,6 +375,140 @@
     "save": "Зберегти",
     "send": "Надіслати",
     "charactersRemaining": "Залишилось символів: {count}",
-    "noMessagesYet": "Поки немає повідомлень. Розпочніть розмову."
+    "noMessagesYet": "Поки немає повідомлень. Розпочніть розмову.",
+    "uploadError": "Не вдалося завантажити зображення.",
+    "editingAttachmentsUnsupportedTitle": "Вкладення недоступні під час редагування",
+    "editingAttachmentsUnsupportedDescription": "Приберіть вкладення, щоб зберегти редагування.",
+    "sendMessageErrorTitle": "Не вдалося надіслати повідомлення",
+    "sendReplyErrorTitle": "Не вдалося надіслати відповідь",
+    "messageUnavailable": "Повідомлення недоступне",
+    "sidebar": {
+      "parish": "Парафія",
+      "groups": "Групи",
+      "announcements": "Оголошення",
+      "noGroupRooms": "Поки немає групових кімнат.",
+      "channelLocked": "Канал заблоковано"
+    },
+    "header": {
+      "searchPlaceholder": "Пошук каналів...",
+      "noChannelsFound": "Каналів не знайдено."
+    },
+    "pinned": {
+      "label": "Закріплено",
+      "by": "Закріпив {name} · {date}",
+      "unpin": "Відкріпити"
+    },
+    "poll": {
+      "title": "Створити опитування",
+      "questionPlaceholder": "Поставте запитання...",
+      "option": "Варіант {index}",
+      "addOption": "+ Додати варіант",
+      "creating": "Створення...",
+      "create": "Створити опитування"
+    }
+  },
+  "requests": {
+    "page": {
+      "subtitle": "Стежте за оновленнями та відповідями",
+      "makeRequest": "Створити запит"
+    },
+    "new": {
+      "subtitle": "Опишіть потребу або попросіть підтримку"
+    },
+    "admin": {
+      "subtitle": "Керуйте парафіяльними запитами та супроводом"
+    },
+    "errors": {
+      "generic": "Щось пішло не так. Спробуйте ще раз."
+    },
+    "status": {
+      "SUBMITTED": "Подано",
+      "ACKNOWLEDGED": "Підтверджено",
+      "SCHEDULED": "Заплановано",
+      "COMPLETED": "Завершено",
+      "CANCELED": "Скасовано"
+    },
+    "type": {
+      "CONFESSION": {
+        "label": "Сповідь",
+        "description": "Заплануйте час для сповіді (деталі не потрібні).",
+        "defaultSummary": "Запит на сповідь"
+      },
+      "TALK_TO_PRIEST": {
+        "label": "Розмова зі священником",
+        "description": "Попросіть розмову або душпастирську зустріч.",
+        "defaultSummary": "Запит на розмову зі священником"
+      },
+      "PRAYER": {
+        "label": "Молитовний намір",
+        "description": "Попросіть молитву за намір або потребу.",
+        "defaultSummary": "Молитовний намір"
+      },
+      "GENERIC": {
+        "label": "Загальний запит",
+        "description": "Благословення, зустріч або інша потреба парафії.",
+        "defaultSummary": "Загальний запит"
+      },
+      "LITURGICAL": {
+        "label": "Літургійний запит"
+      }
+    },
+    "list": {
+      "emptyTitle": "Ще немає запитів",
+      "emptyDescription": "Коли ви надішлете запит, оновлення з’являться тут.",
+      "submittedAt": "Подано {time}",
+      "updatedAt": "Оновлено {time}",
+      "assignedTo": "Призначено: {name}"
+    },
+    "detail": {
+      "pageTitle": "Деталі запиту",
+      "subtitle": "Стежте за останніми оновленнями",
+      "backToList": "Назад до моїх запитів",
+      "preferredTime": "Бажане вікно часу:",
+      "noDetails": "Додаткових деталей немає.",
+      "timeline": "Хронологія",
+      "timelineEmpty": "Оновлення від духовенства та адміністраторів з’являться тут у процесі опрацювання запиту.",
+      "updated": "Запит оновлено.",
+      "updateError": "Не вдалося оновити запит.",
+      "canceled": "Запит скасовано.",
+      "cancelError": "Не вдалося скасувати запит.",
+      "scheduledConfirmed": "Запропонований час підтверджено.",
+      "scheduledRejected": "Ви відхилили запропонований час.",
+      "proposedTime": "Запропонований час:",
+      "schedulingPending": "Деталі планування уточнюються. Перевірте пізніше.",
+      "acceptTime": "Підтвердити час",
+      "rejectTime": "Відхилити час",
+      "cancelRequest": "Скасувати запит"
+    },
+    "create": {
+      "receivedTitle": "Ваш запит отримано.",
+      "receivedDescription": "Ми скоро зв’яжемося. Ви можете стежити за оновленнями у «Моїх запитах».",
+      "viewMyRequests": "Переглянути мої запити",
+      "makeAnother": "Створити ще один запит",
+      "chooseType": "Оберіть тип запиту",
+      "chooseTypeDescription": "Виберіть варіант, який найкраще відповідає вашій потребі.",
+      "step2": "Крок 2",
+      "yourName": "Ваше ім’я",
+      "fullNamePlaceholder": "Повне ім’я",
+      "email": "Email",
+      "emailPlaceholder": "you@example.com",
+      "emailHelper": "Ми використаємо це для зворотного зв’язку щодо запиту.",
+      "phoneOptional": "Телефон (необов’язково)",
+      "phonePlaceholder": "(555) 555-1234",
+      "summary": "Коротко",
+      "summaryPlaceholder": "Короткий опис",
+      "preferredTimeOptional": "Бажане вікно часу (необов’язково)",
+      "preferredTimePlaceholder": "наприклад, будні ввечері або в суботу зранку",
+      "preferredTimeHelper": "Будь ласка, без зайвих деталей. Достатньо вказати бажаний час.",
+      "details": "Деталі",
+      "detailsPlaceholder": "Опишіть щонайменше 15 символів",
+      "submit": "Надіслати запит",
+      "notesHelper": {
+        "CONFESSION": "Коротко, без чутливих сповідальних деталей.",
+        "TALK_TO_PRIEST": "Поділіться коротким описом, щоб ми підготувалися (без чутливих сповідальних деталей).",
+        "GENERIC": "Коротко опишіть потребу — напр., благословення дому, авто або зустріч.",
+        "PRAYER": "Додайте корисний контекст (без чутливих сповідальних деталей)."
+      }
+    }
   }
 }

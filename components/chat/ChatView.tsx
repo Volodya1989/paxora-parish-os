@@ -301,7 +301,7 @@ export default function ChatView({
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(error?.error ?? "Unable to upload images.");
+      throw new Error(error?.error ?? t("chat.uploadError"));
     }
 
     const data = await response.json();
@@ -313,8 +313,8 @@ export default function ChatView({
       if (editingMessage) {
         if (files.length > 0) {
           addToast({
-            title: "Attachments not supported while editing",
-            description: "Remove attachments to save your edit.",
+            title: t("chat.editingAttachmentsUnsupportedTitle"),
+            description: t("chat.editingAttachmentsUnsupportedDescription"),
             status: "neutral"
           });
           return;
@@ -345,8 +345,8 @@ export default function ChatView({
       });
     } catch (error) {
       addToast({
-        title: "Unable to send message",
-        description: error instanceof Error ? error.message : "Please try again.",
+        title: t("chat.sendMessageErrorTitle"),
+        description: error instanceof Error ? error.message : t("common.tryAgain"),
         status: "neutral"
       });
     }
@@ -372,8 +372,8 @@ export default function ChatView({
       });
     } catch (error) {
       addToast({
-        title: "Unable to send reply",
-        description: error instanceof Error ? error.message : "Please try again.",
+        title: t("chat.sendReplyErrorTitle"),
+        description: error instanceof Error ? error.message : t("common.tryAgain"),
         status: "neutral"
       });
     }
