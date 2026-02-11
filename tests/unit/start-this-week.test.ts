@@ -13,6 +13,16 @@ test("member start-this-week checklist includes five pilot actions", () => {
     items.map((item) => item.href),
     ["/announcements", "/calendar", "/groups", "/tasks", "/requests"]
   );
+  assert.deepEqual(
+    items.map((item) => item.labelKey),
+    [
+      "thisWeek.startGuide.member.announcements",
+      "thisWeek.startGuide.member.events",
+      "thisWeek.startGuide.member.groups",
+      "thisWeek.startGuide.member.tasks",
+      "thisWeek.startGuide.member.requests"
+    ]
+  );
 });
 
 test("admin and shepherd checklists include leadership actions", () => {

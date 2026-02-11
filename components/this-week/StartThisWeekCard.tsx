@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { ParishRole } from "@prisma/client";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
+import { useTranslations } from "@/lib/i18n/provider";
 import { buildLocalePathname } from "@/lib/i18n/routing";
 import type { Locale } from "@/lib/i18n/config";
 import {
@@ -20,6 +21,7 @@ type StartThisWeekCardProps = {
 };
 
 export default function StartThisWeekCard({ userId, parishId, role, locale }: StartThisWeekCardProps) {
+  const t = useTranslations();
   const [hidden, setHidden] = useState<boolean | null>(null);
 
   const storageKey = useMemo(
@@ -58,8 +60,8 @@ export default function StartThisWeekCard({ userId, parishId, role, locale }: St
           <h2 className="text-sm font-semibold text-ink-900">Start this week</h2>
           <p className="mt-1 text-xs text-ink-600">
             {role === "MEMBER"
-              ? "Follow these quick steps to get connected in your first week."
-              : "Use these quick actions to lead your parish week with confidence."}
+              ? t("thisWeek.startGuide.memberDescription")
+              : t("thisWeek.startGuide.leaderDescription")}
           </p>
         </div>
         <Button type="button" variant="ghost" onClick={dismissCard} className="h-8 px-2 text-xs">
@@ -73,9 +75,7 @@ export default function StartThisWeekCard({ userId, parishId, role, locale }: St
             <Link
               href={buildLocalePathname(locale, item.href)}
               className="block rounded-xl border border-mist-200 bg-white px-3 py-2 text-sm font-medium text-ink-700 transition hover:border-primary-300 hover:text-primary-700"
-            >
-              {item.label}
-            </Link>
+            >{t(item.labelKey)}</Link>
           </li>
         ))}
       </ul>

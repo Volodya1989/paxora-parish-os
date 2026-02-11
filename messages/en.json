@@ -171,7 +171,23 @@
     "groupsJoinedFew": "groups joined",
     "groupsJoinedMany": "groups joined",
     "adminView": "Admin view",
-    "latestPrefix": "Latest:"
+    "latestPrefix": "Latest:",
+    "startGuide": {
+      "memberDescription": "Follow these quick steps to get connected in your first week.",
+      "leaderDescription": "Use these quick actions to lead your parish week with confidence.",
+      "member": {
+        "announcements": "Read announcements",
+        "events": "Check upcoming events",
+        "groups": "Join a parish group",
+        "tasks": "Find a way to serve",
+        "requests": "Submit a request"
+      },
+      "leader": {
+        "announcement": "Publish an announcement",
+        "event": "Create an event",
+        "requests": "Triage requests"
+      }
+    }
   },
   "announcements": {
     "title": "Announcements",
