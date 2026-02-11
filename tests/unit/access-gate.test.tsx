@@ -21,7 +21,7 @@ test("Access gate renders pending state", () => {
   );
 
   assert.match(markup, /Access pending/);
-  assert.match(markup, /notify you/);
+  assert.match(markup, /in review/);
 });
 
 test("Access gate renders approved state", () => {

@@ -13,7 +13,7 @@ export default function AccessGateContent({ status, parishName }: AccessGateCont
       <div className="space-y-2">
         <h2 className="text-h2">Access granted</h2>
         <p className="text-sm text-ink-500">
-          You&apos;re approved {parishLabel}. Head back to the dashboard to begin.
+          You&apos;re approved {parishLabel}. Continue to the workspace to start this week.
         </p>
       </div>
     );
@@ -24,7 +24,8 @@ export default function AccessGateContent({ status, parishName }: AccessGateCont
       <div className="space-y-2">
         <h2 className="text-h2">Access pending</h2>
         <p className="text-sm text-ink-500">
-          Your request is with a parish leader. They can review it from their tasks view.
+          Your request is in review. A parish leader will approve or decline it and we&apos;ll email
+          you as soon as status changes.
         </p>
       </div>
     );
@@ -35,7 +36,8 @@ export default function AccessGateContent({ status, parishName }: AccessGateCont
       <div className="space-y-2">
         <h2 className="text-h2">Verify your email</h2>
         <p className="text-sm text-ink-500">
-          Confirm your email address before requesting access {parishLabel}.
+          Confirm your email address before requesting access {parishLabel}. You can resend the
+          verification email below.
         </p>
       </div>
     );
@@ -45,8 +47,7 @@ export default function AccessGateContent({ status, parishName }: AccessGateCont
     <div className="space-y-2">
       <h2 className="text-h2">Request access</h2>
       <p className="text-sm text-ink-500">
-        Ask to join the parish workspace {parishLabel}. A leader will review and approve your
-        access.
+        Ask to join the parish workspace {parishLabel}. Parish leadership reviews every request.
       </p>
     </div>
   );

@@ -33,12 +33,14 @@ type ThisWeekParishionerViewProps = {
   parishLogoUrl?: string | null;
   /** User's first name for personalized greeting */
   userName?: string;
+  startGuide?: ReactNode;
 };
 
 export default async function ThisWeekParishionerView({
   data,
   locale,
   viewToggle,
+  startGuide,
   parishName,
   parishLogoUrl,
   userName
@@ -107,6 +109,8 @@ export default async function ThisWeekParishionerView({
         quote={t("thisWeek.quote")}
         quoteSource={t("thisWeek.quoteSource")}
       />
+
+      {startGuide}
 
       {/* Hero Section: Four Main Action Tiles */}
       <QuickBlocksRow
