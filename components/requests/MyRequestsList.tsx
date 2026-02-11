@@ -30,13 +30,13 @@ export default function MyRequestsList({ requests }: { requests: RequestListItem
           className="block rounded-card focus-ring"
         >
           <Card className="space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <CardTitle className="text-base">{request.title}</CardTitle>
-              <Badge tone={REQUEST_STATUS_TONES[request.status]}>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <CardTitle className="min-w-0 text-base break-words">{request.title}</CardTitle>
+              <Badge tone={REQUEST_STATUS_TONES[request.status]} className="w-fit self-start">
                 {getRequestStatusLabel(request.status)}
               </Badge>
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-ink-500">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-500">
               <span>{getRequestTypeLabel(request.type)}</span>
               <span aria-hidden="true">•</span>
               <span>Submitted {formatMessageTime(request.createdAt)}</span>
