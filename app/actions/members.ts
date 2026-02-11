@@ -18,6 +18,7 @@ import {
   cancelInviteSchema
 } from "@/lib/validation/members";
 import { isAdminClergy, requireCoordinatorOrAdmin } from "@/lib/authz/membership";
+import { ParishAuthError } from "@/server/auth/parish";
 import type { MemberActionError, MemberActionState } from "@/lib/types/members";
 
 function buildError(message: string, error: MemberActionError): MemberActionState {
@@ -26,10 +27,42 @@ function buildError(message: string, error: MemberActionError): MemberActionStat
 
 async function requireSession() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    throw new Error("Unauthorized");
+  if (!session?.user?.id || !session.user.activeParishId) {
+    throw new ParishAuthError("Unauthorized", 401);
   }
-  return session;
+
+  return {
+    userId: session.user.id,
+    activeParishId: session.user.activeParishId
+  };
+}
+
+
+async function requireGroupInActiveParish(groupId: string, activeParishId: string) {
+  const group = await prisma.group.findUnique({
+    where: { id: groupId },
+    select: { id: true, parishId: true, joinPolicy: true, status: true }
+  });
+
+  if (!group || group.parishId !== activeParishId) {
+    throw new ParishAuthError("Not found", 404);
+  }
+
+  return group;
+}
+
+async function requireCoordinatorOrAdminInActiveParish(
+  userId: string,
+  groupId: string,
+  activeParishId: string
+) {
+  const context = await requireCoordinatorOrAdmin(userId, groupId);
+
+  if (context.parishId !== activeParishId) {
+    throw new ParishAuthError("Not found", 404);
+  }
+
+  return context;
 }
 
 export async function inviteMember(input: {
@@ -44,9 +77,19 @@ export async function inviteMember(input: {
     return buildError(parsed.error.errors[0]?.message ?? "Invalid invite", "VALIDATION_ERROR");
   }
 
+  try {
+    await requireGroupInActiveParish(parsed.data.groupId, session.activeParishId);
+  } catch {
+    return buildError("Invite not found.", "NOT_FOUND");
+  }
+
   let context;
   try {
-    context = await requireCoordinatorOrAdmin(session.user.id, parsed.data.groupId);
+    context = await requireCoordinatorOrAdminInActiveParish(
+      session.userId,
+      parsed.data.groupId,
+      session.activeParishId
+    );
   } catch (error) {
     return buildError("You do not have permission to invite members.", "NOT_AUTHORIZED");
   }
@@ -103,7 +146,7 @@ export async function inviteMember(input: {
     update: {
       role,
       status: "INVITED",
-      invitedByUserId: session.user.id,
+      invitedByUserId: session.userId,
       invitedEmail: targetUser.email
     },
     create: {
@@ -111,7 +154,7 @@ export async function inviteMember(input: {
       userId: targetUser.id,
       role,
       status: "INVITED",
-      invitedByUserId: session.user.id,
+      invitedByUserId: session.userId,
       invitedEmail: targetUser.email
     }
   });
@@ -133,11 +176,17 @@ export async function acceptInvite(input: { groupId: string }): Promise<MemberAc
     return buildError(parsed.error.errors[0]?.message ?? "Invalid invite", "VALIDATION_ERROR");
   }
 
+  try {
+    await requireGroupInActiveParish(parsed.data.groupId, session.activeParishId);
+  } catch {
+    return buildError("Invite not found.", "NOT_FOUND");
+  }
+
   const membership = await prisma.groupMembership.findUnique({
     where: {
       groupId_userId: {
         groupId: parsed.data.groupId,
-        userId: session.user.id
+        userId: session.userId
       }
     },
     select: { status: true }
@@ -151,14 +200,14 @@ export async function acceptInvite(input: { groupId: string }): Promise<MemberAc
     where: {
       groupId_userId: {
         groupId: parsed.data.groupId,
-        userId: session.user.id
+        userId: session.userId
       }
     },
     data: {
       status: "ACTIVE",
       invitedByUserId: null,
       invitedEmail: null,
-      approvedByUserId: session.user.id
+      approvedByUserId: session.userId
     }
   });
 
@@ -184,7 +233,7 @@ export async function declineInvite(input: { groupId: string }): Promise<MemberA
     where: {
       groupId_userId: {
         groupId: parsed.data.groupId,
-        userId: session.user.id
+        userId: session.userId
       }
     },
     select: { status: true }
@@ -198,7 +247,7 @@ export async function declineInvite(input: { groupId: string }): Promise<MemberA
     where: {
       groupId_userId: {
         groupId: parsed.data.groupId,
-        userId: session.user.id
+        userId: session.userId
       }
     }
   });
@@ -219,12 +268,10 @@ export async function joinGroup(input: { groupId: string }): Promise<MemberActio
     return buildError(parsed.error.errors[0]?.message ?? "Invalid group", "VALIDATION_ERROR");
   }
 
-  const group = await prisma.group.findUnique({
-    where: { id: parsed.data.groupId },
-    select: { id: true, parishId: true, joinPolicy: true, status: true }
-  });
-
-  if (!group) {
+  let group;
+  try {
+    group = await requireGroupInActiveParish(parsed.data.groupId, session.activeParishId);
+  } catch {
     return buildError("Group not found.", "NOT_FOUND");
   }
 
@@ -236,7 +283,7 @@ export async function joinGroup(input: { groupId: string }): Promise<MemberActio
     where: {
       parishId_userId: {
         parishId: group.parishId,
-        userId: session.user.id
+        userId: session.userId
       }
     },
     select: { role: true }
@@ -254,7 +301,7 @@ export async function joinGroup(input: { groupId: string }): Promise<MemberActio
     where: {
       groupId_userId: {
         groupId: group.id,
-        userId: session.user.id
+        userId: session.userId
       }
     },
     select: { status: true, role: true }
@@ -268,21 +315,21 @@ export async function joinGroup(input: { groupId: string }): Promise<MemberActio
     where: {
       groupId_userId: {
         groupId: group.id,
-        userId: session.user.id
+        userId: session.userId
       }
     },
     update: {
       status: "ACTIVE",
       invitedByUserId: null,
       invitedEmail: null,
-      approvedByUserId: session.user.id
+      approvedByUserId: session.userId
     },
     create: {
       groupId: group.id,
-      userId: session.user.id,
+      userId: session.userId,
       role: existing?.role ?? "PARISHIONER",
       status: "ACTIVE",
-      approvedByUserId: session.user.id
+      approvedByUserId: session.userId
     }
   });
 
@@ -304,12 +351,10 @@ export async function requestToJoin(input: { groupId: string }): Promise<MemberA
     return buildError(parsed.error.errors[0]?.message ?? "Invalid group", "VALIDATION_ERROR");
   }
 
-  const group = await prisma.group.findUnique({
-    where: { id: parsed.data.groupId },
-    select: { id: true, parishId: true, joinPolicy: true, status: true }
-  });
-
-  if (!group) {
+  let group;
+  try {
+    group = await requireGroupInActiveParish(parsed.data.groupId, session.activeParishId);
+  } catch {
     return buildError("Group not found.", "NOT_FOUND");
   }
 
@@ -321,7 +366,7 @@ export async function requestToJoin(input: { groupId: string }): Promise<MemberA
     where: {
       parishId_userId: {
         parishId: group.parishId,
-        userId: session.user.id
+        userId: session.userId
       }
     },
     select: { role: true }
@@ -339,7 +384,7 @@ export async function requestToJoin(input: { groupId: string }): Promise<MemberA
     where: {
       groupId_userId: {
         groupId: group.id,
-        userId: session.user.id
+        userId: session.userId
       }
     },
     select: { status: true, role: true }
@@ -355,7 +400,7 @@ export async function requestToJoin(input: { groupId: string }): Promise<MemberA
   await prisma.groupMembership.create({
     data: {
       groupId: group.id,
-      userId: session.user.id,
+      userId: session.userId,
       role: "PARISHIONER",
       status: "REQUESTED"
     }
@@ -379,11 +424,17 @@ export async function leaveGroup(input: { groupId: string }): Promise<MemberActi
     return buildError(parsed.error.errors[0]?.message ?? "Invalid group", "VALIDATION_ERROR");
   }
 
+  try {
+    await requireGroupInActiveParish(parsed.data.groupId, session.activeParishId);
+  } catch {
+    return buildError("Group not found.", "NOT_FOUND");
+  }
+
   const membership = await prisma.groupMembership.findUnique({
     where: {
       groupId_userId: {
         groupId: parsed.data.groupId,
-        userId: session.user.id
+        userId: session.userId
       }
     },
     select: { status: true }
@@ -397,7 +448,7 @@ export async function leaveGroup(input: { groupId: string }): Promise<MemberActi
     where: {
       groupId_userId: {
         groupId: parsed.data.groupId,
-        userId: session.user.id
+        userId: session.userId
       }
     }
   });
@@ -425,7 +476,11 @@ export async function approveJoinRequest(input: {
 
   let context;
   try {
-    context = await requireCoordinatorOrAdmin(session.user.id, parsed.data.groupId);
+    context = await requireCoordinatorOrAdminInActiveParish(
+      session.userId,
+      parsed.data.groupId,
+      session.activeParishId
+    );
   } catch (error) {
     return buildError("You do not have permission to approve requests.", "NOT_AUTHORIZED");
   }
@@ -453,7 +508,7 @@ export async function approveJoinRequest(input: {
     },
     data: {
       status: "ACTIVE",
-      approvedByUserId: session.user.id
+      approvedByUserId: session.userId
     }
   });
 
@@ -479,7 +534,11 @@ export async function denyJoinRequest(input: {
   }
 
   try {
-    await requireCoordinatorOrAdmin(session.user.id, parsed.data.groupId);
+    await requireCoordinatorOrAdminInActiveParish(
+      session.userId,
+      parsed.data.groupId,
+      session.activeParishId
+    );
   } catch (error) {
     return buildError("You do not have permission to deny requests.", "NOT_AUTHORIZED");
   }
@@ -529,7 +588,11 @@ export async function removeMember(input: {
   }
 
   try {
-    await requireCoordinatorOrAdmin(session.user.id, parsed.data.groupId);
+    await requireCoordinatorOrAdminInActiveParish(
+      session.userId,
+      parsed.data.groupId,
+      session.activeParishId
+    );
   } catch (error) {
     return buildError("You do not have permission to remove members.", "NOT_AUTHORIZED");
   }
@@ -578,7 +641,11 @@ export async function cancelInvite(input: {
   }
 
   try {
-    await requireCoordinatorOrAdmin(session.user.id, parsed.data.groupId);
+    await requireCoordinatorOrAdminInActiveParish(
+      session.userId,
+      parsed.data.groupId,
+      session.activeParishId
+    );
   } catch (error) {
     return buildError("You do not have permission to cancel invites.", "NOT_AUTHORIZED");
   }
@@ -629,7 +696,11 @@ export async function changeMemberRole(input: {
 
   let context;
   try {
-    context = await requireCoordinatorOrAdmin(session.user.id, parsed.data.groupId);
+    context = await requireCoordinatorOrAdminInActiveParish(
+      session.userId,
+      parsed.data.groupId,
+      session.activeParishId
+    );
   } catch (error) {
     return buildError("You do not have permission to change roles.", "NOT_AUTHORIZED");
   }

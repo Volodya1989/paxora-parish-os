@@ -178,6 +178,16 @@ enum EmailStatus {
   SKIPPED
 }
 
+enum DeliveryChannel {
+  EMAIL
+  PUSH
+}
+
+enum DeliveryStatus {
+  SUCCESS
+  FAILURE
+}
+
 enum ParishEmailDomainStatus {
   DEFAULT
   PENDING
@@ -250,6 +260,7 @@ model Parish {
   heroNominations HeroNomination[]
   parishInvites   ParishInvite[]
   hubItems        ParishHubItem[]
+  deliveryAttempts DeliveryAttempt[]
   impersonatedUsers User[]                 @relation("ImpersonatedParish")
   auditLogs       AuditLog[]              @relation("ParishAuditLogs")
 }
@@ -342,6 +353,7 @@ model User {
   decidedEventRequests     EventRequest[]           @relation("EventRequestDecisionBy")
   requestsCreated          Request[]                @relation("RequestCreatedBy")
   requestsAssigned         Request[]                @relation("RequestAssignedTo")
+  deliveryAttempts         DeliveryAttempt[]
   impersonatedParish       Parish?                  @relation("ImpersonatedParish", fields: [impersonatedParishId], references: [id], onDelete: SetNull)
   auditLogs                AuditLog[]               @relation("AuditActor")
 }
@@ -490,6 +502,28 @@ model EmailLog {
   @@index([weekId])
   @@index([joinRequestId])
   @@index([announcementId])
+}
+
+model DeliveryAttempt {
+  id                 String          @id @default(cuid())
+  channel            DeliveryChannel
+  status             DeliveryStatus
+  parishId           String?
+  userId             String?
+  target             String?
+  template           String?
+  context            Json?
+  providerMessageId  String?
+  errorCode          String?
+  errorMessage       String?
+  createdAt          DateTime        @default(now())
+
+  parish Parish? @relation(fields: [parishId], references: [id], onDelete: SetNull)
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([parishId, createdAt])
+  @@index([channel, status, createdAt])
+  @@index([userId, createdAt])
 }
 
 model PasswordResetToken {

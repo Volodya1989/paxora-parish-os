@@ -1,4 +1,5 @@
 import { prisma } from "@/server/db/prisma";
+import { recordDeliveryAttempt, toDeliveryTarget } from "@/lib/ops/deliveryAttempts";
 import { getConfiguredWebPush, isVapidConfigured } from "./vapid";
 
 export type PushPayload = {
@@ -45,16 +46,43 @@ export async function sendPushToUser(
             data,
             { TTL: 60 * 60 } // 1 hour
           );
+          await recordDeliveryAttempt({
+            channel: "PUSH",
+            status: "SUCCESS",
+            parishId,
+            userId,
+            target: toDeliveryTarget("PUSH", sub.endpoint),
+            template: payload.tag ?? "push",
+            context: {
+              title: payload.title,
+              url: payload.url ?? null
+            }
+          });
         } catch (error: unknown) {
           const statusCode = (error as { statusCode?: number })?.statusCode;
+          const message = error instanceof Error ? error.message : "Unknown push error";
           if (statusCode === 410 || statusCode === 404) {
             staleIds.push(sub.id);
           }
+          await recordDeliveryAttempt({
+            channel: "PUSH",
+            status: "FAILURE",
+            parishId,
+            userId,
+            target: toDeliveryTarget("PUSH", sub.endpoint),
+            template: payload.tag ?? "push",
+            context: {
+              title: payload.title,
+              url: payload.url ?? null
+            },
+            errorCode: statusCode ? String(statusCode) : null,
+            errorMessage: message
+          });
           // Log non-stale errors for observability but don't throw
           if (statusCode !== 410 && statusCode !== 404) {
             console.error(
               `[push] Failed to send to subscription ${sub.id}:`,
-              statusCode ?? (error instanceof Error ? error.message : "unknown")
+              statusCode ?? message
             );
           }
         }
