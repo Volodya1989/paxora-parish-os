@@ -2,6 +2,14 @@ import { prisma } from "@/server/db/prisma";
 import { NotificationType } from "@prisma/client";
 import { getRequestStatusLabel } from "@/lib/requests/utils";
 
+const notificationPreferenceFieldByType = {
+  [NotificationType.MESSAGE]: "notifyMessageInApp",
+  [NotificationType.TASK]: "notifyTaskInApp",
+  [NotificationType.ANNOUNCEMENT]: "notifyAnnouncementInApp",
+  [NotificationType.EVENT]: "notifyEventInApp",
+  [NotificationType.REQUEST]: "notifyRequestInApp"
+} as const;
+
 type NotificationCreateInput = {
   parishId: string;
   type: NotificationType;
@@ -18,8 +26,19 @@ async function createNotificationsForUsers(
   const uniqueUserIds = [...new Set(userIds)];
   if (uniqueUserIds.length === 0) return;
 
+  const preferenceField = notificationPreferenceFieldByType[input.type];
+  const recipients = await prisma.user.findMany({
+    where: {
+      id: { in: uniqueUserIds },
+      [preferenceField]: true
+    },
+    select: { id: true }
+  });
+
+  if (recipients.length === 0) return;
+
   await prisma.notification.createMany({
-    data: uniqueUserIds.map((userId) => ({
+    data: recipients.map(({ id: userId }) => ({
       userId,
       parishId: input.parishId,
       type: input.type,
@@ -229,7 +248,7 @@ export async function notifyRequestAssignedInApp(opts: {
     type: NotificationType.REQUEST,
     title: "New request assigned to you",
     description: requestTitle,
-    href: `/requests/${requestId}`
+    href: `/admin/requests?requestId=${requestId}`
   });
 }
 

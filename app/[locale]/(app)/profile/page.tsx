@@ -128,7 +128,12 @@ export default async function ProfilePage({
             initialSettings={{
               notificationsEnabled: profile.notificationsEnabled,
               weeklyDigestEnabled: profile.weeklyDigestEnabled,
-              volunteerHoursOptIn: profile.volunteerHoursOptIn
+              volunteerHoursOptIn: profile.volunteerHoursOptIn,
+              notifyMessageInApp: profile.notifyMessageInApp,
+              notifyTaskInApp: profile.notifyTaskInApp,
+              notifyAnnouncementInApp: profile.notifyAnnouncementInApp,
+              notifyEventInApp: profile.notifyEventInApp,
+              notifyRequestInApp: profile.notifyRequestInApp
             }}
           />
         </div>

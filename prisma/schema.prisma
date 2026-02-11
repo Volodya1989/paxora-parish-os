@@ -286,6 +286,11 @@ model User {
   emailVerifiedAt      DateTime?
   notificationsEnabled Boolean   @default(true)
   weeklyDigestEnabled  Boolean   @default(true)
+  notifyMessageInApp   Boolean   @default(true)
+  notifyTaskInApp      Boolean   @default(true)
+  notifyAnnouncementInApp Boolean @default(true)
+  notifyEventInApp     Boolean   @default(true)
+  notifyRequestInApp   Boolean   @default(true)
   volunteerHoursOptIn  Boolean   @default(false)
   birthdayMonth        Int?
   birthdayDay          Int?

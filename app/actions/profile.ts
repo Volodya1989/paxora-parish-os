@@ -10,12 +10,22 @@ type UpdateProfileSettingsInput = {
   notificationsEnabled: boolean;
   weeklyDigestEnabled: boolean;
   volunteerHoursOptIn: boolean;
+  notifyMessageInApp: boolean;
+  notifyTaskInApp: boolean;
+  notifyAnnouncementInApp: boolean;
+  notifyEventInApp: boolean;
+  notifyRequestInApp: boolean;
 };
 
 export async function updateProfileSettings({
   notificationsEnabled,
   weeklyDigestEnabled,
-  volunteerHoursOptIn
+  volunteerHoursOptIn,
+  notifyMessageInApp,
+  notifyTaskInApp,
+  notifyAnnouncementInApp,
+  notifyEventInApp,
+  notifyRequestInApp
 }: UpdateProfileSettingsInput) {
   const session = await getServerSession(authOptions);
 
@@ -31,16 +41,35 @@ export async function updateProfileSettings({
   if (
     typeof notificationsEnabled !== "boolean" ||
     typeof weeklyDigestEnabled !== "boolean" ||
-    typeof volunteerHoursOptIn !== "boolean"
+    typeof volunteerHoursOptIn !== "boolean" ||
+    typeof notifyMessageInApp !== "boolean" ||
+    typeof notifyTaskInApp !== "boolean" ||
+    typeof notifyAnnouncementInApp !== "boolean" ||
+    typeof notifyEventInApp !== "boolean" ||
+    typeof notifyRequestInApp !== "boolean"
   ) {
     throw new Error("Invalid settings");
   }
 
-  const [, updatedMembership] = await Promise.all([
+  const [updatedUser, updatedMembership] = await Promise.all([
     prisma.user.update({
       where: { id: session.user.id },
-      data: { volunteerHoursOptIn },
-      select: { volunteerHoursOptIn: true }
+      data: {
+        volunteerHoursOptIn,
+        notifyMessageInApp,
+        notifyTaskInApp,
+        notifyAnnouncementInApp,
+        notifyEventInApp,
+        notifyRequestInApp
+      },
+      select: {
+        volunteerHoursOptIn: true,
+        notifyMessageInApp: true,
+        notifyTaskInApp: true,
+        notifyAnnouncementInApp: true,
+        notifyEventInApp: true,
+        notifyRequestInApp: true
+      }
     }),
     prisma.membership.upsert({
       where: {
@@ -71,7 +100,12 @@ export async function updateProfileSettings({
   return {
     notificationsEnabled: updatedMembership.notifyEmailEnabled,
     weeklyDigestEnabled: updatedMembership.weeklyDigestEnabled,
-    volunteerHoursOptIn
+    volunteerHoursOptIn: updatedUser.volunteerHoursOptIn,
+    notifyMessageInApp: updatedUser.notifyMessageInApp,
+    notifyTaskInApp: updatedUser.notifyTaskInApp,
+    notifyAnnouncementInApp: updatedUser.notifyAnnouncementInApp,
+    notifyEventInApp: updatedUser.notifyEventInApp,
+    notifyRequestInApp: updatedUser.notifyRequestInApp
   };
 }
 

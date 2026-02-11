@@ -12,6 +12,11 @@ type ProfileSettingsProps = {
     notificationsEnabled: boolean;
     weeklyDigestEnabled: boolean;
     volunteerHoursOptIn: boolean;
+    notifyMessageInApp: boolean;
+    notifyTaskInApp: boolean;
+    notifyAnnouncementInApp: boolean;
+    notifyEventInApp: boolean;
+    notifyRequestInApp: boolean;
   };
 };
 
@@ -61,7 +66,15 @@ export function ProfileSettings({ initialSettings }: ProfileSettingsProps) {
   const { addToast } = useToast();
 
   const handleToggle = (
-    key: "notificationsEnabled" | "weeklyDigestEnabled" | "volunteerHoursOptIn"
+    key:
+      | "notificationsEnabled"
+      | "weeklyDigestEnabled"
+      | "volunteerHoursOptIn"
+      | "notifyMessageInApp"
+      | "notifyTaskInApp"
+      | "notifyAnnouncementInApp"
+      | "notifyEventInApp"
+      | "notifyRequestInApp"
   ) => {
     const nextSettings = {
       ...settings,
@@ -118,6 +131,44 @@ export function ProfileSettings({ initialSettings }: ProfileSettingsProps) {
             enabled={settings.volunteerHoursOptIn}
             disabled={isPending}
             onToggle={() => handleToggle("volunteerHoursOptIn")}
+          />
+          <p className="px-1 pt-2 text-xs font-semibold uppercase tracking-wide text-ink-500">
+            In-app notification categories
+          </p>
+          <ToggleRow
+            label="Messages"
+            description="Get in-app notifications for new chat messages."
+            enabled={settings.notifyMessageInApp}
+            disabled={isPending}
+            onToggle={() => handleToggle("notifyMessageInApp")}
+          />
+          <ToggleRow
+            label="Tasks"
+            description="Get in-app notifications when tasks are assigned or updated."
+            enabled={settings.notifyTaskInApp}
+            disabled={isPending}
+            onToggle={() => handleToggle("notifyTaskInApp")}
+          />
+          <ToggleRow
+            label="Announcements"
+            description="Get in-app notifications for newly published announcements."
+            enabled={settings.notifyAnnouncementInApp}
+            disabled={isPending}
+            onToggle={() => handleToggle("notifyAnnouncementInApp")}
+          />
+          <ToggleRow
+            label="Events"
+            description="Get in-app notifications for new events and reminders."
+            enabled={settings.notifyEventInApp}
+            disabled={isPending}
+            onToggle={() => handleToggle("notifyEventInApp")}
+          />
+          <ToggleRow
+            label="Requests"
+            description="Get in-app notifications for request status and assignment changes."
+            enabled={settings.notifyRequestInApp}
+            disabled={isPending}
+            onToggle={() => handleToggle("notifyRequestInApp")}
           />
         </div>
       </div>

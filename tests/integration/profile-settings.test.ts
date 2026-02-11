@@ -91,7 +91,12 @@ test.skip("updateProfileSettings persists and returns updated settings", async (
   const result = await actions.updateProfileSettings({
     notificationsEnabled: false,
     weeklyDigestEnabled: true,
-    volunteerHoursOptIn: true
+    volunteerHoursOptIn: true,
+    notifyMessageInApp: false,
+    notifyTaskInApp: true,
+    notifyAnnouncementInApp: false,
+    notifyEventInApp: true,
+    notifyRequestInApp: true
   });
 
   assert.equal(result.notificationsEnabled, false);

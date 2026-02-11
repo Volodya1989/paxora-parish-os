@@ -29,7 +29,12 @@ test("ProfileSettings renders toggles with aria-checked state", () => {
         initialSettings: {
           notificationsEnabled: true,
           weeklyDigestEnabled: false,
-          volunteerHoursOptIn: true
+          volunteerHoursOptIn: true,
+          notifyMessageInApp: true,
+          notifyTaskInApp: true,
+          notifyAnnouncementInApp: true,
+          notifyEventInApp: true,
+          notifyRequestInApp: true
         }
       })
     )
