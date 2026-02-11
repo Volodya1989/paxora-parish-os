@@ -28,3 +28,18 @@ test("middleware allows prefixed locale paths", () => {
   assert.equal(response.headers.get("location"), null);
   assert.equal(response.cookies.get("NEXT_LOCALE")?.value, "uk");
 });
+
+
+test("middleware rejects invalid locale prefixes", () => {
+  const request = createRequest("http://localhost/es/announcements");
+  const response = handleLocaleRouting(request);
+
+  assert.equal(response.headers.get("x-middleware-rewrite"), "http://localhost/404");
+});
+
+test("middleware falls back to default for unsupported Accept-Language", () => {
+  const request = createRequest("http://localhost/", { "accept-language": "es-MX,es;q=0.9" });
+  const response = handleLocaleRouting(request);
+
+  assert.equal(response.headers.get("location"), "http://localhost/en");
+});

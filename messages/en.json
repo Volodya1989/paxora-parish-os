@@ -75,7 +75,11 @@
     "inProgress": "In Progress",
     "done": "Done",
     "loading": "Loading",
-    "error": "Error"
+    "error": "Error",
+    "back": "Back",
+    "cancel": "Cancel",
+    "tryAgain": "Please try again.",
+    "myParish": "My Parish"
   },
   "notifications": {
     "title": "Notifications",
@@ -371,6 +375,140 @@
     "save": "Save",
     "send": "Send",
     "charactersRemaining": "{count} characters remaining",
-    "noMessagesYet": "No messages yet. Start the conversation."
+    "noMessagesYet": "No messages yet. Start the conversation.",
+    "uploadError": "Unable to upload images.",
+    "editingAttachmentsUnsupportedTitle": "Attachments not supported while editing",
+    "editingAttachmentsUnsupportedDescription": "Remove attachments to save your edit.",
+    "sendMessageErrorTitle": "Unable to send message",
+    "sendReplyErrorTitle": "Unable to send reply",
+    "messageUnavailable": "Message unavailable",
+    "sidebar": {
+      "parish": "Parish",
+      "groups": "Groups",
+      "announcements": "Announcements",
+      "noGroupRooms": "No group rooms yet.",
+      "channelLocked": "Channel locked"
+    },
+    "header": {
+      "searchPlaceholder": "Search channels...",
+      "noChannelsFound": "No channels found."
+    },
+    "pinned": {
+      "label": "Pinned",
+      "by": "Pinned by {name} · {date}",
+      "unpin": "Unpin"
+    },
+    "poll": {
+      "title": "Create a poll",
+      "questionPlaceholder": "Ask a question...",
+      "option": "Option {index}",
+      "addOption": "+ Add option",
+      "creating": "Creating...",
+      "create": "Create poll"
+    }
+  },
+  "requests": {
+    "page": {
+      "subtitle": "Track updates and follow-ups",
+      "makeRequest": "Make a Request"
+    },
+    "new": {
+      "subtitle": "Share a need or ask for support"
+    },
+    "admin": {
+      "subtitle": "Manage and follow up on parish requests"
+    },
+    "errors": {
+      "generic": "Something went wrong. Please try again."
+    },
+    "status": {
+      "SUBMITTED": "Submitted",
+      "ACKNOWLEDGED": "Acknowledged",
+      "SCHEDULED": "Scheduled",
+      "COMPLETED": "Completed",
+      "CANCELED": "Canceled"
+    },
+    "type": {
+      "CONFESSION": {
+        "label": "Confession",
+        "description": "Schedule a time for confession (no details needed).",
+        "defaultSummary": "Confession request"
+      },
+      "TALK_TO_PRIEST": {
+        "label": "Talk to a priest",
+        "description": "Request a conversation or pastoral meeting.",
+        "defaultSummary": "Request to talk with a priest"
+      },
+      "PRAYER": {
+        "label": "Prayer request",
+        "description": "Ask for prayer for an intention or need.",
+        "defaultSummary": "Prayer request"
+      },
+      "GENERIC": {
+        "label": "General request",
+        "description": "Blessing, meeting, or any other parish need.",
+        "defaultSummary": "General request"
+      },
+      "LITURGICAL": {
+        "label": "Liturgical"
+      }
+    },
+    "list": {
+      "emptyTitle": "No requests yet",
+      "emptyDescription": "When you submit a request, updates will show up here.",
+      "submittedAt": "Submitted {time}",
+      "updatedAt": "Updated {time}",
+      "assignedTo": "Assigned to {name}"
+    },
+    "detail": {
+      "pageTitle": "Request details",
+      "subtitle": "Track the latest updates",
+      "backToList": "Back to My Requests",
+      "preferredTime": "Preferred time window:",
+      "noDetails": "No additional details provided.",
+      "timeline": "Timeline",
+      "timelineEmpty": "Updates from clergy and admins will appear here as your request is processed.",
+      "updated": "Request updated.",
+      "updateError": "Unable to update request.",
+      "canceled": "Request canceled.",
+      "cancelError": "Unable to cancel request.",
+      "scheduledConfirmed": "Scheduled time confirmed.",
+      "scheduledRejected": "You declined the proposed time.",
+      "proposedTime": "Proposed time:",
+      "schedulingPending": "Scheduling details are being finalized. Please check back soon.",
+      "acceptTime": "Accept time",
+      "rejectTime": "Reject time",
+      "cancelRequest": "Cancel request"
+    },
+    "create": {
+      "receivedTitle": "Your request has been received.",
+      "receivedDescription": "We'll follow up soon. You can check updates anytime in My Requests.",
+      "viewMyRequests": "View My Requests",
+      "makeAnother": "Make another request",
+      "chooseType": "Choose a request type",
+      "chooseTypeDescription": "Pick the option that best fits your need.",
+      "step2": "Step 2",
+      "yourName": "Your name",
+      "fullNamePlaceholder": "Full name",
+      "email": "Email",
+      "emailPlaceholder": "you@example.com",
+      "emailHelper": "We'll use this to follow up on your request.",
+      "phoneOptional": "Phone (optional)",
+      "phonePlaceholder": "(555) 555-1234",
+      "summary": "Summary",
+      "summaryPlaceholder": "Short summary",
+      "preferredTimeOptional": "Preferred time window (optional)",
+      "preferredTimePlaceholder": "e.g., Weekday evenings or Saturday morning",
+      "preferredTimeHelper": "Please keep details minimal. A preferred time window is enough.",
+      "details": "Details",
+      "detailsPlaceholder": "Please share at least 15 characters",
+      "submit": "Submit request",
+      "notesHelper": {
+        "CONFESSION": "Keep it brief and avoid sensitive confessional details.",
+        "TALK_TO_PRIEST": "Share a brief overview so we can prepare (avoid sensitive confessional details).",
+        "GENERIC": "Briefly describe your need — e.g., home blessing, car blessing, meeting.",
+        "PRAYER": "Share any helpful context (avoid sensitive confessional details)."
+      }
+    }
   }
 }
