@@ -260,6 +260,7 @@ model Parish {
   heroNominations HeroNomination[]
   parishInvites   ParishInvite[]
   hubItems        ParishHubItem[]
+  deliveryAttempts DeliveryAttempt[]
   impersonatedUsers User[]                 @relation("ImpersonatedParish")
   auditLogs       AuditLog[]              @relation("ParishAuditLogs")
 }
@@ -352,6 +353,7 @@ model User {
   decidedEventRequests     EventRequest[]           @relation("EventRequestDecisionBy")
   requestsCreated          Request[]                @relation("RequestCreatedBy")
   requestsAssigned         Request[]                @relation("RequestAssignedTo")
+  deliveryAttempts         DeliveryAttempt[]
   impersonatedParish       Parish?                  @relation("ImpersonatedParish", fields: [impersonatedParishId], references: [id], onDelete: SetNull)
   auditLogs                AuditLog[]               @relation("AuditActor")
 }
