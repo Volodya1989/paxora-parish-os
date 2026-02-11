@@ -12,6 +12,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/server/auth/options";
 import { getLocaleFromParam } from "@/lib/i18n/routing";
 import { getTranslator } from "@/lib/i18n/translator";
+import StartThisWeekCard from "@/components/this-week/StartThisWeekCard";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -63,6 +64,18 @@ export default async function ThisWeekPage({
     }
   }
 
+  const startGuide =
+    session?.user?.id && data.parishRole
+      ? (
+          <StartThisWeekCard
+            userId={session.user.id}
+            parishId={data.parishId}
+            role={data.parishRole}
+            locale={locale}
+          />
+        )
+      : null;
+
   return viewMode === "admin" ? (
     <ThisWeekAdminView
       data={data}
@@ -72,6 +85,7 @@ export default async function ThisWeekPage({
       parishName={parishName}
       parishLogoUrl={parishLogoUrl}
       userName={userName}
+      startGuide={startGuide}
     />
   ) : (
     <ThisWeekParishionerView
@@ -83,6 +97,7 @@ export default async function ThisWeekPage({
       parishName={parishName}
       parishLogoUrl={parishLogoUrl}
       userName={userName}
+      startGuide={startGuide}
     />
   );
 }

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import SectionTitle from "@/components/ui/SectionTitle";
@@ -62,11 +63,19 @@ export default async function AccessPage({ searchParams, params }: AccessPagePro
             ) : null}
           </form>
         ) : (
-          <div className="rounded-card border border-mist-200 bg-mist-50 px-4 py-3">
-            <p className="text-sm font-medium text-ink-700">We&apos;ll notify you by email.</p>
-            <p className="text-xs text-ink-400">
-              You can safely close this tab and return once a leader approves access.
-            </p>
+          <div className="space-y-3 rounded-card border border-mist-200 bg-mist-50 px-4 py-3">
+            <div>
+              <p className="text-sm font-medium text-ink-700">We&apos;ll notify you by email.</p>
+              <p className="text-xs text-ink-400">
+                You can safely close this tab and return once a leader approves access.
+              </p>
+            </div>
+            <Link
+              href={buildLocalePathname(locale, "/access")}
+              className="inline-flex w-full items-center justify-center rounded-full border border-transparent px-4 py-2 text-sm font-medium text-ink-600 transition hover:bg-mist-100"
+            >
+              Refresh status
+            </Link>
           </div>
         )}
 

@@ -46,6 +46,7 @@ type ThisWeekAdminViewProps = {
   parishName?: string;
   parishLogoUrl?: string | null;
   userName?: string;
+  startGuide?: ReactNode;
 };
 
 /* ---------- lightweight inline icons ---------- */
@@ -166,6 +167,7 @@ export default async function ThisWeekAdminView({
   locale,
   viewToggle,
   spotlightAdmin,
+  startGuide,
   parishName = "Mother of God Ukrainian Catholic Church",
   parishLogoUrl,
   userName
@@ -276,6 +278,8 @@ export default async function ThisWeekAdminView({
         quote={t("thisWeek.quote")}
         quoteSource={t("thisWeek.quoteSource")}
       />
+
+      {startGuide}
 
       {/* Quick blocks — identical to parishioner view */}
       <QuickBlocksRow
