@@ -8,6 +8,7 @@ import {
   MAX_CHAT_ATTACHMENT_SIZE,
   MAX_CHAT_ATTACHMENTS
 } from "@/lib/chat/attachments";
+import { useTranslations } from "@/lib/i18n/provider";
 
 const MAX_LENGTH = 1000;
 
@@ -45,6 +46,7 @@ export default function Composer({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { addToast } = useToast();
+  const t = useTranslations();
 
   useEffect(() => {
     if (editingMessage) {
@@ -129,8 +131,8 @@ export default function Composer({
     const availableSlots = Math.max(0, MAX_CHAT_ATTACHMENTS - attachments.length);
     if (availableSlots === 0) {
       addToast({
-        title: "Attachment limit reached",
-        description: `You can add up to ${MAX_CHAT_ATTACHMENTS} images.`,
+        title: t("chat.attachmentLimitTitle"),
+        description: t("chat.attachmentLimitDescription").replace("{count}", String(MAX_CHAT_ATTACHMENTS)),
         status: "neutral"
       });
       return;
@@ -143,16 +145,16 @@ export default function Composer({
       }
       if (!CHAT_ATTACHMENT_MIME_TYPES.includes(file.type)) {
         addToast({
-          title: "Unsupported file type",
-          description: "Please choose a JPG, PNG, GIF, or WebP image.",
+          title: t("chat.unsupportedFileType"),
+          description: t("chat.unsupportedFileTypeDescription"),
           status: "neutral"
         });
         continue;
       }
       if (file.size > MAX_CHAT_ATTACHMENT_SIZE) {
         addToast({
-          title: "Image too large",
-          description: "Images must be 5MB or smaller.",
+          title: t("chat.imageTooLarge"),
+          description: t("chat.imageTooLargeDescription"),
           status: "neutral"
         });
         continue;
@@ -200,8 +202,8 @@ export default function Composer({
       {isEditing ? (
         <div className="mb-2 flex items-center justify-between gap-3 rounded-xl border border-mist-100 bg-mist-50 px-3 py-2 text-xs text-ink-500">
           <div>
-            <p className="font-semibold text-ink-700">Editing message</p>
-            <p className="text-ink-500">Make your changes and save.</p>
+            <p className="font-semibold text-ink-700">{t("chat.editingMessage")}</p>
+            <p className="text-ink-500">{t("chat.editingMessageDescription")}</p>
           </div>
           {onCancelEdit ? (
             <button
@@ -209,7 +211,7 @@ export default function Composer({
               className="text-xs font-semibold text-ink-600 hover:text-ink-900"
               onClick={onCancelEdit}
             >
-              Cancel
+              {t("common.cancel")}
             </button>
           ) : null}
         </div>
@@ -217,10 +219,10 @@ export default function Composer({
         <div className="mb-2 flex items-center justify-between gap-3 rounded-xl border border-mist-100 bg-mist-50 px-3 py-2 text-xs text-ink-500">
           <div className="min-w-0">
             <p className="font-semibold text-ink-700">
-              Replying in thread to {replyTo.authorName}
+              {t("chat.replyingTo")} {replyTo.authorName}
             </p>
             <p className="truncate text-ink-500">
-              {replyTo.deletedAt ? "Deleted message" : replyTo.body}
+              {replyTo.deletedAt ? t("chat.deletedMessage") : replyTo.body}
             </p>
           </div>
           {onCancelReply ? (
@@ -229,7 +231,7 @@ export default function Composer({
               className="text-xs font-semibold text-ink-600 hover:text-ink-900"
               onClick={onCancelReply}
             >
-              Cancel
+              {t("common.cancel")}
             </button>
           ) : null}
         </div>
@@ -238,7 +240,7 @@ export default function Composer({
       {/* Mention autocomplete */}
       {mentionCandidates.length ? (
         <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-ink-500">
-          <span className="text-ink-400">Tag a member:</span>
+                    <span className="text-ink-400">{t("chat.tagMember")}</span>
           {mentionCandidates.map((user) => (
             <button
               key={user.id}
@@ -302,8 +304,8 @@ export default function Composer({
                     setPlusMenuOpen(false);
                     if (isEditing) {
                       addToast({
-                        title: "Attachments disabled while editing",
-                        description: "Finish editing before adding images.",
+                        title: t("chat.attachmentDisabledEditingTitle"),
+                        description: t("chat.attachmentDisabledEditingDescription"),
                         status: "neutral"
                       });
                       return;
@@ -315,7 +317,7 @@ export default function Composer({
                     <path d="M4 3.75A1.75 1.75 0 015.75 2h8.5A1.75 1.75 0 0116 3.75v12.5A1.75 1.75 0 0114.25 18h-8.5A1.75 1.75 0 014 16.25V3.75zm1.75-.25a.25.25 0 00-.25.25v12.5c0 .138.112.25.25.25h8.5a.25.25 0 00.25-.25V3.75a.25.25 0 00-.25-.25h-8.5z" />
                     <path d="M6.75 7a.75.75 0 00-.75.75v3.5a.75.75 0 001.5 0v-3.5A.75.75 0 006.75 7zm6.5 0a.75.75 0 00-.75.75v3.5a.75.75 0 001.5 0v-3.5A.75.75 0 0013.25 7zM10 9a.75.75 0 00-.75.75v2.5a.75.75 0 001.5 0v-2.5A.75.75 0 0010 9z" />
                   </svg>
-                  Add photos
+                  {t("chat.addPhotos")}
                 </button>
                 {onCreatePoll ? (
                   <button
@@ -329,7 +331,7 @@ export default function Composer({
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-ink-400" aria-hidden="true">
                       <path d="M15.5 2A1.5 1.5 0 0014 3.5v13a1.5 1.5 0 001.5 1.5h1a1.5 1.5 0 001.5-1.5v-13A1.5 1.5 0 0016.5 2h-1zM9.5 6A1.5 1.5 0 008 7.5v9A1.5 1.5 0 009.5 18h1a1.5 1.5 0 001.5-1.5v-9A1.5 1.5 0 0010.5 6h-1zM3.5 10A1.5 1.5 0 002 11.5v5A1.5 1.5 0 003.5 18h1A1.5 1.5 0 006 16.5v-5A1.5 1.5 0 004.5 10h-1z" />
                     </svg>
-                    Create poll
+                    {t("chat.createPoll")}
                   </button>
                 ) : null}
               </div>
@@ -345,10 +347,10 @@ export default function Composer({
           onKeyDown={handleKeyDown}
           placeholder={
             disabled
-              ? "This channel is locked."
+              ? t("chat.channelLocked")
               : isEditing
-                ? "Edit your message..."
-                : "Write a message..."
+                ? t("chat.editMessagePlaceholder")
+                : t("chat.writeMessagePlaceholder")
           }
           maxLength={MAX_LENGTH}
           disabled={isDisabled}
@@ -365,7 +367,7 @@ export default function Composer({
               ? "flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm transition hover:bg-emerald-500 active:bg-emerald-700"
               : "flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-200 text-gray-400 cursor-not-allowed"
           }
-          aria-label={isEditing ? "Save" : "Send"}
+          aria-label={isEditing ? t("chat.save") : t("chat.send")}
           disabled={!canSend}
           onClick={handleSend}
         >
@@ -412,7 +414,9 @@ export default function Composer({
 
       {/* Character count */}
       {remaining < 100 ? (
-        <p className="mt-1 text-right text-xs text-ink-400">{remaining} characters remaining</p>
+        <p className="mt-1 text-right text-xs text-ink-400">
+          {t("chat.charactersRemaining").replace("{count}", String(remaining))}
+        </p>
       ) : null}
     </div>
   );

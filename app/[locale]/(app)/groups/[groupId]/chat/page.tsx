@@ -1,5 +1,5 @@
 import { getServerSession } from "next-auth";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import PageShell from "@/components/app/page-shell";
 import ChatView from "@/components/chat/ChatView";
 import { authOptions } from "@/server/auth/options";
@@ -7,22 +7,25 @@ import { prisma } from "@/server/db/prisma";
 import { getGroupMembership, getParishMembership, isCoordinatorForGroup } from "@/server/db/groups";
 import { canModerateChatChannel, canPostGroupChannel, isParishLeader } from "@/lib/permissions";
 import { listChannelsForUser, listMessages, getPinnedMessage, getLastReadAt } from "@/lib/queries/chat";
+import { buildLocalePathname, getLocaleFromParam } from "@/lib/i18n/routing";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 type GroupChatPageProps = {
-  params: Promise<{ groupId: string }>;
+  params: Promise<{ locale: string; groupId: string }>;
 };
 
 export default async function GroupChatPage({ params }: GroupChatPageProps) {
+  const rawParams = await params;
+  const locale = getLocaleFromParam(rawParams.locale);
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id || !session.user.activeParishId) {
-    throw new Error("Unauthorized");
+    redirect(buildLocalePathname(locale, "/sign-in"));
   }
 
-  const { groupId } = await params;
+  const { groupId } = rawParams;
   const parishId = session.user.activeParishId;
   const userId = session.user.id;
 
@@ -47,14 +50,14 @@ export default async function GroupChatPage({ params }: GroupChatPageProps) {
   ]);
 
   if (!parishMembership) {
-    throw new Error("Unauthorized");
+    redirect(buildLocalePathname(locale, "/access"));
   }
 
   const isLeader = isParishLeader(parishMembership.role);
   const isMember = Boolean(groupMembership && groupMembership.status === "ACTIVE");
 
   if (!isLeader && !isMember) {
-    throw new Error("Unauthorized");
+    notFound();
   }
 
   const channelRecord =

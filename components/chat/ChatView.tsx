@@ -32,6 +32,7 @@ import {
   votePoll
 } from "@/server/actions/chat";
 import { useMediaQuery } from "@/lib/ui/useMediaQuery";
+import { useTranslations } from "@/lib/i18n/provider";
 
 function sortMessages(items: ChatMessage[]) {
   return [...items].sort((a, b) => {
@@ -107,11 +108,14 @@ export default function ChatView({
   const [members, setMembers] = useState<ChatChannelMember[]>(channelMembers ?? []);
   const [membersOpen, setMembersOpen] = useState(false);
   const [isPollingReady, setIsPollingReady] = useState(false);
+  const [hasOlderMessages, setHasOlderMessages] = useState(initialMessages.length >= 50);
+  const [isLoadingOlder, setIsLoadingOlder] = useState(false);
   const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
   const [threadRoot, setThreadRoot] = useState<ChatMessage | null>(null);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const router = useRouter();
   const { addToast } = useToast();
+  const t = useTranslations();
 
   const messagesRef = useRef(messages);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -248,7 +252,39 @@ export default function ChatView({
   useEffect(() => {
     setEditingMessage(null);
     setThreadRoot(null);
-  }, [channel.id]);
+    setHasOlderMessages(initialMessages.length >= 50);
+  }, [channel.id, initialMessages.length]);
+
+  const loadOlderMessages = useCallback(async () => {
+    const oldest = messagesRef.current[0];
+    if (!oldest || isLoadingOlder) {
+      return;
+    }
+
+    setIsLoadingOlder(true);
+
+    try {
+      const response = await fetch(`/api/chat/${channel.id}/history?before=${oldest.id}`);
+      if (!response.ok) {
+        throw new Error("Unable to load history");
+      }
+
+      const data = await response.json();
+      const incoming = (data.messages ?? []).map(parseMessage) as ChatMessage[];
+
+      setMessages((prev) => {
+        const existing = new Set(prev.map((message) => message.id));
+        const fresh = incoming.filter((message) => !existing.has(message.id));
+        return sortMessages([...fresh, ...prev]);
+      });
+
+      setHasOlderMessages(Boolean(data.hasMore));
+    } catch {
+      addToast({ title: t("chat.loadOlderError"), status: "error" });
+    } finally {
+      setIsLoadingOlder(false);
+    }
+  }, [addToast, channel.id, isLoadingOlder, t]);
 
   const uploadAttachments = async (files: File[]) => {
     if (files.length === 0) return [];
@@ -524,6 +560,20 @@ export default function ChatView({
           />
         </div>
         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overscroll-contain py-2">
+          {hasOlderMessages ? (
+            <div className="mb-2 flex justify-center px-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={isLoadingOlder}
+                onClick={() => {
+                  void loadOlderMessages();
+                }}
+              >
+                {isLoadingOlder ? t("chat.loadingOlder") : t("chat.loadOlder")}
+              </Button>
+            </div>
+          ) : null}
           <ChatThread
             messages={channelMessages}
             pinnedMessage={pinnedMessageState}

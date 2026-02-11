@@ -186,6 +186,48 @@ Source context: `docs/mvp-pilot-readiness-report.md`.
 - Load-older history path exists for channels with larger message volume.
 - UI remains usable on mobile composer layouts.
 
+### Epic 5 implementation review (current codebase)
+
+Status legend: **Done** = acceptance criterion is implemented in current code. **Partial** = implemented but with meaningful MVP risk. **Missing** = not implemented yet.
+
+#### Story 5.1 — Chat channels are role-safe and usable
+
+| Acceptance criterion | Status | Current implementation evidence | MVP improvements needed |
+|---|---|---|---|
+| Parish/group channel visibility is role and membership aware. | **Done** | Channel listing filters by parish membership, leader role, and active group memberships; non-members are excluded from unauthorized group channels. | Add explicit role-matrix integration tests (member vs coordinator vs shepherd/admin) to prevent regressions. |
+| Posting permissions differ correctly for announcement/parish/group channels. | **Done** | Posting checks are channel-type-specific in chat actions and attachment API (`ANNOUNCEMENT` uses leader/coordinator; `GROUP` uses leader/active member). | Add tests for negative cases (member posting to announcement, non-member posting to group). |
+| Unauthorized channel access attempts are denied. | **Partial** | Access checks deny unauthorized users in action/API paths. | Standardize denial behavior/UX across server pages and APIs (currently mixed thrown errors and 401/403 JSON). |
+
+**MVP-ready action list (5.1)**
+- Add integration tests for visibility + posting matrix.
+- Normalize unauthorized handling contract for page + API routes.
+
+#### Story 5.2 — Rich chat interactions for weekly coordination
+
+| Acceptance criterion | Status | Current implementation evidence | MVP improvements needed |
+|---|---|---|---|
+| Users can send messages with reply threading and reactions. | **Done** | Message posting supports optional parent message id; thread previews and reaction toggle are implemented end-to-end. | Add DB-backed integration tests for reaction toggling and threaded reply authorization boundaries. |
+| Poll creation and voting work. | **Partial** | Poll create and vote actions are implemented with option validation and expiry checks. | Expand automated coverage for poll lifecycle (expired polls, invalid option, single-vote semantics, access permissions). |
+| Image attachments upload within size/type limits. | **Done** | Attachment constraints are enforced (mime whitelist, 5MB max, max 3 files, URL prefix guard). | Add integration tests for upload endpoint edge cases and malformed payload handling. |
+
+**MVP-ready action list (5.2)**
+- Add poll lifecycle + permission integration tests.
+- Add attachment upload edge-case tests.
+- Replace hardcoded chat copy with i18n keys for EN/UK parity.
+
+#### Story 5.3 — Chat performance remains acceptable for pilot load
+
+| Acceptance criterion | Status | Current implementation evidence | MVP improvements needed |
+|---|---|---|---|
+| Polling/cursor updates perform within target thresholds for pilot usage. | **Partial** | Client uses cursor-based incremental polling with dedupe merge, which reduces repeated full-history payloads. | Define measurable SLOs (poll latency, payload size, concurrent users/channel) and validate with load checks. |
+| Load-older history path exists for channels with larger message volume. | **Missing** | Current flow polls only newer messages from latest cursor. | Implement backward pagination (“Load older”) with stable cursor semantics and tests. |
+| UI remains usable on mobile composer layouts. | **Done** | Mobile-aware composer/thread interactions exist (touch gestures, compact action menu behavior, responsive layout). | Add small-screen regression checklist/tests for composer density and action discoverability. |
+
+**MVP-ready action list (5.3)**
+- Build and ship load-older pagination.
+- Define pilot chat performance budgets and run validation.
+- Add integration/perf coverage once DB-backed chat suites are enabled.
+
 ---
 
 ## Epic 6 — i18n and Clarity for Bilingual Pilots
