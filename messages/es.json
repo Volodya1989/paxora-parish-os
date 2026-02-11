@@ -320,5 +320,34 @@
       "noArchived": "No archived groups",
       "noArchivedDesc": "No archived groups — all groups are active and welcoming."
     }
+  },
+  "chat": {
+    "noChannelsTitle": "No channels available",
+    "noChannelsDescription": "There are no parish chat channels yet. Check back once a channel is created.",
+    "loadOlder": "Load older messages",
+    "loadingOlder": "Loading older messages...",
+    "loadOlderError": "Unable to load older messages right now.",
+    "attachmentLimitTitle": "Attachment limit reached",
+    "attachmentLimitDescription": "You can add up to {count} images.",
+    "unsupportedFileType": "Unsupported file type",
+    "unsupportedFileTypeDescription": "Please choose a JPG, PNG, GIF, or WebP image.",
+    "imageTooLarge": "Image too large",
+    "imageTooLargeDescription": "Images must be 5MB or smaller.",
+    "editingMessage": "Editing message",
+    "editingMessageDescription": "Make your changes and save.",
+    "replyingTo": "Replying in thread to",
+    "tagMember": "Tag a member:",
+    "attachmentDisabledEditingTitle": "Attachments disabled while editing",
+    "attachmentDisabledEditingDescription": "Finish editing before adding images.",
+    "addPhotos": "Add photos",
+    "createPoll": "Create poll",
+    "channelLocked": "This channel is locked.",
+    "editMessagePlaceholder": "Edit your message...",
+    "writeMessagePlaceholder": "Write a message...",
+    "deletedMessage": "Deleted message",
+    "save": "Save",
+    "send": "Send",
+    "charactersRemaining": "{count} characters remaining",
+    "noMessagesYet": "No messages yet. Start the conversation."
   }
 }

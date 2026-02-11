@@ -7,6 +7,7 @@ import PinnedBanner from "@/components/chat/PinnedBanner";
 import type { ChatMessage, ChatPinnedMessage } from "@/components/chat/types";
 import { REACTION_EMOJIS } from "@/lib/chat/reactions";
 import { cn } from "@/lib/ui/cn";
+import { useTranslations } from "@/lib/i18n/provider";
 
 const EDIT_WINDOW_MS = 15 * 60 * 1000;
 const GROUP_WINDOW_MS = 2 * 60 * 1000;
@@ -210,6 +211,7 @@ export default function ChatThread({
   const [contextMenuMessageId, setContextMenuMessageId] = useState<string | null>(
     initialReactionMenuMessageId ?? null
   );
+  const t = useTranslations();
   const [lightboxImage, setLightboxImage] = useState<{ url: string; alt: string } | null>(
     null
   );
@@ -264,7 +266,7 @@ export default function ChatThread({
         {isLoading ? <ListSkeleton rows={3} /> : null}
         {messages.length === 0 && !isLoading ? (
           <div className="rounded-card border border-dashed border-mist-200 bg-mist-50 px-4 py-6 text-center text-sm text-ink-500">
-            No messages yet. Start the conversation.
+            {t("chat.noMessagesYet")}
           </div>
         ) : null}
         {grouped.map((group) => (

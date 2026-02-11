@@ -109,6 +109,16 @@ type ListMessagesInput = {
   getNow?: () => Date;
 };
 
+type ListOlderMessagesInput = {
+  channelId: string;
+  before: {
+    createdAt: Date;
+    id: string;
+  };
+  limit?: number;
+  userId?: string;
+};
+
 type ReactionSummary = {
   emoji: string;
   count: number;
@@ -565,6 +575,179 @@ export async function listMessages({
       poll
     };
   }) as ChatMessageItem[];
+}
+
+export async function listOlderMessages({
+  channelId,
+  before,
+  limit = 30,
+  userId
+}: ListOlderMessagesInput) {
+  const rawMessages = await prisma.chatMessage.findMany({
+    where: {
+      channelId,
+      OR: [
+        {
+          createdAt: {
+            lt: before.createdAt
+          }
+        },
+        {
+          createdAt: before.createdAt,
+          id: {
+            lt: before.id
+          }
+        }
+      ]
+    },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: limit + 1,
+    select: {
+      id: true,
+      body: true,
+      createdAt: true,
+      editedAt: true,
+      deletedAt: true,
+      _count: {
+        select: {
+          replies: true
+        }
+      },
+      parentMessage: {
+        select: {
+          id: true,
+          body: true,
+          createdAt: true,
+          deletedAt: true,
+          author: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          }
+        }
+      },
+      attachments: {
+        select: {
+          id: true,
+          url: true,
+          mimeType: true,
+          size: true,
+          width: true,
+          height: true
+        }
+      },
+      author: {
+        select: {
+          id: true,
+          name: true,
+          email: true
+        }
+      },
+      poll: {
+        select: {
+          id: true,
+          question: true,
+          expiresAt: true,
+          options: {
+            orderBy: { order: "asc" as const },
+            select: {
+              id: true,
+              label: true,
+              _count: { select: { votes: true } },
+              votes: userId
+                ? {
+                    where: { userId },
+                    select: { id: true }
+                  }
+                : false
+            }
+          }
+        }
+      }
+    }
+  });
+
+  const hasMore = rawMessages.length > limit;
+  const messages = hasMore ? rawMessages.slice(0, limit) : rawMessages;
+  const ordered = [...messages].reverse();
+
+  const messageIds = ordered.map((message) => message.id);
+  const reactionMap = await listReactionsForMessages(messageIds, userId);
+
+  const mapped = ordered.map((message) => {
+    let poll: ChatPollItem | null = null;
+
+    if (message.poll) {
+      const totalVotes = message.poll.options.reduce(
+        (sum, opt) => sum + (opt._count?.votes ?? 0),
+        0
+      );
+      const myVoteOption = message.poll.options.find(
+        (opt) => Array.isArray(opt.votes) && opt.votes.length > 0
+      );
+
+      poll = {
+        id: message.poll.id,
+        question: message.poll.question,
+        expiresAt: message.poll.expiresAt,
+        totalVotes,
+        options: message.poll.options.map((opt) => ({
+          id: opt.id,
+          label: opt.label,
+          votes: opt._count?.votes ?? 0,
+          votedByMe: Array.isArray(opt.votes) && opt.votes.length > 0
+        })),
+        myVoteOptionId: myVoteOption?.id ?? null
+      };
+    }
+
+    return {
+      id: message.id,
+      body: message.body,
+      createdAt: message.createdAt,
+      editedAt: message.editedAt,
+      deletedAt: message.deletedAt,
+      replyCount: message._count.replies ?? 0,
+      reactions: reactionMap.get(message.id) ?? [],
+      author: {
+        id: message.author.id,
+        name: message.author.name ?? message.author.email ?? "Parish member"
+      },
+      parentMessage: message.parentMessage
+        ? {
+            id: message.parentMessage.id,
+            body: message.parentMessage.body,
+            createdAt: message.parentMessage.createdAt,
+            deletedAt: message.parentMessage.deletedAt,
+            author: {
+              id: message.parentMessage.author.id,
+              name:
+                message.parentMessage.author.name ??
+                message.parentMessage.author.email ??
+                "Parish member"
+            }
+          }
+        : null,
+      attachments: message.deletedAt
+        ? []
+        : message.attachments.map((attachment) => ({
+            id: attachment.id,
+            url: attachment.url,
+            mimeType: attachment.mimeType,
+            size: attachment.size,
+            width: attachment.width ?? null,
+            height: attachment.height ?? null
+          })),
+      poll
+    };
+  }) as ChatMessageItem[];
+
+  return {
+    messages: mapped,
+    hasMore
+  };
 }
 
 export async function getPinnedMessage(channelId: string, userId?: string) {

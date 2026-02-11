@@ -1,4 +1,5 @@
 import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
 import PageShell from "@/components/app/page-shell";
 import ChatView from "@/components/chat/ChatView";
 import Card, { CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -6,19 +7,25 @@ import { authOptions } from "@/server/auth/options";
 import { getParishMembership, isCoordinatorInParish } from "@/server/db/groups";
 import { canModerateChatChannel, canPostAnnouncementChannel, isParishLeader } from "@/lib/permissions";
 import { listChannelsForUser, listMessages, getPinnedMessage, listChannelMembers, getLastReadAt } from "@/lib/queries/chat";
+import { buildLocalePathname, getLocaleFromParam } from "@/lib/i18n/routing";
+import { getTranslations } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 type CommunityChatPageProps = {
   searchParams: Promise<{ channel?: string }>;
+  params: Promise<{ locale: string }>;
 };
 
-export default async function CommunityChatPage({ searchParams }: CommunityChatPageProps) {
+export default async function CommunityChatPage({ searchParams, params }: CommunityChatPageProps) {
+  const { locale: localeParam } = await params;
+  const locale = getLocaleFromParam(localeParam);
+  const t = getTranslations(locale);
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id || !session.user.activeParishId) {
-    throw new Error("Unauthorized");
+    redirect(buildLocalePathname(locale, "/sign-in"));
   }
 
   const { channel: channelIdParam } = await searchParams;
@@ -33,9 +40,9 @@ export default async function CommunityChatPage({ searchParams }: CommunityChatP
       <PageShell title="" spacing="compact">
         <Card>
           <CardHeader>
-            <CardTitle>No channels available</CardTitle>
+            <CardTitle>{t("chat.noChannelsTitle")}</CardTitle>
             <CardDescription>
-              There are no parish chat channels yet. Check back once a channel is created.
+              {t("chat.noChannelsDescription")}
             </CardDescription>
           </CardHeader>
         </Card>
@@ -50,7 +57,7 @@ export default async function CommunityChatPage({ searchParams }: CommunityChatP
   const parishMembership = await getParishMembership(parishId, userId);
 
   if (!parishMembership) {
-    throw new Error("Unauthorized");
+    redirect(buildLocalePathname(locale, "/access"));
   }
 
   const isLeader = isParishLeader(parishMembership.role);

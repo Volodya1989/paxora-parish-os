@@ -343,5 +343,34 @@
       "noArchived": "Немає архівних груп",
       "noArchivedDesc": "Архівних груп немає — усі групи активні та відкриті."
     }
+  },
+  "chat": {
+    "noChannelsTitle": "Канали недоступні",
+    "noChannelsDescription": "Поки немає парафіяльних чат-каналів. Поверніться пізніше, коли канал буде створено.",
+    "loadOlder": "Завантажити старіші повідомлення",
+    "loadingOlder": "Завантаження старіших повідомлень...",
+    "loadOlderError": "Зараз не вдається завантажити старіші повідомлення.",
+    "attachmentLimitTitle": "Досягнуто ліміт вкладень",
+    "attachmentLimitDescription": "Можна додати до {count} зображень.",
+    "unsupportedFileType": "Непідтримуваний тип файлу",
+    "unsupportedFileTypeDescription": "Оберіть зображення JPG, PNG, GIF або WebP.",
+    "imageTooLarge": "Зображення завелике",
+    "imageTooLargeDescription": "Розмір зображень має бути не більше 5 МБ.",
+    "editingMessage": "Редагування повідомлення",
+    "editingMessageDescription": "Внесіть зміни та збережіть.",
+    "replyingTo": "Відповідь у гілці для",
+    "tagMember": "Позначити учасника:",
+    "attachmentDisabledEditingTitle": "Під час редагування вкладення вимкнено",
+    "attachmentDisabledEditingDescription": "Завершіть редагування, перш ніж додавати зображення.",
+    "addPhotos": "Додати фото",
+    "createPoll": "Створити опитування",
+    "channelLocked": "Цей канал заблокований.",
+    "editMessagePlaceholder": "Відредагуйте повідомлення...",
+    "writeMessagePlaceholder": "Напишіть повідомлення...",
+    "deletedMessage": "Видалене повідомлення",
+    "save": "Зберегти",
+    "send": "Надіслати",
+    "charactersRemaining": "Залишилось символів: {count}",
+    "noMessagesYet": "Поки немає повідомлень. Розпочніть розмову."
   }
 }
