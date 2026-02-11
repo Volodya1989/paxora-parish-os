@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/server/auth/options";
 import { requireAdminOrShepherd } from "@/server/auth/permissions";
 import { listRequestsForBoard } from "@/lib/queries/requests";
+import type { RequestType } from "@prisma/client";
 import { getPeopleList } from "@/lib/queries/people";
 import { prisma } from "@/server/db/prisma";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
@@ -22,8 +23,9 @@ export default async function AdminRequestsPage({
 
   const params = await searchParams;
   const typeParam = typeof params.type === "string" ? params.type : null;
-  const type = ["CONFESSION", "LITURGICAL", "PRAYER", "TALK_TO_PRIEST"].includes(typeParam ?? "")
-    ? (typeParam as "CONFESSION" | "LITURGICAL" | "PRAYER" | "TALK_TO_PRIEST")
+  const allowedTypes = ["CONFESSION", "LITURGICAL", "PRAYER", "TALK_TO_PRIEST", "GENERIC"] as const;
+  const type = allowedTypes.includes(typeParam as RequestType)
+    ? (typeParam as RequestType)
     : null;
   const assigneeId = typeof params.assignee === "string" ? params.assignee : null;
   const scopeParam = typeof params.scope === "string" ? params.scope : null;

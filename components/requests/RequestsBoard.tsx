@@ -33,7 +33,7 @@ import {
   updateRequestVisibility,
   type RequestActionResult
 } from "@/server/actions/requests";
-import { parseRequestDetails } from "@/lib/requests/details";
+import { buildRequestTimeline, parseRequestDetails } from "@/lib/requests/details";
 
 const statusOptions: Array<{ value: RequestStatus; label: string }> = REQUEST_STATUS_ORDER.map(
   (status) => ({ value: status, label: getRequestStatusLabel(status) })
@@ -210,40 +210,7 @@ export default function RequestsBoard({ requests, assignees }: RequestsBoardProp
     isRequestOverdue(request.status, request.createdAt, request.updatedAt) ? "Overdue" : null;
 
   const requestDetails = parseRequestDetails(selectedRequest?.details ?? null);
-  const historyItems = useMemo(() => {
-    if (!requestDetails) return [];
-    const emailHistory = (requestDetails.history ?? []).map((entry, index) => {
-      const typeLabel = (entry.type ?? entry.template ?? "EMAIL").replace(/_/g, " ").toLowerCase();
-      const metaParts = [
-        typeLabel,
-        entry.sentByName ? `Sent by ${entry.sentByName}` : null
-      ].filter(Boolean);
-      return {
-        id: `email-${index}-${entry.sentAt}`,
-        title: entry.subject ?? `${typeLabel} email`,
-        timestamp: entry.sentAt,
-        meta: metaParts.join(" · "),
-        note: entry.note
-      };
-    });
-    const activityHistory = (requestDetails.activity ?? []).map((entry, index) => {
-      const metaParts = [
-        entry.type.replace(/_/g, " ").toLowerCase(),
-        entry.actorName ? `By ${entry.actorName}` : null
-      ].filter(Boolean);
-      return {
-        id: `activity-${index}-${entry.occurredAt}`,
-        title: entry.description,
-        timestamp: entry.occurredAt,
-        meta: metaParts.join(" · "),
-        note: null as string | null
-      };
-    });
-
-    return [...emailHistory, ...activityHistory].sort(
-      (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
-  }, [requestDetails]);
+  const historyItems = useMemo(() => buildRequestTimeline(requestDetails), [requestDetails]);
 
   const formatDateInput = (date: Date) => date.toISOString().split("T")[0];
   const formatTimeInput = (date: Date) => date.toTimeString().slice(0, 5);
@@ -397,7 +364,19 @@ export default function RequestsBoard({ requests, assignees }: RequestsBoardProp
             <div className="space-y-2">
               {group.items.length === 0 ? (
                 <Card>
-                  <CardDescription>No requests here.</CardDescription>
+                  <CardDescription>
+                    {searchParams?.toString()
+                      ? "No requests match these filters. Try widening type, assignee, scope, or overdue settings."
+                      : group.status === "SUBMITTED"
+                        ? "No submitted requests right now. New requests from parishioners will appear here."
+                        : group.status === "ACKNOWLEDGED"
+                          ? "No acknowledged requests. Mark submitted requests as acknowledged once reviewed."
+                          : group.status === "SCHEDULED"
+                            ? "No scheduled requests yet. Schedule meeting-focused requests to organize follow-up."
+                            : group.status === "COMPLETED"
+                              ? "No completed requests yet. Completed requests help track parish follow-through."
+                              : "No canceled requests."}
+                  </CardDescription>
                 </Card>
               ) : (
                 <>

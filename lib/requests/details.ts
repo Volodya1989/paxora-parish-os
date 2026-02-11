@@ -62,6 +62,14 @@ export type RequestDetails = {
   activity?: RequestActivityEntry[];
 };
 
+export type RequestTimelineEntry = {
+  id: string;
+  timestamp: string;
+  title: string;
+  meta: string;
+  note: string | null;
+};
+
 const isPlainObject = (value: Prisma.JsonValue | null): value is Prisma.JsonObject => {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 };
@@ -111,4 +119,43 @@ export function hasRequestEmailHistoryEntry(
     if (matcher.payloadHash && entry.payloadHash !== matcher.payloadHash) return false;
     return true;
   });
+}
+
+export function buildRequestTimeline(details: RequestDetails | null): RequestTimelineEntry[] {
+  if (!details) {
+    return [];
+  }
+
+  const emailHistory = (details.history ?? []).map((entry, index) => {
+    const eventType = (entry.type ?? entry.template ?? "EMAIL").replace(/_/g, " ").toLowerCase();
+    const meta = [eventType, entry.sentByName ? `Sent by ${entry.sentByName}` : null]
+      .filter(Boolean)
+      .join(" · ");
+
+    return {
+      id: `email-${index}-${entry.sentAt}`,
+      timestamp: entry.sentAt,
+      title: entry.subject ?? `${eventType} email`,
+      meta,
+      note: entry.note ?? null
+    };
+  });
+
+  const activityHistory = (details.activity ?? []).map((entry, index) => {
+    const meta = [entry.type.replace(/_/g, " ").toLowerCase(), entry.actorName ? `By ${entry.actorName}` : null]
+      .filter(Boolean)
+      .join(" · ");
+
+    return {
+      id: `activity-${index}-${entry.occurredAt}`,
+      timestamp: entry.occurredAt,
+      title: entry.description,
+      meta,
+      note: null
+    };
+  });
+
+  return [...emailHistory, ...activityHistory].sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  );
 }

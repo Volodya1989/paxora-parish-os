@@ -8,7 +8,7 @@ import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayou
 import { Card, CardDescription, CardTitle } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import { formatMessageTime } from "@/lib/time/messageTime";
-import { parseRequestDetails } from "@/lib/requests/details";
+import { buildRequestTimeline, parseRequestDetails } from "@/lib/requests/details";
 import {
   getRequestStatusLabel,
   getRequestTypeLabel,
@@ -42,6 +42,7 @@ export default async function RequestDetailPage({
   }
 
   const details = parseRequestDetails(request.details);
+  const timelineItems = buildRequestTimeline(details);
 
   return (
     <ParishionerPageLayout
@@ -96,6 +97,31 @@ export default async function RequestDetailPage({
         ) : (
           <p className="text-sm text-ink-500">No additional details provided.</p>
         )}
+
+        <div className="space-y-2">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-400">Timeline</h3>
+          {timelineItems.length ? (
+            <div className="space-y-2">
+              {timelineItems.map((entry) => (
+                <div
+                  key={entry.id}
+                  className="rounded-card border border-mist-200 bg-white px-3 py-2 text-xs text-ink-600"
+                >
+                  <p className="font-semibold text-ink-700">{entry.title}</p>
+                  <p className="text-[11px] text-ink-400">
+                    {new Date(entry.timestamp).toLocaleString()}
+                    {entry.meta ? ` · ${entry.meta}` : ""}
+                  </p>
+                  {entry.note ? <p className="mt-1 text-[11px] text-ink-500">{entry.note}</p> : null}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-ink-500">
+              Updates from clergy and admins will appear here as your request is processed.
+            </p>
+          )}
+        </div>
       </Card>
     </ParishionerPageLayout>
   );
