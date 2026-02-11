@@ -234,7 +234,7 @@ export default function ProfileDates({ initialDates }: ProfileDatesProps) {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-mist-200 bg-mist-50/60 p-4">
+        <div className="flex flex-col gap-4 rounded-card border border-mist-200 bg-mist-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-medium text-ink-900">Allow parish greetings</p>
             <p className="text-sm text-ink-500">
@@ -258,7 +258,7 @@ export default function ProfileDates({ initialDates }: ProfileDatesProps) {
             }
             disabled={isPending || !isEditing}
             className={cn(
-              "relative inline-flex h-6 w-11 items-center rounded-full border transition focus-ring",
+              "relative inline-flex h-6 w-11 shrink-0 items-center self-start rounded-full border transition focus-ring sm:self-center",
               formState.greetingsOptIn
                 ? "border-primary-500 bg-primary-500"
                 : "border-mist-200 bg-mist-200",

@@ -91,21 +91,21 @@ export default async function ProfilePage({
     >
       <div className="mx-auto w-full max-w-4xl space-y-4 md:space-y-5">
         <Card>
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm font-medium text-ink-900">{t("profile.quickActions")}</p>
               <p className="text-sm text-ink-500">{t("profile.quickActionsDesc")}</p>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
               <a
                 href="#notification-settings"
-                className="inline-flex items-center justify-center rounded-button border border-mist-200 bg-white px-3 py-1.5 text-xs font-medium text-ink-900 transition hover:border-mist-300 hover:bg-mist-50 focus-ring"
+                className="inline-flex min-h-[2.25rem] items-center justify-center rounded-button border border-mist-200 bg-white px-3 py-1.5 text-xs font-medium text-ink-900 transition hover:border-mist-300 hover:bg-mist-50 focus-ring"
               >
                 {t("profile.notificationSettings")}
               </a>
               <a
                 href="#important-dates"
-                className="inline-flex items-center justify-center rounded-button border border-mist-200 bg-white px-3 py-1.5 text-xs font-medium text-ink-900 transition hover:border-mist-300 hover:bg-mist-50 focus-ring"
+                className="inline-flex min-h-[2.25rem] items-center justify-center rounded-button border border-mist-200 bg-white px-3 py-1.5 text-xs font-medium text-ink-900 transition hover:border-mist-300 hover:bg-mist-50 focus-ring"
               >
                 {t("profile.importantDates")}
               </a>
@@ -177,7 +177,7 @@ export default async function ProfilePage({
               {pendingRequests.map((request) => (
                 <div
                   key={request.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-mist-200 bg-mist-50 px-3 py-2"
+                  className="flex flex-col gap-3 rounded-card border border-mist-200 bg-mist-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div>
                     <div className="text-sm font-medium text-ink-800">
@@ -185,18 +185,18 @@ export default async function ProfilePage({
                     </div>
                     <div className="text-xs text-ink-500">{request.userEmail}</div>
                   </div>
-                  <div className="text-xs text-ink-400">
+                  <div className="text-xs text-ink-400 sm:text-right">
                     {t("profile.requested")} {request.requestedAt.toLocaleDateString(locale === "uk" ? "uk-UA" : undefined)}
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <form className="flex items-center gap-2" action={approveParishAccess}>
+                  <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                    <form className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center" action={approveParishAccess}>
                       <input type="hidden" name="parishId" value={request.parishId} />
                       <input type="hidden" name="userId" value={request.userId} />
                       <select
                         name="role"
                         defaultValue=""
                         required
-                        className="w-[160px] rounded-button border border-mist-200 bg-white px-3 py-2 text-sm text-ink-700 shadow-card transition focus-ring"
+                        className="w-full rounded-button border border-mist-200 bg-white px-3 py-2 text-sm text-ink-700 shadow-card transition focus-ring sm:w-[160px]"
                       >
                         <option value="" disabled>
                           {t("profile.selectRole")}
@@ -209,10 +209,10 @@ export default async function ProfilePage({
                         {t("buttons.approve")}
                       </Button>
                     </form>
-                    <form action={rejectParishAccess}>
+                    <form className="w-full sm:w-auto" action={rejectParishAccess}>
                       <input type="hidden" name="parishId" value={request.parishId} />
                       <input type="hidden" name="userId" value={request.userId} />
-                      <Button type="submit" size="sm" variant="secondary">
+                      <Button type="submit" size="sm" variant="secondary" className="w-full sm:w-auto">
                         {t("buttons.reject")}
                       </Button>
                     </form>
