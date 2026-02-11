@@ -6,11 +6,12 @@ import { prisma } from "@/server/db/prisma";
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
 
-  if (!session?.user?.id) {
+  if (!session?.user?.id || !session.user.activeParishId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const userId = session.user.id;
+  const parishId = session.user.activeParishId;
 
   let body: unknown;
   try {
@@ -27,7 +28,7 @@ export async function POST(request: Request) {
 
   try {
     await prisma.pushSubscription.deleteMany({
-      where: { userId, endpoint }
+      where: { userId, parishId, endpoint }
     });
 
     return NextResponse.json({ ok: true });

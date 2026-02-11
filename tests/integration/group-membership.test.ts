@@ -356,3 +356,95 @@ dbTest("invite, join requests, approvals, role changes, and leave", async () => 
   assert.equal(unauthorizedInvite.status, "error");
   assert.equal(unauthorizedInvite.error, "NOT_AUTHORIZED");
 });
+
+dbTest("rejects cross-parish group mutations when active parish does not match", async () => {
+  const parishA = await prisma.parish.create({ data: { name: "St A", slug: "st-a" } });
+  const parishB = await prisma.parish.create({ data: { name: "St B", slug: "st-b" } });
+
+  const admin = await prisma.user.create({
+    data: {
+      email: "admin-cross@example.com",
+      name: "Admin Cross",
+      passwordHash: "hashed",
+      activeParishId: parishA.id
+    }
+  });
+
+  const target = await prisma.user.create({
+    data: {
+      email: "target-cross@example.com",
+      name: "Target Cross",
+      passwordHash: "hashed",
+      activeParishId: parishB.id
+    }
+  });
+
+  await prisma.membership.createMany({
+    data: [
+      { parishId: parishA.id, userId: admin.id, role: "ADMIN" },
+      { parishId: parishB.id, userId: admin.id, role: "ADMIN" },
+      { parishId: parishB.id, userId: target.id, role: "MEMBER" }
+    ]
+  });
+
+  const groupInB = await prisma.group.create({
+    data: {
+      parishId: parishB.id,
+      createdById: admin.id,
+      name: "B Group",
+      description: "Cross-parish guard",
+      joinPolicy: "OPEN",
+      visibility: "PUBLIC",
+      status: "ACTIVE"
+    }
+  });
+
+  session.user.id = admin.id;
+  session.user.activeParishId = parishA.id;
+
+  const inviteAttempt = await actions.inviteMember({
+    groupId: groupInB.id,
+    email: target.email,
+    role: "PARISHIONER"
+  });
+
+  assert.equal(inviteAttempt.status, "error");
+  assert.equal(inviteAttempt.error, "NOT_AUTHORIZED");
+
+  session.user.id = target.id;
+  session.user.activeParishId = parishA.id;
+
+  const joinAttempt = await actions.joinGroup({ groupId: groupInB.id });
+  assert.equal(joinAttempt.status, "error");
+  assert.equal(joinAttempt.error, "NOT_FOUND");
+});
+
+dbTest("rejects group mutation when active parish context is missing", async () => {
+  const parish = await prisma.parish.create({ data: { name: "St Missing", slug: "st-missing" } });
+  const user = await prisma.user.create({
+    data: {
+      email: "missing-context@example.com",
+      name: "Missing Context",
+      passwordHash: "hashed",
+      activeParishId: null
+    }
+  });
+
+  const group = await prisma.group.create({
+    data: {
+      parishId: parish.id,
+      createdById: user.id,
+      name: "Missing Context Group",
+      description: "Guard",
+      joinPolicy: "OPEN",
+      visibility: "PUBLIC",
+      status: "ACTIVE"
+    }
+  });
+
+  session.user.id = user.id;
+  session.user.activeParishId = "";
+
+  const result = await actions.joinGroup({ groupId: group.id }).catch(() => ({ status: "error" }));
+  assert.equal(result.status, "error");
+});
