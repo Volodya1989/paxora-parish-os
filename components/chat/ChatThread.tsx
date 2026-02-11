@@ -382,6 +382,7 @@ function MessageRow({
   firstUnreadMessageId?: string | null;
   showUnreadSeparator: boolean;
 }) {
+  const t = useTranslations();
   const initials = getInitials(message.author.name) || "PS";
   const isDeleted = Boolean(message.deletedAt);
   const now = Date.now();
@@ -393,7 +394,7 @@ function MessageRow({
   const canReply = !isDeleted;
   const parentPreview = message.parentMessage
     ? message.parentMessage.deletedAt
-      ? "Deleted message"
+      ? t("chat.deletedMessage")
       : message.parentMessage.body
     : null;
   const showThreadLink = Boolean(onViewThread && message.replyCount > 0);
@@ -572,7 +573,7 @@ function MessageRow({
                 {message.parentMessage.author.name}
               </p>
               <p className="mt-0.5 break-words text-ink-500">
-                {parentPreview ? getSnippet(parentPreview, 140) : "Message unavailable"}
+                {parentPreview ? getSnippet(parentPreview, 140) : t("chat.messageUnavailable")}
               </p>
             </div>
           ) : null}
@@ -589,7 +590,7 @@ function MessageRow({
                     : "text-ink-800"
               )}
             >
-              {isDeleted ? "This message was deleted." : message.body}
+              {isDeleted ? t("chat.deletedMessage") : message.body}
             </p>
           ) : null}
 

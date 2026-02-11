@@ -6,13 +6,18 @@ import { prisma } from "@/server/db/prisma";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
 import MyRequestsList from "@/components/requests/MyRequestsList";
 import { cn } from "@/lib/ui/cn";
+import { getTranslations } from "@/lib/i18n/server";
+import { getLocaleFromParam } from "@/lib/i18n/routing";
 
-export default async function MyRequestsPage() {
+export default async function MyRequestsPage({ params }: { params: Promise<{ locale: string }> }) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id || !session.user.activeParishId) {
     return null;
   }
+
+  const { locale: localeParam } = await params;
+  const t = getTranslations(getLocaleFromParam(localeParam));
 
   const [requests, parish] = await Promise.all([
     listMyRequests(session.user.activeParishId, session.user.id),
@@ -25,9 +30,9 @@ export default async function MyRequestsPage() {
   return (
     <ParishionerPageLayout
       pageTitle="My Requests"
-      parishName={parish?.name ?? "My Parish"}
+      parishName={parish?.name ?? t("common.myParish")}
       parishLogoUrl={parish?.logoUrl ?? null}
-      subtitle="Track updates and follow-ups"
+      subtitle={t("requests.page.subtitle")}
       backHref="/parish"
       actions={
         <Link
@@ -36,7 +41,7 @@ export default async function MyRequestsPage() {
             "inline-flex min-h-[2.25rem] items-center justify-center gap-1.5 whitespace-nowrap rounded-button border border-white/40 bg-white/10 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm transition hover:bg-white/20 focus-ring sm:gap-2 sm:px-3 sm:text-xs"
           )}
         >
-          Make a Request
+          {t("requests.page.makeRequest")}
         </Link>
       }
     >

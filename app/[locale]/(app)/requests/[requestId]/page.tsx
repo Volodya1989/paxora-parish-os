@@ -9,17 +9,15 @@ import { Card, CardDescription, CardTitle } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import { formatMessageTime } from "@/lib/time/messageTime";
 import { buildRequestTimeline, parseRequestDetails } from "@/lib/requests/details";
-import {
-  getRequestStatusLabel,
-  getRequestTypeLabel,
-  REQUEST_STATUS_TONES
-} from "@/lib/requests/utils";
+import { REQUEST_STATUS_TONES } from "@/lib/requests/utils";
 import RequestDetailActions from "@/components/requests/RequestDetailActions";
+import { getTranslations } from "@/lib/i18n/server";
+import { getLocaleFromParam } from "@/lib/i18n/routing";
 
 export default async function RequestDetailPage({
   params
 }: {
-  params: Promise<{ requestId: string }>;
+  params: Promise<{ requestId: string; locale: string }>;
 }) {
   const session = await getServerSession(authOptions);
 
@@ -27,7 +25,8 @@ export default async function RequestDetailPage({
     return null;
   }
 
-  const { requestId } = await params;
+  const { requestId, locale: localeParam } = await params;
+  const t = getTranslations(getLocaleFromParam(localeParam));
 
   const [request, parish] = await Promise.all([
     getRequestDetail(session.user.activeParishId, session.user.id, requestId),
@@ -46,17 +45,17 @@ export default async function RequestDetailPage({
 
   return (
     <ParishionerPageLayout
-      pageTitle="Request details"
-      parishName={parish?.name ?? "My Parish"}
+      pageTitle={t("requests.detail.pageTitle")}
+      parishName={parish?.name ?? t("common.myParish")}
       parishLogoUrl={parish?.logoUrl ?? null}
-      subtitle="Track the latest updates"
+      subtitle={t("requests.detail.subtitle")}
       backHref="/requests"
       actions={
         <Link
           href="/requests"
           className="inline-flex items-center justify-center gap-2 rounded-button border border-white/40 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-white/20 focus-ring"
         >
-          Back to My Requests
+          {t("requests.detail.backToList")}
         </Link>
       }
     >
@@ -64,15 +63,15 @@ export default async function RequestDetailPage({
         <div className="space-y-1">
           <CardTitle>{request.title}</CardTitle>
           <CardDescription>
-            {getRequestTypeLabel(request.type)} · Updated {formatMessageTime(request.updatedAt)}
+            {t(`requests.type.${request.type}.label`)} · {t("requests.list.updatedAt").replace("{time}", formatMessageTime(request.updatedAt))}
           </CardDescription>
           <Badge tone={REQUEST_STATUS_TONES[request.status]}>
-            {getRequestStatusLabel(request.status)}
+            {t(`requests.status.${request.status}`)}
           </Badge>
         </div>
 
         {request.assignedTo?.name ? (
-          <div className="text-sm text-ink-600">Assigned to {request.assignedTo.name}</div>
+          <div className="text-sm text-ink-600">{t("requests.list.assignedTo").replace("{name}", request.assignedTo.name)}</div>
         ) : null}
 
         <RequestDetailActions
@@ -90,16 +89,16 @@ export default async function RequestDetailPage({
             ) : null}
             {details.preferredTimeWindow ? (
               <p className="text-sm text-ink-700">
-                Preferred time window: {details.preferredTimeWindow}
+                {t("requests.detail.preferredTime")} {details.preferredTimeWindow}
               </p>
             ) : null}
           </div>
         ) : (
-          <p className="text-sm text-ink-500">No additional details provided.</p>
+          <p className="text-sm text-ink-500">{t("requests.detail.noDetails")}</p>
         )}
 
         <div className="space-y-2">
-          <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-400">Timeline</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-400">{t("requests.detail.timeline")}</h3>
           {timelineItems.length ? (
             <div className="space-y-2">
               {timelineItems.map((entry) => (
@@ -118,7 +117,7 @@ export default async function RequestDetailPage({
             </div>
           ) : (
             <p className="text-sm text-ink-500">
-              Updates from clergy and admins will appear here as your request is processed.
+              {t("requests.detail.timelineEmpty")}
             </p>
           )}
         </div>
