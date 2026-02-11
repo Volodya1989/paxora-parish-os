@@ -572,7 +572,7 @@ function MessageRow({
                 {message.parentMessage.author.name}
               </p>
               <p className="mt-0.5 break-words text-ink-500">
-                {parentPreview ? getSnippet(parentPreview, 140) : "Message unavailable"}
+                {parentPreview ? getSnippet(parentPreview, 140) : t("chat.messageUnavailable")}
               </p>
             </div>
           ) : null}
@@ -589,7 +589,7 @@ function MessageRow({
                     : "text-ink-800"
               )}
             >
-              {isDeleted ? "This message was deleted." : message.body}
+              {isDeleted ? t("chat.deletedMessage") : message.body}
             </p>
           ) : null}
 

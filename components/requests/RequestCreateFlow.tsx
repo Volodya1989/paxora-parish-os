@@ -11,6 +11,7 @@ import { Card, CardDescription, CardTitle, InteractiveCard } from "@/components/
 import { createRequest } from "@/server/actions/requests";
 import { REQUEST_TYPE_OPTIONS } from "@/lib/requests/utils";
 import { cn } from "@/lib/ui/cn";
+import { useTranslations } from "@/lib/i18n/provider";
 
 const summaryDefaults: Partial<Record<RequestType, string>> = {
   CONFESSION: "Confession request",
@@ -35,6 +36,7 @@ export default function RequestCreateFlow({
   defaultName = "",
   defaultEmail = ""
 }: RequestCreateFlowProps) {
+  const t = useTranslations();
   const [selectedType, setSelectedType] = useState<RequestType | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
@@ -46,13 +48,23 @@ export default function RequestCreateFlow({
     [selectedType]
   );
 
+  const requestTypeCopy = useMemo(
+    () =>
+      REQUEST_TYPE_OPTIONS.map((option) => ({
+        ...option,
+        label: t(`requests.type.${option.value}.label`),
+        description: t(`requests.type.${option.value}.description`)
+      })),
+    [t]
+  );
+
   if (submitted) {
     return (
       <Card className="space-y-4">
         <div className="space-y-2">
-          <CardTitle>Your request has been received.</CardTitle>
+          <CardTitle>{t("requests.create.receivedTitle")}</CardTitle>
           <CardDescription>
-            We&apos;ll follow up soon. You can check updates anytime in My Requests.
+            {t("requests.create.receivedDescription")}
           </CardDescription>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -60,14 +72,14 @@ export default function RequestCreateFlow({
             href="/requests"
             className="inline-flex items-center justify-center rounded-button bg-primary-700 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-primary-600 focus-ring"
           >
-            View My Requests
+            {t("requests.create.viewMyRequests")}
           </Link>
           <Button variant="secondary" onClick={() => {
             setSubmitted(false);
             setSelectedType(null);
             setErrorMessage(null);
           }}>
-            Make another request
+            {t("requests.create.makeAnother")}
           </Button>
         </div>
       </Card>
@@ -78,11 +90,11 @@ export default function RequestCreateFlow({
     return (
       <div className="space-y-4">
         <div>
-          <h2 className="text-lg font-semibold text-ink-900">Choose a request type</h2>
-          <p className="text-sm text-ink-500">Pick the option that best fits your need.</p>
+          <h2 className="text-lg font-semibold text-ink-900">{t("requests.create.chooseType")}</h2>
+          <p className="text-sm text-ink-500">{t("requests.create.chooseTypeDescription")}</p>
         </div>
         <div className="grid gap-3 md:grid-cols-2">
-          {REQUEST_TYPE_OPTIONS.map((option) => (
+          {requestTypeCopy.map((option) => (
             <button
               key={option.value}
               type="button"
@@ -103,12 +115,7 @@ export default function RequestCreateFlow({
   const showPreferredTime =
     selectedType === "CONFESSION" || selectedType === "TALK_TO_PRIEST" || selectedType === "GENERIC";
   const showNotes = true;
-  const notesLabel =
-    selectedType === "TALK_TO_PRIEST"
-      ? "Details"
-      : selectedType === "GENERIC"
-        ? "Details"
-        : "Details";
+  const notesLabel = t("requests.create.details");
   const notesHelper =
     selectedType === "CONFESSION"
       ? "Keep it brief and avoid sensitive confessional details."
@@ -134,14 +141,14 @@ export default function RequestCreateFlow({
               setSubmitted(true);
               return;
             }
-            setErrorMessage(result.message ?? "Something went wrong. Please try again.");
+            setErrorMessage(result.message ?? t("requests.errors.generic"));
           });
         }}
       >
         <div className="space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">Step 2</p>
-          <h2 className="text-lg font-semibold text-ink-900">{selectedCopy?.label}</h2>
-          <p className="text-sm text-ink-500">{selectedCopy?.description}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">{t("requests.create.step2")}</p>
+          <h2 className="text-lg font-semibold text-ink-900">{selectedType ? t(`requests.type.${selectedType}.label`) : selectedCopy?.label}</h2>
+          <p className="text-sm text-ink-500">{selectedType ? t(`requests.type.${selectedType}.description`) : selectedCopy?.description}</p>
         </div>
 
         {errorMessage ? (
@@ -152,12 +159,12 @@ export default function RequestCreateFlow({
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-ink-700" htmlFor="requester-name">
-            Your name
+            {t("requests.create.yourName")}
           </label>
           <Input
             id="requester-name"
             name="requesterName"
-            placeholder="Full name"
+            placeholder={t("requests.create.fullNamePlaceholder")}
             defaultValue={defaultName}
             autoComplete="name"
             required
@@ -166,42 +173,42 @@ export default function RequestCreateFlow({
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-ink-700" htmlFor="requester-email">
-            Email
+            {t("requests.create.email")}
           </label>
           <Input
             id="requester-email"
             name="requesterEmail"
             type="email"
-            placeholder="you@example.com"
+            placeholder={t("requests.create.emailPlaceholder")}
             defaultValue={defaultEmail}
             autoComplete="email"
             required
           />
-          <p className="text-xs text-ink-500">We&apos;ll use this to follow up on your request.</p>
+          <p className="text-xs text-ink-500">{t("requests.create.emailHelper")}</p>
         </div>
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-ink-700" htmlFor="requester-phone">
-            Phone (optional)
+            {t("requests.create.phoneOptional")}
           </label>
           <Input
             id="requester-phone"
             name="requesterPhone"
             type="tel"
-            placeholder="(555) 555-1234"
+            placeholder={t("requests.create.phonePlaceholder")}
             autoComplete="tel"
           />
         </div>
 
         <div className="space-y-2">
           <label className="text-sm font-medium text-ink-700" htmlFor="request-title">
-            Summary
+            {t("requests.create.summary")}
           </label>
           <Input
             id="request-title"
             name="title"
-            placeholder="Short summary"
-            defaultValue={summaryDefaults[selectedType] ?? ""}
+            placeholder={t("requests.create.summaryPlaceholder")}
+            defaultValue={selectedType ? t(`requests.type.${selectedType}.defaultSummary`) : summaryDefaults[selectedType] ?? ""}
             required
           />
         </div>
@@ -209,16 +216,16 @@ export default function RequestCreateFlow({
         {showPreferredTime ? (
           <div className="space-y-2">
             <label className="text-sm font-medium text-ink-700" htmlFor="request-time">
-              Preferred time window (optional)
+              {t("requests.create.preferredTimeOptional")}
             </label>
             <Input
               id="request-time"
               name="preferredTimeWindow"
-              placeholder="e.g., Weekday evenings or Saturday morning"
+              placeholder={t("requests.create.preferredTimePlaceholder")}
             />
             {selectedType === "CONFESSION" ? (
               <p className="text-xs text-ink-500">
-                Please keep details minimal. A preferred time window is enough.
+                {t("requests.create.preferredTimeHelper")}
               </p>
             ) : null}
           </div>
@@ -234,10 +241,10 @@ export default function RequestCreateFlow({
               name="description"
               rows={4}
               minLength={15}
-              placeholder="Please share at least 15 characters"
+              placeholder={t("requests.create.detailsPlaceholder")}
               required
             />
-            <p className="text-xs text-ink-500">{notesHelper}</p>
+            <p className="text-xs text-ink-500">{selectedType ? t(`requests.create.notesHelper.${selectedType}`) : notesHelper}</p>
           </div>
         ) : null}
 
@@ -247,10 +254,10 @@ export default function RequestCreateFlow({
             variant="secondary"
             onClick={() => setSelectedType(null)}
           >
-            Back
+            {t("common.back")}
           </Button>
           <Button type="submit" isLoading={isPending}>
-            Submit request
+            {t("requests.create.submit")}
           </Button>
         </div>
       </form>

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ChatChannelSummary } from "@/components/chat/types";
 import { cn } from "@/lib/ui/cn";
+import { useTranslations } from "@/lib/i18n/provider";
 
 export default function ChatHeader({
   channel,
@@ -21,6 +22,7 @@ export default function ChatHeader({
   onChannelChange?: (channelId: string) => void;
 }) {
   const router = useRouter();
+  const t = useTranslations();
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
   const menuBtnRef = useRef<HTMLButtonElement>(null);
@@ -249,14 +251,14 @@ export default function ChatHeader({
               type="text"
               value={channelSearch}
               onChange={(event) => setChannelSearch(event.target.value)}
-              placeholder="Search channels..."
+              placeholder={t("chat.header.searchPlaceholder")}
               className="w-full rounded-lg border border-mist-200 bg-mist-50 px-3 py-1.5 text-sm text-ink-700 placeholder:text-ink-400 focus:border-emerald-300 focus:outline-none focus:ring-1 focus:ring-emerald-300"
               autoFocus
               aria-label="Search channels"
             />
             <div className="mt-2 max-h-48 overflow-y-auto">
               {filteredChannels.length === 0 ? (
-                <p className="px-1 py-2 text-xs text-ink-400">No channels found.</p>
+                <p className="px-1 py-2 text-xs text-ink-400">{t("chat.header.noChannelsFound")}</p>
               ) : null}
               {filteredChannels.map((option) => (
                 <button

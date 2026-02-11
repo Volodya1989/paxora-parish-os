@@ -9,6 +9,7 @@ import {
   cancelOwnRequest,
   respondToScheduledRequest
 } from "@/server/actions/requests";
+import { useTranslations } from "@/lib/i18n/provider";
 
 type RequestDetailActionsProps = {
   requestId: string;
@@ -25,6 +26,7 @@ export default function RequestDetailActions({
   scheduledEnd,
   scheduleResponseStatus
 }: RequestDetailActionsProps) {
+  const t = useTranslations();
   const router = useRouter();
   const { addToast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -41,12 +43,12 @@ export default function RequestDetailActions({
     startTransition(async () => {
       const result = await respondToScheduledRequest({ requestId, response });
       if (result.status === "success") {
-        addToast({ title: result.message ?? "Request updated.", status: "success" });
+        addToast({ title: result.message ?? t("requests.detail.updated"), status: "success" });
         setResponseState(response === "ACCEPT" ? "ACCEPTED" : "REJECTED");
         router.refresh();
         return;
       }
-      addToast({ title: result.message ?? "Unable to update request.", status: "error" });
+      addToast({ title: result.message ?? t("requests.detail.updateError"), status: "error" });
     });
   };
 
@@ -55,11 +57,11 @@ export default function RequestDetailActions({
     startTransition(async () => {
       const result = await cancelOwnRequest({ requestId });
       if (result.status === "success") {
-        addToast({ title: result.message ?? "Request canceled.", status: "success" });
+        addToast({ title: result.message ?? t("requests.detail.canceled"), status: "success" });
         router.refresh();
         return;
       }
-      addToast({ title: result.message ?? "Unable to cancel request.", status: "error" });
+      addToast({ title: result.message ?? t("requests.detail.cancelError"), status: "error" });
     });
   };
 
@@ -68,16 +70,16 @@ export default function RequestDetailActions({
   const hasSchedule = status === "SCHEDULED" && Boolean(scheduledStart);
   const responseMessage =
     responseState === "ACCEPTED"
-      ? "Scheduled time confirmed."
+      ? t("requests.detail.scheduledConfirmed")
       : responseState === "REJECTED"
-        ? "You declined the proposed time."
+        ? t("requests.detail.scheduledRejected")
         : null;
 
   return (
     <div className="space-y-3">
       {hasSchedule ? (
         <div className="rounded-card border border-emerald-100 bg-emerald-50 px-3 py-3 text-sm text-emerald-700">
-          Proposed time:{" "}
+          {t("requests.detail.proposedTime")} 
           <span className="font-semibold">
             {new Date(scheduledStart as string).toLocaleString()}
           </span>
@@ -87,7 +89,7 @@ export default function RequestDetailActions({
 
       {status === "SCHEDULED" && !scheduledStart ? (
         <div className="rounded-card border border-amber-100 bg-amber-50 px-3 py-3 text-sm text-amber-700">
-          Scheduling details are being finalized. Please check back soon.
+          {t("requests.detail.schedulingPending")}
         </div>
       ) : null}
 
@@ -105,7 +107,7 @@ export default function RequestDetailActions({
             isLoading={isPending}
             disabled={isPending}
           >
-            Accept time
+            {t("requests.detail.acceptTime")}
           </Button>
           <Button
             type="button"
@@ -114,7 +116,7 @@ export default function RequestDetailActions({
             isLoading={isPending}
             disabled={isPending}
           >
-            Reject time
+            {t("requests.detail.rejectTime")}
           </Button>
         </div>
       ) : null}
@@ -128,7 +130,7 @@ export default function RequestDetailActions({
           isLoading={isPending}
           disabled={isPending}
         >
-          Cancel request
+          {t("requests.detail.cancelRequest")}
         </Button>
       ) : null}
     </div>

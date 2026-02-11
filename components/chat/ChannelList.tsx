@@ -4,6 +4,7 @@ import Link from "next/link";
 import Badge from "@/components/ui/Badge";
 import { cn } from "@/lib/ui/cn";
 import type { ChatChannelSummary } from "@/components/chat/types";
+import { useTranslations } from "@/lib/i18n/provider";
 
 const COMMUNITY_CHAT_ROUTE = "/community/chat";
 
@@ -15,9 +16,9 @@ function channelHref(channel: ChatChannelSummary) {
   return `${COMMUNITY_CHAT_ROUTE}?channel=${channel.id}`;
 }
 
-function channelLabel(channel: ChatChannelSummary) {
+function channelLabel(channel: ChatChannelSummary, announcementsLabel: string) {
   if (channel.type === "ANNOUNCEMENT") {
-    return "Announcements";
+    return announcementsLabel;
   }
 
   return channel.name;
@@ -30,13 +31,14 @@ export default function ChannelList({
   channels: ChatChannelSummary[];
   activeChannelId: string;
 }) {
+  const t = useTranslations();
   const parishChannels = channels.filter((channel) => channel.type !== "GROUP");
   const groupChannels = channels.filter((channel) => channel.type === "GROUP");
 
   return (
     <div className="space-y-6">
       <section className="space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">Parish</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">{t("chat.sidebar.parish")}</p>
         <div className="space-y-2">
           {parishChannels.map((channel) => {
             const isActive = channel.id === activeChannelId;
@@ -53,9 +55,9 @@ export default function ChannelList({
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-medium">{channelLabel(channel)}</span>
+                    <span className="font-medium">{channelLabel(channel, t("chat.sidebar.announcements"))}</span>
                     {channel.lockedAt ? (
-                      <span className="text-xs text-ink-400" aria-label="Channel locked">
+                      <span className="text-xs text-ink-400" aria-label={t("chat.sidebar.channelLocked")}>
                         🔒
                       </span>
                     ) : null}
@@ -72,10 +74,10 @@ export default function ChannelList({
       </section>
 
       <section className="space-y-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">Groups</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">{t("chat.sidebar.groups")}</p>
         <div className="space-y-2">
           {groupChannels.length === 0 ? (
-            <p className="text-xs text-ink-400">No group rooms yet.</p>
+            <p className="text-xs text-ink-400">{t("chat.sidebar.noGroupRooms")}</p>
           ) : (
             groupChannels.map((channel) => {
               const isActive = channel.id === activeChannelId;
@@ -94,7 +96,7 @@ export default function ChannelList({
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{channel.group?.name ?? channel.name}</span>
                       {channel.lockedAt ? (
-                        <span className="text-xs text-ink-400" aria-label="Channel locked">
+                        <span className="text-xs text-ink-400" aria-label={t("chat.sidebar.channelLocked")}>
                           🔒
                         </span>
                       ) : null}

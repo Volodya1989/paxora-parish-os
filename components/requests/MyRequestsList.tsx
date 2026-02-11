@@ -1,21 +1,23 @@
+"use client";
+
 import Link from "next/link";
 import type { RequestListItem } from "@/lib/queries/requests";
 import { Card, CardDescription, CardTitle } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import { formatMessageTime } from "@/lib/time/messageTime";
 import {
-  getRequestStatusLabel,
-  getRequestTypeLabel,
   REQUEST_STATUS_TONES
 } from "@/lib/requests/utils";
+import { useTranslations } from "@/lib/i18n/provider";
 
 export default function MyRequestsList({ requests }: { requests: RequestListItem[] }) {
+  const t = useTranslations();
   if (!requests.length) {
     return (
       <Card>
-        <CardTitle>No requests yet</CardTitle>
+        <CardTitle>{t("requests.list.emptyTitle")}</CardTitle>
         <CardDescription>
-          When you submit a request, updates will show up here.
+          {t("requests.list.emptyDescription")}
         </CardDescription>
       </Card>
     );
@@ -33,19 +35,19 @@ export default function MyRequestsList({ requests }: { requests: RequestListItem
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <CardTitle className="min-w-0 text-base break-words">{request.title}</CardTitle>
               <Badge tone={REQUEST_STATUS_TONES[request.status]} className="w-fit self-start">
-                {getRequestStatusLabel(request.status)}
+                {t(`requests.status.${request.status}`)}
               </Badge>
             </div>
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink-500">
-              <span>{getRequestTypeLabel(request.type)}</span>
+              <span>{t(`requests.type.${request.type}.label`)}</span>
               <span aria-hidden="true">•</span>
-              <span>Submitted {formatMessageTime(request.createdAt)}</span>
+              <span>{t("requests.list.submittedAt").replace("{time}", formatMessageTime(request.createdAt))}</span>
               <span aria-hidden="true">•</span>
-              <span>Updated {formatMessageTime(request.updatedAt)}</span>
+              <span>{t("requests.list.updatedAt").replace("{time}", formatMessageTime(request.updatedAt))}</span>
               {request.assignedTo?.name ? (
                 <>
                   <span aria-hidden="true">•</span>
-                  <span>Assigned to {request.assignedTo.name}</span>
+                  <span>{t("requests.list.assignedTo").replace("{name}", request.assignedTo.name)}</span>
                 </>
               ) : null}
             </div>
