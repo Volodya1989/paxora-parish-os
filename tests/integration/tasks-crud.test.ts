@@ -40,8 +40,8 @@ async function resetDatabase() {
   await prisma.user.deleteMany();
 }
 
-let actions: typeof import("@/server/actions/tasks");
-let taskState: typeof import("@/server/actions/taskState");
+let actions: any;
+let taskState: any;
 
 before(async () => {
   if (!hasDatabase) {

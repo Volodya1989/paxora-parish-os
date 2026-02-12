@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import GratitudeSpotlightCard from "@/components/gratitude/GratitudeSpotlightCard";
 import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
 import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
 import GratitudeSpotlightAdminPanel from "@/components/this-week/admin/GratitudeSpotlightAdminPanel";
@@ -38,7 +40,15 @@ export default function GratitudeSpotlightAdminSection({
   spotlight,
   admin
 }: GratitudeSpotlightAdminSectionProps) {
+  const searchParams = useSearchParams();
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+
+  useEffect(() => {
+    const shouldOpenFromLink = searchParams?.get("openNominees") === "1";
+    if (admin && shouldOpenFromLink) {
+      setShowAdminPanel(true);
+    }
+  }, [admin, searchParams]);
 
   if (!admin) {
     return (
@@ -53,18 +63,18 @@ export default function GratitudeSpotlightAdminSection({
     );
   }
 
-  const canManage = true;
   const panelTitle = "Gratitude Spotlight (Admin)";
+  const hasPublishedItems = spotlight.enabled && spotlight.items.length > 0;
 
   return (
     <div className="space-y-3">
-      <GratitudeSpotlightCard
-        enabled={spotlight.enabled}
-        limit={spotlight.limit}
-        items={spotlight.items}
-        showCta
-        headerActions={
-          canManage ? (
+      {hasPublishedItems ? (
+        <GratitudeSpotlightCard
+          enabled={spotlight.enabled}
+          limit={spotlight.limit}
+          items={spotlight.items}
+          showCta
+          headerActions={
             <Button
               type="button"
               size="sm"
@@ -75,34 +85,48 @@ export default function GratitudeSpotlightAdminSection({
             >
               Add nominee
             </Button>
-          ) : null
-        }
-      />
-      {canManage ? (
-        <>
-          <Modal open={showAdminPanel} onClose={() => setShowAdminPanel(false)} title={panelTitle}>
-            <GratitudeSpotlightAdminPanel
-              weekId={weekId}
-              settings={admin.settings}
-              nominations={admin.nominations}
-              memberOptions={admin.memberOptions}
-              withCard={false}
-              showHeader={false}
-            />
-          </Modal>
-          <Drawer open={showAdminPanel} onClose={() => setShowAdminPanel(false)} title={panelTitle}>
-            <GratitudeSpotlightAdminPanel
-              weekId={weekId}
-              settings={admin.settings}
-              nominations={admin.nominations}
-              memberOptions={admin.memberOptions}
-              compact
-              withCard={false}
-              showHeader={false}
-            />
-          </Drawer>
-        </>
-      ) : null}
+          }
+        />
+      ) : (
+        <Card className="space-y-3 border border-dashed border-rose-200 bg-rose-50/50 p-4">
+          <div>
+            <p className="text-sm font-semibold text-rose-900">Gratitude list for this week</p>
+            <p className="text-xs text-rose-700">No published spotlight nominations yet.</p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            className="w-full sm:w-auto"
+            onClick={() => setShowAdminPanel(true)}
+            aria-expanded={showAdminPanel}
+          >
+            Add nominee
+          </Button>
+        </Card>
+      )}
+
+      <Modal open={showAdminPanel} onClose={() => setShowAdminPanel(false)} title={panelTitle}>
+        <GratitudeSpotlightAdminPanel
+          weekId={weekId}
+          settings={admin.settings}
+          nominations={admin.nominations}
+          memberOptions={admin.memberOptions}
+          withCard={false}
+          showHeader={false}
+        />
+      </Modal>
+      <Drawer open={showAdminPanel} onClose={() => setShowAdminPanel(false)} title={panelTitle}>
+        <GratitudeSpotlightAdminPanel
+          weekId={weekId}
+          settings={admin.settings}
+          nominations={admin.nominations}
+          memberOptions={admin.memberOptions}
+          compact
+          withCard={false}
+          showHeader={false}
+        />
+      </Drawer>
     </div>
   );
 }

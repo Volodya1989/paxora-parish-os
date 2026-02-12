@@ -6,7 +6,7 @@ import { loadModuleFromRoot } from "../_helpers/load-module";
 import { applyMigrations } from "../_helpers/migrate";
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
-const dbTest = hasDatabase ? test.skip : test.skip;
+const dbTest = hasDatabase ? test : test.skip;
 
 const session = {
   user: {
@@ -18,6 +18,12 @@ const session = {
 mock.module("next-auth", {
   namedExports: {
     getServerSession: async () => session
+  }
+});
+
+mock.module("next/cache", {
+  namedExports: {
+    revalidatePath: () => undefined
   }
 });
 
@@ -52,19 +58,14 @@ async function resetDatabase() {
   await prisma.user.deleteMany();
 }
 
-let actions: typeof import("@/server/actions/chat");
+let actions: any;
 
 before(async () => {
   if (!hasDatabase) {
     return;
   }
   await applyMigrations();
-  const loaded = (await loadModuleFromRoot(
-    "server/actions/chat"
-  )) as typeof import("@/server/actions/chat");
-  const fallback = (loaded as { default?: typeof loaded }).default ?? loaded;
-  actions =
-    typeof (loaded as typeof fallback).postMessage === "function" ? loaded : fallback;
+  actions = await loadModuleFromRoot("server/actions/chat");
   await prisma.$connect();
   await resetDatabase();
 });

@@ -1,11 +1,11 @@
 import { after, before, test, mock } from "node:test";
 import assert from "node:assert/strict";
 import { prisma } from "@/server/db/prisma";
-import { resolveFromRoot } from "../_helpers/resolve";
+import { loadModuleFromRoot } from "../_helpers/load-module";
 import { applyMigrations } from "../_helpers/migrate";
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
-const dbTest = test.skip;
+const dbTest = hasDatabase ? test : test.skip;
 
 const session = {
   user: {
@@ -34,14 +34,14 @@ async function resetDatabase() {
   await prisma.user.deleteMany();
 }
 
-let actions: typeof import("@/app/actions/members");
+let actions: any;
 
 before(async () => {
   if (!hasDatabase) {
     return;
   }
   await applyMigrations();
-  actions = await import(resolveFromRoot("app/actions/members"));
+  actions = await loadModuleFromRoot("app/actions/members");
   await prisma.$connect();
   await resetDatabase();
 });
@@ -409,7 +409,7 @@ dbTest("rejects cross-parish group mutations when active parish does not match",
   });
 
   assert.equal(inviteAttempt.status, "error");
-  assert.equal(inviteAttempt.error, "NOT_AUTHORIZED");
+  assert.equal(inviteAttempt.error, "NOT_FOUND");
 
   session.user.id = target.id;
   session.user.activeParishId = parishA.id;

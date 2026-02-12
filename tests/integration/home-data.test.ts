@@ -6,6 +6,7 @@ import { applyMigrations } from "../_helpers/migrate";
 import { loadModuleFromRoot } from "../_helpers/load-module";
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
+const dbTest = hasDatabase ? test : test.skip;
 
 const session = {
   user: {
@@ -17,6 +18,13 @@ const session = {
 mock.module("next-auth", {
   namedExports: {
     getServerSession: async () => session
+  }
+});
+
+mock.module("next/cache", {
+  namedExports: {
+    revalidatePath: () => undefined,
+    unstable_noStore: () => undefined
   }
 });
 
@@ -32,7 +40,7 @@ async function resetDatabase() {
   await prisma.user.deleteMany();
 }
 
-let homeQueries: typeof import("@/lib/queries/home");
+let homeQueries: any;
 
 before(async () => {
   if (!hasDatabase) {
@@ -52,7 +60,7 @@ after(async () => {
   await prisma.$disconnect();
 });
 
-test.skip("getHomeSummary returns stable week completion data", async () => {
+dbTest("getHomeSummary returns stable week completion data", async () => {
   const fixedNow = new Date("2024-05-08T12:00:00.000Z");
   const parish = await prisma.parish.create({
     data: { name: "St. Luke", slug: "st-luke" }
