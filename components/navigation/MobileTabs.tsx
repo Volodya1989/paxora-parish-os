@@ -68,7 +68,7 @@ export function MobileTabs({
                   onNavigate?.(localizedHref);
                   setOpen(false);
                 }}
-                className={`flex min-w-0 flex-col items-center gap-1 rounded-button px-1.5 py-1 text-xs font-medium transition focus-ring ${
+                className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-button px-1 py-1 text-[11px] font-medium leading-tight transition focus-ring ${
                   isActive ? "text-primary-700" : "text-ink-500"
                 }`}
               >
@@ -82,7 +82,7 @@ export function MobileTabs({
                 >
                   {item.icon}
                 </span>
-                <span className="truncate text-center">{t(item.labelKey)}</span>
+                <span className="max-w-full truncate text-center">{t(item.labelKey)}</span>
               </Link>
             );
           })}
@@ -92,7 +92,7 @@ export function MobileTabs({
             aria-expanded={open}
             data-testid="tab-more"
             onClick={handleMoreToggle}
-            className={`flex min-w-0 flex-col items-center gap-1 rounded-button px-1.5 py-1 text-xs font-medium transition focus-ring ${
+            className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-button px-1 py-1 text-[11px] font-medium leading-tight transition focus-ring ${
               open ? "text-primary-700" : "text-ink-500"
             }`}
           >
