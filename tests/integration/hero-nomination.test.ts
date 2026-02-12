@@ -39,21 +39,24 @@ async function resetDatabase() {
   await prisma.user.deleteMany();
 }
 
-type GratitudeActions = Pick<
-  typeof import("@/server/actions/gratitude"),
-  "createHeroNomination" | "publishHeroNomination"
->;
+type CreateHeroNomination = typeof import("@/server/actions/gratitude").createHeroNomination;
+type PublishHeroNomination = typeof import("@/server/actions/gratitude").publishHeroNomination;
 
-function resolveGratitudeActions(moduleValue: unknown): GratitudeActions {
+function resolveActionFn<T extends "createHeroNomination" | "publishHeroNomination">(
+  moduleValue: unknown,
+  actionName: T
+): T extends "createHeroNomination" ? CreateHeroNomination : PublishHeroNomination {
   let current: unknown = moduleValue;
-  for (let depth = 0; depth < 4; depth += 1) {
+  for (let depth = 0; depth < 6; depth += 1) {
     if (!current || (typeof current !== "object" && typeof current !== "function")) {
       break;
     }
 
     const record = current as Record<string, unknown>;
-    if (typeof record.createHeroNomination === "function" && typeof record.publishHeroNomination === "function") {
-      return record as unknown as GratitudeActions;
+    if (typeof record[actionName] === "function") {
+      return record[actionName] as T extends "createHeroNomination"
+        ? CreateHeroNomination
+        : PublishHeroNomination;
     }
 
     if (!("default" in record)) {
@@ -63,10 +66,15 @@ function resolveGratitudeActions(moduleValue: unknown): GratitudeActions {
     current = record.default;
   }
 
-  throw new Error("Unable to load gratitude actions module exports.");
+  const keys =
+    moduleValue && (typeof moduleValue === "object" || typeof moduleValue === "function")
+      ? Object.keys(moduleValue as Record<string, unknown>).join(", ")
+      : "<non-object module>";
+  throw new Error(`Unable to load gratitude action '${actionName}'. Module keys: ${keys}`);
 }
 
-let actions: GratitudeActions;
+let createHeroNomination: CreateHeroNomination;
+let publishHeroNomination: PublishHeroNomination;
 
 before(async () => {
   if (!hasDatabase) {
@@ -74,7 +82,8 @@ before(async () => {
   }
   await applyMigrations();
   const moduleValue = await import("@/server/actions/gratitude");
-  actions = resolveGratitudeActions(moduleValue);
+  createHeroNomination = resolveActionFn(moduleValue, "createHeroNomination");
+  publishHeroNomination = resolveActionFn(moduleValue, "publishHeroNomination");
   await prisma.$connect();
   await resetDatabase();
 });
@@ -121,7 +130,7 @@ dbTest("nomination can be saved as draft and then published", async () => {
   const now = new Date("2024-09-02T12:00:00.000Z");
   const week = await getOrCreateCurrentWeek(parish.id, now);
 
-  await actions.createHeroNomination({
+  await createHeroNomination({
     weekId: week.id,
     nomineeUserId: nominee.id,
     reason: "Showed up early every day."
@@ -134,7 +143,7 @@ dbTest("nomination can be saved as draft and then published", async () => {
   assert.equal(draft.status, "DRAFT");
   assert.equal(draft.publishedAt, null);
 
-  await actions.publishHeroNomination({ nominationId: draft.id });
+  await publishHeroNomination({ nominationId: draft.id });
 
   const published = await prisma.heroNomination.findUnique({
     where: { id: draft.id },
