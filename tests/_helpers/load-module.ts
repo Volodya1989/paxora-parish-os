@@ -10,8 +10,8 @@ import { resolveFromRoot } from "./resolve";
  * there may be one or more levels of `.default` wrapping, and the top-level
  * namespace may carry metadata properties added by the mock loader.
  *
- * Strategy: prefer levels that expose *function* exports.  Only fall back to
- * non-function exports when there is nowhere deeper to look.
+ * Strategy: prefer levels that expose export bindings, including accessor
+ * descriptors created by Node's module mock loader.
  */
 function extractExports<T>(mod: Record<string, unknown>, path: string): T {
   const seen = new Set<unknown>();
@@ -30,16 +30,35 @@ function extractExports<T>(mod: Record<string, unknown>, path: string): T {
       (k) => k !== "default" && k !== "__esModule"
     );
 
-    // Diagnostic: always log structure on stderr so CI output reveals it
-    const typeSnippet = keys.slice(0, 5).map((k) => `${k}:${typeof record[k]}`);
+    const descriptors = new Map(
+      keys.map((k) => [k, Object.getOwnPropertyDescriptor(record, k)])
+    );
+
+    // Diagnostic: log descriptor shape without reading live bindings.
+    const typeSnippet = keys.slice(0, 5).map((k) => {
+      const descriptor = descriptors.get(k);
+      if (!descriptor) return `${k}:missing`;
+      if (typeof descriptor.get === "function") return `${k}:getter`;
+      return `${k}:${typeof descriptor.value}`;
+    });
     console.error(
       `[loadModuleFromRoot] "${path}" depth=${depth} ownKeys=[${typeSnippet}]${
         "default" in record ? " hasDefault" : ""
       }`
     );
 
-    const hasFunctions = keys.some((k) => typeof record[k] === "function");
-    const hasDefined = keys.some((k) => record[k] !== undefined);
+    const hasFunctions = keys.some((k) => {
+      const descriptor = descriptors.get(k);
+      return Boolean(
+        descriptor &&
+          (("value" in descriptor && typeof descriptor.value === "function") ||
+            typeof descriptor.get === "function")
+      );
+    });
+    const hasDefined = keys.some((k) => {
+      const descriptor = descriptors.get(k);
+      return Boolean(descriptor && (typeof descriptor.get === "function" || descriptor.value !== undefined));
+    });
 
     // Best case: this level has function exports → use it
     if (hasFunctions) {
