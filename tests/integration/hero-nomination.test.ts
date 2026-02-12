@@ -3,11 +3,10 @@ import assert from "node:assert/strict";
 import { prisma } from "@/server/db/prisma";
 import { getOrCreateCurrentWeek } from "@/domain/week";
 import { getThisWeekDataForUser } from "@/lib/queries/this-week";
-import { loadModuleFromRoot } from "../_helpers/load-module";
 import { applyMigrations } from "../_helpers/migrate";
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
-const dbTest = hasDatabase ? test.skip : test.skip;
+const dbTest = hasDatabase ? test : test.skip;
 
 const session = {
   user: {
@@ -40,14 +39,42 @@ async function resetDatabase() {
   await prisma.user.deleteMany();
 }
 
-let actions: typeof import("@/server/actions/gratitude");
+type GratitudeActions = Pick<
+  typeof import("@/server/actions/gratitude"),
+  "createHeroNomination" | "publishHeroNomination"
+>;
+
+function resolveGratitudeActions(moduleValue: unknown): GratitudeActions {
+  let current: unknown = moduleValue;
+  for (let depth = 0; depth < 4; depth += 1) {
+    if (!current || (typeof current !== "object" && typeof current !== "function")) {
+      break;
+    }
+
+    const record = current as Record<string, unknown>;
+    if (typeof record.createHeroNomination === "function" && typeof record.publishHeroNomination === "function") {
+      return record as unknown as GratitudeActions;
+    }
+
+    if (!("default" in record)) {
+      break;
+    }
+
+    current = record.default;
+  }
+
+  throw new Error("Unable to load gratitude actions module exports.");
+}
+
+let actions: GratitudeActions;
 
 before(async () => {
   if (!hasDatabase) {
     return;
   }
   await applyMigrations();
-  actions = await loadModuleFromRoot("server/actions/gratitude");
+  const moduleValue = await import("@/server/actions/gratitude");
+  actions = resolveGratitudeActions(moduleValue);
   await prisma.$connect();
   await resetDatabase();
 });
@@ -60,7 +87,7 @@ after(async () => {
   await prisma.$disconnect();
 });
 
-dbTest("nominate and publish shows up in This Week spotlight", async () => {
+dbTest("nomination can be saved as draft and then published", async () => {
   const parish = await prisma.parish.create({
     data: { name: "St. Luke", slug: "st-luke" }
   });
@@ -104,8 +131,20 @@ dbTest("nominate and publish shows up in This Week spotlight", async () => {
     where: { parishId: parish.id, weekId: week.id }
   });
   assert.ok(draft);
+  assert.equal(draft.status, "DRAFT");
+  assert.equal(draft.publishedAt, null);
 
-  await actions.publishHeroNomination({ nominationId: draft?.id ?? "" });
+  await actions.publishHeroNomination({ nominationId: draft.id });
+
+  const published = await prisma.heroNomination.findUnique({
+    where: { id: draft.id },
+    select: {
+      status: true,
+      publishedAt: true
+    }
+  });
+  assert.equal(published?.status, "PUBLISHED");
+  assert.ok(published?.publishedAt);
 
   const data = await getThisWeekDataForUser({
     parishId: parish.id,

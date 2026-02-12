@@ -8,10 +8,12 @@ import HoursSummaryCard from "@/components/hours/HoursSummaryCard";
 import HoursLeaderboardCard from "@/components/hours/HoursLeaderboardCard";
 import GratitudeSpotlightCard from "@/components/gratitude/GratitudeSpotlightCard";
 import GratitudeSettingsPanel from "@/components/hours/GratitudeSettingsPanel";
+import GratitudeSpotlightAdminPanel from "@/components/this-week/admin/GratitudeSpotlightAdminPanel";
 import { getParishMembership, isCoordinatorInParish } from "@/server/db/groups";
 import { isParishLeader } from "@/lib/permissions";
 import { prisma } from "@/server/db/prisma";
 import PageHeader from "@/components/header/PageHeader";
+import { getGratitudeAdminData } from "@/lib/queries/gratitude";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -25,7 +27,7 @@ export default async function GratitudeBoardPage() {
 
   const parishId = session.user.activeParishId;
   const summary = await getHoursSummary({ parishId });
-  const [leaderboards, spotlight, membership, coordinator, parishSettings] = await Promise.all([
+  const [leaderboards, spotlight, membership, coordinator, parishSettings, adminData] = await Promise.all([
     getHoursLeaderboards({ parishId }),
     getGratitudeSpotlight({ parishId, weekId: summary.week.id }),
     getParishMembership(parishId, session.user.id),
@@ -39,7 +41,8 @@ export default async function GratitudeBoardPage() {
         silverHours: true,
         goldHours: true
       }
-    })
+    }),
+    getGratitudeAdminData({ parishId, weekId: summary.week.id })
   ]);
 
   if (!membership || !parishSettings) {
@@ -95,9 +98,12 @@ export default async function GratitudeBoardPage() {
       />
 
       {canManage ? (
-        <Card className="space-y-2 border border-dashed border-mist-200 bg-mist-50/50 p-4 text-xs text-ink-500">
-          Manage nominations from the This Week admin view.
-        </Card>
+        <GratitudeSpotlightAdminPanel
+          weekId={summary.week.id}
+          settings={adminData.settings}
+          nominations={adminData.nominations}
+          memberOptions={adminData.memberOptions}
+        />
       ) : null}
 
       {canManageSettings ? (
