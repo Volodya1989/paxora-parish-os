@@ -142,7 +142,7 @@ function AnnouncementRow({ item }: { item: AnnouncementPreview }) {
 function GratitudeEntryCard({ t }: { t: (key: string) => string }) {
   return (
     <Link
-      href="#gratitude-spotlight"
+      href={`${routes.thisWeek}?view=admin&openNominees=1#gratitude-spotlight`}
       className="group flex items-center gap-3 rounded-2xl border border-rose-200 bg-gradient-to-r from-rose-50 via-pink-50 to-amber-50 px-4 py-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
     >
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600">

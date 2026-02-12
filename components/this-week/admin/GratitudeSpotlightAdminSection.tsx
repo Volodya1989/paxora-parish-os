@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import GratitudeSpotlightCard from "@/components/gratitude/GratitudeSpotlightCard";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
@@ -39,7 +40,15 @@ export default function GratitudeSpotlightAdminSection({
   spotlight,
   admin
 }: GratitudeSpotlightAdminSectionProps) {
+  const searchParams = useSearchParams();
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+
+  useEffect(() => {
+    const shouldOpenFromLink = searchParams?.get("openNominees") === "1";
+    if (admin && shouldOpenFromLink) {
+      setShowAdminPanel(true);
+    }
+  }, [admin, searchParams]);
 
   if (!admin) {
     return (
