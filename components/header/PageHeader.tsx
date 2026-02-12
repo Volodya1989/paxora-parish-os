@@ -77,7 +77,7 @@ export default function PageHeader({
       <div className="absolute -bottom-2 left-1/4 h-12 w-12 rounded-full bg-white/5" />
 
       {/* Top bar with breadcrumb and actions */}
-      <div className="relative mb-2 flex items-center justify-between gap-3">
+      <div className="relative mb-2 flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3 text-sm font-semibold text-white">
           {backHref ? (
             <button
@@ -107,7 +107,7 @@ export default function PageHeader({
             className="h-10 w-10 shrink-0 rounded-md object-contain md:h-12 md:w-12"
             onError={(e) => { e.currentTarget.src = "/icon.png"; }}
           />
-          <span className="min-w-0 truncate">{parishName}</span>
+          <span className="min-w-0 break-words text-xs leading-tight sm:text-sm">{parishName}</span>
         </div>
         <div className="flex items-center gap-1.5">
           {actions}

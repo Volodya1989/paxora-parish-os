@@ -36,7 +36,7 @@ export default function QuickBlocksRow({ blocks }: QuickBlocksRowProps) {
   };
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 sm:grid-cols-4">
       {blocks.map((block) => (
         <button
           key={block.id}
@@ -51,13 +51,13 @@ export default function QuickBlocksRow({ blocks }: QuickBlocksRowProps) {
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/80 shadow-sm">
               {block.icon}
             </span>
-            <span className="rounded-full bg-white/90 px-2 py-0.5 text-xs font-semibold text-ink-700 shadow-sm">
+            <span className="shrink-0 rounded-full bg-white/90 px-2 py-0.5 text-xs font-semibold text-ink-700 shadow-sm">
               {block.count}
             </span>
           </div>
           <div className="space-y-0.5">
             <div className="text-sm font-semibold text-ink-900">{block.label}</div>
-            <p className="text-xs text-ink-500 line-clamp-1">{block.summary}</p>
+            <p className="text-xs text-ink-500 line-clamp-2 sm:line-clamp-1">{block.summary}</p>
           </div>
         </button>
       ))}

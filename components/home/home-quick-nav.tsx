@@ -67,32 +67,30 @@ export default function HomeQuickNav({ counts }: HomeQuickNavProps) {
   };
 
   return (
-    <div className="-mx-4 overflow-x-auto px-4 pb-2 scrollbar-hide sm:mx-0 sm:px-0">
-      <div className="flex min-w-[640px] gap-3 sm:min-w-0 sm:gap-4">
-        {items.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => scrollToSection(item.href)}
-            className={cn(
-              "group flex min-w-[150px] flex-1 flex-col gap-2 rounded-card border px-4 py-3 text-left transition hover:shadow-card",
-              item.accentClass
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm font-semibold">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/70">
-                  {item.icon}
-                </span>
-                {item.label}
-              </div>
-              <span className="rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-ink-700 shadow-sm">
-                {item.count}
+    <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-4">
+      {items.map((item) => (
+        <button
+          key={item.id}
+          onClick={() => scrollToSection(item.href)}
+          className={cn(
+            "group flex min-w-0 flex-col gap-2 rounded-card border px-4 py-3 text-left transition hover:shadow-card",
+            item.accentClass
+          )}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2 text-sm font-semibold">
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/70">
+                {item.icon}
               </span>
+              <span className="truncate">{item.label}</span>
             </div>
-            <p className="text-xs text-ink-500">{item.description}</p>
-          </button>
-        ))}
-      </div>
+            <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-xs font-semibold text-ink-700 shadow-sm">
+              {item.count}
+            </span>
+          </div>
+          <p className="text-xs text-ink-500">{item.description}</p>
+        </button>
+      ))}
     </div>
   );
 }
