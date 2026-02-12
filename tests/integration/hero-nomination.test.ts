@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { prisma } from "@/server/db/prisma";
 import { getOrCreateCurrentWeek } from "@/domain/week";
 import { getThisWeekDataForUser } from "@/lib/queries/this-week";
-import { loadModuleFromRoot } from "../_helpers/load-module";
+import { resolveFromRoot } from "../_helpers/resolve";
 import { applyMigrations } from "../_helpers/migrate";
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
@@ -47,7 +47,7 @@ before(async () => {
     return;
   }
   await applyMigrations();
-  actions = await loadModuleFromRoot("server/actions/gratitude");
+  actions = await import(resolveFromRoot("server/actions/gratitude"));
   await prisma.$connect();
   await resetDatabase();
 });
