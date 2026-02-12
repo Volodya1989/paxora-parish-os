@@ -270,21 +270,45 @@ export default function TasksView({
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         {renderViewToggle()}
 
-        {/* + create (circle on mobile, button on desktop) */}
-        {(canManageTasks || (showCreateButton && viewMode !== "opportunities")) && (
-          <>
-            <button
+        {/* Mobile actions row: keep Filters and + on same line */}
+        <div className="flex items-center justify-between gap-2 md:hidden">
+          <FiltersDrawer title={t("tasks.filters.title")} className="shrink-0">
+            <div className="space-y-4">
+              <div className="rounded-xl border-l-4 border-l-sky-400 bg-sky-50/60 px-4 py-3">
+                <p className="text-xs text-sky-700">{t("tasks.filters.tip")}</p>
+              </div>
+              {renderViewToggle()}
+              <TaskFilters
+                filters={filters}
+                groupOptions={groupOptions}
+                showOwnership={viewMode !== "opportunities"}
+                layout="stacked"
+                searchPlaceholder={
+                  viewMode === "opportunities" ? t("tasks.filters.searchOpportunities") : undefined
+                }
+              />
+            </div>
+          </FiltersDrawer>
+
+          {(canManageTasks || (showCreateButton && viewMode !== "opportunities")) && (
+            <Button
               type="button"
               onClick={() =>
                 canManageTasks
                   ? setIsCreateOpen(true)
                   : openCreateDialogWithVisibility("private")
               }
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 sm:hidden"
+              className="h-11 min-w-11 rounded-full px-0 sm:hidden"
               aria-label={canManageTasks ? ctaLabel : t("thisWeek.addTaskAria")}
             >
               <PlusIcon />
-            </button>
+            </Button>
+          )}
+        </div>
+
+        {/* + create (desktop buttons) */}
+        {(canManageTasks || (showCreateButton && viewMode !== "opportunities")) && (
+          <>
             <Button
               type="button"
               onClick={() =>
@@ -308,27 +332,6 @@ export default function TasksView({
             )}
           </>
         )}
-
-        {/* Filters drawer (mobile only) */}
-        <div className="md:hidden">
-          <FiltersDrawer title={t("tasks.filters.title")} className="shrink-0">
-            <div className="space-y-4">
-              <div className="rounded-xl border-l-4 border-l-sky-400 bg-sky-50/60 px-4 py-3">
-                <p className="text-xs text-sky-700">{t("tasks.filters.tip")}</p>
-              </div>
-              {renderViewToggle()}
-              <TaskFilters
-                filters={filters}
-                groupOptions={groupOptions}
-                showOwnership={viewMode !== "opportunities"}
-                layout="stacked"
-                searchPlaceholder={
-                  viewMode === "opportunities" ? t("tasks.filters.searchOpportunities") : undefined
-                }
-              />
-            </div>
-          </FiltersDrawer>
-        </div>
 
         {/* Hours & Gratitude Board — desktop only */}
         {canManageTasks && (
