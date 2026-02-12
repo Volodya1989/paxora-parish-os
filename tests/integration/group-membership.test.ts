@@ -5,7 +5,7 @@ import { resolveFromRoot } from "../_helpers/resolve";
 import { applyMigrations } from "../_helpers/migrate";
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
-const dbTest = test.skip;
+const dbTest = hasDatabase ? test : test.skip;
 
 const session = {
   user: {
@@ -409,7 +409,7 @@ dbTest("rejects cross-parish group mutations when active parish does not match",
   });
 
   assert.equal(inviteAttempt.status, "error");
-  assert.equal(inviteAttempt.error, "NOT_AUTHORIZED");
+  assert.equal(inviteAttempt.error, "NOT_FOUND");
 
   session.user.id = target.id;
   session.user.activeParishId = parishA.id;

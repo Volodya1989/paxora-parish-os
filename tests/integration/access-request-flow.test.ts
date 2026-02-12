@@ -5,6 +5,7 @@ import { resolveFromRoot } from "../_helpers/resolve";
 import { applyMigrations } from "../_helpers/migrate";
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
+const dbTest = hasDatabase ? test : test.skip;
 
 const session = {
   user: {
@@ -22,6 +23,18 @@ mock.module("next-auth", {
 mock.module("next/cache", {
   namedExports: {
     revalidatePath: () => undefined
+  }
+});
+
+mock.module("next/headers", {
+  namedExports: {
+    cookies: async () => ({ get: () => undefined })
+  }
+});
+
+mock.module("next/navigation", {
+  namedExports: {
+    redirect: () => undefined
   }
 });
 
@@ -59,7 +72,7 @@ after(async () => {
   await prisma.$disconnect();
 });
 
-test.skip("request access and approve flow", async () => {
+dbTest("request access and approve flow", async () => {
   const parish = await prisma.parish.create({
     data: { name: "St. Clare", slug: "st-clare" }
   });
@@ -68,7 +81,8 @@ test.skip("request access and approve flow", async () => {
       email: "requester@example.com",
       name: "Requester",
       passwordHash: "hashed",
-      activeParishId: parish.id
+      activeParishId: parish.id,
+      emailVerifiedAt: new Date()
     }
   });
   const approver = await prisma.user.create({

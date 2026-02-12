@@ -5,7 +5,7 @@ import { applyMigrations } from "../_helpers/migrate";
 import { loadModuleFromRoot } from "../_helpers/load-module";
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
-const dbTest = hasDatabase ? test.skip : test.skip;
+const dbTest = hasDatabase ? test : test.skip;
 
 const session = {
   user: {
