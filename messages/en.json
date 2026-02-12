@@ -177,6 +177,18 @@
     "groupsJoinedMany": "groups joined",
     "adminView": "Admin view",
     "latestPrefix": "Latest:",
+    "gratitudeCard": {
+      "title": "Gratitude list for this week",
+      "description": "Add or update nominations and celebrate parishioners who served with love.",
+      "cta": "Open"
+    },
+    "pendingApprovals": "Pending approvals",
+    "accessRequests": "Access requests",
+    "noOpportunities": "No opportunities right now",
+    "noOpportunitiesHint": "Check back soon for new ways to serve.",
+    "addPrivateTask": "Add a private task",
+    "requestPublicTask": "Request a public task",
+    "addTaskAria": "Add a task",
     "startGuide": {
       "memberDescription": "Follow these quick steps to get connected in your first week.",
       "leaderDescription": "Use these quick actions to lead your parish week with confidence.",

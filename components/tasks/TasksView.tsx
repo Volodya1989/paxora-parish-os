@@ -216,8 +216,8 @@ export default function TasksView({
       if (viewMode === "opportunities") {
         return (
           <ListEmptyState
-            title="No opportunities right now"
-            description="Check back soon for new ways to serve."
+            title={t("thisWeek.noOpportunities")}
+            description={t("thisWeek.noOpportunitiesHint")}
           />
         );
       }
@@ -281,7 +281,7 @@ export default function TasksView({
                   : openCreateDialogWithVisibility("private")
               }
               className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 sm:hidden"
-              aria-label={canManageTasks ? ctaLabel : "Add a task"}
+              aria-label={canManageTasks ? ctaLabel : t("thisWeek.addTaskAria")}
             >
               <PlusIcon />
             </button>
@@ -294,7 +294,7 @@ export default function TasksView({
               }
               className="hidden h-9 px-3 text-sm sm:inline-flex"
             >
-              {canManageTasks ? ctaLabel : "Add a private task"}
+              {canManageTasks ? ctaLabel : t("thisWeek.addPrivateTask")}
             </Button>
             {!canManageTasks && (
               <Button
@@ -303,7 +303,7 @@ export default function TasksView({
                 onClick={() => openCreateDialogWithVisibility("public")}
                 className="hidden h-9 px-3 text-sm sm:inline-flex"
               >
-                Request a public task
+                {t("thisWeek.requestPublicTask")}
               </Button>
             )}
           </>
@@ -358,7 +358,7 @@ export default function TasksView({
       {canManageTasks && pendingTaskApprovals.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs font-bold uppercase tracking-wider text-amber-700">
-            Pending approvals
+            {t("thisWeek.pendingApprovals")}
           </p>
           {pendingTaskApprovals.map((task) => (
             <div
@@ -399,7 +399,7 @@ export default function TasksView({
       {canManageTasks && pendingAccessRequests.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs font-bold uppercase tracking-wider text-sky-700">
-            Access requests
+            {t("thisWeek.accessRequests")}
           </p>
           {pendingAccessRequests.map((request) => (
             <div
