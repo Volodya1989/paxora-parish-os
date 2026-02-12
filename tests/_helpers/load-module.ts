@@ -8,14 +8,15 @@ import { resolveFromRoot } from "./resolve";
  * that as an ES module namespace the real exports live under `.default`.
  * Depending on the Node version and flags (e.g. --experimental-test-module-mocks)
  * there may be one or more levels of `.default` wrapping, and the top-level
- * namespace may or may not carry "ghost" keys with `undefined` values.
+ * namespace may carry metadata properties added by the mock loader.
  *
- * This function handles all those cases by simply walking down until it finds
- * real exports.
+ * Strategy: prefer levels that expose *function* exports.  Only fall back to
+ * non-function exports when there is nowhere deeper to look.
  */
 function extractExports<T>(mod: Record<string, unknown>, path: string): T {
   const seen = new Set<unknown>();
   let current: unknown = mod;
+  let bestNonFunctionLevel: unknown = undefined;
 
   for (let depth = 0; depth < 6; depth++) {
     if (!current || (typeof current !== "object" && typeof current !== "function")) {
@@ -29,12 +30,28 @@ function extractExports<T>(mod: Record<string, unknown>, path: string): T {
       (k) => k !== "default" && k !== "__esModule"
     );
 
-    // Check if at least one non-default property has a defined value
-    if (keys.length > 0 && keys.some((k) => record[k] !== undefined)) {
+    // Diagnostic: always log structure on stderr so CI output reveals it
+    const typeSnippet = keys.slice(0, 5).map((k) => `${k}:${typeof record[k]}`);
+    console.error(
+      `[loadModuleFromRoot] "${path}" depth=${depth} ownKeys=[${typeSnippet}]${
+        "default" in record ? " hasDefault" : ""
+      }`
+    );
+
+    const hasFunctions = keys.some((k) => typeof record[k] === "function");
+    const hasDefined = keys.some((k) => record[k] !== undefined);
+
+    // Best case: this level has function exports → use it
+    if (hasFunctions) {
       return current as T;
     }
 
-    // No real exports here — descend into .default
+    // Remember the first level that has any defined exports (even non-functions)
+    if (hasDefined && bestNonFunctionLevel === undefined) {
+      bestNonFunctionLevel = current;
+    }
+
+    // Try to descend into .default
     if ("default" in record && record.default !== undefined) {
       current = record.default;
     } else {
@@ -42,17 +59,19 @@ function extractExports<T>(mod: Record<string, unknown>, path: string): T {
     }
   }
 
-  // Diagnostic: if we get here without finding exports, log info for debugging
+  // If we never found functions, return the best non-function level (or last)
+  const result = bestNonFunctionLevel ?? current;
+
   console.error(
-    `[loadModuleFromRoot] Could not find exports for "${path}".`,
-    `Final value type: ${typeof current}.`,
-    `Raw module keys: ${Object.getOwnPropertyNames(mod)}.`,
-    mod.default != null
-      ? `mod.default keys: ${Object.getOwnPropertyNames(mod.default)}`
-      : "mod.default is nullish"
+    `[loadModuleFromRoot] "${path}" resolved to ${typeof result}` +
+      (result && typeof result === "object"
+        ? ` keys=[${Object.getOwnPropertyNames(result)
+            .filter((k) => k !== "__esModule")
+            .slice(0, 5)}]`
+        : "")
   );
 
-  return current as T;
+  return result as T;
 }
 
 export const loadModuleFromRoot = async <T,>(path: string): Promise<T> => {
