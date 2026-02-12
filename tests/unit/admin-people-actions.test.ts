@@ -15,7 +15,7 @@ mock.module("next/cache", {
 });
 
 test.skip("updateMemberRole returns not authorized without session", async () => {
-  const actions = await loadModuleFromRoot<typeof import("@/app/actions/people")>(
+  const actions = await loadModuleFromRoot<any>(
     "app/actions/people"
   );
   const result = await actions.updateMemberRole({ memberId: "member", role: "ADMIN" });
@@ -25,7 +25,7 @@ test.skip("updateMemberRole returns not authorized without session", async () =>
 });
 
 test.skip("removeMember returns not authorized without session", async () => {
-  const actions = await loadModuleFromRoot<typeof import("@/app/actions/people")>(
+  const actions = await loadModuleFromRoot<any>(
     "app/actions/people"
   );
   const result = await actions.removeMember({ memberId: "member" });

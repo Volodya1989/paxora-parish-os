@@ -33,7 +33,7 @@ async function resetDatabase() {
   await prisma.user.deleteMany();
 }
 
-let hubItemsRoute: typeof import("@/app/api/parish/[parishId]/hub-items/route");
+let hubItemsRoute: any;
 
 before(async () => {
   if (!hasDatabase) {

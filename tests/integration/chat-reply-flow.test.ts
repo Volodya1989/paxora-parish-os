@@ -58,7 +58,7 @@ async function resetDatabase() {
   await prisma.user.deleteMany();
 }
 
-let actions: typeof import("@/server/actions/chat");
+let actions: any;
 
 before(async () => {
   if (!hasDatabase) {

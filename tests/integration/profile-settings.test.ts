@@ -39,7 +39,7 @@ async function resetDatabase() {
   await prisma.user.deleteMany();
 }
 
-let actions: typeof import("@/app/actions/profile");
+let actions: any;
 
 before(async () => {
   if (!hasDatabase) {
@@ -58,7 +58,7 @@ before(async () => {
         : typeof nestedDefault?.updateProfileSettings === "function"
           ? nestedDefault
           : loaded;
-  actions = resolved as typeof import("@/app/actions/profile");
+  actions = resolved as any;
   await prisma.$connect();
   await resetDatabase();
 });

@@ -40,7 +40,7 @@ async function resetDatabase() {
   await prisma.user.deleteMany();
 }
 
-let homeQueries: typeof import("@/lib/queries/home");
+let homeQueries: any;
 
 before(async () => {
   if (!hasDatabase) {
