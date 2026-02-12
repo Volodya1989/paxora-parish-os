@@ -67,7 +67,7 @@ export default function HomeQuickNav({ counts }: HomeQuickNavProps) {
   };
 
   return (
-    <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {items.map((item) => (
         <button
           key={item.id}
