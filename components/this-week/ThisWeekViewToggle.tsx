@@ -41,9 +41,9 @@ export default function ThisWeekViewToggle({ value }: ThisWeekViewToggleProps) {
     <button
       type="button"
       onClick={handleSwitch}
-      className="flex items-center gap-1 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-medium text-white/80 backdrop-blur-sm transition hover:bg-white/25 hover:text-white"
+      className="flex max-w-full items-center gap-1 rounded-full bg-white/15 px-2 py-1 text-[10px] font-medium text-white/80 backdrop-blur-sm transition hover:bg-white/25 hover:text-white sm:px-2.5 sm:text-[11px]"
     >
-      <span>{label}</span>
+      <span className="max-w-[9rem] truncate sm:max-w-none">{label}</span>
       <ArrowIcon className="h-3 w-3" />
     </button>
   );
