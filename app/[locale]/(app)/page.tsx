@@ -28,7 +28,7 @@ export default async function HomePage({
   const highlightCount = summary.nextEvents.length + summary.announcements.length;
 
   return (
-    <div className="section-gap">
+    <div className="section-gap overflow-x-hidden">
       <div className="mx-auto max-w-6xl space-y-2">
         <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
           {t("landing.home")}

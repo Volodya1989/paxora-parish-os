@@ -72,7 +72,7 @@ export default function ParishionerHeader({
         <div className="absolute right-1/3 top-1/2 h-8 w-8 rounded-full bg-white/5" />
 
         {/* Top bar with controls */}
-        <div className="relative mb-2 flex items-center justify-between gap-2 sm:gap-3">
+        <div className="relative mb-2 flex items-start justify-between gap-2 sm:gap-3">
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <img
               src={logoSrc}
@@ -112,7 +112,7 @@ export default function ParishionerHeader({
             {greeting}{userName ? `, ${userName}` : ""}!
           </h1>
           <p className="text-sm font-semibold text-white sm:text-base">
-            {parishName}
+            <span className="break-words">{parishName}</span>
           </p>
           {quote && (
             <blockquote className="mt-2 border-l-4 border-white/40 pl-3 text-xs italic text-white/90">

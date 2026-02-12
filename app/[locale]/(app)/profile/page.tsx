@@ -89,7 +89,7 @@ export default async function ProfilePage({
       gradientClass="from-primary-600 via-primary-500 to-emerald-500"
       icon={<SparklesIcon className="h-6 w-6 text-white" />}
     >
-      <div className="mx-auto w-full max-w-4xl space-y-4 md:space-y-5">
+      <div className="mx-auto w-full max-w-4xl space-y-4 overflow-x-hidden md:space-y-5">
         <Card>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -99,13 +99,13 @@ export default async function ProfilePage({
             <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
               <a
                 href="#notification-settings"
-                className="inline-flex w-full min-h-[2.25rem] items-center justify-center rounded-button border border-mist-200 bg-white px-3 py-1.5 text-center text-xs font-medium text-ink-900 transition hover:border-mist-300 hover:bg-mist-50 focus-ring whitespace-normal break-words sm:w-auto"
+                className="inline-flex w-full min-h-[2.25rem] items-center justify-center rounded-button border border-mist-200 bg-white px-3 py-1.5 text-center text-xs font-medium leading-tight text-ink-900 transition hover:border-mist-300 hover:bg-mist-50 focus-ring whitespace-normal break-words sm:w-auto"
               >
                 {t("profile.notificationSettings")}
               </a>
               <a
                 href="#important-dates"
-                className="inline-flex w-full min-h-[2.25rem] items-center justify-center rounded-button border border-mist-200 bg-white px-3 py-1.5 text-center text-xs font-medium text-ink-900 transition hover:border-mist-300 hover:bg-mist-50 focus-ring whitespace-normal break-words sm:w-auto"
+                className="inline-flex w-full min-h-[2.25rem] items-center justify-center rounded-button border border-mist-200 bg-white px-3 py-1.5 text-center text-xs font-medium leading-tight text-ink-900 transition hover:border-mist-300 hover:bg-mist-50 focus-ring whitespace-normal break-words sm:w-auto"
               >
                 {t("profile.importantDates")}
               </a>
