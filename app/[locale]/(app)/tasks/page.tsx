@@ -62,12 +62,13 @@ function parseTaskFilters(
   };
 }
 
-function formatDateRange(startsOn: Date, endsOn: Date) {
-  const start = startsOn.toLocaleDateString("en-US", {
+function formatDateRange(startsOn: Date, endsOn: Date, locale: string) {
+  const localeTag = locale === "uk" ? "uk-UA" : locale === "es" ? "es" : "en-US";
+  const start = startsOn.toLocaleDateString(localeTag, {
     month: "short",
     day: "numeric"
   });
-  const end = new Date(endsOn.getTime() - 1).toLocaleDateString("en-US", {
+  const end = new Date(endsOn.getTime() - 1).toLocaleDateString(localeTag, {
     month: "short",
     day: "numeric"
   });
@@ -195,7 +196,7 @@ export default async function TasksPage({
       <VolunteerHoursSummary ytdHours={ytdHours} tier={milestoneTier} />
       <TasksView
         weekLabel={week.label}
-        weekRange={formatDateRange(week.startsOn, week.endsOn)}
+        weekRange={formatDateRange(week.startsOn, week.endsOn, locale)}
         weekId={week.id}
         tasks={taskList.tasks}
         summary={taskList.summary}

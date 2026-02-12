@@ -139,7 +139,7 @@ function AnnouncementRow({ item }: { item: AnnouncementPreview }) {
 }
 
 
-function GratitudeEntryCard() {
+function GratitudeEntryCard({ t }: { t: (key: string) => string }) {
   return (
     <Link
       href={routes.gratitudeBoard}
@@ -149,12 +149,12 @@ function GratitudeEntryCard() {
         <HandHeartIcon className="h-5 w-5" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-rose-900">Gratitude list for this week</p>
+        <p className="text-sm font-semibold text-rose-900">{t("thisWeek.gratitudeCard.title")}</p>
         <p className="text-xs text-rose-700">
-          Add or update nominations and celebrate parishioners who served with love.
+          {t("thisWeek.gratitudeCard.description")}
         </p>
       </div>
-      <span className="text-sm font-semibold text-rose-500 transition group-hover:text-rose-700">Open</span>
+      <span className="text-sm font-semibold text-rose-500 transition group-hover:text-rose-700">{t("thisWeek.gratitudeCard.cta")}</span>
     </Link>
   );
 }
@@ -354,7 +354,7 @@ export default async function ThisWeekAdminView({
       {alerts.length > 0 && <AdminAlertBanner alerts={alerts} />}
 
       {/* Gratitude board entry point for clergy/admin */}
-      {spotlightAdmin ? <GratitudeEntryCard /> : null}
+      {spotlightAdmin ? <GratitudeEntryCard t={t} /> : null}
 
       {/* ──── Admin sections: borderless, compact ──── */}
 

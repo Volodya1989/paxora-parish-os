@@ -9,3 +9,7 @@ test("serve navigation keeps tasks as primary route", () => {
 test("serve leader board route is discoverable as dedicated path", () => {
   assert.equal(routes.serveBoard, "/serve-board");
 });
+
+test("gratitude board route exists for GratitudeEntryCard", () => {
+  assert.equal(routes.gratitudeBoard, "/gratitude-board");
+});
