@@ -4,6 +4,7 @@ import { prisma } from "@/server/db/prisma";
 import { sendResendEmail } from "@/lib/email/providers/resend";
 import { getSenderForParish } from "@/lib/email/sender";
 import { shouldSendEmail, type MembershipEmailPreferences } from "@/lib/email/rules";
+import { recordDeliveryAttempt, toDeliveryTarget } from "@/lib/ops/deliveryAttempts";
 
 type EmailContent = {
   subject: string;
@@ -107,6 +108,16 @@ export async function sendEmail(input: EmailSendInput): Promise<EmailSendResult>
         error: getDefaultSenderError()
       }
     });
+    await recordDeliveryAttempt({
+      channel: "EMAIL",
+      status: "FAILURE",
+      parishId: input.parishId ?? null,
+      userId: input.userId ?? null,
+      target: toDeliveryTarget("EMAIL", input.toEmail),
+      template: input.template,
+      context: { type: input.type },
+      errorMessage: getDefaultSenderError()
+    });
     return { status: "FAILED", log };
   }
 
@@ -137,6 +148,16 @@ export async function sendEmail(input: EmailSendInput): Promise<EmailSendResult>
       }
     });
 
+    await recordDeliveryAttempt({
+      channel: "EMAIL",
+      status: "SUCCESS",
+      parishId: input.parishId ?? null,
+      userId: input.userId ?? null,
+      target: toDeliveryTarget("EMAIL", input.toEmail),
+      template: input.template,
+      context: { type: input.type }
+    });
+
     return { status: "SENT", log };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown email error";
@@ -155,6 +176,17 @@ export async function sendEmail(input: EmailSendInput): Promise<EmailSendResult>
         sentAt: null,
         error: message
       }
+    });
+
+    await recordDeliveryAttempt({
+      channel: "EMAIL",
+      status: "FAILURE",
+      parishId: input.parishId ?? null,
+      userId: input.userId ?? null,
+      target: toDeliveryTarget("EMAIL", input.toEmail),
+      template: input.template,
+      context: { type: input.type },
+      errorMessage: message
     });
 
     return { status: "FAILED", log };

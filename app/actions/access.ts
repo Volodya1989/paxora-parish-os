@@ -184,6 +184,10 @@ export async function approveParishAccess(input: FormData | ApproveAccessInput) 
     throw new Error("Missing approval details");
   }
 
+  if (!session.user.activeParishId || session.user.activeParishId !== parishId) {
+    throw new Error("Unauthorized");
+  }
+
   const approverMembership = await prisma.membership.findUnique({
     where: {
       parishId_userId: {
@@ -285,6 +289,10 @@ export async function rejectParishAccess(input: FormData | RejectAccessInput) {
 
   if (!parishId || !userId) {
     throw new Error("Missing rejection details");
+  }
+
+  if (!session.user.activeParishId || session.user.activeParishId !== parishId) {
+    throw new Error("Unauthorized");
   }
 
   const approverMembership = await prisma.membership.findUnique({
