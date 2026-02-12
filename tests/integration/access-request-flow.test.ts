@@ -1,10 +1,11 @@
 import { after, before, test, mock } from "node:test";
 import assert from "node:assert/strict";
 import { prisma } from "@/server/db/prisma";
-import { resolveFromRoot } from "../_helpers/resolve";
+import { loadModuleFromRoot } from "../_helpers/load-module";
 import { applyMigrations } from "../_helpers/migrate";
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
+const dbTest = hasDatabase ? test : test.skip;
 
 const session = {
   user: {
@@ -25,6 +26,18 @@ mock.module("next/cache", {
   }
 });
 
+mock.module("next/headers", {
+  namedExports: {
+    cookies: async () => ({ get: () => undefined })
+  }
+});
+
+mock.module("next/navigation", {
+  namedExports: {
+    redirect: () => undefined
+  }
+});
+
 async function resetDatabase() {
   await prisma.accessRequest.deleteMany();
   await prisma.announcement.deleteMany();
@@ -39,14 +52,14 @@ async function resetDatabase() {
   await prisma.user.deleteMany();
 }
 
-let actions: typeof import("@/app/actions/access");
+let actions: any;
 
 before(async () => {
   if (!hasDatabase) {
     return;
   }
   await applyMigrations();
-  actions = await import(resolveFromRoot("app/actions/access"));
+  actions = await loadModuleFromRoot("app/actions/access");
   await prisma.$connect();
   await resetDatabase();
 });
@@ -59,7 +72,7 @@ after(async () => {
   await prisma.$disconnect();
 });
 
-test.skip("request access and approve flow", async () => {
+dbTest("request access and approve flow", async () => {
   const parish = await prisma.parish.create({
     data: { name: "St. Clare", slug: "st-clare" }
   });
@@ -68,7 +81,8 @@ test.skip("request access and approve flow", async () => {
       email: "requester@example.com",
       name: "Requester",
       passwordHash: "hashed",
-      activeParishId: parish.id
+      activeParishId: parish.id,
+      emailVerifiedAt: new Date()
     }
   });
   const approver = await prisma.user.create({

@@ -6,7 +6,7 @@ import { loadModuleFromRoot } from "../_helpers/load-module";
 import { applyMigrations } from "../_helpers/migrate";
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
-const dbTest = test.skip;
+const dbTest = hasDatabase ? test : test.skip;
 
 const session = {
   user: {
@@ -40,7 +40,7 @@ async function resetDatabase() {
   await prisma.user.deleteMany();
 }
 
-let actions: typeof import("@/server/actions/announcements");
+let actions: any;
 
 before(async () => {
   if (!hasDatabase) {
