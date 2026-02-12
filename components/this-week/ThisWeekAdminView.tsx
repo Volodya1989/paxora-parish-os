@@ -138,6 +138,27 @@ function AnnouncementRow({ item }: { item: AnnouncementPreview }) {
   );
 }
 
+
+function GratitudeEntryCard() {
+  return (
+    <Link
+      href={routes.gratitudeBoard}
+      className="group flex items-center gap-3 rounded-2xl border border-rose-200 bg-gradient-to-r from-rose-50 via-pink-50 to-amber-50 px-4 py-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+    >
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600">
+        <HandHeartIcon className="h-5 w-5" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-rose-900">Gratitude list for this week</p>
+        <p className="text-xs text-rose-700">
+          Add or update nominations and celebrate parishioners who served with love.
+        </p>
+      </div>
+      <span className="text-sm font-semibold text-rose-500 transition group-hover:text-rose-700">Open</span>
+    </Link>
+  );
+}
+
 /* ---------- section header ---------- */
 
 function SectionHeader({ title, count, countLabel, href, linkLabel = "View all" }: {
@@ -332,6 +353,9 @@ export default async function ThisWeekAdminView({
       {/* Admin alerts — compact, only when there are pending actions */}
       {alerts.length > 0 && <AdminAlertBanner alerts={alerts} />}
 
+      {/* Gratitude board entry point for clergy/admin */}
+      {spotlightAdmin ? <GratitudeEntryCard /> : null}
+
       {/* ──── Admin sections: borderless, compact ──── */}
 
       {/* Serve */}
@@ -439,11 +463,13 @@ export default async function ThisWeekAdminView({
 
       {/* Gratitude spotlight (admin can manage nominations) */}
       {(hasGratitudeItems || spotlightAdmin) && (
-        <GratitudeSpotlightAdminSection
-          weekId={data.week.id}
-          spotlight={data.gratitudeSpotlight}
-          admin={spotlightAdmin ?? null}
-        />
+        <div id="gratitude-spotlight">
+          <GratitudeSpotlightAdminSection
+            weekId={data.week.id}
+            spotlight={data.gratitudeSpotlight}
+            admin={spotlightAdmin ?? null}
+          />
+        </div>
       )}
     </div>
   );

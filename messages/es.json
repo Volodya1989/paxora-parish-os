@@ -254,7 +254,12 @@
       "addedToVolunteers": "Added to volunteers",
       "leftVolunteerList": "Left volunteer list",
       "taskDeleted": "Task deleted"
-    }
+    },
+    "myServeTitle": "Mi servicio",
+    "myServeSubtitle": "Tus compromisos y oportunidades personales de servicio esta semana",
+    "leaderBoardTitle": "Tablero de servicio del equipo",
+    "leaderBoardSubtitle": "Tablero del equipo para coordinadores para rastrear y asignar tareas de servicio.",
+    "leaderBoardHelper": "Este es el tablero del equipo para coordinadores. Para compromisos personales, vuelve a Mi servicio."
   },
   "tasks": {
     "view": {
@@ -282,6 +287,10 @@
       "addTitle": "Add a task title to continue.",
       "placeholder": "Quick add a task...",
       "aria": "Quick add a task"
+    },
+    "leaderBoard": {
+      "helper": "¿Necesitas coordinar el flujo del equipo? Abre el tablero del equipo.",
+      "cta": "Abrir tablero de equipo"
     }
   },
   "groups": {

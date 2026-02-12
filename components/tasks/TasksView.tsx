@@ -50,6 +50,7 @@ type TasksViewProps = {
   rejectAccessAction: (formData: FormData) => Promise<void>;
   viewMode?: "all" | "opportunities" | "mine";
   canManageTasks?: boolean;
+  canAccessLeaderBoard?: boolean;
 };
 
 export default function TasksView({
@@ -69,7 +70,8 @@ export default function TasksView({
   approveAccessAction,
   rejectAccessAction,
   viewMode = "all",
-  canManageTasks = true
+  canManageTasks = true,
+  canAccessLeaderBoard = false
 }: TasksViewProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -250,8 +252,22 @@ export default function TasksView({
         tone="sky"
       />
 
+      {canAccessLeaderBoard ? (
+        <div className="rounded-xl border border-sky-100 bg-sky-50/60 px-4 py-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-sky-800">{t("tasks.leaderBoard.helper")}</p>
+            <Link
+              href={routes.serveBoard}
+              className="inline-flex min-h-[36px] items-center rounded-full border border-sky-200 bg-white px-3 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
+            >
+              {t("tasks.leaderBoard.cta")}
+            </Link>
+          </div>
+        </div>
+      ) : null}
+
       {/* Controls: toggle + actions — single compact row */}
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         {renderViewToggle()}
 
         {/* + create (circle on mobile, button on desktop) */}
@@ -403,7 +419,7 @@ export default function TasksView({
                   })}
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                 <SelectMenu
                   name={`role-${request.id}`}
                   value={accessRoles[request.id] ?? ""}
@@ -416,7 +432,7 @@ export default function TasksView({
                     { value: "SHEPHERD", label: "Clergy" },
                     { value: "ADMIN", label: "Admin" }
                   ]}
-                  className="w-[140px]"
+                  className="w-full sm:w-[160px]"
                 />
                 <Button
                   type="button"

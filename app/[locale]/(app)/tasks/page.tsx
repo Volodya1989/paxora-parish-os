@@ -13,7 +13,7 @@ import TasksView from "@/components/tasks/TasksView";
 import { getTasksViewMode } from "@/lib/tasks/viewMode";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
 import VolunteerHoursSummary from "@/components/serve-board/VolunteerHoursSummary";
-import { isParishLeader } from "@/lib/permissions";
+import { canAccessServeBoard, isParishLeader } from "@/lib/permissions";
 import { HandHeartIcon } from "@/components/icons/ParishIcons";
 import { getTranslator } from "@/lib/i18n/translator";
 import { getLocaleFromParam } from "@/lib/i18n/routing";
@@ -119,7 +119,7 @@ export default async function TasksPage({
   const week = await getWeekForSelection(parishId, weekSelection, getNow());
   const filters = parseTaskFilters(resolvedSearchParams, viewMode);
 
-  const [taskList, groups, members, pendingRequests, pendingTaskApprovals, parish, ytdHours] = await Promise.all([
+  const [taskList, groups, members, pendingRequests, pendingTaskApprovals, parish, ytdHours, coordinatorMembership] = await Promise.all([
     listTasks({
       parishId,
       actorUserId: session.user.id,
@@ -151,7 +151,15 @@ export default async function TasksPage({
       where: { id: parishId },
       select: { name: true, logoUrl: true, bronzeHours: true, silverHours: true, goldHours: true }
     }),
-    getUserYtdHours({ parishId, userId: session.user.id })
+    getUserYtdHours({ parishId, userId: session.user.id }),
+    prisma.groupMembership.findFirst({
+      where: {
+        userId: session.user.id,
+        role: "COORDINATOR",
+        group: { parishId }
+      },
+      select: { id: true }
+    })
   ]);
 
   const milestoneTier = getMilestoneTier({
@@ -172,14 +180,15 @@ export default async function TasksPage({
   });
 
   const isLeader = isParishLeader(membership.role);
+  const canAccessLeaderBoard = canAccessServeBoard(membership.role, Boolean(coordinatorMembership));
 
   return (
     <ParishionerPageLayout
-      pageTitle={t("nav.serve")}
+      pageTitle={t("serve.myServeTitle")}
       parishName={parish?.name ?? t("serve.myParish")}
       parishLogoUrl={parish?.logoUrl ?? null}
       isLeader={isLeader}
-      subtitle={t("serve.subtitle")}
+      subtitle={t("serve.myServeSubtitle")}
       gradientClass="from-sky-500 via-sky-400 to-cyan-500"
       icon={<HandHeartIcon className="h-6 w-6 text-white" />}
     >
@@ -201,6 +210,7 @@ export default async function TasksPage({
         rejectAccessAction={rejectParishAccess}
         viewMode={viewMode}
         canManageTasks={isLeader}
+        canAccessLeaderBoard={canAccessLeaderBoard}
       />
     </ParishionerPageLayout>
   );

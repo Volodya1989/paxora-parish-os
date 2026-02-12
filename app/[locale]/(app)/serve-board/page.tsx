@@ -7,13 +7,14 @@ import { getNow } from "@/lib/time/getNow";
 import { listTasks } from "@/lib/queries/tasks";
 import { getUserYtdHours } from "@/lib/queries/hours";
 import { getMilestoneTier } from "@/lib/hours/milestones";
-import { isParishLeader } from "@/lib/permissions";
+import { canAccessServeBoard, canRequestOpportunity, isParishLeader } from "@/lib/permissions";
+import { redirect } from "next/navigation";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
 import ServeBoardView from "@/components/serve-board/ServeBoardView";
 import VolunteerHoursSummary from "@/components/serve-board/VolunteerHoursSummary";
 import { HandHeartIcon } from "@/components/icons/ParishIcons";
 import { getTranslator } from "@/lib/i18n/translator";
-import { getLocaleFromParam } from "@/lib/i18n/routing";
+import { buildLocalePathname, getLocaleFromParam } from "@/lib/i18n/routing";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -45,7 +46,7 @@ export default async function ServeBoardPage({
   const week = await getOrCreateCurrentWeek(parishId, getNow());
   const isLeader = isParishLeader(membership.role);
 
-  const [taskList, members, parish, ytdHours] = await Promise.all([
+  const [taskList, members, parish, ytdHours, coordinatorMembership] = await Promise.all([
     listTasks({
       parishId,
       actorUserId: session.user.id,
@@ -69,8 +70,23 @@ export default async function ServeBoardPage({
       where: { id: parishId },
       select: { name: true, logoUrl: true, bronzeHours: true, silverHours: true, goldHours: true }
     }),
-    getUserYtdHours({ parishId, userId: session.user.id })
+    getUserYtdHours({ parishId, userId: session.user.id }),
+    prisma.groupMembership.findFirst({
+      where: {
+        userId: session.user.id,
+        role: "COORDINATOR",
+        group: { parishId }
+      },
+      select: { id: true }
+    })
   ]);
+
+  const isCoordinator = Boolean(coordinatorMembership);
+  const canAccessLeaderBoard = canAccessServeBoard(membership.role, isCoordinator);
+
+  if (!canAccessLeaderBoard) {
+    redirect(buildLocalePathname(locale, "/tasks"));
+  }
 
   const milestoneTier = getMilestoneTier({
     ytdHours,
@@ -90,11 +106,11 @@ export default async function ServeBoardPage({
 
   return (
     <ParishionerPageLayout
-      pageTitle={t("nav.serve")}
+      pageTitle={t("serve.leaderBoardTitle")}
       parishName={parish?.name ?? t("serve.myParish")}
       parishLogoUrl={parish?.logoUrl ?? null}
       isLeader={isLeader}
-      subtitle={t("serve.subtitle")}
+      subtitle={t("serve.leaderBoardSubtitle")}
       gradientClass="from-sky-500 via-sky-400 to-cyan-500"
       icon={<HandHeartIcon className="h-6 w-6 text-white" />}
     >
@@ -104,6 +120,7 @@ export default async function ServeBoardPage({
         memberOptions={memberOptions}
         currentUserId={session.user.id}
         isLeader={isLeader}
+        canRequestOpportunity={canRequestOpportunity(membership.role)}
       />
     </ParishionerPageLayout>
   );
