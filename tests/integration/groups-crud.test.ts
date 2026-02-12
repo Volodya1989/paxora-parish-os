@@ -41,28 +41,12 @@ async function resetDatabase() {
 
 let actions: typeof import("@/server/actions/groups");
 
-const resolveGroupActions = (value: unknown) => {
-  let current: unknown = value;
-  for (let depth = 0; depth < 3; depth += 1) {
-    if (current && typeof current === "object" && "createGroup" in current) {
-      return current as typeof import("@/server/actions/groups");
-    }
-    if (current && typeof current === "object" && "default" in current) {
-      current = (current as { default: unknown }).default;
-      continue;
-    }
-    break;
-  }
-  return current as typeof import("@/server/actions/groups");
-};
-
 before(async () => {
   if (!hasDatabase) {
     return;
   }
   await applyMigrations();
-  const loaded = await loadModuleFromRoot("server/actions/groups");
-  actions = resolveGroupActions(loaded);
+  actions = await loadModuleFromRoot("server/actions/groups");
   await prisma.$connect();
   await resetDatabase();
 });

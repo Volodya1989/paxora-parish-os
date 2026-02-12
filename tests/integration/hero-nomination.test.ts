@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { prisma } from "@/server/db/prisma";
 import { getOrCreateCurrentWeek } from "@/domain/week";
 import { getThisWeekDataForUser } from "@/lib/queries/this-week";
+import { loadModuleFromRoot } from "../_helpers/load-module";
 import { applyMigrations } from "../_helpers/migrate";
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
@@ -39,42 +40,14 @@ async function resetDatabase() {
   await prisma.user.deleteMany();
 }
 
-type GratitudeActions = Pick<
-  typeof import("@/server/actions/gratitude"),
-  "createHeroNomination" | "publishHeroNomination"
->;
-
-function resolveGratitudeActions(moduleValue: unknown): GratitudeActions {
-  let current: unknown = moduleValue;
-  for (let depth = 0; depth < 4; depth += 1) {
-    if (!current || (typeof current !== "object" && typeof current !== "function")) {
-      break;
-    }
-
-    const record = current as Record<string, unknown>;
-    if (typeof record.createHeroNomination === "function" && typeof record.publishHeroNomination === "function") {
-      return record as unknown as GratitudeActions;
-    }
-
-    if (!("default" in record)) {
-      break;
-    }
-
-    current = record.default;
-  }
-
-  throw new Error("Unable to load gratitude actions module exports.");
-}
-
-let actions: GratitudeActions;
+let actions: typeof import("@/server/actions/gratitude");
 
 before(async () => {
   if (!hasDatabase) {
     return;
   }
   await applyMigrations();
-  const moduleValue = await import("@/server/actions/gratitude");
-  actions = resolveGratitudeActions(moduleValue);
+  actions = await loadModuleFromRoot("server/actions/gratitude");
   await prisma.$connect();
   await resetDatabase();
 });

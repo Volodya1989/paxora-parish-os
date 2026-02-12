@@ -1,7 +1,7 @@
 import { after, before, test, mock } from "node:test";
 import assert from "node:assert/strict";
 import { prisma } from "@/server/db/prisma";
-import { resolveFromRoot } from "../_helpers/resolve";
+import { loadModuleFromRoot } from "../_helpers/load-module";
 import { applyMigrations } from "../_helpers/migrate";
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
@@ -41,7 +41,7 @@ before(async () => {
     return;
   }
   await applyMigrations();
-  actions = await import(resolveFromRoot("app/actions/members"));
+  actions = await loadModuleFromRoot("app/actions/members");
   await prisma.$connect();
   await resetDatabase();
 });

@@ -21,6 +21,12 @@ mock.module("next-auth", {
   }
 });
 
+mock.module("next/cache", {
+  namedExports: {
+    revalidatePath: () => undefined
+  }
+});
+
 mock.module("../../lib/storage/r2", {
   namedExports: {
     getR2Config: () => ({
@@ -59,12 +65,7 @@ before(async () => {
     return;
   }
   await applyMigrations();
-  const loaded = (await loadModuleFromRoot(
-    "server/actions/chat"
-  )) as typeof import("@/server/actions/chat");
-  const fallback = (loaded as { default?: typeof loaded }).default ?? loaded;
-  actions =
-    typeof (loaded as typeof fallback).postMessage === "function" ? loaded : fallback;
+  actions = await loadModuleFromRoot("server/actions/chat");
   await prisma.$connect();
   await resetDatabase();
 });

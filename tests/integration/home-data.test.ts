@@ -21,6 +21,13 @@ mock.module("next-auth", {
   }
 });
 
+mock.module("next/cache", {
+  namedExports: {
+    revalidatePath: () => undefined,
+    unstable_noStore: () => undefined
+  }
+});
+
 async function resetDatabase() {
   await prisma.announcement.deleteMany();
   await prisma.event.deleteMany();
