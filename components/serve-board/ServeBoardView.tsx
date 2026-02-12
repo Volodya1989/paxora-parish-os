@@ -40,6 +40,7 @@ type ServeBoardViewProps = {
   memberOptions: Array<{ id: string; name: string; label?: string }>;
   currentUserId: string;
   isLeader: boolean;
+  canRequestOpportunity: boolean;
 };
 
 function formatDueDate(value: string, locale: string) {
@@ -66,7 +67,8 @@ export default function ServeBoardView({
   tasks,
   memberOptions,
   currentUserId,
-  isLeader
+  isLeader,
+  canRequestOpportunity
 }: ServeBoardViewProps) {
   const { addToast } = useToast();
   const router = useRouter();
@@ -87,6 +89,7 @@ export default function ServeBoardView({
   const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null);
   const [completeTaskId, setCompleteTaskId] = useState<string | null>(null);
   const [requestOpen, setRequestOpen] = useState(false);
+  const [mobileColumn, setMobileColumn] = useState<TaskStatus>("OPEN");
   const [, startTransition] = useTransition();
 
   const orderStorageKey = `serve-board-order-${currentUserId}`;
@@ -352,22 +355,28 @@ export default function ServeBoardView({
         tone="sky"
       />
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          type="button"
-          onClick={() => setRequestOpen(true)}
-          className="h-10 px-4 text-sm"
-        >
-          {t("serve.requestOpportunity")}
-        </Button>
-        {renderFilterButton(t("serve.filters.all"), ownershipFilter === "all", () => setOwnershipFilter("all"))}
-        {renderFilterButton(t("serve.filters.mine"), ownershipFilter === "mine", () => setOwnershipFilter("mine"))}
+      <p className="text-sm text-ink-600">{t("serve.leaderBoardHelper")}</p>
+
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+        {canRequestOpportunity ? (
+          <Button
+            type="button"
+            onClick={() => setRequestOpen(true)}
+            className="h-10 w-full px-4 text-sm sm:w-auto"
+          >
+            {t("serve.requestOpportunity")}
+          </Button>
+        ) : null}
+        <div className="flex flex-wrap items-center gap-2">
+          {renderFilterButton(t("serve.filters.all"), ownershipFilter === "all", () => setOwnershipFilter("all"))}
+          {renderFilterButton(t("serve.filters.mine"), ownershipFilter === "mine", () => setOwnershipFilter("mine"))}
+        </div>
         <input
           type="search"
           value={searchQuery}
           onChange={(event) => setSearchQuery(event.target.value)}
           placeholder={t("serve.searchPlaceholder")}
-          className="h-8 w-40 rounded-full border border-mist-200 bg-white px-3 text-xs text-ink-700 placeholder:text-ink-400 focus:border-primary-300 focus:outline-none focus:ring-1 focus:ring-primary-300 sm:w-52"
+          className="h-9 w-full rounded-full border border-mist-200 bg-white px-3 text-sm text-ink-700 placeholder:text-ink-400 focus:border-primary-300 focus:outline-none focus:ring-1 focus:ring-primary-300 sm:h-8 sm:w-56 sm:text-xs"
         />
       </div>
 
@@ -378,12 +387,32 @@ export default function ServeBoardView({
           icon={<HeartIcon className="h-6 w-6" />}
           variant="friendly"
           action={
-            <Button onClick={() => setRequestOpen(true)}>
-              {t("serve.requestOpportunity")}
-            </Button>
+            canRequestOpportunity ? (
+              <Button onClick={() => setRequestOpen(true)}>
+                {t("serve.requestOpportunity")}
+              </Button>
+            ) : undefined
           }
         />
       ) : null}
+
+      <div className="flex gap-2 overflow-x-auto pb-1 md:hidden">
+        {statusColumns.map((column) => (
+          <button
+            key={column.id}
+            type="button"
+            onClick={() => setMobileColumn(column.id)}
+            className={cn(
+              "whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold transition",
+              mobileColumn === column.id
+                ? "border-primary-200 bg-primary-50 text-primary-700"
+                : "border-mist-200 bg-white text-ink-600"
+            )}
+          >
+            {t(column.labelKey)}
+          </button>
+        ))}
+      </div>
 
       <div className="flex gap-4 overflow-x-auto pb-4 md:grid md:grid-cols-3 md:overflow-visible">
         {statusColumns.map((column) => {
@@ -392,7 +421,8 @@ export default function ServeBoardView({
             <div
               key={column.id}
               className={cn(
-                "min-w-[280px] flex-1 rounded-lg p-1 transition md:min-w-0",
+                "min-w-full flex-1 rounded-lg p-1 transition md:min-w-0",
+                mobileColumn !== column.id ? "hidden md:block" : "block",
                 dragOverColumn === column.id && draggedTaskId
                   ? "bg-mist-100/60 ring-2 ring-primary-200"
                   : ""

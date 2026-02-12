@@ -20,3 +20,11 @@ export function canPostGroupChannel(parishRole: ParishRole, isGroupMember: boole
 export function canModerateChatChannel(parishRole: ParishRole, isCoordinator: boolean) {
   return isParishLeader(parishRole) || isCoordinator;
 }
+
+export function canAccessServeBoard(parishRole: ParishRole, isCoordinator: boolean) {
+  return isParishLeader(parishRole) || isCoordinator;
+}
+
+export function canRequestOpportunity(parishRole: ParishRole) {
+  return parishRole === "MEMBER";
+}

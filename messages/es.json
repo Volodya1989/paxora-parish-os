@@ -165,7 +165,19 @@
     "reviewNow": "Review now",
     "quickAdd": "Quick add",
     "quickAddDesc": "Create something new without leaving the weekly overview.",
-    "parishionerView": "Parishioner view"
+    "parishionerView": "Parishioner view",
+    "gratitudeCard": {
+      "title": "Lista de gratitud de esta semana",
+      "description": "Agrega o actualiza nominaciones y celebra a los feligreses que sirvieron con amor.",
+      "cta": "Abrir"
+    },
+    "pendingApprovals": "Aprobaciones pendientes",
+    "accessRequests": "Solicitudes de acceso",
+    "noOpportunities": "No hay oportunidades en este momento",
+    "noOpportunitiesHint": "Vuelve pronto para nuevas formas de servir.",
+    "addPrivateTask": "Agregar tarea privada",
+    "requestPublicTask": "Solicitar tarea pública",
+    "addTaskAria": "Agregar tarea"
   },
   "announcements": {
     "title": "Announcements",
@@ -188,7 +200,7 @@
     },
     "quote": "Each of you should use whatever gift you have received to serve others.",
     "quoteSource": "1 Peter 4:10",
-    "requestOpportunity": "Request an opportunity",
+    "requestOpportunity": "Solicitar una oportunidad",
     "requestOpportunityDesc": "Have an idea for a volunteer opportunity? Share it with parish leadership and help build our community of service.",
     "requestOpportunitySuccess": "Thank you! Your opportunity request has been submitted to parish leadership. We'll review it and create the opportunity if it aligns with our parish needs.",
     "filters": {
@@ -254,7 +266,12 @@
       "addedToVolunteers": "Added to volunteers",
       "leftVolunteerList": "Left volunteer list",
       "taskDeleted": "Task deleted"
-    }
+    },
+    "myServeTitle": "Mi servicio",
+    "myServeSubtitle": "Tus compromisos y oportunidades personales de servicio esta semana",
+    "leaderBoardTitle": "Tablero de servicio del equipo",
+    "leaderBoardSubtitle": "Tablero del equipo para coordinadores para rastrear y asignar tareas de servicio.",
+    "leaderBoardHelper": "Este es el tablero del equipo para coordinadores. Para compromisos personales, vuelve a Mi servicio."
   },
   "tasks": {
     "view": {
@@ -282,6 +299,10 @@
       "addTitle": "Add a task title to continue.",
       "placeholder": "Quick add a task...",
       "aria": "Quick add a task"
+    },
+    "leaderBoard": {
+      "helper": "¿Necesitas coordinar el flujo del equipo? Abre el tablero del equipo.",
+      "cta": "Abrir tablero de equipo"
     }
   },
   "groups": {

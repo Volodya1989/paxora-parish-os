@@ -1,6 +1,7 @@
 export const routes = {
   thisWeek: "/this-week",
   serve: "/tasks",
+  serveBoard: "/serve-board",
   gratitudeBoard: "/gratitude-board",
   calendar: "/calendar",
   groups: "/groups",
