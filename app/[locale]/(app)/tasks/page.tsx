@@ -217,6 +217,9 @@ export default async function TasksPage({
         viewMode={viewMode}
         canManageTasks={isLeader}
         canAccessLeaderBoard={canAccessLeaderBoard}
+        canRequestCreation={membership.role === "MEMBER"}
+        requesterEmail={session.user.email ?? ""}
+        requestGroupOptions={groups.map((group) => ({ id: group.id, name: group.name }))}
       />
     </ParishionerPageLayout>
   );

@@ -23,6 +23,7 @@ import { useLocale } from "@/lib/i18n/provider";
 import QuoteCard from "@/components/app/QuoteCard";
 import { buildLocalePathname } from "@/lib/i18n/routing";
 import ParishionerRequestButton from "@/components/requests/ParishionerRequestButton";
+import FiltersActionRow from "@/components/app/FiltersActionRow";
 
 type GroupsViewProps = {
   groups: GroupListItem[];
@@ -31,6 +32,7 @@ type GroupsViewProps = {
   canManageGroups: boolean;
   canRequestParishSupport: boolean;
   requesterEmail: string;
+  requestGroupOptions: Array<{ id: string; name: string }>;
 };
 
 export default function GroupsView({
@@ -39,7 +41,8 @@ export default function GroupsView({
   actorUserId,
   canManageGroups,
   canRequestParishSupport,
-  requesterEmail
+  requesterEmail,
+  requestGroupOptions
 }: GroupsViewProps) {
   const t = useTranslations();
   const locale = useLocale();
@@ -74,12 +77,12 @@ export default function GroupsView({
   );
 
   useEffect(() => {
-    if (searchParams?.get("create") !== "group") {
+    if (!canManageGroups || searchParams?.get("create") !== "group") {
       return;
     }
 
     setIsCreateOpen(true);
-  }, [addToast, canManageGroups, router, searchParams]);
+  }, [canManageGroups, searchParams]);
 
   const openCreateDialog = () => {
     setIsCreateOpen(true);
@@ -248,9 +251,17 @@ export default function GroupsView({
           title={t("empty.noGroups")}
           description={canManageGroups ? t("groups.empty.startMessage") : t("groups.empty.requestMessage")}
           action={
-            <Button onClick={openCreateDialog}>
-              {canManageGroups ? t("groups.startGroup") : t("groups.suggestGroup")}
-            </Button>
+            canManageGroups ? (
+              <Button onClick={openCreateDialog}>{t("groups.startGroup")}</Button>
+            ) : (
+              <ParishionerRequestButton
+                canRequest={canRequestParishSupport}
+                requesterEmail={requesterEmail}
+                sourceScreen="groups"
+                groupOptions={requestGroupOptions}
+                className="h-10 w-10 rounded-full px-0"
+              />
+            )
           }
           variant="friendly"
         />
@@ -278,25 +289,8 @@ export default function GroupsView({
       />
 
       {/* Action bar */}
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={openCreateDialog}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 sm:hidden"
-          aria-label={canManageGroups ? t("groups.startGroup") : t("groups.suggestGroup")}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
-        </button>
-        <Button onClick={openCreateDialog} className="hidden h-9 px-3 text-sm sm:inline-flex">
-          {canManageGroups ? t("groups.startGroup") : t("groups.suggestGroup")}
-        </Button>
-        <ParishionerRequestButton
-          canRequest={canRequestParishSupport}
-          requesterEmail={requesterEmail}
-          contextType="GROUP"
-          className="ml-auto h-9 px-3 text-sm"
-        />
-        <div className="md:hidden">
+      <FiltersActionRow
+        filters={
           <FiltersDrawer title={t("groups.filters.title")}>
             <GroupFilters
               activeTab={activeTab}
@@ -307,7 +301,19 @@ export default function GroupsView({
               layout="stacked"
             />
           </FiltersDrawer>
-        </div>
+        }
+        action={
+          <ParishionerRequestButton
+            canRequest={canRequestParishSupport}
+            requesterEmail={requesterEmail}
+            sourceScreen="groups"
+            groupOptions={requestGroupOptions}
+            className="h-10 w-10 rounded-full px-0"
+          />
+        }
+      />
+
+      {canManageGroups ? (
         <div className="hidden md:flex md:items-center md:gap-2">
           <GroupFilters
             activeTab={activeTab}
@@ -318,7 +324,7 @@ export default function GroupsView({
             layout="inline"
           />
         </div>
-      </div>
+      ) : null}
 
       {/* Pending invites for the current user */}
       {myInvites.length > 0 ? (

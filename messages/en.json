@@ -547,6 +547,40 @@
         "GENERIC": "Briefly describe your need — e.g., home blessing, car blessing, meeting.",
         "PRAYER": "Share any helpful context (avoid sensitive confessional details)."
       }
+    },
+    "createContent": {
+      "addAria": "Open create request",
+      "modalTitle": "Create request",
+      "modalDescription": "Request a new public event, public serve task, or group. Parish leadership will review your request.",
+      "success": "Your creation request was submitted successfully.",
+      "submit": "Send request",
+      "fromEmail": "From / Email",
+      "requestType": "Request type",
+      "types": {
+        "event": "Create public event",
+        "serveTask": "Create public serve task",
+        "group": "Create new group"
+      },
+      "scope": "Scope",
+      "scopes": {
+        "public": "Public (whole parish)",
+        "group": "For a specific group"
+      },
+      "joinGroupHint": "Join a group to request group-scoped items.",
+      "group": "Group",
+      "selectGroup": "Select group",
+      "title": "Title",
+      "titlePlaceholder": "Add a short title",
+      "description": "Description",
+      "descriptionPlaceholder": "Please share at least 15 characters",
+      "eventDateOptional": "Event date (optional)",
+      "eventTimeOptional": "Event time (optional)",
+      "neededByOptional": "Needed by date (optional)",
+      "defaults": {
+        "event": "Create public event request",
+        "serveTask": "Create public serve task request",
+        "group": "Create new group request"
+      }
     }
   },
   "pwa": {

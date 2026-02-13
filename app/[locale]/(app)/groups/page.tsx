@@ -42,6 +42,9 @@ export default async function GroupsPage({
 
   const groups = await listGroups(parishId, actorUserId, membership.role, true);
   const isLeader = isParishLeader(membership.role);
+  const joinedGroups = groups
+    .filter((group) => group.viewerMembershipStatus === "ACTIVE")
+    .map((group) => ({ id: group.id, name: group.name }));
 
   return (
     <ParishionerPageLayout
@@ -60,6 +63,7 @@ export default async function GroupsPage({
         canManageGroups={isLeader}
         canRequestParishSupport={membership.role === "MEMBER"}
         requesterEmail={session.user.email ?? ""}
+        requestGroupOptions={joinedGroups}
       />
     </ParishionerPageLayout>
   );

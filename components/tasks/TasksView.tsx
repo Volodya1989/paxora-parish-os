@@ -20,6 +20,7 @@ import { cn } from "@/lib/ui/cn";
 import Link from "next/link";
 import { routes } from "@/lib/navigation/routes";
 import { useTranslations } from "@/lib/i18n/provider";
+import ParishionerRequestButton from "@/components/requests/ParishionerRequestButton";
 
 function PlusIcon() {
   return (
@@ -52,6 +53,9 @@ type TasksViewProps = {
   canManageTasks?: boolean;
   canAccessLeaderBoard?: boolean;
   showGroupFilterHint?: boolean;
+  canRequestCreation?: boolean;
+  requesterEmail?: string;
+  requestGroupOptions?: Array<{ id: string; name: string }>;
 };
 
 export default function TasksView({
@@ -73,7 +77,10 @@ export default function TasksView({
   viewMode = "all",
   canManageTasks = true,
   canAccessLeaderBoard = false,
-  showGroupFilterHint = false
+  showGroupFilterHint = false,
+  canRequestCreation = false,
+  requesterEmail = "",
+  requestGroupOptions = []
 }: TasksViewProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -295,6 +302,13 @@ export default function TasksView({
             </div>
           </FiltersDrawer>
 
+          <ParishionerRequestButton
+            canRequest={canRequestCreation}
+            requesterEmail={requesterEmail}
+            sourceScreen="serve"
+            groupOptions={requestGroupOptions}
+            className="h-10 w-10 rounded-full px-0"
+          />
           {(canManageTasks || (showCreateButton && viewMode !== "opportunities")) && (
             <Button
               type="button"
@@ -337,6 +351,14 @@ export default function TasksView({
             )}
           </>
         )}
+
+        <ParishionerRequestButton
+          canRequest={canRequestCreation}
+          requesterEmail={requesterEmail}
+          sourceScreen="serve"
+          groupOptions={requestGroupOptions}
+          className="ml-auto hidden h-10 w-10 rounded-full px-0 md:inline-flex"
+        />
 
         {/* Hours & Gratitude Board — desktop only */}
         {canManageTasks && (

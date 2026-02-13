@@ -15,6 +15,7 @@ import ScheduleView from "@/components/calendar/ScheduleView";
 import EventRequestApprovals from "@/components/calendar/EventRequestApprovals";
 import PageShell from "@/components/app/page-shell";
 import FiltersDrawer from "@/components/app/filters-drawer";
+import FiltersActionRow from "@/components/app/FiltersActionRow";
 import Card from "@/components/ui/Card";
 import ListEmptyState from "@/components/app/list-empty-state";
 import QuoteCard from "@/components/app/QuoteCard";
@@ -49,6 +50,7 @@ type CalendarViewProps = {
   pendingEventRequests: PendingEventRequest[];
   canRequestParishSupport?: boolean;
   requesterEmail?: string;
+  requestGroupOptions?: Array<{ id: string; name: string }>;
 };
 
 type CalendarViewValue = "week" | "month";
@@ -87,7 +89,8 @@ export default function CalendarView({
   viewerGroupIds,
   pendingEventRequests,
   canRequestParishSupport = false,
-  requesterEmail = ""
+  requesterEmail = "",
+  requestGroupOptions = []
 }: CalendarViewProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -198,8 +201,9 @@ export default function CalendarView({
       <ParishionerRequestButton
         canRequest={canRequestParishSupport}
         requesterEmail={requesterEmail}
-        contextType="EVENT"
-        className={canCreateEvents ? "h-9 px-3 text-sm" : "h-9 px-3 text-sm"}
+        sourceScreen="events"
+        groupOptions={requestGroupOptions}
+        className="h-10 w-10 rounded-full px-0"
       />
     </div>
   );
@@ -242,24 +246,13 @@ export default function CalendarView({
           source={t("calendar.quoteSource")}
           tone="primary"
         />
-        {/* Controls: toggle + actions — single compact row */}
+        {/* Controls */}
         <div className="flex flex-wrap items-center gap-2">
           <TabsList aria-label="Time range" className="flex-wrap">
             <TabsTrigger value="week">{t("calendar.week")}</TabsTrigger>
             <TabsTrigger value="month">{t("calendar.month")}</TabsTrigger>
           </TabsList>
-          {surface === "schedule" ? (
-            <div className="md:hidden">
-              <FiltersDrawer title={t("calendar.scheduleFilters")}>{scheduleFilters}</FiltersDrawer>
-            </div>
-          ) : null}
-          <ParishionerRequestButton
-            canRequest={canRequestParishSupport}
-            requesterEmail={requesterEmail}
-            contextType="EVENT"
-            className="ml-auto h-9 px-3 text-sm"
-          />
-          {canCreateEvents && (
+          {canCreateEvents ? (
             <>
               <button
                 type="button"
@@ -267,7 +260,7 @@ export default function CalendarView({
                   setCreateType("SERVICE");
                   setCreateOpen(true);
                 }}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 sm:hidden"
+                className="ml-auto flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 sm:hidden"
                 aria-label={t("calendar.addEvent")}
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
@@ -278,13 +271,26 @@ export default function CalendarView({
                   setCreateType("SERVICE");
                   setCreateOpen(true);
                 }}
-                className="ml-auto h-9 px-3 text-sm"
+                className="ml-auto hidden h-9 px-3 text-sm sm:inline-flex"
               >
                 {t("calendar.addEvent")}
               </Button>
             </>
-          )}
+          ) : null}
         </div>
+
+        <FiltersActionRow
+          filters={<FiltersDrawer title={t("calendar.scheduleFilters")}>{scheduleFilters}</FiltersDrawer>}
+          action={
+            <ParishionerRequestButton
+              canRequest={canRequestParishSupport}
+              requesterEmail={requesterEmail}
+              sourceScreen="events"
+              groupOptions={requestGroupOptions}
+              className="h-10 w-10 rounded-full px-0"
+            />
+          }
+        />
 
         {/* Pending event request approvals — at top for leaders */}
         {canManageEventRequests && pendingEventRequests.length > 0 && (

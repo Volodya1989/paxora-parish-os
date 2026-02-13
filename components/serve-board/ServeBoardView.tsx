@@ -11,6 +11,8 @@ import TaskDetailDialog from "@/components/tasks/TaskDetailDialog";
 import TaskCompletionDialog from "@/components/tasks/TaskCompletionDialog";
 import ParishionerRequestButton from "@/components/requests/ParishionerRequestButton";
 import ListEmptyState from "@/components/app/list-empty-state";
+import FiltersDrawer from "@/components/app/filters-drawer";
+import FiltersActionRow from "@/components/app/FiltersActionRow";
 import { HeartIcon, ListChecksIcon } from "@/components/icons/ParishIcons";
 import { useToast } from "@/components/ui/Toast";
 import QuoteCard from "@/components/app/QuoteCard";
@@ -42,6 +44,7 @@ type ServeBoardViewProps = {
   isLeader: boolean;
   canRequestOpportunity: boolean;
   requesterEmail: string;
+  requestGroupOptions: Array<{ id: string; name: string }>;
 };
 
 function formatDueDate(value: string, locale: string) {
@@ -70,7 +73,8 @@ export default function ServeBoardView({
   currentUserId,
   isLeader,
   canRequestOpportunity,
-  requesterEmail
+  requesterEmail,
+  requestGroupOptions
 }: ServeBoardViewProps) {
   const { addToast } = useToast();
   const router = useRouter();
@@ -327,26 +331,58 @@ export default function ServeBoardView({
     setDragOverColumn(null);
   };
 
-  const renderFilterButton = (
-    label: string,
-    active: boolean,
-    onClick: () => void
-  ) => (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "rounded-full border px-3 py-1 text-xs font-semibold transition",
-        active
-          ? "border-emerald-200 bg-emerald-100 text-emerald-800"
-          : "border-mist-200 bg-white text-ink-600 hover:bg-mist-50"
-      )}
-    >
-      {label}
-    </button>
+  const serveFilters = (
+    <div className="space-y-4">
+      <div className="rounded-xl border-l-4 border-l-sky-400 bg-sky-50/60 px-4 py-3">
+        <p className="text-xs text-sky-700">{t("tasks.filters.tip")}</p>
+      </div>
+      <div className="space-y-2">
+        <p className="text-xs font-semibold uppercase tracking-wide text-ink-500">{t("tasks.filters.ownership")}</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setOwnershipFilter("all")}
+            className={cn(
+              "rounded-full border px-3 py-1 text-xs font-semibold transition",
+              ownershipFilter === "all"
+                ? "border-emerald-200 bg-emerald-100 text-emerald-800"
+                : "border-mist-200 bg-white text-ink-600 hover:bg-mist-50"
+            )}
+          >
+            {t("serve.filters.all")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setOwnershipFilter("mine")}
+            className={cn(
+              "rounded-full border px-3 py-1 text-xs font-semibold transition",
+              ownershipFilter === "mine"
+                ? "border-emerald-200 bg-emerald-100 text-emerald-800"
+                : "border-mist-200 bg-white text-ink-600 hover:bg-mist-50"
+            )}
+          >
+            {t("serve.filters.mine")}
+          </button>
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <label className="text-xs font-semibold uppercase tracking-wide text-ink-500" htmlFor="serve-board-search">
+          {t("tasks.filters.search")}
+        </label>
+        <input
+          id="serve-board-search"
+          type="search"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder={t("serve.searchPlaceholder")}
+          className="h-9 w-full rounded-full border border-mist-200 bg-white px-3 text-sm text-ink-700 placeholder:text-ink-400 focus:border-primary-300 focus:outline-none focus:ring-1 focus:ring-primary-300"
+        />
+      </div>
+    </div>
   );
 
   const totalOpportunities = filteredTasks.length;
+
 
   return (
     <div className="section-gap">
@@ -358,25 +394,22 @@ export default function ServeBoardView({
 
       <p className="text-sm text-ink-600">{t("serve.leaderBoardHelper")}</p>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-        <div className="flex flex-wrap items-center gap-2">
-          {renderFilterButton(t("serve.filters.all"), ownershipFilter === "all", () => setOwnershipFilter("all"))}
-          {renderFilterButton(t("serve.filters.mine"), ownershipFilter === "mine", () => setOwnershipFilter("mine"))}
-        </div>
-        <input
-          type="search"
-          value={searchQuery}
-          onChange={(event) => setSearchQuery(event.target.value)}
-          placeholder={t("serve.searchPlaceholder")}
-          className="h-9 w-full rounded-full border border-mist-200 bg-white px-3 text-sm text-ink-700 placeholder:text-ink-400 focus:border-primary-300 focus:outline-none focus:ring-1 focus:ring-primary-300 sm:h-8 sm:w-56 sm:text-xs"
-        />
-        <ParishionerRequestButton
-          canRequest={canRequestOpportunity}
-          requesterEmail={requesterEmail}
-          contextType="SERVE_PUBLIC_TASK"
-          className="h-10 w-full px-4 text-sm sm:ml-auto sm:h-9 sm:w-auto sm:px-3"
-        />
-      </div>
+      <FiltersActionRow
+        filters={
+          <FiltersDrawer title={t("tasks.filters.title")} className="shrink-0">
+            {serveFilters}
+          </FiltersDrawer>
+        }
+        action={
+          <ParishionerRequestButton
+            canRequest={canRequestOpportunity}
+            requesterEmail={requesterEmail}
+            sourceScreen="serve"
+            groupOptions={requestGroupOptions}
+            className="h-10 w-10 rounded-full px-0"
+          />
+        }
+      />
 
       {totalOpportunities === 0 ? (
         <ListEmptyState
@@ -389,8 +422,9 @@ export default function ServeBoardView({
               <ParishionerRequestButton
                 canRequest={canRequestOpportunity}
                 requesterEmail={requesterEmail}
-                contextType="SERVE_PUBLIC_TASK"
-                className="h-9 px-3 text-sm"
+                sourceScreen="serve"
+                groupOptions={requestGroupOptions}
+                className="h-10 w-10 rounded-full px-0"
               />
             ) : undefined
           }

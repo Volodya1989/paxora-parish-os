@@ -123,6 +123,7 @@ export default async function CalendarPage({
         pendingEventRequests={pendingEventRequests}
         canRequestParishSupport={membership?.role === "MEMBER"}
         requesterEmail={session.user.email ?? ""}
+        requestGroupOptions={groupMemberships.map((membershipRecord) => membershipRecord.group).filter((group): group is { id: string; name: string } => Boolean(group))}
       />
     </ParishionerPageLayout>
   );

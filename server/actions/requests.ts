@@ -51,10 +51,13 @@ const contextualRequestSchema = createRequestSchema.pick({
   title: true,
   description: true
 }).extend({
-  recipientUserId: z.string().min(1, "Recipient is required."),
-  contextType: z.enum(["GROUP", "EVENT", "SERVE_PUBLIC_TASK"]).optional(),
-  contextId: z.string().trim().optional(),
-  contextTitle: z.string().trim().optional()
+  requestedEntityType: z.enum(["EVENT", "SERVE_TASK", "GROUP"]),
+  scope: z.enum(["PUBLIC", "GROUP"]),
+  sourceScreen: z.enum(["serve", "groups", "events"]),
+  groupId: z.string().trim().optional(),
+  eventDate: z.string().trim().optional(),
+  eventTime: z.string().trim().optional(),
+  taskNeededByDate: z.string().trim().optional()
 });
 
 async function getOrCreateWeekForDate(parishId: string, startsAt: Date) {
@@ -186,28 +189,39 @@ export async function submitParishionerContextRequest(formData: FormData): Promi
   const parsed = contextualRequestSchema.safeParse({
     title: formData.get("title")?.toString(),
     description: formData.get("description")?.toString(),
-    recipientUserId: formData.get("recipientUserId")?.toString(),
-    contextType: formData.get("contextType")?.toString(),
-    contextId: formData.get("contextId")?.toString() ?? undefined,
-    contextTitle: formData.get("contextTitle")?.toString() ?? undefined
+    requestedEntityType: formData.get("requestedEntityType")?.toString(),
+    scope: formData.get("scope")?.toString(),
+    sourceScreen: formData.get("sourceScreen")?.toString(),
+    groupId: formData.get("groupId")?.toString() ?? undefined,
+    eventDate: formData.get("eventDate")?.toString() ?? undefined,
+    eventTime: formData.get("eventTime")?.toString() ?? undefined,
+    taskNeededByDate: formData.get("taskNeededByDate")?.toString() ?? undefined
   });
 
   if (!parsed.success) {
     return { status: "error", message: parsed.error.errors[0]?.message ?? "Invalid request." };
   }
 
-  const recipientMembership = await prisma.membership.findUnique({
-    where: {
-      parishId_userId: {
-        parishId,
-        userId: parsed.data.recipientUserId
-      }
-    },
-    select: { role: true }
-  });
+  const scope = parsed.data.requestedEntityType === "GROUP" ? "PUBLIC" : parsed.data.scope;
 
-  if (!recipientMembership || (recipientMembership.role !== "ADMIN" && recipientMembership.role !== "SHEPHERD")) {
-    return { status: "error", message: "Recipient must be clergy or admin in your parish." };
+  if (scope === "GROUP") {
+    if (!parsed.data.groupId) {
+      return { status: "error", message: "Please select a group." };
+    }
+
+    const membership = await prisma.groupMembership.findFirst({
+      where: {
+        userId: session.user.id,
+        groupId: parsed.data.groupId,
+        status: "ACTIVE",
+        group: { parishId }
+      },
+      select: { id: true }
+    });
+
+    if (!membership) {
+      return { status: "error", message: "You must be an active member of the selected group." };
+    }
   }
 
   const requester = await prisma.user.findUnique({
@@ -219,21 +233,41 @@ export async function submitParishionerContextRequest(formData: FormData): Promi
     return { status: "error", message: "A valid email is required to submit a request." };
   }
 
+  const assigneeMembership =
+    (await prisma.membership.findFirst({
+      where: { parishId, role: "SHEPHERD" },
+      orderBy: { user: { name: "asc" } },
+      select: { userId: true }
+    })) ??
+    (await prisma.membership.findFirst({
+      where: { parishId, role: "ADMIN" },
+      orderBy: { user: { name: "asc" } },
+      select: { userId: true }
+    }));
+
+  if (!assigneeMembership) {
+    return { status: "error", message: "No clergy or admin recipients are available." };
+  }
+
   await prisma.request.create({
     data: {
       parishId,
       createdByUserId: session.user.id,
-      assignedToUserId: parsed.data.recipientUserId,
+      assignedToUserId: assigneeMembership.userId,
       type: "GENERIC",
-      visibilityScope: "ADMIN_SPECIFIC",
+      visibilityScope: "ADMIN_ALL",
       title: parsed.data.title,
       details: {
         requesterEmail: requester.email,
         requesterName: requester.name ?? session.user.name ?? requester.email,
         description: parsed.data.description,
-        contextType: parsed.data.contextType ?? null,
-        contextId: parsed.data.contextId ?? null,
-        contextTitle: parsed.data.contextTitle ?? null
+        sourceScreen: parsed.data.sourceScreen,
+        requestedEntityType: parsed.data.requestedEntityType,
+        scope,
+        groupId: scope === "GROUP" ? parsed.data.groupId ?? null : null,
+        eventDate: parsed.data.eventDate ?? null,
+        eventTime: parsed.data.eventTime ?? null,
+        taskNeededByDate: parsed.data.taskNeededByDate ?? null
       } as Prisma.InputJsonValue
     }
   });
@@ -243,6 +277,7 @@ export async function submitParishionerContextRequest(formData: FormData): Promi
 
   return { status: "success" };
 }
+
 export async function updateRequestStatus(input: {
   requestId: string;
   status: "SUBMITTED" | "ACKNOWLEDGED" | "SCHEDULED" | "COMPLETED" | "CANCELED";

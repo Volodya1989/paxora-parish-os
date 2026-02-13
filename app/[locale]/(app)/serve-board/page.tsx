@@ -46,7 +46,7 @@ export default async function ServeBoardPage({
   const week = await getOrCreateCurrentWeek(parishId, getNow());
   const isLeader = isParishLeader(membership.role);
 
-  const [taskList, members, parish, ytdHours, coordinatorMembership] = await Promise.all([
+  const [taskList, members, parish, ytdHours, coordinatorMembership, requestGroupMemberships] = await Promise.all([
     listTasks({
       parishId,
       actorUserId: session.user.id,
@@ -78,6 +78,22 @@ export default async function ServeBoardPage({
         group: { parishId }
       },
       select: { id: true }
+    }),
+    prisma.groupMembership.findMany({
+      where: {
+        userId: session.user.id,
+        status: "ACTIVE",
+        group: { parishId }
+      },
+      select: {
+        group: {
+          select: {
+            id: true,
+            name: true
+          }
+        }
+      },
+      orderBy: { group: { name: "asc" } }
     })
   ]);
 
@@ -122,6 +138,7 @@ export default async function ServeBoardPage({
         isLeader={isLeader}
         canRequestOpportunity={canRequestOpportunity(membership.role)}
         requesterEmail={session.user.email ?? ""}
+        requestGroupOptions={requestGroupMemberships.map((membership) => membership.group).filter(Boolean)}
       />
     </ParishionerPageLayout>
   );
