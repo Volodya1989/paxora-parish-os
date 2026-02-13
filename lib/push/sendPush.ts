@@ -1,6 +1,7 @@
 import { prisma } from "@/server/db/prisma";
 import { recordDeliveryAttempt, toDeliveryTarget } from "@/lib/ops/deliveryAttempts";
 import { getConfiguredWebPush, isVapidConfigured } from "./vapid";
+import { getNotificationUnreadCount } from "@/lib/queries/notifications";
 
 export type PushPayload = {
   title: string;
@@ -31,7 +32,12 @@ export async function sendPushToUser(
     if (subscriptions.length === 0) return;
 
     const webpush = getConfiguredWebPush();
-    const data = JSON.stringify(payload);
+    const unreadCount = await getNotificationUnreadCount(userId, parishId);
+    const data = JSON.stringify({ ...payload, badge: unreadCount });
+
+    if (process.env.NODE_ENV !== "production") {
+      console.debug("[push] payload badge", { userId, parishId, unreadCount, tag: payload.tag ?? "push" });
+    }
 
     const staleIds: string[] = [];
 

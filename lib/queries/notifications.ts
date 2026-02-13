@@ -74,6 +74,25 @@ async function getStoredNotificationItems(
  *  - New events (since lastSeenEventsAt)
  *  - Pending approval requests (tasks, groups, events) — leaders only
  */
+
+export async function getNotificationUnreadCount(
+  userId: string,
+  parishId: string
+): Promise<number> {
+  const storedCount = await prisma.notification.count({
+    where: { userId, parishId }
+  });
+
+  if (storedCount > 0) {
+    return prisma.notification.count({
+      where: { userId, parishId, readAt: null }
+    });
+  }
+
+  const result = await getNotificationItems(userId, parishId);
+  return result.count;
+}
+
 export async function getNotificationItems(
   userId: string,
   parishId: string
