@@ -30,13 +30,15 @@ type TasksListProps = {
   groupOptions: Array<{ id: string; name: string }>;
   memberOptions: Array<{ id: string; name: string; label?: string }>;
   currentUserId: string;
+  isMyCommitmentsContext?: boolean;
 };
 
 export default function TasksList({
   tasks,
   groupOptions,
   memberOptions,
-  currentUserId
+  currentUserId,
+  isMyCommitmentsContext = false
 }: TasksListProps) {
   const t = useTranslations();
   const { addToast } = useToast();
@@ -337,6 +339,8 @@ export default function TasksList({
         groupOptions={groupOptions}
         memberOptions={memberOptions}
         currentUserId={currentUserId}
+        forcePrivate={isMyCommitmentsContext && editingTask?.visibility === "PRIVATE"}
+        hideEstimatedHours={isMyCommitmentsContext && editingTask?.visibility === "PRIVATE"}
       />
 
       <TaskDetailDialog

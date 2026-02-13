@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
-import { getParishMembership, listGroupsByParish } from "@/server/db/groups";
+import { getParishMembership, listTaskFilterGroups } from "@/server/db/groups";
 import { getWeekForSelection, parseWeekSelection } from "@/domain/week";
 import { getNow } from "@/lib/time/getNow";
 import { listPendingTaskApprovals, listTasks, type TaskFilters } from "@/lib/queries/tasks";
@@ -128,7 +128,11 @@ export default async function TasksPage({
       filters,
       viewMode: viewMode === "opportunities" ? "opportunities" : "all"
     }),
-    listGroupsByParish(parishId),
+    listTaskFilterGroups({
+      parishId,
+      userId: session.user.id,
+      role: membership.role
+    }),
     prisma.membership.findMany({
       where: { parishId },
       orderBy: { user: { name: "asc" } },
@@ -203,6 +207,7 @@ export default async function TasksPage({
         filteredCount={taskList.filteredCount}
         filters={taskList.filters}
         groupOptions={groups.map((group) => ({ id: group.id, name: group.name }))}
+        showGroupFilterHint={!isLeader && groups.length === 0}
         memberOptions={memberOptions}
         currentUserId={session.user.id}
         pendingAccessRequests={pendingRequests}
@@ -212,6 +217,7 @@ export default async function TasksPage({
         viewMode={viewMode}
         canManageTasks={isLeader}
         canAccessLeaderBoard={canAccessLeaderBoard}
+        canRequestContentCreate={membership.role === "MEMBER"}
       />
     </ParishionerPageLayout>
   );

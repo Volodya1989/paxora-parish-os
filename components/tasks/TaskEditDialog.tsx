@@ -34,6 +34,8 @@ type TaskEditDialogProps = {
   groupOptions: Array<{ id: string; name: string }>;
   memberOptions: Array<{ id: string; name: string; label?: string }>;
   currentUserId: string;
+  forcePrivate?: boolean;
+  hideEstimatedHours?: boolean;
 };
 
 export default function TaskEditDialog({
@@ -42,7 +44,9 @@ export default function TaskEditDialog({
   task,
   groupOptions,
   memberOptions,
-  currentUserId
+  currentUserId,
+  forcePrivate = false,
+  hideEstimatedHours = false
 }: TaskEditDialogProps) {
   const { addToast } = useToast();
   const router = useRouter();
@@ -64,15 +68,15 @@ export default function TaskEditDialog({
   const ownerId = useId();
   const volunteersNeeded = task?.volunteersNeeded ?? 1;
   const [visibility, setVisibility] = useState<"public" | "private">(
-    task?.visibility === "PRIVATE" ? "private" : "public"
+    forcePrivate || task?.visibility === "PRIVATE" ? "private" : "public"
   );
 
   useEffect(() => {
     if (open) {
       handledSuccess.current = false;
-      setVisibility(task?.visibility === "PRIVATE" ? "private" : "public");
+      setVisibility(forcePrivate || task?.visibility === "PRIVATE" ? "private" : "public");
     }
-  }, [open, task?.visibility]);
+  }, [forcePrivate, open, task?.visibility]);
 
   useEffect(() => {
     if (state.status !== "success") {
@@ -106,6 +110,7 @@ export default function TaskEditDialog({
       action={formAction}
     >
       <input type="hidden" name="taskId" value={task?.id ?? ""} />
+      <input type="hidden" name="editContext" value={forcePrivate ? "my_commitments" : "default"} />
       <div className="space-y-2">
         <Label htmlFor={titleId}>Title</Label>
         <Input
@@ -126,7 +131,8 @@ export default function TaskEditDialog({
           defaultValue={task?.notes ?? ""}
         />
       </div>
-      <div className="space-y-2">
+      {!hideEstimatedHours ? (
+        <div className="space-y-2">
         <Label htmlFor={estimatedHoursId}>Estimated hours (optional)</Label>
         <Input
           id={estimatedHoursId}
@@ -137,7 +143,8 @@ export default function TaskEditDialog({
           placeholder="e.g. 2"
           defaultValue={task?.estimatedHours ?? ""}
         />
-      </div>
+        </div>
+      ) : null}
       <div className="space-y-2">
         <Label htmlFor={dueAtId}>Due date</Label>
         <Input
@@ -147,26 +154,35 @@ export default function TaskEditDialog({
           defaultValue={task?.dueAt ? formatDateInput(new Date(task.dueAt)) : ""}
         />
       </div>
-      <div className="space-y-2">
-        <Label htmlFor={visibilityId}>Visibility</Label>
-        <SelectMenu
-          id={visibilityId}
-          name="visibility"
-          value={visibility}
-          onValueChange={(nextValue) => {
-            const nextVisibility = nextValue === "public" ? "public" : "private";
-            setVisibility(nextVisibility);
-          }}
-          options={[
-            { value: "public", label: "Public (shared with the parish)" },
-            { value: "private", label: "Private (just you)" }
-          ]}
-        />
-        <p className="text-xs text-ink-400">
-          Public tasks created by members require approval before they appear for everyone.
-        </p>
-      </div>
-      {visibility === "private" ? (
+      {forcePrivate ? (
+        <>
+          <input type="hidden" name="visibility" value="private" />
+          <p className="rounded-xl border border-mist-200 bg-mist-50 px-3 py-2 text-xs text-ink-500">
+            Private commitment only.
+          </p>
+        </>
+      ) : (
+        <div className="space-y-2">
+          <Label htmlFor={visibilityId}>Visibility</Label>
+          <SelectMenu
+            id={visibilityId}
+            name="visibility"
+            value={visibility}
+            onValueChange={(nextValue) => {
+              const nextVisibility = nextValue === "public" ? "public" : "private";
+              setVisibility(nextVisibility);
+            }}
+            options={[
+              { value: "public", label: "Public (shared with the parish)" },
+              { value: "private", label: "Private (just you)" }
+            ]}
+          />
+          <p className="text-xs text-ink-400">
+            Public tasks created by members require approval before they appear for everyone.
+          </p>
+        </div>
+      )}
+      {visibility === "private" || forcePrivate ? (
         <>
           <input type="hidden" name="volunteersNeeded" value="1" />
           <input type="hidden" name="groupId" value="" />

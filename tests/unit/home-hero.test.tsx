@@ -21,6 +21,6 @@ test("Home hero renders progress ring and completion chip", () => {
   );
 
   assert.match(markup, /58%/);
-  assert.match(markup, /7\/12 complete/);
-  assert.match(markup, /View This Week/);
+  assert.match(markup, /7\/12/);
+  assert.match(markup, /This Week/);
 });

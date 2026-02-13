@@ -22,19 +22,22 @@ import { useTranslations } from "@/lib/i18n/provider";
 import { useLocale } from "@/lib/i18n/provider";
 import QuoteCard from "@/components/app/QuoteCard";
 import { buildLocalePathname } from "@/lib/i18n/routing";
+import ParishionerAddButton from "@/components/shared/ParishionerAddButton";
 
 type GroupsViewProps = {
   groups: GroupListItem[];
   parishId: string;
   actorUserId: string;
   canManageGroups: boolean;
+  canRequestContentCreate: boolean;
 };
 
 export default function GroupsView({
   groups,
   parishId,
   actorUserId,
-  canManageGroups
+  canManageGroups,
+  canRequestContentCreate
 }: GroupsViewProps) {
   const t = useTranslations();
   const locale = useLocale();
@@ -65,6 +68,14 @@ export default function GroupsView({
 
   const myInvites = useMemo(
     () => groups.filter((group) => group.viewerMembershipStatus === "INVITED" && group.status === "ACTIVE"),
+    [groups]
+  );
+
+  const joinedGroupOptions = useMemo(
+    () =>
+      groups
+        .filter((group) => group.viewerMembershipStatus === "ACTIVE")
+        .map((group) => ({ id: group.id, name: group.name })),
     [groups]
   );
 
@@ -242,11 +253,7 @@ export default function GroupsView({
         <ListEmptyState
           title={t("empty.noGroups")}
           description={canManageGroups ? t("groups.empty.startMessage") : t("groups.empty.requestMessage")}
-          action={
-            <Button onClick={openCreateDialog}>
-              {canManageGroups ? t("groups.startGroup") : t("groups.suggestGroup")}
-            </Button>
-          }
+          action={canManageGroups ? <Button onClick={openCreateDialog}>{t("groups.startGroup")}</Button> : undefined}
           variant="friendly"
         />
       );
@@ -274,17 +281,6 @@ export default function GroupsView({
 
       {/* Action bar */}
       <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={openCreateDialog}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 sm:hidden"
-          aria-label={canManageGroups ? t("groups.startGroup") : t("groups.suggestGroup")}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
-        </button>
-        <Button onClick={openCreateDialog} className="hidden h-9 px-3 text-sm sm:inline-flex">
-          {canManageGroups ? t("groups.startGroup") : t("groups.suggestGroup")}
-        </Button>
         <div className="md:hidden">
           <FiltersDrawer title={t("groups.filters.title")}>
             <GroupFilters
@@ -307,6 +303,27 @@ export default function GroupsView({
             layout="inline"
           />
         </div>
+
+        {canManageGroups ? (
+          <>
+            <button
+              type="button"
+              onClick={openCreateDialog}
+              className="ml-auto flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 sm:hidden"
+              aria-label={t("groups.startGroup")}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
+            </button>
+            <Button onClick={openCreateDialog} className="ml-auto hidden h-9 px-3 text-sm sm:inline-flex">
+              {t("groups.startGroup")}
+            </Button>
+          </>
+        ) : canRequestContentCreate ? (
+          <ParishionerAddButton
+            onClick={openCreateDialog}
+            ariaLabel={t("groups.startGroup")}
+          />
+        ) : null}
       </div>
 
       {/* Pending invites for the current user */}
