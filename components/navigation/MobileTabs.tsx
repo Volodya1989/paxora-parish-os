@@ -52,7 +52,7 @@ export function MobileTabs({
     <>
       <nav
         aria-label="Primary"
-        className="fixed bottom-0 left-0 right-0 z-30 border-t border-mist-200 bg-white/95 shadow-card md:hidden"
+        className="fixed bottom-0 left-0 right-0 z-30 border-t border-mist-200 bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-card md:hidden"
       >
         <div className="flex items-center justify-around px-2 py-2">
           {items.map((item) => {

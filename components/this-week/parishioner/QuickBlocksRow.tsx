@@ -47,7 +47,7 @@ export default function QuickBlocksRow({ blocks }: QuickBlocksRowProps) {
             block.accentClass
           )}
         >
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center justify-between gap-2">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/80 shadow-sm">
               {block.icon}
             </span>
@@ -55,9 +55,9 @@ export default function QuickBlocksRow({ blocks }: QuickBlocksRowProps) {
               {block.count}
             </span>
           </div>
-          <div className="space-y-0.5">
-            <div className="text-sm font-semibold text-ink-900">{block.label}</div>
-            <p className="text-xs text-ink-500 line-clamp-2 sm:line-clamp-1">{block.summary}</p>
+          <div className="min-w-0 space-y-0.5">
+            <div className="truncate text-sm font-semibold text-ink-900">{block.label}</div>
+            <p className="line-clamp-2 break-words text-xs text-ink-500 sm:line-clamp-1">{block.summary}</p>
           </div>
         </button>
       ))}

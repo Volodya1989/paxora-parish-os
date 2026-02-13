@@ -68,7 +68,7 @@ export default function PageHeader({
   return (
     <header
       className={cn(
-        "relative -mx-4 -mt-6 overflow-hidden bg-gradient-to-br px-4 pb-4 pt-4 text-white md:-mx-8 md:rounded-b-2xl md:px-6",
+        "relative -mx-4 -mt-6 overflow-hidden bg-gradient-to-br px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] text-white md:-mx-8 md:rounded-b-2xl md:px-6",
         gradientClass
       )}
     >
@@ -109,7 +109,7 @@ export default function PageHeader({
           />
           <span className="min-w-0 break-words text-xs leading-tight sm:text-sm">{parishName}</span>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex shrink-0 items-center gap-1.5">
           {actions}
           {count > 0 && (
             <NotificationCenter bellClassName="h-8 w-8 border-0 bg-white/20 text-white backdrop-blur-sm hover:bg-white/30 md:hidden" />
