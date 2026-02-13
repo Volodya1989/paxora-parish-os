@@ -58,6 +58,7 @@ export default async function GroupsPage({
         parishId={parishId}
         actorUserId={actorUserId}
         canManageGroups={isLeader}
+        canRequestContentCreate={membership.role === "MEMBER"}
       />
     </ParishionerPageLayout>
   );

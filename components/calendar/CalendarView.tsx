@@ -11,6 +11,7 @@ import CalendarDayList from "@/components/calendar/CalendarDayList";
 import EventDetailPanel from "@/components/calendar/EventDetailPanel";
 import EventCreateDialog from "@/components/calendar/EventCreateDialog";
 import EventRequestDialog from "@/components/shared/EventRequestDialog";
+import ParishionerAddButton from "@/components/shared/ParishionerAddButton";
 import ScheduleView from "@/components/calendar/ScheduleView";
 import EventRequestApprovals from "@/components/calendar/EventRequestApprovals";
 import PageShell from "@/components/app/page-shell";
@@ -47,6 +48,7 @@ type CalendarViewProps = {
   groupOptions: Array<{ id: string; name: string }>;
   viewerGroupIds: string[];
   pendingEventRequests: PendingEventRequest[];
+  canRequestContentCreate?: boolean;
 };
 
 type CalendarViewValue = "week" | "month";
@@ -83,7 +85,8 @@ export default function CalendarView({
   canManageEventRequests,
   groupOptions,
   viewerGroupIds,
-  pendingEventRequests
+  pendingEventRequests,
+  canRequestContentCreate = false
 }: CalendarViewProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -94,8 +97,8 @@ export default function CalendarView({
   const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilter>("all");
   const [groupFilter, setGroupFilter] = useState<GroupFilter>("all");
   const [createOpen, setCreateOpen] = useState(false);
-  const [createType, setCreateType] = useState<"SERVICE" | "EVENT">("SERVICE");
   const [requestOpen, setRequestOpen] = useState(false);
+  const [createType, setCreateType] = useState<"SERVICE" | "EVENT">("SERVICE");
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
   const weekDays = useMemo(() => getWeekDays(weekRange.start), [weekRange.start]);
@@ -192,14 +195,13 @@ export default function CalendarView({
           {t("calendar.addService")}
         </Button>
       ) : null}
-      {!canManageEventRequests && (
-        <Button
-          variant={canCreateEvents ? "secondary" : "primary"}
+      {canRequestContentCreate ? (
+        <ParishionerAddButton
           onClick={() => setRequestOpen(true)}
-        >
-          {t("calendar.requestEvent")}
-        </Button>
-      )}
+          ariaLabel={t("calendar.addEvent")}
+          className="mx-auto"
+        />
+      ) : null}
     </div>
   );
 
@@ -233,6 +235,16 @@ export default function CalendarView({
     </div>
   );
 
+  const actionFilters = (
+    <div className="space-y-3">
+      <Select value={view} onChange={(event) => setView(event.target.value as CalendarViewValue)}>
+        <option value="week">{t("calendar.week")}</option>
+        <option value="month">{t("calendar.month")}</option>
+      </Select>
+      {scheduleFilters}
+    </div>
+  );
+
   return (
     <Tabs value={view} onValueChange={(value) => setView(value)}>
       <div className="section-gap">
@@ -241,27 +253,18 @@ export default function CalendarView({
           source={t("calendar.quoteSource")}
           tone="primary"
         />
-        {/* Controls: toggle + actions — single compact row */}
+        <TabsList aria-label="Time range" className="flex-wrap">
+          <TabsTrigger value="week">{t("calendar.week")}</TabsTrigger>
+          <TabsTrigger value="month">{t("calendar.month")}</TabsTrigger>
+        </TabsList>
+
+        {/* Action row: Filters left, Add right */}
         <div className="flex flex-wrap items-center gap-2">
-          <TabsList aria-label="Time range" className="flex-wrap">
-            <TabsTrigger value="week">{t("calendar.week")}</TabsTrigger>
-            <TabsTrigger value="month">{t("calendar.month")}</TabsTrigger>
-          </TabsList>
-          {surface === "schedule" ? (
-            <div className="md:hidden">
-              <FiltersDrawer title={t("calendar.scheduleFilters")}>{scheduleFilters}</FiltersDrawer>
-            </div>
-          ) : null}
-          {!canManageEventRequests && (
-            <Button
-              type="button"
-              onClick={() => setRequestOpen(true)}
-              className="hidden h-9 px-3 text-sm sm:inline-flex"
-            >
-              {t("calendar.requestEvent")}
-            </Button>
-          )}
-          {canCreateEvents && (
+          <div>
+            <FiltersDrawer title={t("calendar.scheduleFilters")}>{actionFilters}</FiltersDrawer>
+          </div>
+
+          {canCreateEvents ? (
             <>
               <button
                 type="button"
@@ -269,7 +272,7 @@ export default function CalendarView({
                   setCreateType("SERVICE");
                   setCreateOpen(true);
                 }}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 sm:hidden"
+                className="ml-auto flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 sm:hidden"
                 aria-label={t("calendar.addEvent")}
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
@@ -280,12 +283,17 @@ export default function CalendarView({
                   setCreateType("SERVICE");
                   setCreateOpen(true);
                 }}
-                className="hidden h-9 px-3 text-sm sm:inline-flex"
+                className="ml-auto hidden h-9 px-3 text-sm sm:inline-flex"
               >
                 {t("calendar.addEvent")}
               </Button>
             </>
-          )}
+          ) : canRequestContentCreate ? (
+            <ParishionerAddButton
+              onClick={() => setRequestOpen(true)}
+              ariaLabel={t("calendar.addEvent")}
+            />
+          ) : null}
         </div>
 
         {/* Pending event request approvals — at top for leaders */}
@@ -423,6 +431,7 @@ export default function CalendarView({
         canCreateGroupEvents={canCreateGroupEvents}
         defaultType={createType}
       />
+
       <EventRequestDialog
         open={requestOpen}
         onOpenChange={setRequestOpen}

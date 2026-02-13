@@ -45,8 +45,8 @@ import { prisma } from "@/server/db/prisma";
 import { getTaskDetail as getTaskDetailQuery } from "@/lib/queries/tasks";
 import { extractMentionedUserIds, mentionSnippet, normalizeMentionEntities } from "@/lib/mentions";
 import { listMentionableUsersForTask } from "@/lib/mentions/permissions";
-import { notifyMentionInApp } from "@/lib/notifications/notify";
-import { notifyMention } from "@/lib/push/notify";
+import { notifyMentionInApp, notifyCreationRequestInApp } from "@/lib/notifications/notify";
+import { notifyMention, notifyCreationRequest } from "@/lib/push/notify";
 
 function assertSession(session: Session | null) {
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -81,6 +81,8 @@ export async function createTask(
     dueAt: fd(formData, "dueAt"),
     visibility: fd(formData, "visibility")
   });
+
+  const creationContext = fd(formData, "creationContext") === "my_commitments" ? "my_commitments" : "default";
 
 
   if (!parsed.success) {
@@ -152,7 +154,11 @@ export async function createTask(
     }
   }
 
-  const visibility = parsed.data.visibility === "public" ? "PUBLIC" : "PRIVATE";
+  const requestedVisibility = parsed.data.visibility === "public" ? "PUBLIC" : "PRIVATE";
+  const visibility =
+    creationContext === "my_commitments" && membership.role === "MEMBER"
+      ? "PRIVATE"
+      : requestedVisibility;
   const approvalStatus =
     visibility === "PRIVATE" || isParishLeader(membership.role) ? "APPROVED" : "PENDING";
   const volunteersNeeded = visibility === "PRIVATE" ? 1 : parsed.data.volunteersNeeded;
@@ -165,7 +171,7 @@ export async function createTask(
   const defaultDueAt = new Date();
   defaultDueAt.setDate(defaultDueAt.getDate() + 14);
 
-  await createTaskDomain({
+  const createdTask = await createTaskDomain({
     parishId,
     weekId: parsed.data.weekId,
     ownerId,
@@ -180,6 +186,43 @@ export async function createTask(
     openToVolunteers,
     approvalStatus
   });
+
+
+  if (approvalStatus === "PENDING") {
+    const leaders = await prisma.membership.findMany({
+      where: {
+        parishId,
+        role: { in: ["ADMIN", "SHEPHERD"] },
+        userId: { not: userId }
+      },
+      select: { userId: true }
+    });
+
+    const recipientIds = leaders.map((leader) => leader.userId);
+    if (recipientIds.length > 0) {
+      const href = "/tasks?pending=1";
+      try {
+        await notifyCreationRequestInApp({
+          parishId,
+          recipientIds,
+          title: `New serve-task request: ${parsed.data.title}`,
+          description: parsed.data.groupId ? "Group-scoped serve request." : "Parish serve request.",
+          href
+        });
+
+        await notifyCreationRequest({
+          parishId,
+          recipientIds,
+          title: "New serve-task request",
+          body: parsed.data.title,
+          url: href,
+          tag: `serve-request-${createdTask.id}`
+        });
+      } catch (error) {
+        console.error("Failed to notify leaders about serve-task request", error);
+      }
+    }
+  }
 
   revalidatePath("/tasks");
   revalidatePath("/this-week");
@@ -547,6 +590,32 @@ export async function updateTask(
     };
   }
 
+  const editContext = formData.get("editContext") === "my_commitments" ? "my_commitments" : "default";
+
+  const membership = await prisma.membership.findUnique({
+    where: {
+      parishId_userId: {
+        parishId,
+        userId
+      }
+    },
+    select: { role: true }
+  });
+
+  if (!membership) {
+    return {
+      status: "error",
+      message: "You must be a parish member to update tasks."
+    };
+  }
+
+  const visibility =
+    editContext === "my_commitments" && membership.role === "MEMBER"
+      ? "PRIVATE"
+      : parsed.data.visibility === "private"
+        ? "PRIVATE"
+        : "PUBLIC";
+
   await updateTaskDomain({
     taskId: parsed.data.taskId,
     parishId,
@@ -558,7 +627,7 @@ export async function updateTask(
     ownerId: parsed.data.ownerId,
     volunteersNeeded: parsed.data.volunteersNeeded,
     dueAt: parsed.data.dueAt,
-    visibility: parsed.data.visibility === "private" ? "PRIVATE" : "PUBLIC"
+    visibility
   });
 
   revalidatePath("/tasks");

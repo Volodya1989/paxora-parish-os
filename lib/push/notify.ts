@@ -201,6 +201,28 @@ export async function notifyEventCreated(opts: {
   await sendPushToUsers(recipientIds, parishId, payload);
 }
 
+
+export async function notifyCreationRequest(opts: {
+  parishId: string;
+  recipientIds: string[];
+  title: string;
+  body: string;
+  url: string;
+  tag: string;
+}) {
+  const { parishId, recipientIds, title, body, url, tag } = opts;
+  if (recipientIds.length === 0) return;
+
+  const payload: PushPayload = {
+    title,
+    body,
+    url,
+    tag
+  };
+
+  await sendPushToUsers(recipientIds, parishId, payload);
+}
+
 export async function notifyRequestAssigned(opts: {
   requestId: string;
   requestTitle: string;

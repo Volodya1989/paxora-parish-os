@@ -9,7 +9,7 @@ import SelectMenu from "@/components/ui/SelectMenu";
 import Card from "@/components/ui/Card";
 import TaskDetailDialog from "@/components/tasks/TaskDetailDialog";
 import TaskCompletionDialog from "@/components/tasks/TaskCompletionDialog";
-import OpportunityRequestDialog from "@/components/serve-board/OpportunityRequestDialog";
+import ParishionerRequestButton from "@/components/requests/ParishionerRequestButton";
 import ListEmptyState from "@/components/app/list-empty-state";
 import { HeartIcon, ListChecksIcon } from "@/components/icons/ParishIcons";
 import { useToast } from "@/components/ui/Toast";
@@ -41,6 +41,7 @@ type ServeBoardViewProps = {
   currentUserId: string;
   isLeader: boolean;
   canRequestOpportunity: boolean;
+  requesterEmail: string;
 };
 
 function formatDueDate(value: string, locale: string) {
@@ -68,7 +69,8 @@ export default function ServeBoardView({
   memberOptions,
   currentUserId,
   isLeader,
-  canRequestOpportunity
+  canRequestOpportunity,
+  requesterEmail
 }: ServeBoardViewProps) {
   const { addToast } = useToast();
   const router = useRouter();
@@ -88,7 +90,6 @@ export default function ServeBoardView({
   const [dragOverTaskId, setDragOverTaskId] = useState<string | null>(null);
   const [dragOverColumn, setDragOverColumn] = useState<TaskStatus | null>(null);
   const [completeTaskId, setCompleteTaskId] = useState<string | null>(null);
-  const [requestOpen, setRequestOpen] = useState(false);
   const [mobileColumn, setMobileColumn] = useState<TaskStatus>("OPEN");
   const [, startTransition] = useTransition();
 
@@ -358,15 +359,6 @@ export default function ServeBoardView({
       <p className="text-sm text-ink-600">{t("serve.leaderBoardHelper")}</p>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-        {canRequestOpportunity ? (
-          <Button
-            type="button"
-            onClick={() => setRequestOpen(true)}
-            className="h-10 w-full px-4 text-sm sm:w-auto"
-          >
-            {t("serve.requestOpportunity")}
-          </Button>
-        ) : null}
         <div className="flex flex-wrap items-center gap-2">
           {renderFilterButton(t("serve.filters.all"), ownershipFilter === "all", () => setOwnershipFilter("all"))}
           {renderFilterButton(t("serve.filters.mine"), ownershipFilter === "mine", () => setOwnershipFilter("mine"))}
@@ -378,6 +370,12 @@ export default function ServeBoardView({
           placeholder={t("serve.searchPlaceholder")}
           className="h-9 w-full rounded-full border border-mist-200 bg-white px-3 text-sm text-ink-700 placeholder:text-ink-400 focus:border-primary-300 focus:outline-none focus:ring-1 focus:ring-primary-300 sm:h-8 sm:w-56 sm:text-xs"
         />
+        <ParishionerRequestButton
+          canRequest={canRequestOpportunity}
+          requesterEmail={requesterEmail}
+          contextType="SERVE_PUBLIC_TASK"
+          className="h-10 w-full px-4 text-sm sm:ml-auto sm:h-9 sm:w-auto sm:px-3"
+        />
       </div>
 
       {totalOpportunities === 0 ? (
@@ -388,9 +386,12 @@ export default function ServeBoardView({
           variant="friendly"
           action={
             canRequestOpportunity ? (
-              <Button onClick={() => setRequestOpen(true)}>
-                {t("serve.requestOpportunity")}
-              </Button>
+              <ParishionerRequestButton
+                canRequest={canRequestOpportunity}
+                requesterEmail={requesterEmail}
+                contextType="SERVE_PUBLIC_TASK"
+                className="h-9 px-3 text-sm"
+              />
             ) : undefined
           }
         />
@@ -689,10 +690,6 @@ export default function ServeBoardView({
           }
         }}
         onConfirm={handleConfirmComplete}
-      />
-      <OpportunityRequestDialog
-        open={requestOpen}
-        onOpenChange={setRequestOpen}
       />
     </div>
   );

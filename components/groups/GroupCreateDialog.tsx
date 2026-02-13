@@ -9,8 +9,10 @@ import Textarea from "@/components/ui/Textarea";
 import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import { createGroup } from "@/server/actions/groups";
+import { createGroup, submitGroupRequest } from "@/server/actions/groups";
+import RequestSuccessState from "@/components/requests/RequestSuccessState";
 import { useMediaQuery } from "@/lib/ui/useMediaQuery";
+import { useTranslations } from "@/lib/i18n/provider";
 
 const NAME_MAX_LENGTH = 80;
 const DESCRIPTION_MAX_LENGTH = 280;
@@ -42,6 +44,7 @@ export default function GroupCreateDialog({
   onCreated
 }: GroupCreateDialogProps) {
   const { addToast } = useToast();
+  const t = useTranslations();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [visibility, setVisibility] = useState<"PUBLIC" | "PRIVATE">("PUBLIC");
@@ -49,6 +52,7 @@ export default function GroupCreateDialog({
     "INVITE_ONLY"
   );
   const [error, setError] = useState<string | null>(null);
+  const [formState, setFormState] = useState<"form" | "success">("form");
   const [isPending, startTransition] = useTransition();
   const modalNameId = useId();
   const modalDescriptionId = useId();
@@ -66,6 +70,7 @@ export default function GroupCreateDialog({
     setVisibility("PUBLIC");
     setJoinPolicy("INVITE_ONLY");
     setError(null);
+    setFormState("form");
   };
 
   useEffect(() => {
@@ -98,6 +103,26 @@ export default function GroupCreateDialog({
 
     startTransition(async () => {
       try {
+        if (isRequest) {
+          const result = await submitGroupRequest({
+            parishId,
+            actorUserId,
+            name: trimmedName,
+            description: trimmedDescription || undefined,
+            visibility,
+            joinPolicy
+          });
+
+          if (result.status === "error") {
+            setError(result.message ?? "We couldn't submit that request. Please try again.");
+            return;
+          }
+
+          setFormState("success");
+          onCreated?.();
+          return;
+        }
+
         await createGroup({
           parishId,
           actorUserId,
@@ -107,10 +132,8 @@ export default function GroupCreateDialog({
           joinPolicy
         });
         addToast({
-          title: isRequest ? "Request submitted" : "Group created",
-          description: isRequest
-            ? "Your request is pending approval from parish leadership."
-            : "Your new group is ready for members and opportunities to help.",
+          title: "Group created",
+          description: "Your new group is ready for members and opportunities to help.",
           status: "success"
         });
         resetForm();
@@ -120,12 +143,10 @@ export default function GroupCreateDialog({
         const message =
           submitError instanceof Error && submitError.message
             ? submitError.message
-            : isRequest
-              ? "We couldn't submit that request. Please try again."
-              : "We couldn't create that group. Please try again.";
+            : "We couldn't create that group. Please try again.";
         setError(message);
         addToast({
-          title: isRequest ? "Unable to submit request" : "Unable to create group",
+          title: "Unable to create group",
           description: message,
           status: "error"
         });
@@ -197,16 +218,22 @@ export default function GroupCreateDialog({
     </form>
   );
 
-  const renderFooter = (formId: string) => (
-    <>
-      <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-        Cancel
-      </Button>
-      <Button type="submit" form={formId} isLoading={isPending}>
-        {isRequest ? "Send request" : "Create group"}
-      </Button>
-    </>
-  );
+  const renderFooter = (formId: string) => {
+    if (formState === "success") {
+      return null;
+    }
+
+    return (
+      <>
+        <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+          {t("buttons.cancel")}
+        </Button>
+        <Button type="submit" form={formId} isLoading={isPending}>
+          {isRequest ? t("requests.common.sendRequest") : "Create group"}
+        </Button>
+      </>
+    );
+  };
 
   const modalFormId = useId();
   const drawerFormId = useId();
@@ -215,7 +242,7 @@ export default function GroupCreateDialog({
   const formDescription = (
     <p className="mb-4 text-sm text-ink-500">
       {isRequest
-        ? "Tell us about the group you want to start. A parish leader will review it."
+        ? t("requests.group.description")
         : "Gather the right people around a mission, ministry, or project."}
     </p>
   );
@@ -225,16 +252,27 @@ export default function GroupCreateDialog({
       <Modal
         open={open}
         onClose={handleClose}
-        title={isRequest ? "Request a new group" : "New group"}
+        title={formState === "success" ? t("requests.common.successTitle") : isRequest ? t("requests.group.requestTitle") : "New group"}
         footer={renderFooter(modalFormId)}
       >
-        {formDescription}
-        {renderForm(
+        {formState === "success" ? (
+          <RequestSuccessState
+            title={t("requests.common.successTitle")}
+            message={t("requests.common.successMessage")}
+            doneLabel={t("requests.common.done")}
+            onDone={handleClose}
+          />
+        ) : (
+          <>
+            {formDescription}
+            {renderForm(
           modalFormId,
           modalNameId,
           modalDescriptionId,
           modalVisibilityId,
           modalJoinPolicyId
+        )}
+          </>
         )}
       </Modal>
     );
@@ -244,16 +282,27 @@ export default function GroupCreateDialog({
     <Drawer
       open={open}
       onClose={handleClose}
-      title={isRequest ? "Request a new group" : "New group"}
+      title={formState === "success" ? t("requests.common.successTitle") : isRequest ? t("requests.group.requestTitle") : "New group"}
       footer={renderFooter(drawerFormId)}
     >
-      {formDescription}
-      {renderForm(
+      {formState === "success" ? (
+        <RequestSuccessState
+          title={t("requests.common.successTitle")}
+          message="Thank you! Your request has been submitted to parish leadership. We'll review it, and you'll receive an update after a decision is made."
+          doneLabel="Done"
+          onDone={handleClose}
+        />
+      ) : (
+        <>
+          {formDescription}
+          {renderForm(
         drawerFormId,
         drawerNameId,
         drawerDescriptionId,
         drawerVisibilityId,
         drawerJoinPolicyId
+      )}
+        </>
       )}
     </Drawer>
   );

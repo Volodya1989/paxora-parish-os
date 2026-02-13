@@ -17,6 +17,7 @@ import {
   type TaskActionState
 } from "@/server/actions/taskState";
 import { shouldCloseTaskDialog } from "@/components/tasks/taskDialogSuccess";
+import RequestSuccessState from "@/components/requests/RequestSuccessState";
 import { useTranslations } from "@/lib/i18n/provider";
 
 function formatDateInput(date: Date) {
@@ -40,6 +41,10 @@ type TaskCreateDialogProps = {
   memberOptions: Array<{ id: string; name: string; label?: string }>;
   currentUserId: string;
   initialVisibility?: "private" | "public";
+  forcePrivate?: boolean;
+  forcePublic?: boolean;
+  requestMode?: boolean;
+  creationContext?: "default" | "my_commitments";
 };
 
 export default function TaskCreateDialog({
@@ -49,9 +54,14 @@ export default function TaskCreateDialog({
   groupOptions,
   memberOptions,
   currentUserId,
-  initialVisibility = "private"
+  initialVisibility = "private",
+  forcePrivate = false,
+  forcePublic = false,
+  requestMode = false,
+  creationContext = "default"
 }: TaskCreateDialogProps) {
   const router = useRouter();
+  const t = useTranslations();
   const { addToast } = useToast();
   const [state, formAction] = useActionState<TaskActionState, FormData>(
     createTask,
@@ -63,6 +73,7 @@ export default function TaskCreateDialog({
   const [formResetKey, setFormResetKey] = useState(0);
   const [volunteersNeeded, setVolunteersNeeded] = useState("1");
   const [visibility, setVisibility] = useState<"public" | "private">("private");
+  const [formState, setFormState] = useState<"form" | "success">("form");
   const [, startTransition] = useTransition();
   const modalFormRef = useRef<HTMLFormElement>(null);
   const drawerFormRef = useRef<HTMLFormElement>(null);
@@ -80,12 +91,14 @@ export default function TaskCreateDialog({
   useEffect(() => {
     if (open && !prevOpen.current) {
       handledSuccess.current = state.status === "success";
+      setFormState("form");
       prevStatus.current = state.status;
-      setVolunteersNeeded(initialVisibility === "public" ? "2" : "1");
-      setVisibility(initialVisibility);
+      const nextInitialVisibility = forcePublic ? "public" : initialVisibility;
+      setVolunteersNeeded(nextInitialVisibility === "public" ? "2" : "1");
+      setVisibility(nextInitialVisibility);
     }
     prevOpen.current = open;
-  }, [initialVisibility, open, state.status]);
+  }, [forcePublic, initialVisibility, open, state.status]);
 
   useEffect(() => {
     const wasSuccess = prevStatus.current === "success";
@@ -111,6 +124,16 @@ export default function TaskCreateDialog({
     modalFormRef.current?.reset();
     drawerFormRef.current?.reset();
     setFormResetKey((prev) => prev + 1);
+
+    if (requestMode) {
+      setFormState("success");
+      startTransition(() => {
+        router.refresh();
+      });
+      prevStatus.current = state.status;
+      return;
+    }
+
     addToast({
       title: "Task saved",
       description: state.message ?? "Your task is ready for the team.",
@@ -121,7 +144,12 @@ export default function TaskCreateDialog({
       router.refresh();
     });
     prevStatus.current = state.status;
-  }, [addToast, onOpenChange, router, startTransition, state]);
+  }, [addToast, onOpenChange, requestMode, router, startTransition, state]);
+
+  const handleRequestDone = () => {
+    onOpenChange(false);
+    setFormState("form");
+  };
 
   const renderForm = (formId: string, ref: RefObject<HTMLFormElement>) => (
     <form
@@ -136,11 +164,14 @@ export default function TaskCreateDialog({
       }}
     >
       <input type="hidden" name="weekId" value={weekId} />
+      <input type="hidden" name="creationContext" value={creationContext} />
 
       {/* Accent header banner */}
       <div className="rounded-xl border-l-4 border-l-sky-400 bg-sky-50/60 px-4 py-3">
         <p className="text-xs text-sky-700">
-          Capture what needs attention this week and assign it to the right owner.
+          {requestMode
+            ? "Share details for the serve task you want to add. Parish leadership will review your request."
+            : "Capture what needs attention this week and assign it to the right owner."}
         </p>
       </div>
 
@@ -159,17 +190,19 @@ export default function TaskCreateDialog({
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor={estimatedHoursId}>Estimated hours (optional)</Label>
-          <Input
-            id={estimatedHoursId}
-            name="estimatedHours"
-            type="number"
-            min={0}
-            step="0.25"
-            placeholder="e.g. 2"
-          />
-        </div>
+        {!forcePrivate ? (
+          <div className="space-y-1.5">
+            <Label htmlFor={estimatedHoursId}>Estimated hours (optional)</Label>
+            <Input
+              id={estimatedHoursId}
+              name="estimatedHours"
+              type="number"
+              min={0}
+              step="0.25"
+              placeholder="e.g. 2"
+            />
+          </div>
+        ) : null}
         <div className="space-y-1.5">
           <Label htmlFor={dueAtId}>Due date</Label>
           <Input
@@ -182,31 +215,47 @@ export default function TaskCreateDialog({
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor={visibilityId}>Visibility</Label>
-        <SelectMenu
-          id={visibilityId}
-          name="visibility"
-          value={visibility}
-          onValueChange={(nextValue) => {
-            const nextVisibility = nextValue === "public" ? "public" : "private";
-            setVisibility(nextVisibility);
-            if (nextVisibility === "private") {
-              setVolunteersNeeded("1");
-            }
-          }}
-          options={[
-            { value: "private", label: "Private (just you)" },
-            { value: "public", label: "Public (shared with the parish)" }
-          ]}
-        />
-        <p className="text-xs text-ink-400">
-          {visibility === "public"
-            ? "Public tasks created by members require approval before they appear for everyone."
-            : "Private tasks stay assigned to you by default."}
-        </p>
-      </div>
-      {visibility === "private" ? (
+      {forcePrivate ? (
+        <>
+          <input type="hidden" name="visibility" value="private" />
+          <p className="rounded-xl border border-mist-200 bg-mist-50 px-3 py-2 text-xs text-ink-500">
+            Private commitment only. This stays in your personal commitments view.
+          </p>
+        </>
+      ) : forcePublic ? (
+        <>
+          <input type="hidden" name="visibility" value="public" />
+          <p className="rounded-xl border border-primary-100 bg-primary-50 px-3 py-2 text-xs text-primary-800">
+            Public serve-task request. Leaders will approve before it appears to everyone.
+          </p>
+        </>
+      ) : (
+        <div className="space-y-1.5">
+          <Label htmlFor={visibilityId}>Visibility</Label>
+          <SelectMenu
+            id={visibilityId}
+            name="visibility"
+            value={visibility}
+            onValueChange={(nextValue) => {
+              const nextVisibility = nextValue === "public" ? "public" : "private";
+              setVisibility(nextVisibility);
+              if (nextVisibility === "private") {
+                setVolunteersNeeded("1");
+              }
+            }}
+            options={[
+              { value: "private", label: "Private (just you)" },
+              { value: "public", label: "Public (shared with the parish)" }
+            ]}
+          />
+          <p className="text-xs text-ink-400">
+            {visibility === "public"
+              ? "Public tasks created by members require approval before they appear for everyone."
+              : "Private tasks stay assigned to you by default."}
+          </p>
+        </div>
+      )}
+      {visibility === "private" || forcePrivate ? (
         <>
           <input type="hidden" name="volunteersNeeded" value="1" />
           <input type="hidden" name="ownerId" value={currentUserId} />
@@ -265,7 +314,10 @@ export default function TaskCreateDialog({
           {state.message}
         </p>
       ) : null}
-      <TaskCreateActions onCancel={() => onOpenChange(false)} />
+      <TaskCreateActions
+        onCancel={() => onOpenChange(false)}
+        submitLabel={requestMode ? t("requests.common.sendRequest") : "Create task"}
+      />
     </form>
   );
 
@@ -274,22 +326,42 @@ export default function TaskCreateDialog({
       <Modal
         open={open}
         onClose={() => onOpenChange(false)}
-        title="New task"
+        title={formState === "success" ? t("requests.common.successTitle") : requestMode ? t("requests.task.requestTitle") : "New task"}
       >
-        {renderForm(modalFormId, modalFormRef)}
+        {formState === "success" ? (
+          <RequestSuccessState
+            title={t("requests.common.successTitle")}
+            message={t("requests.common.successMessage")}
+            doneLabel={t("requests.common.done")}
+            onDone={handleRequestDone}
+          />
+        ) : renderForm(modalFormId, modalFormRef)}
       </Modal>
       <Drawer
         open={open}
         onClose={() => onOpenChange(false)}
-        title="New task"
+        title={formState === "success" ? t("requests.common.successTitle") : requestMode ? t("requests.task.requestTitle") : "New task"}
       >
-        {renderForm(drawerFormId, drawerFormRef)}
+        {formState === "success" ? (
+          <RequestSuccessState
+            title={t("requests.common.successTitle")}
+            message={t("requests.common.successMessage")}
+            doneLabel={t("requests.common.done")}
+            onDone={handleRequestDone}
+          />
+        ) : renderForm(drawerFormId, drawerFormRef)}
       </Drawer>
     </>
   );
 }
 
-function TaskCreateActions({ onCancel }: { onCancel: () => void }) {
+function TaskCreateActions({
+  onCancel,
+  submitLabel
+}: {
+  onCancel: () => void;
+  submitLabel: string;
+}) {
   const t = useTranslations();
   const { pending } = useFormStatus();
 
@@ -299,7 +371,7 @@ function TaskCreateActions({ onCancel }: { onCancel: () => void }) {
         {t("buttons.cancel")}
       </Button>
       <Button type="submit" isLoading={pending}>
-        Create task
+        {submitLabel}
       </Button>
     </div>
   );

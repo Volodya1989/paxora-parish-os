@@ -547,6 +547,68 @@
         "GENERIC": "Briefly describe your need — e.g., home blessing, car blessing, meeting.",
         "PRAYER": "Share any helpful context (avoid sensitive confessional details)."
       }
+    },
+    "createContent": {
+      "modalTitle": "Create request",
+      "modalDescription": "Submit what you want to create for parish review.",
+      "submit": "Send request",
+      "success": "Your creation request was sent to parish leadership.",
+      "type": "Request type",
+      "typeEvent": "Create public event",
+      "typeServe": "Create public serve task",
+      "typeGroup": "Create new group",
+      "scope": "Scope",
+      "scopePublic": "Public (whole parish)",
+      "scopeGroup": "For a specific group",
+      "scopeGroupHint": "Join a group to request group-scoped items.",
+      "noGroup": "No group",
+      "title": "Title",
+      "description": "Description",
+      "descriptionPlaceholder": "Share what should be created and why it helps the parish.",
+      "eventDateOptional": "Event date (optional)",
+      "neededByOptional": "Needed by date (optional)",
+      "defaultTitleEvent": "Create public event request",
+      "defaultTitleServe": "Create public serve task request",
+      "defaultTitleGroup": "Create new group request",
+      "addAria": "Add creation request"
+    },
+    "common": {
+      "successTitle": "Request submitted",
+      "successMessage": "Thank you! Your request has been submitted to parish leadership. We'll review it, and you'll receive an update after a decision is made.",
+      "sendRequest": "Send request",
+      "done": "Done"
+    },
+    "group": {
+      "requestTitle": "Request a new group",
+      "description": "Tell us about the group you want to start. A parish leader will review it."
+    },
+    "task": {
+      "requestTitle": "Request a serve task"
+    },
+    "event": {
+      "title": "Request an event",
+      "description": "Know of an event that should be on the parish calendar? Submit a request and parish leadership will review it. Requests are shared with the group lead and always sent to clergy.",
+      "successMessage": "Thank you! Your event request has been submitted to parish leadership. We'll review it, and you'll receive an email once it's approved or declined.",
+      "fields": {
+        "eventTitle": "Event title",
+        "eventTitlePlaceholder": "e.g., Youth group outing",
+        "eventType": "Event type",
+        "selectType": "Select a type",
+        "typeService": "Service",
+        "typeRehearsal": "Rehearsal",
+        "typeGathering": "Community gathering",
+        "typeOther": "Other",
+        "proposedDate": "Proposed date",
+        "proposedTime": "Proposed time",
+        "location": "Location",
+        "locationPlaceholder": "Where will this event take place?",
+        "description": "Description",
+        "descriptionPlaceholder": "Tell us about the event and why it should be scheduled",
+        "participants": "Expected participants (optional)",
+        "participantsPlaceholder": "Approximate number",
+        "contactName": "Your name",
+        "contactNamePlaceholder": "So leadership can follow up"
+      }
     }
   },
   "pwa": {

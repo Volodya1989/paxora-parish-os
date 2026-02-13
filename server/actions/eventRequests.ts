@@ -15,6 +15,8 @@ import {
   sendEventRequestSubmittedEmail
 } from "@/lib/email/eventRequests";
 import { getParishMembership } from "@/server/db/groups";
+import { notifyCreationRequestInApp } from "@/lib/notifications/notify";
+import { notifyCreationRequest } from "@/lib/push/notify";
 
 const HOUR_IN_MS = 60 * 60 * 1000;
 
@@ -250,6 +252,31 @@ export async function submitEventRequest(formData: FormData): Promise<EventReque
       }
     })
   );
+
+
+  const recipientIds = recipients.map((recipient) => recipient.userId).filter((id) => id !== requesterId);
+  if (recipientIds.length > 0) {
+    const href = "/calendar?pending=1";
+    try {
+      await notifyCreationRequestInApp({
+        parishId,
+        recipientIds,
+        title: `New event request: ${title}`,
+        description: `Requested by ${requester.name ?? contactName}`,
+        href
+      });
+      await notifyCreationRequest({
+        parishId,
+        recipientIds,
+        title: "New event request",
+        body: title,
+        url: href,
+        tag: `event-request-${request.id}`
+      });
+    } catch (error) {
+      console.error("Failed to create event-request notifications", error);
+    }
+  }
 
   revalidatePath("/calendar");
 

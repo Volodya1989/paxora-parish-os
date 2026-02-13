@@ -236,6 +236,23 @@ export async function notifyEventReminderInApp(opts: {
   });
 }
 
+
+export async function notifyCreationRequestInApp(opts: {
+  parishId: string;
+  recipientIds: string[];
+  title: string;
+  description?: string | null;
+  href: string;
+}) {
+  await createNotificationsForUsers(opts.recipientIds, {
+    parishId: opts.parishId,
+    type: NotificationType.REQUEST,
+    title: opts.title,
+    description: opts.description ?? null,
+    href: opts.href
+  });
+}
+
 export async function notifyRequestAssignedInApp(opts: {
   requestId: string;
   requestTitle: string;

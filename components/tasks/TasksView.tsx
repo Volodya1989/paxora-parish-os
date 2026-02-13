@@ -16,6 +16,8 @@ import type { PendingAccessRequest } from "@/lib/queries/access";
 import type { PendingTaskApproval } from "@/lib/queries/tasks";
 import { approveTask, rejectTask } from "@/server/actions/tasks";
 import TaskQuickAdd from "@/components/tasks/TaskQuickAdd";
+import ParishionerAddButton from "@/components/shared/ParishionerAddButton";
+import PendingRequestsSection from "@/components/requests/PendingRequestsSection";
 import { cn } from "@/lib/ui/cn";
 import Link from "next/link";
 import { routes } from "@/lib/navigation/routes";
@@ -51,6 +53,8 @@ type TasksViewProps = {
   viewMode?: "all" | "opportunities" | "mine";
   canManageTasks?: boolean;
   canAccessLeaderBoard?: boolean;
+  showGroupFilterHint?: boolean;
+  canRequestContentCreate?: boolean;
 };
 
 export default function TasksView({
@@ -71,13 +75,15 @@ export default function TasksView({
   rejectAccessAction,
   viewMode = "all",
   canManageTasks = true,
-  canAccessLeaderBoard = false
+  canAccessLeaderBoard = false,
+  showGroupFilterHint = false,
+  canRequestContentCreate = false
 }: TasksViewProps) {
   const t = useTranslations();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [createVisibility, setCreateVisibility] = useState<"private" | "public">("private");
+  const [isRequestOpen, setIsRequestOpen] = useState(false);
   const [accessRoles, setAccessRoles] = useState<Record<string, string>>({});
   const [isApproving, startApprovalTransition] = useTransition();
   const [isAccessPending, startAccessTransition] = useTransition();
@@ -163,11 +169,6 @@ export default function TasksView({
     router.replace(`?${params.toString()}`, { scroll: false });
   };
 
-  const openCreateDialogWithVisibility = (visibility: "private" | "public") => {
-    setCreateVisibility(visibility);
-    setIsCreateOpen(true);
-  };
-
   useEffect(() => {
     if (createParam === "task" && showCreateButton) {
       setIsCreateOpen(true);
@@ -239,6 +240,7 @@ export default function TasksView({
         groupOptions={groupOptions}
         memberOptions={memberOptions}
         currentUserId={currentUserId}
+        isMyCommitmentsContext={!canManageTasks && viewMode === "mine"}
       />
     );
   };
@@ -281,57 +283,54 @@ export default function TasksView({
               <TaskFilters
                 filters={filters}
                 groupOptions={groupOptions}
-                showOwnership={viewMode !== "opportunities"}
+                showOwnership={viewMode !== "opportunities" && (canManageTasks || viewMode !== "mine")}
+                showGroup={canManageTasks || viewMode !== "mine"}
                 layout="stacked"
                 searchPlaceholder={
                   viewMode === "opportunities" ? t("tasks.filters.searchOpportunities") : undefined
                 }
+                groupDisabledHint={showGroupFilterHint ? "Join a group to filter" : undefined}
               />
             </div>
           </FiltersDrawer>
 
-          {(canManageTasks || (showCreateButton && viewMode !== "opportunities")) && (
+          {canManageTasks ? (
             <Button
               type="button"
-              onClick={() =>
-                canManageTasks
-                  ? setIsCreateOpen(true)
-                  : openCreateDialogWithVisibility("private")
-              }
+              onClick={() => setIsCreateOpen(true)}
               className="h-11 min-w-11 rounded-full px-0 sm:hidden"
-              aria-label={canManageTasks ? ctaLabel : t("thisWeek.addTaskAria")}
+              aria-label={ctaLabel}
             >
               <PlusIcon />
             </Button>
-          )}
+          ) : canRequestContentCreate ? (
+            <ParishionerAddButton
+              onClick={() => setIsRequestOpen(true)}
+              ariaLabel={t("serve.requestOpportunity")}
+            />
+          ) : null}
         </div>
 
         {/* + create (desktop buttons) */}
-        {(canManageTasks || (showCreateButton && viewMode !== "opportunities")) && (
+        {canManageTasks && (
           <>
             <Button
               type="button"
-              onClick={() =>
-                canManageTasks
-                  ? setIsCreateOpen(true)
-                  : openCreateDialogWithVisibility("private")
-              }
+              onClick={() => setIsCreateOpen(true)}
               className="hidden h-9 px-3 text-sm sm:inline-flex"
             >
-              {canManageTasks ? ctaLabel : t("thisWeek.addPrivateTask")}
+              {ctaLabel}
             </Button>
-            {!canManageTasks && (
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => openCreateDialogWithVisibility("public")}
-                className="hidden h-9 px-3 text-sm sm:inline-flex"
-              >
-                {t("thisWeek.requestPublicTask")}
-              </Button>
-            )}
           </>
         )}
+
+        {!canManageTasks && canRequestContentCreate ? (
+          <ParishionerAddButton
+            onClick={() => setIsRequestOpen(true)}
+            ariaLabel={t("serve.requestOpportunity")}
+            className="hidden md:flex"
+          />
+        ) : null}
 
         {/* Hours & Gratitude Board — desktop only */}
         {canManageTasks && (
@@ -349,54 +348,31 @@ export default function TasksView({
         <TaskFilters
           filters={filters}
           groupOptions={groupOptions}
-          showOwnership={viewMode !== "opportunities"}
+          showOwnership={viewMode !== "opportunities" && (canManageTasks || viewMode !== "mine")}
+          showGroup={canManageTasks || viewMode !== "mine"}
           layout="inline"
           searchPlaceholder={
             viewMode === "opportunities" ? t("tasks.filters.searchOpportunities") : undefined
           }
+          groupDisabledHint={showGroupFilterHint ? "Join a group to filter" : undefined}
         />
       </div>
 
       {/* Pending approvals — compact banners above the list */}
       {canManageTasks && pendingTaskApprovals.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-bold uppercase tracking-wider text-amber-700">
-            {t("thisWeek.pendingApprovals")}
-          </p>
-          {pendingTaskApprovals.map((task) => (
-            <div
-              key={task.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-l-4 border-amber-200 border-l-amber-400 bg-amber-50/60 px-4 py-3"
-            >
-              <div className="min-w-0 flex-1 space-y-0.5">
-                <p className="text-sm font-semibold text-ink-800">{task.title}</p>
-                <p className="text-xs text-ink-500">
-                  by {task.createdBy.name} · {task.owner?.name ?? "Unassigned"}
-                  {task.group ? ` · ${task.group.name}` : ""}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => handleApproveTask(task.id)}
-                  disabled={isApproving}
-                >
-                  Approve
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => handleRejectTask(task.id)}
-                  disabled={isApproving}
-                >
-                  Reject
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
+        <PendingRequestsSection
+          heading={t("thisWeek.pendingApprovals")}
+          items={pendingTaskApprovals.map((task) => ({
+            id: task.id,
+            title: task.title,
+            subtitle: `by ${task.createdBy.name} · ${task.owner?.name ?? "Unassigned"}`,
+            description: task.group ? `Group: ${task.group.name}` : "Parish task",
+            badgeLabel: task.group ? `group: ${task.group.name}` : "parish",
+            isBusy: isApproving,
+            onApprove: () => handleApproveTask(task.id),
+            onReject: () => handleRejectTask(task.id)
+          }))}
+        />
       )}
 
       {canManageTasks && pendingAccessRequests.length > 0 && (
@@ -461,8 +437,8 @@ export default function TasksView({
       )}
 
       {/* Quick add (admin only, outside of opportunities view) */}
-      {canManageTasks && viewMode !== "opportunities" && (
-        <TaskQuickAdd weekId={weekId} />
+      {(canManageTasks || viewMode === "mine") && viewMode !== "opportunities" && (
+        <TaskQuickAdd weekId={weekId} creationContext={viewMode === "mine" ? "my_commitments" : "default"} />
       )}
 
       {/* Tasks */}
@@ -475,7 +451,22 @@ export default function TasksView({
         groupOptions={groupOptions}
         memberOptions={memberOptions}
         currentUserId={currentUserId}
-        initialVisibility={createVisibility}
+        initialVisibility="private"
+        forcePrivate={!canManageTasks && viewMode === "mine"}
+        creationContext={!canManageTasks && viewMode === "mine" ? "my_commitments" : "default"}
+      />
+
+
+      <TaskCreateDialog
+        open={isRequestOpen}
+        onOpenChange={setIsRequestOpen}
+        weekId={weekId}
+        groupOptions={groupOptions}
+        memberOptions={memberOptions}
+        currentUserId={currentUserId}
+        initialVisibility="public"
+        forcePublic
+        requestMode
       />
     </div>
   );

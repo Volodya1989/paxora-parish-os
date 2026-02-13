@@ -16,6 +16,8 @@ import {
 } from "@/lib/validation/groups";
 import { getParishMembership } from "@/server/db/groups";
 import { isParishLeader } from "@/lib/permissions";
+import { notifyCreationRequestInApp } from "@/lib/notifications/notify";
+import { notifyCreationRequest } from "@/lib/push/notify";
 
 // TODO: Wire to parish policy once stored in the database.
 const ALLOW_GROUP_LEADS_TO_MANAGE_MEMBERSHIP = true;
@@ -59,6 +61,43 @@ function assertActorContext(
   }
 
   return { userId, parishId };
+}
+
+async function notifyLeadersAboutGroupRequest(opts: {
+  parishId: string;
+  groupId: string;
+  groupName: string;
+  requesterId: string;
+}) {
+  const leaders = await prisma.membership.findMany({
+    where: {
+      parishId: opts.parishId,
+      role: { in: ["ADMIN", "SHEPHERD"] },
+      userId: { not: opts.requesterId }
+    },
+    select: { userId: true }
+  });
+
+  const recipientIds = leaders.map((leader) => leader.userId);
+  if (recipientIds.length === 0) return;
+
+  const href = "/groups?pending=1";
+  await notifyCreationRequestInApp({
+    parishId: opts.parishId,
+    recipientIds,
+    title: `New group request: ${opts.groupName}`,
+    description: "A parishioner submitted a group creation request.",
+    href
+  });
+
+  await notifyCreationRequest({
+    parishId: opts.parishId,
+    recipientIds,
+    title: "New group request",
+    body: opts.groupName,
+    url: href,
+    tag: `group-request-${opts.groupId}`
+  });
 }
 
 export async function listGroups() {
@@ -119,7 +158,21 @@ export async function createGroup(input: {
         });
 
         if (requestCount >= 2) {
-          throw new Error("You can request up to two groups per month.");
+          throw new Error("You already have pending group requests this month. Please wait for a decision.");
+        }
+
+        const existingPending = await tx.group.findFirst({
+          where: {
+            parishId,
+            createdById: userId,
+            name: parsed.data.name,
+            status: "PENDING_APPROVAL"
+          },
+          select: { id: true }
+        });
+
+        if (existingPending) {
+          throw new Error("You already have a pending group request with this name.");
         }
       }
 
@@ -170,9 +223,54 @@ export async function createGroup(input: {
       throw error;
     });
 
+  if (group.status === "PENDING_APPROVAL") {
+    try {
+      await notifyLeadersAboutGroupRequest({
+        parishId,
+        groupId: group.id,
+        groupName: group.name,
+        requesterId: userId
+      });
+    } catch (error) {
+      console.error("Failed to notify leaders about group request", error);
+    }
+  }
+
   revalidatePath("/groups");
 
   return group;
+}
+
+export async function submitGroupRequest(input: {
+  parishId: string;
+  actorUserId: string;
+  name: string;
+  description?: string | null;
+  visibility: "PUBLIC" | "PRIVATE";
+  joinPolicy: "INVITE_ONLY" | "OPEN" | "REQUEST_TO_JOIN";
+}): Promise<{ status: "success" | "error"; message?: string }> {
+  try {
+    await createGroup(input);
+    return { status: "success" };
+  } catch (error) {
+    const message =
+      error instanceof Error && error.message
+        ? error.message
+        : "Unable to submit request right now. Please try again.";
+
+    if (message.includes("pending group request") || message.includes("pending group requests")) {
+      return {
+        status: "error",
+        message: "You already have a pending group request. Please wait for approval or choose a different name."
+      };
+    }
+
+    if (message.includes("already exists")) {
+      return { status: "error", message };
+    }
+
+    return { status: "error", message };
+  }
 }
 
 export async function approveGroupRequest(input: {

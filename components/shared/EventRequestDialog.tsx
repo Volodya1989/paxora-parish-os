@@ -6,6 +6,7 @@ import Select from "@/components/ui/Select";
 import Textarea from "@/components/ui/Textarea";
 import RequestDialog from "@/components/shared/RequestDialog";
 import { submitEventRequest } from "@/server/actions/eventRequests";
+import { useTranslations } from "@/lib/i18n/provider";
 
 type EventRequestDialogProps = {
   open: boolean;
@@ -16,44 +17,46 @@ export default function EventRequestDialog({
   open,
   onOpenChange
 }: EventRequestDialogProps) {
+  const t = useTranslations();
+
   return (
     <RequestDialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Request an event"
-      description={
-        "Know of an event that should be on the parish calendar? Submit a request and parish leadership will review it. Requests are shared with the group lead and always sent to clergy."
-      }
-      successMessage={
-        "Thank you! Your event request has been submitted to parish leadership. We'll review it, and you'll receive an email once it's approved or declined."
-      }
+      title={t("requests.event.title")}
+      description={t("requests.event.description")}
+      successTitle={t("requests.common.successTitle")}
+      successMessage={t("requests.event.successMessage")}
+      submitLabel={t("requests.common.sendRequest")}
+      doneLabel={t("requests.common.done")}
+      cancelLabel={t("buttons.cancel")}
       onSubmit={submitEventRequest}
       renderFields={(formId) => (
         <>
           <div className="space-y-1.5">
-            <Label htmlFor={`${formId}-title`}>Event title</Label>
+            <Label htmlFor={`${formId}-title`}>{t("requests.event.fields.eventTitle")}</Label>
             <Input
               id={`${formId}-title`}
               name="title"
               required
-              placeholder="e.g., Youth group outing"
+              placeholder={t("requests.event.fields.eventTitlePlaceholder")}
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor={`${formId}-type`}>Event type</Label>
+            <Label htmlFor={`${formId}-type`}>{t("requests.event.fields.eventType")}</Label>
             <Select id={`${formId}-type`} name="type" required>
-              <option value="">Select a type</option>
-              <option value="SERVICE">Service</option>
-              <option value="REHEARSAL">Rehearsal</option>
-              <option value="GATHERING">Community gathering</option>
-              <option value="OTHER">Other</option>
+              <option value="">{t("requests.event.fields.selectType")}</option>
+              <option value="SERVICE">{t("requests.event.fields.typeService")}</option>
+              <option value="REHEARSAL">{t("requests.event.fields.typeRehearsal")}</option>
+              <option value="GATHERING">{t("requests.event.fields.typeGathering")}</option>
+              <option value="OTHER">{t("requests.event.fields.typeOther")}</option>
             </Select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor={`${formId}-date`}>Proposed date</Label>
+              <Label htmlFor={`${formId}-date`}>{t("requests.event.fields.proposedDate")}</Label>
               <Input
                 id={`${formId}-date`}
                 name="date"
@@ -62,7 +65,7 @@ export default function EventRequestDialog({
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor={`${formId}-time`}>Proposed time</Label>
+              <Label htmlFor={`${formId}-time`}>{t("requests.event.fields.proposedTime")}</Label>
               <Input
                 id={`${formId}-time`}
                 name="time"
@@ -73,43 +76,43 @@ export default function EventRequestDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor={`${formId}-location`}>Location</Label>
+            <Label htmlFor={`${formId}-location`}>{t("requests.event.fields.location")}</Label>
             <Input
               id={`${formId}-location`}
               name="location"
               required
-              placeholder="Where will this event take place?"
+              placeholder={t("requests.event.fields.locationPlaceholder")}
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor={`${formId}-description`}>Description</Label>
+            <Label htmlFor={`${formId}-description`}>{t("requests.event.fields.description")}</Label>
             <Textarea
               id={`${formId}-description`}
               name="description"
               required
-              placeholder="Tell us about the event and why it should be scheduled"
+              placeholder={t("requests.event.fields.descriptionPlaceholder")}
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor={`${formId}-participants`}>Expected participants (optional)</Label>
+            <Label htmlFor={`${formId}-participants`}>{t("requests.event.fields.participants")}</Label>
             <Input
               id={`${formId}-participants`}
               name="participants"
               type="number"
               min="1"
-              placeholder="Approximate number"
+              placeholder={t("requests.event.fields.participantsPlaceholder")}
             />
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor={`${formId}-name`}>Your name</Label>
+            <Label htmlFor={`${formId}-name`}>{t("requests.event.fields.contactName")}</Label>
             <Input
               id={`${formId}-name`}
               name="contactName"
               required
-              placeholder="So leadership can follow up"
+              placeholder={t("requests.event.fields.contactNamePlaceholder")}
             />
           </div>
 

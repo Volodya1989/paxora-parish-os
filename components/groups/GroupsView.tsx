@@ -22,19 +22,23 @@ import { useTranslations } from "@/lib/i18n/provider";
 import { useLocale } from "@/lib/i18n/provider";
 import QuoteCard from "@/components/app/QuoteCard";
 import { buildLocalePathname } from "@/lib/i18n/routing";
+import ParishionerAddButton from "@/components/shared/ParishionerAddButton";
+import PendingRequestsSection from "@/components/requests/PendingRequestsSection";
 
 type GroupsViewProps = {
   groups: GroupListItem[];
   parishId: string;
   actorUserId: string;
   canManageGroups: boolean;
+  canRequestContentCreate: boolean;
 };
 
 export default function GroupsView({
   groups,
   parishId,
   actorUserId,
-  canManageGroups
+  canManageGroups,
+  canRequestContentCreate
 }: GroupsViewProps) {
   const t = useTranslations();
   const locale = useLocale();
@@ -67,6 +71,7 @@ export default function GroupsView({
     () => groups.filter((group) => group.viewerMembershipStatus === "INVITED" && group.status === "ACTIVE"),
     [groups]
   );
+
 
   useEffect(() => {
     if (searchParams?.get("create") !== "group") {
@@ -242,11 +247,7 @@ export default function GroupsView({
         <ListEmptyState
           title={t("empty.noGroups")}
           description={canManageGroups ? t("groups.empty.startMessage") : t("groups.empty.requestMessage")}
-          action={
-            <Button onClick={openCreateDialog}>
-              {canManageGroups ? t("groups.startGroup") : t("groups.suggestGroup")}
-            </Button>
-          }
+          action={canManageGroups ? <Button onClick={openCreateDialog}>{t("groups.startGroup")}</Button> : undefined}
           variant="friendly"
         />
       );
@@ -274,17 +275,6 @@ export default function GroupsView({
 
       {/* Action bar */}
       <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={openCreateDialog}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 sm:hidden"
-          aria-label={canManageGroups ? t("groups.startGroup") : t("groups.suggestGroup")}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
-        </button>
-        <Button onClick={openCreateDialog} className="hidden h-9 px-3 text-sm sm:inline-flex">
-          {canManageGroups ? t("groups.startGroup") : t("groups.suggestGroup")}
-        </Button>
         <div className="md:hidden">
           <FiltersDrawer title={t("groups.filters.title")}>
             <GroupFilters
@@ -307,6 +297,27 @@ export default function GroupsView({
             layout="inline"
           />
         </div>
+
+        {canManageGroups ? (
+          <>
+            <button
+              type="button"
+              onClick={openCreateDialog}
+              className="ml-auto flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 sm:hidden"
+              aria-label={t("groups.startGroup")}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
+            </button>
+            <Button onClick={openCreateDialog} className="ml-auto hidden h-9 px-3 text-sm sm:inline-flex">
+              {t("groups.startGroup")}
+            </Button>
+          </>
+        ) : canRequestContentCreate ? (
+          <ParishionerAddButton
+            onClick={openCreateDialog}
+            ariaLabel={t("groups.startGroup")}
+          />
+        ) : null}
       </div>
 
       {/* Pending invites for the current user */}
@@ -366,55 +377,25 @@ export default function GroupsView({
 
       {/* Pending group requests — leaders see approve/reject, members see status */}
       {canManageGroups && pendingGroups.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-bold uppercase tracking-wider text-amber-700">
-            Group requests
-          </p>
-          {pendingGroups.map((group) => (
-            <div
-              key={group.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-l-4 border-amber-200 border-l-amber-400 bg-amber-50/60 px-4 py-3"
-            >
-              <div className="min-w-0 flex-1 space-y-0.5">
-                <p className="text-sm font-semibold text-ink-800">{group.name}</p>
-                <p className="text-xs text-ink-500">
-                  {group.description ?? "No description provided."}
-                </p>
-                <p className="text-xs text-ink-400">
-                  Requested by{" "}
-                  {group.createdBy?.name ?? group.createdBy?.email ?? "Parishioner"}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() =>
-                    void runGroupAction(group.id, () =>
-                      approveGroupRequest({ parishId, actorUserId, groupId: group.id })
-                    )
-                  }
-                  disabled={pendingGroupId === group.id}
-                >
-                  Approve
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  onClick={() =>
-                    void runGroupAction(group.id, () =>
-                      rejectGroupRequest({ parishId, actorUserId, groupId: group.id })
-                    )
-                  }
-                  disabled={pendingGroupId === group.id}
-                >
-                  Reject
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
+        <PendingRequestsSection
+          heading="Group requests"
+          items={pendingGroups.map((group) => ({
+            id: group.id,
+            title: group.name,
+            subtitle: group.description ?? "No description provided.",
+            description: `Requested by ${group.createdBy?.name ?? group.createdBy?.email ?? "Parishioner"}`,
+            badgeLabel: "parish",
+            isBusy: pendingGroupId === group.id,
+            onApprove: () =>
+              void runGroupAction(group.id, () =>
+                approveGroupRequest({ parishId, actorUserId, groupId: group.id })
+              ),
+            onReject: () =>
+              void runGroupAction(group.id, () =>
+                rejectGroupRequest({ parishId, actorUserId, groupId: group.id })
+              )
+          }))}
+        />
       )}
 
       {!canManageGroups && pendingGroups.length > 0 && (
