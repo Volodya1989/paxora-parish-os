@@ -371,5 +371,31 @@
     "send": "Send",
     "charactersRemaining": "{count} characters remaining",
     "noMessagesYet": "No messages yet. Start the conversation."
+  },
+  "requests": {
+    "createContent": {
+      "modalTitle": "Solicitud de creación",
+      "modalDescription": "Envía lo que deseas crear para revisión parroquial.",
+      "submit": "Enviar solicitud",
+      "success": "Tu solicitud de creación fue enviada al liderazgo parroquial.",
+      "type": "Tipo de solicitud",
+      "typeEvent": "Crear evento público",
+      "typeServe": "Crear tarea pública de servicio",
+      "typeGroup": "Crear nuevo grupo",
+      "scope": "Alcance",
+      "scopePublic": "Público (toda la parroquia)",
+      "scopeGroup": "Para un grupo específico",
+      "scopeGroupHint": "Únete a un grupo para solicitar elementos con alcance de grupo.",
+      "noGroup": "Sin grupo",
+      "title": "Título",
+      "description": "Descripción",
+      "descriptionPlaceholder": "Comparte qué se debe crear y por qué ayuda a la parroquia.",
+      "eventDateOptional": "Fecha del evento (opcional)",
+      "neededByOptional": "Fecha límite (opcional)",
+      "defaultTitleEvent": "Solicitud para crear evento público",
+      "defaultTitleServe": "Solicitud para crear tarea pública de servicio",
+      "defaultTitleGroup": "Solicitud para crear nuevo grupo",
+      "addAria": "Agregar solicitud de creación"
+    }
   }
 }

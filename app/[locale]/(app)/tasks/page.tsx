@@ -217,6 +217,7 @@ export default async function TasksPage({
         viewMode={viewMode}
         canManageTasks={isLeader}
         canAccessLeaderBoard={canAccessLeaderBoard}
+        canRequestContentCreate={membership.role === "MEMBER"}
       />
     </ParishionerPageLayout>
   );

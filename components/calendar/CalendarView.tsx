@@ -10,7 +10,7 @@ import CalendarGridMonth from "@/components/calendar/CalendarGridMonth";
 import CalendarDayList from "@/components/calendar/CalendarDayList";
 import EventDetailPanel from "@/components/calendar/EventDetailPanel";
 import EventCreateDialog from "@/components/calendar/EventCreateDialog";
-import ParishionerRequestButton from "@/components/requests/ParishionerRequestButton";
+import CreateContentRequestButton from "@/components/requests/CreateContentRequestButton";
 import ScheduleView from "@/components/calendar/ScheduleView";
 import EventRequestApprovals from "@/components/calendar/EventRequestApprovals";
 import PageShell from "@/components/app/page-shell";
@@ -47,8 +47,7 @@ type CalendarViewProps = {
   groupOptions: Array<{ id: string; name: string }>;
   viewerGroupIds: string[];
   pendingEventRequests: PendingEventRequest[];
-  canRequestParishSupport?: boolean;
-  requesterEmail?: string;
+  canRequestContentCreate?: boolean;
 };
 
 type CalendarViewValue = "week" | "month";
@@ -86,8 +85,7 @@ export default function CalendarView({
   groupOptions,
   viewerGroupIds,
   pendingEventRequests,
-  canRequestParishSupport = false,
-  requesterEmail = ""
+  canRequestContentCreate = false
 }: CalendarViewProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -195,11 +193,11 @@ export default function CalendarView({
           {t("calendar.addService")}
         </Button>
       ) : null}
-      <ParishionerRequestButton
-        canRequest={canRequestParishSupport}
-        requesterEmail={requesterEmail}
-        contextType="EVENT"
-        className={canCreateEvents ? "h-9 px-3 text-sm" : "h-9 px-3 text-sm"}
+      <CreateContentRequestButton
+        canRequest={canRequestContentCreate}
+        sourceScreen="events"
+        groupOptions={groupOptions}
+        className="flex h-11 min-w-11 items-center justify-center rounded-full bg-primary-600 px-0 text-white shadow-sm transition hover:bg-primary-700"
       />
     </div>
   );
@@ -242,24 +240,20 @@ export default function CalendarView({
           source={t("calendar.quoteSource")}
           tone="primary"
         />
-        {/* Controls: toggle + actions — single compact row */}
+        <TabsList aria-label="Time range" className="flex-wrap">
+          <TabsTrigger value="week">{t("calendar.week")}</TabsTrigger>
+          <TabsTrigger value="month">{t("calendar.month")}</TabsTrigger>
+        </TabsList>
+
+        {/* Action row: Filters left, Add right */}
         <div className="flex flex-wrap items-center gap-2">
-          <TabsList aria-label="Time range" className="flex-wrap">
-            <TabsTrigger value="week">{t("calendar.week")}</TabsTrigger>
-            <TabsTrigger value="month">{t("calendar.month")}</TabsTrigger>
-          </TabsList>
           {surface === "schedule" ? (
-            <div className="md:hidden">
+            <div>
               <FiltersDrawer title={t("calendar.scheduleFilters")}>{scheduleFilters}</FiltersDrawer>
             </div>
           ) : null}
-          <ParishionerRequestButton
-            canRequest={canRequestParishSupport}
-            requesterEmail={requesterEmail}
-            contextType="EVENT"
-            className="ml-auto h-9 px-3 text-sm"
-          />
-          {canCreateEvents && (
+
+          {canCreateEvents ? (
             <>
               <button
                 type="button"
@@ -267,7 +261,7 @@ export default function CalendarView({
                   setCreateType("SERVICE");
                   setCreateOpen(true);
                 }}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 sm:hidden"
+                className="ml-auto flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 sm:hidden"
                 aria-label={t("calendar.addEvent")}
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
@@ -278,11 +272,18 @@ export default function CalendarView({
                   setCreateType("SERVICE");
                   setCreateOpen(true);
                 }}
-                className="ml-auto h-9 px-3 text-sm"
+                className="ml-auto hidden h-9 px-3 text-sm sm:inline-flex"
               >
                 {t("calendar.addEvent")}
               </Button>
             </>
+          ) : (
+            <CreateContentRequestButton
+              canRequest={canRequestContentCreate}
+              sourceScreen="events"
+              groupOptions={groupOptions}
+              className="ml-auto flex h-11 min-w-11 items-center justify-center rounded-full bg-primary-600 px-0 text-white shadow-sm transition hover:bg-primary-700"
+            />
           )}
         </div>
 

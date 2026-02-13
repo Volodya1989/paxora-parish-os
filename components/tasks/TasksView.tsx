@@ -16,6 +16,7 @@ import type { PendingAccessRequest } from "@/lib/queries/access";
 import type { PendingTaskApproval } from "@/lib/queries/tasks";
 import { approveTask, rejectTask } from "@/server/actions/tasks";
 import TaskQuickAdd from "@/components/tasks/TaskQuickAdd";
+import CreateContentRequestButton from "@/components/requests/CreateContentRequestButton";
 import { cn } from "@/lib/ui/cn";
 import Link from "next/link";
 import { routes } from "@/lib/navigation/routes";
@@ -52,6 +53,7 @@ type TasksViewProps = {
   canManageTasks?: boolean;
   canAccessLeaderBoard?: boolean;
   showGroupFilterHint?: boolean;
+  canRequestContentCreate?: boolean;
 };
 
 export default function TasksView({
@@ -73,13 +75,13 @@ export default function TasksView({
   viewMode = "all",
   canManageTasks = true,
   canAccessLeaderBoard = false,
-  showGroupFilterHint = false
+  showGroupFilterHint = false,
+  canRequestContentCreate = false
 }: TasksViewProps) {
   const t = useTranslations();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [createVisibility, setCreateVisibility] = useState<"private" | "public">("private");
   const [accessRoles, setAccessRoles] = useState<Record<string, string>>({});
   const [isApproving, startApprovalTransition] = useTransition();
   const [isAccessPending, startAccessTransition] = useTransition();
@@ -163,11 +165,6 @@ export default function TasksView({
       }
     }
     router.replace(`?${params.toString()}`, { scroll: false });
-  };
-
-  const openCreateDialogWithVisibility = (visibility: "private" | "public") => {
-    setCreateVisibility(visibility);
-    setIsCreateOpen(true);
   };
 
   useEffect(() => {
@@ -295,48 +292,46 @@ export default function TasksView({
             </div>
           </FiltersDrawer>
 
-          {(canManageTasks || (showCreateButton && viewMode !== "opportunities")) && (
+          {canManageTasks ? (
             <Button
               type="button"
-              onClick={() =>
-                canManageTasks
-                  ? setIsCreateOpen(true)
-                  : openCreateDialogWithVisibility("private")
-              }
+              onClick={() => setIsCreateOpen(true)}
               className="h-11 min-w-11 rounded-full px-0 sm:hidden"
-              aria-label={canManageTasks ? ctaLabel : t("thisWeek.addTaskAria")}
+              aria-label={ctaLabel}
             >
               <PlusIcon />
             </Button>
+          ) : (
+            <CreateContentRequestButton
+              canRequest={canRequestContentCreate}
+              sourceScreen="serve"
+              groupOptions={groupOptions}
+              className="ml-auto flex h-11 min-w-11 items-center justify-center rounded-full bg-primary-600 px-0 text-white shadow-sm transition hover:bg-primary-700"
+            />
           )}
         </div>
 
         {/* + create (desktop buttons) */}
-        {(canManageTasks || (showCreateButton && viewMode !== "opportunities")) && (
+        {canManageTasks && (
           <>
             <Button
               type="button"
-              onClick={() =>
-                canManageTasks
-                  ? setIsCreateOpen(true)
-                  : openCreateDialogWithVisibility("private")
-              }
+              onClick={() => setIsCreateOpen(true)}
               className="hidden h-9 px-3 text-sm sm:inline-flex"
             >
-              {canManageTasks ? ctaLabel : t("thisWeek.addPrivateTask")}
+              {ctaLabel}
             </Button>
-            {!canManageTasks && viewMode !== "mine" && (
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => openCreateDialogWithVisibility("public")}
-                className="hidden h-9 px-3 text-sm sm:inline-flex"
-              >
-                {t("thisWeek.requestPublicTask")}
-              </Button>
-            )}
           </>
         )}
+
+        {!canManageTasks ? (
+          <CreateContentRequestButton
+            canRequest={canRequestContentCreate}
+            sourceScreen="serve"
+            groupOptions={groupOptions}
+            className="ml-auto hidden h-11 min-w-11 items-center justify-center rounded-full bg-primary-600 px-0 text-white shadow-sm transition hover:bg-primary-700 md:flex"
+          />
+        ) : null}
 
         {/* Hours & Gratitude Board — desktop only */}
         {canManageTasks && (
@@ -482,7 +477,7 @@ export default function TasksView({
         groupOptions={groupOptions}
         memberOptions={memberOptions}
         currentUserId={currentUserId}
-        initialVisibility={!canManageTasks && viewMode === "mine" ? "private" : createVisibility}
+        initialVisibility="private"
         forcePrivate={!canManageTasks && viewMode === "mine"}
         creationContext={!canManageTasks && viewMode === "mine" ? "my_commitments" : "default"}
       />
