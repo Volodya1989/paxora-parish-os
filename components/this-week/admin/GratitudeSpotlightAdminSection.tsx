@@ -8,6 +8,7 @@ import Card from "@/components/ui/Card";
 import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
 import GratitudeSpotlightAdminPanel from "@/components/this-week/admin/GratitudeSpotlightAdminPanel";
+import { useLocale, useTranslations } from "@/lib/i18n/provider";
 
 type GratitudeSpotlightAdminSectionProps = {
   weekId: string;
@@ -41,6 +42,8 @@ export default function GratitudeSpotlightAdminSection({
   admin
 }: GratitudeSpotlightAdminSectionProps) {
   const searchParams = useSearchParams();
+  const t = useTranslations();
+  const locale = useLocale();
   const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   useEffect(() => {
@@ -58,12 +61,13 @@ export default function GratitudeSpotlightAdminSection({
           limit={spotlight.limit}
           items={spotlight.items}
           showCta
+          locale={locale}
         />
       </div>
     );
   }
 
-  const panelTitle = "Gratitude Spotlight (Admin)";
+  const panelTitle = t("thisWeek.gratitudeSpotlight.adminTitle");
   const hasPublishedItems = spotlight.enabled && spotlight.items.length > 0;
 
   return (
@@ -74,6 +78,7 @@ export default function GratitudeSpotlightAdminSection({
           limit={spotlight.limit}
           items={spotlight.items}
           showCta
+          locale={locale}
           headerActions={
             <Button
               type="button"
@@ -83,15 +88,15 @@ export default function GratitudeSpotlightAdminSection({
               onClick={() => setShowAdminPanel(true)}
               aria-expanded={showAdminPanel}
             >
-              Add nominee
+              {t("thisWeek.gratitudeSpotlight.addNominee")}
             </Button>
           }
         />
       ) : (
         <Card className="space-y-3 border border-dashed border-rose-200 bg-rose-50/50 p-4">
           <div>
-            <p className="text-sm font-semibold text-rose-900">Gratitude list for this week</p>
-            <p className="text-xs text-rose-700">No published spotlight nominations yet.</p>
+            <p className="text-sm font-semibold text-rose-900">{t("thisWeek.gratitudeCard.title")}</p>
+            <p className="text-xs text-rose-700">{t("thisWeek.gratitudeSpotlight.noPublished")}</p>
           </div>
           <Button
             type="button"
@@ -101,7 +106,7 @@ export default function GratitudeSpotlightAdminSection({
             onClick={() => setShowAdminPanel(true)}
             aria-expanded={showAdminPanel}
           >
-            Add nominee
+            {t("thisWeek.gratitudeSpotlight.addNominee")}
           </Button>
         </Card>
       )}

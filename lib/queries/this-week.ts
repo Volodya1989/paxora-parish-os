@@ -9,6 +9,7 @@ import { getWeekForSelection, type WeekSelection } from "@/domain/week";
 import { getNow } from "@/lib/time/getNow";
 import { getGratitudeSpotlight } from "@/lib/queries/gratitude";
 import { listUnreadCountsForRooms } from "@/lib/queries/chat";
+import { listEventsByRange } from "@/lib/queries/events";
 
 export type TaskPreview = {
   id: string;
@@ -160,21 +161,23 @@ export async function getThisWeekDataForUser({
         location: true
       }
     }),
-    prisma.event.findFirst({
-      where: {
-        parishId,
-        startsAt: {
-          gte: now
-        }
-      },
-      orderBy: { startsAt: "asc" },
-      select: {
-        id: true,
-        title: true,
-        startsAt: true,
-        endsAt: true,
-        location: true
+    listEventsByRange({
+      parishId,
+      start: now,
+      end: new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000),
+      userId
+    }).then((calendarEvents) => {
+      const nextEvent = calendarEvents[0];
+      if (!nextEvent) {
+        return null;
       }
+      return {
+        id: nextEvent.id,
+        title: nextEvent.title,
+        startsAt: nextEvent.startsAt,
+        endsAt: nextEvent.endsAt,
+        location: nextEvent.location
+      };
     }),
     prisma.announcement.findMany({
       where: {

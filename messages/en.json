@@ -210,7 +210,17 @@
     },
     "todayAt": "Today at {time}",
     "nextEventAt": "Next Event at {time} • {day}",
-    "noUpcomingEvents": "No upcoming events"
+    "noUpcomingEvents": "No upcoming events",
+    "gratitudeSpotlight": {
+      "title": "Gratitude Spotlight",
+      "subtitle": "This week's gratitude highlights",
+      "viewBoard": "View board",
+      "parishioner": "Parishioner",
+      "moreHighlights": "+{count} more highlights",
+      "addNominee": "Add nominee",
+      "adminTitle": "Gratitude Spotlight (Admin)",
+      "noPublished": "No published spotlight nominations yet."
+    }
   },
   "announcements": {
     "title": "Announcements",

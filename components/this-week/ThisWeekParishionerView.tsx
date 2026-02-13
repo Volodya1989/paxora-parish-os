@@ -186,6 +186,7 @@ export default function ThisWeekParishionerView({
           limit={data.gratitudeSpotlight.limit}
           items={data.gratitudeSpotlight.items}
           showCta
+          locale={locale}
         />
       )}
     </div>

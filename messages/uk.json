@@ -210,7 +210,17 @@
     },
     "todayAt": "Сьогодні о {time}",
     "nextEventAt": "Наступна подія о {time} • {day}",
-    "noUpcomingEvents": "Немає запланованих подій"
+    "noUpcomingEvents": "Немає запланованих подій",
+    "gratitudeSpotlight": {
+      "title": "Вітрина вдячності",
+      "subtitle": "Підбірка подяк цього тижня",
+      "viewBoard": "Переглянути дошку",
+      "parishioner": "Парафіянин",
+      "moreHighlights": "+ще {count} подяк",
+      "addNominee": "Додати номінанта",
+      "adminTitle": "Вітрина вдячності (адмін)",
+      "noPublished": "Поки що немає опублікованих номінацій."
+    }
   },
   "announcements": {
     "title": "Оголошення",
