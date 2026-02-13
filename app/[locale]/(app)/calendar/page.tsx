@@ -121,6 +121,7 @@ export default async function CalendarPage({
         groupOptions={groupOptions}
         viewerGroupIds={groupIds}
         pendingEventRequests={pendingEventRequests}
+        canRequestContentCreate={membership?.role === "MEMBER"}
       />
     </ParishionerPageLayout>
   );

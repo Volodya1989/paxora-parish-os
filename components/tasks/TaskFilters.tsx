@@ -13,7 +13,9 @@ type TaskFiltersProps = {
   filters: TaskFilters;
   groupOptions: Array<{ id: string; name: string }>;
   showOwnership?: boolean;
+  showGroup?: boolean;
   searchPlaceholder?: string;
+  groupDisabledHint?: string;
   layout?: "inline" | "stacked";
 };
 
@@ -21,7 +23,9 @@ export default function TaskFilters({
   filters,
   groupOptions,
   showOwnership = true,
+  showGroup = true,
   searchPlaceholder,
+  groupDisabledHint,
   layout = "inline"
 }: TaskFiltersProps) {
   const t = useTranslations();
@@ -101,18 +105,24 @@ export default function TaskFilters({
         </div>
       ) : null}
 
-      <div className="space-y-2">
-        <Label htmlFor={groupId}>{t("tasks.filters.group")}</Label>
-        <SelectMenu
-          id={groupId}
-          value={filters.groupId ?? "all"}
-          onValueChange={(value) => updateParam("group", value)}
-          options={[
-            { value: "all", label: t("tasks.filters.allGroups") },
-            ...groupOptions.map((group) => ({ value: group.id, label: group.name }))
-          ]}
-        />
-      </div>
+      {showGroup ? (
+        <div className="space-y-2">
+          <Label htmlFor={groupId}>{t("tasks.filters.group")}</Label>
+          <SelectMenu
+            id={groupId}
+            value={filters.groupId ?? "all"}
+            disabled={groupOptions.length === 0 && Boolean(groupDisabledHint)}
+            onValueChange={(value) => updateParam("group", value)}
+            options={[
+              { value: "all", label: t("tasks.filters.allGroups") },
+              ...groupOptions.map((group) => ({ value: group.id, label: group.name }))
+            ]}
+          />
+          {groupOptions.length === 0 && groupDisabledHint ? (
+            <p className="text-xs text-ink-500">{groupDisabledHint}</p>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="space-y-2">
         <Label htmlFor={searchId}>{t("tasks.filters.search")}</Label>
