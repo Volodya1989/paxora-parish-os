@@ -18,13 +18,13 @@ import Badge from "@/components/ui/Badge";
 import type { ThisWeekData, TaskPreview, EventPreview, AnnouncementPreview } from "@/lib/queries/this-week";
 import { routes } from "@/lib/navigation/routes";
 import {
-  formatDayDate,
   formatShortDate,
   formatTime,
 } from "@/lib/this-week/formatters";
 import { getNow } from "@/lib/time/getNow";
 import { getTranslations } from "@/lib/i18n/server";
 import type { Locale } from "@/lib/i18n/config";
+import { buildEventsSummary } from "@/lib/this-week/eventsSummary";
 
 type ThisWeekAdminViewProps = {
   data: ThisWeekData;
@@ -183,7 +183,7 @@ function SectionHeader({ title, count, countLabel, href, linkLabel = "View all" 
 
 /* ---------- main component ---------- */
 
-export default async function ThisWeekAdminView({
+export default function ThisWeekAdminView({
   data,
   locale,
   viewToggle,
@@ -260,21 +260,14 @@ export default async function ThisWeekAdminView({
   const tasksInProgress = data.tasks.filter((t) => t.status === "IN_PROGRESS").length;
   const tasksOpen = data.tasks.filter((t) => t.status === "OPEN").length;
 
-  // Filter events to today and future only
   const now = getNow();
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const upcomingEvents = data.events.filter(
-    (event) => event.startsAt >= startOfToday
-  );
+  const upcomingEvents = data.events.filter((event) => event.startsAt >= now);
 
   const announcementsSummary =
     publishedAnnouncements.length > 0
       ? `${t("thisWeek.latestPrefix")} ${publishedAnnouncements[0]?.title ?? t("thisWeek.announcements")}`
       : t("thisWeek.allRead");
-  const servicesSummary =
-    upcomingEvents.length > 0
-      ? `${t("thisWeek.nextPrefix")} ${formatDayDate(upcomingEvents[0].startsAt, locale)}`
-      : t("empty.nothingScheduled");
+  const servicesSummary = buildEventsSummary({ events: data.events, locale, now, t });
   const communitySummary = getJoinedGroupsSummary({ count: data.memberGroups.length, locale, t });
 
   const opportunitiesSummary =

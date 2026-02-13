@@ -13,13 +13,10 @@ import Link from "next/link";
 import type { ThisWeekData } from "@/lib/queries/this-week";
 import { routes } from "@/lib/navigation/routes";
 import GratitudeSpotlightCard from "@/components/gratitude/GratitudeSpotlightCard";
-import {
-  formatDayDate,
-} from "@/lib/this-week/formatters";
-import { getNow } from "@/lib/time/getNow";
 import { getTranslations } from "@/lib/i18n/server";
 import type { Locale } from "@/lib/i18n/config";
 import { buildLocalePathname } from "@/lib/i18n/routing";
+import { buildEventsSummary } from "@/lib/this-week/eventsSummary";
 
 type ThisWeekParishionerViewProps = {
   data: ThisWeekData;
@@ -36,14 +33,15 @@ type ThisWeekParishionerViewProps = {
   startGuide?: ReactNode;
 };
 
-export default async function ThisWeekParishionerView({
+export default function ThisWeekParishionerView({
   data,
   locale,
   viewToggle,
   startGuide,
   parishName,
   parishLogoUrl,
-  userName
+  userName,
+  now
 }: ThisWeekParishionerViewProps) {
   const t = getTranslations(locale);
 
@@ -68,22 +66,15 @@ export default async function ThisWeekParishionerView({
     return a.title.localeCompare(b.title);
   });
 
-  // Filter events to today and future only
-  const now = getNow();
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const upcomingEvents = data.events.filter(
-    (event) => event.startsAt >= startOfToday
-  );
+  // Filter events to future only
+  const upcomingEvents = data.events.filter((event) => event.startsAt >= now);
 
   // Generate summaries for quick blocks
   const announcementsSummary =
     publishedAnnouncements.length > 0
       ? publishedAnnouncements[0]?.title ?? t("thisWeek.announcements")
       : t("thisWeek.allRead");
-  const servicesSummary =
-    upcomingEvents.length > 0
-      ? `${t("thisWeek.nextPrefix")} ${formatDayDate(upcomingEvents[0].startsAt, locale)}`
-      : t("empty.nothingScheduled");
+  const servicesSummary = buildEventsSummary({ events: data.events, locale, now, t });
   const communitySummary = getJoinedGroupsSummary({ count: data.memberGroups.length, locale, t });
 
   // Opportunities: count by status
