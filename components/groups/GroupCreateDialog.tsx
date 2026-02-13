@@ -9,8 +9,9 @@ import Textarea from "@/components/ui/Textarea";
 import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
-import { createGroup } from "@/server/actions/groups";
+import { submitGroupCreationRequest } from "@/server/actions/groups";
 import { useMediaQuery } from "@/lib/ui/useMediaQuery";
+import RequestSuccessState from "@/components/shared/RequestSuccessState";
 
 const NAME_MAX_LENGTH = 80;
 const DESCRIPTION_MAX_LENGTH = 280;
@@ -49,6 +50,7 @@ export default function GroupCreateDialog({
     "INVITE_ONLY"
   );
   const [error, setError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
   const [isPending, startTransition] = useTransition();
   const modalNameId = useId();
   const modalDescriptionId = useId();
@@ -66,6 +68,7 @@ export default function GroupCreateDialog({
     setVisibility("PUBLIC");
     setJoinPolicy("INVITE_ONLY");
     setError(null);
+    setSubmitted(false);
   };
 
   useEffect(() => {
@@ -98,7 +101,7 @@ export default function GroupCreateDialog({
 
     startTransition(async () => {
       try {
-        await createGroup({
+        const result = await submitGroupCreationRequest({
           parishId,
           actorUserId,
           name: trimmedName,
@@ -106,6 +109,22 @@ export default function GroupCreateDialog({
           visibility,
           joinPolicy
         });
+        if (result.status === "error") {
+          setError(result.message ?? "Unable to submit group request.");
+          addToast({
+            title: isRequest ? "Unable to submit request" : "Unable to create group",
+            description: result.message ?? "Please try again.",
+            status: "error"
+          });
+          return;
+        }
+
+        if (isRequest) {
+          setSubmitted(true);
+          onCreated?.();
+          return;
+        }
+
         addToast({
           title: isRequest ? "Request submitted" : "Group created",
           description: isRequest
@@ -140,6 +159,15 @@ export default function GroupCreateDialog({
     visibilityId: string,
     joinPolicyId: string
   ) => (
+    submitted ? (
+      <RequestSuccessState
+        message="Your request is pending approval from parish leadership."
+        onDone={() => {
+          resetForm();
+          onOpenChange(false);
+        }}
+      />
+    ) : (
     <form id={formId} className="space-y-4" onSubmit={handleSubmit}>
       <div className="space-y-2">
         <Label htmlFor={nameId}>Group name</Label>
@@ -195,10 +223,11 @@ export default function GroupCreateDialog({
         </p>
       ) : null}
     </form>
+    )
   );
 
   const renderFooter = (formId: string) => (
-    <>
+    submitted ? null : <>
       <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
         Cancel
       </Button>

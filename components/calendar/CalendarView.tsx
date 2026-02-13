@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Button from "@/components/ui/Button";
 import Select from "@/components/ui/Select";
@@ -11,9 +11,10 @@ import CalendarDayList from "@/components/calendar/CalendarDayList";
 import EventDetailPanel from "@/components/calendar/EventDetailPanel";
 import EventCreateDialog from "@/components/calendar/EventCreateDialog";
 import EventRequestDialog from "@/components/shared/EventRequestDialog";
+import ActionRow from "@/components/shared/ActionRow";
 import ParishionerAddButton from "@/components/shared/ParishionerAddButton";
+import PendingRequestsSection from "@/components/shared/PendingRequestsSection";
 import ScheduleView from "@/components/calendar/ScheduleView";
-import EventRequestApprovals from "@/components/calendar/EventRequestApprovals";
 import PageShell from "@/components/app/page-shell";
 import FiltersDrawer from "@/components/app/filters-drawer";
 import Card from "@/components/ui/Card";
@@ -29,6 +30,7 @@ import {
 import type { CalendarEvent } from "@/lib/queries/events";
 import { useTranslations } from "@/lib/i18n/provider";
 import type { PendingEventRequest } from "@/lib/queries/eventRequests";
+import { approveEventRequest, rejectEventRequest } from "@/server/actions/eventRequests";
 
 type CalendarViewProps = {
   weekRange: CalendarRange;
@@ -100,6 +102,8 @@ export default function CalendarView({
   const [requestOpen, setRequestOpen] = useState(false);
   const [createType, setCreateType] = useState<"SERVICE" | "EVENT">("SERVICE");
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
 
   const weekDays = useMemo(() => getWeekDays(weekRange.start), [weekRange.start]);
   const monthDays = useMemo(
@@ -235,6 +239,30 @@ export default function CalendarView({
     </div>
   );
 
+  const pendingRequestItems = useMemo(
+    () =>
+      pendingEventRequests.map((request) => ({
+        id: request.id,
+        title: request.title,
+        description: request.description ?? undefined,
+        meta: `${request.requester.name ?? request.contactName}`
+      })),
+    [pendingEventRequests]
+  );
+
+  const handleRequestDecision = (requestId: string, action: "approve" | "reject") => {
+    setActiveRequestId(requestId);
+    startTransition(async () => {
+      if (action === "approve") {
+        await approveEventRequest({ requestId });
+      } else {
+        await rejectEventRequest({ requestId });
+      }
+      setActiveRequestId(null);
+      router.refresh();
+    });
+  };
+
   return (
     <Tabs value={view} onValueChange={(value) => setView(value)}>
       <div className="section-gap">
@@ -249,48 +277,30 @@ export default function CalendarView({
         </TabsList>
 
         {/* Action row: Filters left, Add right */}
-        <div className="flex flex-wrap items-center gap-2">
-          {surface === "schedule" ? (
-            <div>
-              <FiltersDrawer title={t("calendar.scheduleFilters")}>{scheduleFilters}</FiltersDrawer>
-            </div>
-          ) : null}
-
-          {canCreateEvents ? (
-            <>
-              <button
-                type="button"
-                onClick={() => {
-                  setCreateType("SERVICE");
-                  setCreateOpen(true);
-                }}
-                className="ml-auto flex h-8 w-8 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 sm:hidden"
-                aria-label={t("calendar.addEvent")}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true"><path d="M12 5v14" /><path d="M5 12h14" /></svg>
-              </button>
-              <Button
-                type="button"
-                onClick={() => {
-                  setCreateType("SERVICE");
-                  setCreateOpen(true);
-                }}
-                className="ml-auto hidden h-9 px-3 text-sm sm:inline-flex"
-              >
-                {t("calendar.addEvent")}
-              </Button>
-            </>
-          ) : canRequestContentCreate ? (
-            <ParishionerAddButton
-              onClick={() => setRequestOpen(true)}
-              ariaLabel={t("calendar.addEvent")}
-            />
-          ) : null}
-        </div>
+        <ActionRow
+          addAriaLabel={t("calendar.addEvent")}
+          showAddButton={canCreateEvents || canRequestContentCreate}
+          onAdd={() => {
+            if (canCreateEvents) {
+              setCreateType("SERVICE");
+              setCreateOpen(true);
+              return;
+            }
+            setRequestOpen(true);
+          }}
+          left={surface === "schedule" ? <FiltersDrawer title={t("calendar.scheduleFilters")}>{scheduleFilters}</FiltersDrawer> : undefined}
+        />
 
         {/* Pending event request approvals — at top for leaders */}
         {canManageEventRequests && pendingEventRequests.length > 0 && (
-          <EventRequestApprovals requests={pendingEventRequests} />
+          <PendingRequestsSection
+            entityType="EVENT"
+            items={pendingRequestItems}
+            canManage={canManageEventRequests}
+            busyId={activeRequestId}
+            onApprove={(id) => handleRequestDecision(id, "approve")}
+            onDecline={(id) => handleRequestDecision(id, "reject")}
+          />
         )}
 
         <div>

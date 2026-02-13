@@ -18,6 +18,7 @@ import {
 } from "@/server/actions/taskState";
 import { shouldCloseTaskDialog } from "@/components/tasks/taskDialogSuccess";
 import { useTranslations } from "@/lib/i18n/provider";
+import RequestSuccessState from "@/components/shared/RequestSuccessState";
 
 function formatDateInput(date: Date) {
   const year = date.getFullYear();
@@ -71,6 +72,7 @@ export default function TaskCreateDialog({
   const [formResetKey, setFormResetKey] = useState(0);
   const [volunteersNeeded, setVolunteersNeeded] = useState("1");
   const [visibility, setVisibility] = useState<"public" | "private">("private");
+  const [submitted, setSubmitted] = useState(false);
   const [, startTransition] = useTransition();
   const modalFormRef = useRef<HTMLFormElement>(null);
   const drawerFormRef = useRef<HTMLFormElement>(null);
@@ -92,6 +94,7 @@ export default function TaskCreateDialog({
       const nextInitialVisibility = forcePublic ? "public" : initialVisibility;
       setVolunteersNeeded(nextInitialVisibility === "public" ? "2" : "1");
       setVisibility(nextInitialVisibility);
+      setSubmitted(false);
     }
     prevOpen.current = open;
   }, [forcePublic, initialVisibility, open, state.status]);
@@ -120,13 +123,18 @@ export default function TaskCreateDialog({
     modalFormRef.current?.reset();
     drawerFormRef.current?.reset();
     setFormResetKey((prev) => prev + 1);
+    if (requestMode) {
+      setSubmitted(true);
+      startTransition(() => {
+        router.refresh();
+      });
+      prevStatus.current = state.status;
+      return;
+    }
+
     addToast({
-      title: requestMode ? "Request submitted" : "Task saved",
-      description:
-        state.message ??
-        (requestMode
-          ? "Your serve task request has been sent for leader approval."
-          : "Your task is ready for the team."),
+      title: "Task saved",
+      description: state.message ?? "Your task is ready for the team.",
       status: "success"
     });
     onOpenChange(false);
@@ -137,6 +145,12 @@ export default function TaskCreateDialog({
   }, [addToast, onOpenChange, requestMode, router, startTransition, state]);
 
   const renderForm = (formId: string, ref: RefObject<HTMLFormElement>) => (
+    submitted && requestMode ? (
+      <RequestSuccessState
+        message="Your request is pending approval from parish leadership."
+        onDone={() => onOpenChange(false)}
+      />
+    ) : (
     <form
       key={`${formId}-${formResetKey}`}
       ref={ref}
@@ -304,6 +318,7 @@ export default function TaskCreateDialog({
         submitLabel={requestMode ? "Send request" : "Create task"}
       />
     </form>
+    )
   );
 
   return (

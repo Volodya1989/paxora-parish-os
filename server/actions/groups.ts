@@ -16,9 +16,15 @@ import {
 } from "@/lib/validation/groups";
 import { getParishMembership } from "@/server/db/groups";
 import { isParishLeader } from "@/lib/permissions";
+import { notifyContentRequestDecisionInApp, notifyContentRequestSubmittedInApp } from "@/lib/notifications/notify";
 
 // TODO: Wire to parish policy once stored in the database.
 const ALLOW_GROUP_LEADS_TO_MANAGE_MEMBERSHIP = true;
+
+type GroupCreateResult = {
+  status: "success" | "error";
+  message?: string;
+};
 
 function assertSession(session: Session | null) {
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -78,7 +84,7 @@ export async function listGroups() {
   });
 }
 
-export async function createGroup(input: {
+async function createGroupInternal(input: {
   parishId: string;
   actorUserId: string;
   name: string;
@@ -106,6 +112,15 @@ export async function createGroup(input: {
   const group = await prisma
     .$transaction(async (tx) => {
       if (!isLeader) {
+        const pendingRequest = await tx.group.findFirst({
+          where: { parishId, createdById: userId, status: "PENDING_APPROVAL" },
+          select: { id: true }
+        });
+
+        if (pendingRequest) {
+          throw new Error("You already have a pending group request. Please wait for review or cancel the pending request.");
+        }
+
         const now = new Date();
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         const requestCount = await tx.group.count({
@@ -175,6 +190,45 @@ export async function createGroup(input: {
   return group;
 }
 
+
+export async function createGroup(input: {
+  parishId: string;
+  actorUserId: string;
+  name: string;
+  description?: string | null;
+  visibility: "PUBLIC" | "PRIVATE";
+  joinPolicy: "INVITE_ONLY" | "OPEN" | "REQUEST_TO_JOIN";
+}) {
+  return createGroupInternal(input);
+}
+
+export async function submitGroupCreationRequest(input: {
+  parishId: string;
+  actorUserId: string;
+  name: string;
+  description?: string | null;
+  visibility: "PUBLIC" | "PRIVATE";
+  joinPolicy: "INVITE_ONLY" | "OPEN" | "REQUEST_TO_JOIN";
+}): Promise<GroupCreateResult> {
+  try {
+    const created = await createGroupInternal(input);
+
+    if (created.status === "PENDING_APPROVAL") {
+      await notifyContentRequestSubmittedInApp({
+        parishId: input.parishId,
+        requesterId: input.actorUserId,
+        title: created.name,
+        href: "/groups?pending=1"
+      });
+    }
+
+    return { status: "success" };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to submit group request.";
+    return { status: "error", message };
+  }
+}
+
 export async function approveGroupRequest(input: {
   parishId: string;
   actorUserId: string;
@@ -226,6 +280,14 @@ export async function approveGroupRequest(input: {
     });
   });
 
+  await notifyContentRequestDecisionInApp({
+    parishId,
+    requesterId: group.createdById,
+    title: "Group request",
+    decision: "APPROVED",
+    href: `/groups?pending=1&groupId=${input.groupId}`
+  });
+
   revalidatePath("/groups");
   revalidatePath(`/groups/${input.groupId}`);
 }
@@ -242,7 +304,7 @@ export async function rejectGroupRequest(input: {
 
   const group = await prisma.group.findUnique({
     where: { id: input.groupId },
-    select: { parishId: true, status: true }
+    select: { parishId: true, status: true, createdById: true }
   });
 
   if (!group || group.parishId !== parishId) {
@@ -256,6 +318,14 @@ export async function rejectGroupRequest(input: {
   await prisma.group.update({
     where: { id: input.groupId },
     data: { status: "REJECTED" }
+  });
+
+  await notifyContentRequestDecisionInApp({
+    parishId,
+    requesterId: group.createdById,
+    title: "Group request",
+    decision: "DECLINED",
+    href: "/groups?pending=1"
   });
 
   revalidatePath("/groups");

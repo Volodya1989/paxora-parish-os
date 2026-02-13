@@ -15,6 +15,7 @@ import {
   sendEventRequestSubmittedEmail
 } from "@/lib/email/eventRequests";
 import { getParishMembership } from "@/server/db/groups";
+import { notifyContentRequestDecisionInApp, notifyContentRequestSubmittedInApp } from "@/lib/notifications/notify";
 
 const HOUR_IN_MS = 60 * 60 * 1000;
 
@@ -251,6 +252,13 @@ export async function submitEventRequest(formData: FormData): Promise<EventReque
     })
   );
 
+  await notifyContentRequestSubmittedInApp({
+    parishId,
+    requesterId,
+    title,
+    href: "/calendar?pending=1"
+  });
+
   revalidatePath("/calendar");
 
   return { status: "success" };
@@ -340,6 +348,14 @@ export async function approveEventRequest({ requestId }: { requestId: string }) 
     }
   }
 
+  await notifyContentRequestDecisionInApp({
+    parishId,
+    requesterId: request.requesterId,
+    title: request.title,
+    decision: "APPROVED",
+    href: "/calendar?pending=1"
+  });
+
   revalidatePath("/calendar");
   return createdEvent;
 }
@@ -404,6 +420,14 @@ export async function rejectEventRequest({ requestId }: { requestId: string }) {
       console.error("Failed to send event request rejection email", error);
     }
   }
+
+  await notifyContentRequestDecisionInApp({
+    parishId,
+    requesterId: request.requesterId,
+    title: request.title,
+    decision: "DECLINED",
+    href: "/calendar?pending=1"
+  });
 
   revalidatePath("/calendar");
 }

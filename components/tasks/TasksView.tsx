@@ -16,20 +16,12 @@ import type { PendingAccessRequest } from "@/lib/queries/access";
 import type { PendingTaskApproval } from "@/lib/queries/tasks";
 import { approveTask, rejectTask } from "@/server/actions/tasks";
 import TaskQuickAdd from "@/components/tasks/TaskQuickAdd";
-import ParishionerAddButton from "@/components/shared/ParishionerAddButton";
+import ActionRow from "@/components/shared/ActionRow";
+import PendingRequestsSection from "@/components/shared/PendingRequestsSection";
 import { cn } from "@/lib/ui/cn";
 import Link from "next/link";
 import { routes } from "@/lib/navigation/routes";
 import { useTranslations } from "@/lib/i18n/provider";
-
-function PlusIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
-      <path d="M12 5v14" />
-      <path d="M5 12h14" />
-    </svg>
-  );
-}
 
 type TasksViewProps = {
   title?: string;
@@ -168,6 +160,16 @@ export default function TasksView({
     router.replace(`?${params.toString()}`, { scroll: false });
   };
 
+  const pendingTaskRequestItems = useMemo(
+    () =>
+      pendingTaskApprovals.map((task) => ({
+        id: task.id,
+        title: task.title,
+        description: `by ${task.createdBy.name} · ${task.owner?.name ?? "Unassigned"}${task.group ? ` · ${task.group.name}` : ""}`
+      })),
+    [pendingTaskApprovals]
+  );
+
   useEffect(() => {
     if (createParam === "task" && showCreateButton) {
       setIsCreateOpen(true);
@@ -271,65 +273,32 @@ export default function TasksView({
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         {renderViewToggle()}
 
-        {/* Mobile actions row: keep Filters and + on same line */}
-        <div className="flex items-center justify-between gap-2 md:hidden">
-          <FiltersDrawer title={t("tasks.filters.title")} className="shrink-0">
-            <div className="space-y-4">
-              <div className="rounded-xl border-l-4 border-l-sky-400 bg-sky-50/60 px-4 py-3">
-                <p className="text-xs text-sky-700">{t("tasks.filters.tip")}</p>
+        <ActionRow
+          addAriaLabel={canManageTasks ? ctaLabel : t("serve.requestOpportunity")}
+          showAddButton={canManageTasks || canRequestContentCreate}
+          onAdd={() => (canManageTasks ? setIsCreateOpen(true) : setIsRequestOpen(true))}
+          left={
+            <FiltersDrawer title={t("tasks.filters.title")} className="shrink-0">
+              <div className="space-y-4">
+                <div className="rounded-xl border-l-4 border-l-sky-400 bg-sky-50/60 px-4 py-3">
+                  <p className="text-xs text-sky-700">{t("tasks.filters.tip")}</p>
+                </div>
+                {renderViewToggle()}
+                <TaskFilters
+                  filters={filters}
+                  groupOptions={groupOptions}
+                  showOwnership={viewMode !== "opportunities" && (canManageTasks || viewMode !== "mine")}
+                  showGroup={canManageTasks || viewMode !== "mine"}
+                  layout="stacked"
+                  searchPlaceholder={
+                    viewMode === "opportunities" ? t("tasks.filters.searchOpportunities") : undefined
+                  }
+                  groupDisabledHint={showGroupFilterHint ? "Join a group to filter" : undefined}
+                />
               </div>
-              {renderViewToggle()}
-              <TaskFilters
-                filters={filters}
-                groupOptions={groupOptions}
-                showOwnership={viewMode !== "opportunities" && (canManageTasks || viewMode !== "mine")}
-                showGroup={canManageTasks || viewMode !== "mine"}
-                layout="stacked"
-                searchPlaceholder={
-                  viewMode === "opportunities" ? t("tasks.filters.searchOpportunities") : undefined
-                }
-                groupDisabledHint={showGroupFilterHint ? "Join a group to filter" : undefined}
-              />
-            </div>
-          </FiltersDrawer>
-
-          {canManageTasks ? (
-            <Button
-              type="button"
-              onClick={() => setIsCreateOpen(true)}
-              className="h-11 min-w-11 rounded-full px-0 sm:hidden"
-              aria-label={ctaLabel}
-            >
-              <PlusIcon />
-            </Button>
-          ) : canRequestContentCreate ? (
-            <ParishionerAddButton
-              onClick={() => setIsRequestOpen(true)}
-              ariaLabel={t("serve.requestOpportunity")}
-            />
-          ) : null}
-        </div>
-
-        {/* + create (desktop buttons) */}
-        {canManageTasks && (
-          <>
-            <Button
-              type="button"
-              onClick={() => setIsCreateOpen(true)}
-              className="hidden h-9 px-3 text-sm sm:inline-flex"
-            >
-              {ctaLabel}
-            </Button>
-          </>
-        )}
-
-        {!canManageTasks && canRequestContentCreate ? (
-          <ParishionerAddButton
-            onClick={() => setIsRequestOpen(true)}
-            ariaLabel={t("serve.requestOpportunity")}
-            className="hidden md:flex"
-          />
-        ) : null}
+            </FiltersDrawer>
+          }
+        />
 
         {/* Hours & Gratitude Board — desktop only */}
         {canManageTasks && (
@@ -357,49 +326,16 @@ export default function TasksView({
         />
       </div>
 
-      {/* Pending approvals — compact banners above the list */}
-      {canManageTasks && pendingTaskApprovals.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-bold uppercase tracking-wider text-amber-700">
-            {t("thisWeek.pendingApprovals")}
-          </p>
-          {pendingTaskApprovals.map((task) => (
-            <div
-              key={task.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-l-4 border-amber-200 border-l-amber-400 bg-amber-50/60 px-4 py-3"
-            >
-              <div className="min-w-0 flex-1 space-y-0.5">
-                <p className="text-sm font-semibold text-ink-800">{task.title}</p>
-                <p className="text-xs text-ink-500">
-                  by {task.createdBy.name} · {task.owner?.name ?? "Unassigned"}
-                  {task.group ? ` · ${task.group.name}` : ""}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => handleApproveTask(task.id)}
-                  disabled={isApproving}
-                >
-                  Approve
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => handleRejectTask(task.id)}
-                  disabled={isApproving}
-                >
-                  Reject
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+            <PendingRequestsSection
+        entityType="SERVE_TASK"
+        items={pendingTaskRequestItems}
+        canManage={canManageTasks}
+        busyId={isApproving ? "*" : null}
+        onApprove={(id) => handleApproveTask(id)}
+        onDecline={(id) => handleRejectTask(id)}
+      />
 
-      {canManageTasks && pendingAccessRequests.length > 0 && (
+{canManageTasks && pendingAccessRequests.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs font-bold uppercase tracking-wider text-sky-700">
             {t("thisWeek.accessRequests")}
