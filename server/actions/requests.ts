@@ -13,6 +13,7 @@ import {
   requestResponseSchema,
   scheduleRequestSchema
 } from "@/lib/validation/requests";
+import { z } from "zod";
 import {
   REQUEST_VISIBILITY_LABELS,
   getDefaultVisibilityForType,
@@ -45,6 +46,16 @@ export type RequestActionResult = { status: "success" | "error"; message?: strin
 
 const hashEmailPayload = (payload: Record<string, unknown>) =>
   crypto.createHash("sha256").update(JSON.stringify(payload)).digest("hex");
+
+const contextualRequestSchema = createRequestSchema.pick({
+  title: true,
+  description: true
+}).extend({
+  recipientUserId: z.string().min(1, "Recipient is required."),
+  contextType: z.enum(["GROUP", "EVENT", "SERVE_PUBLIC_TASK"]).optional(),
+  contextId: z.string().trim().optional(),
+  contextTitle: z.string().trim().optional()
+});
 
 async function getOrCreateWeekForDate(parishId: string, startsAt: Date) {
   const weekStart = getWeekStartMonday(startsAt);
@@ -149,6 +160,89 @@ export async function createRequest(formData: FormData): Promise<RequestActionRe
   return { status: "success" };
 }
 
+
+export async function submitParishionerContextRequest(formData: FormData): Promise<RequestActionResult> {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id || !session.user.activeParishId) {
+    return { status: "error", message: "Please sign in to submit a request." };
+  }
+
+  const parishId = session.user.activeParishId;
+  const requesterMembership = await prisma.membership.findUnique({
+    where: {
+      parishId_userId: {
+        parishId,
+        userId: session.user.id
+      }
+    },
+    select: { role: true }
+  });
+
+  if (!requesterMembership || requesterMembership.role !== "MEMBER") {
+    return { status: "error", message: "Only parishioners can submit this request." };
+  }
+
+  const parsed = contextualRequestSchema.safeParse({
+    title: formData.get("title")?.toString(),
+    description: formData.get("description")?.toString(),
+    recipientUserId: formData.get("recipientUserId")?.toString(),
+    contextType: formData.get("contextType")?.toString(),
+    contextId: formData.get("contextId")?.toString() ?? undefined,
+    contextTitle: formData.get("contextTitle")?.toString() ?? undefined
+  });
+
+  if (!parsed.success) {
+    return { status: "error", message: parsed.error.errors[0]?.message ?? "Invalid request." };
+  }
+
+  const recipientMembership = await prisma.membership.findUnique({
+    where: {
+      parishId_userId: {
+        parishId,
+        userId: parsed.data.recipientUserId
+      }
+    },
+    select: { role: true }
+  });
+
+  if (!recipientMembership || (recipientMembership.role !== "ADMIN" && recipientMembership.role !== "SHEPHERD")) {
+    return { status: "error", message: "Recipient must be clergy or admin in your parish." };
+  }
+
+  const requester = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { email: true, name: true }
+  });
+
+  if (!requester?.email) {
+    return { status: "error", message: "A valid email is required to submit a request." };
+  }
+
+  await prisma.request.create({
+    data: {
+      parishId,
+      createdByUserId: session.user.id,
+      assignedToUserId: parsed.data.recipientUserId,
+      type: "GENERIC",
+      visibilityScope: "ADMIN_SPECIFIC",
+      title: parsed.data.title,
+      details: {
+        requesterEmail: requester.email,
+        requesterName: requester.name ?? session.user.name ?? requester.email,
+        description: parsed.data.description,
+        contextType: parsed.data.contextType ?? null,
+        contextId: parsed.data.contextId ?? null,
+        contextTitle: parsed.data.contextTitle ?? null
+      } as Prisma.InputJsonValue
+    }
+  });
+
+  revalidatePath("/requests");
+  revalidatePath("/admin/requests");
+
+  return { status: "success" };
+}
 export async function updateRequestStatus(input: {
   requestId: string;
   status: "SUBMITTED" | "ACKNOWLEDGED" | "SCHEDULED" | "COMPLETED" | "CANCELED";

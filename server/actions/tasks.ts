@@ -82,6 +82,8 @@ export async function createTask(
     visibility: fd(formData, "visibility")
   });
 
+  const creationContext = fd(formData, "creationContext") === "my_commitments" ? "my_commitments" : "default";
+
 
   if (!parsed.success) {
     return {
@@ -152,7 +154,11 @@ export async function createTask(
     }
   }
 
-  const visibility = parsed.data.visibility === "public" ? "PUBLIC" : "PRIVATE";
+  const requestedVisibility = parsed.data.visibility === "public" ? "PUBLIC" : "PRIVATE";
+  const visibility =
+    creationContext === "my_commitments" && membership.role === "MEMBER"
+      ? "PRIVATE"
+      : requestedVisibility;
   const approvalStatus =
     visibility === "PRIVATE" || isParishLeader(membership.role) ? "APPROVED" : "PENDING";
   const volunteersNeeded = visibility === "PRIVATE" ? 1 : parsed.data.volunteersNeeded;
@@ -547,6 +553,32 @@ export async function updateTask(
     };
   }
 
+  const editContext = formData.get("editContext") === "my_commitments" ? "my_commitments" : "default";
+
+  const membership = await prisma.membership.findUnique({
+    where: {
+      parishId_userId: {
+        parishId,
+        userId
+      }
+    },
+    select: { role: true }
+  });
+
+  if (!membership) {
+    return {
+      status: "error",
+      message: "You must be a parish member to update tasks."
+    };
+  }
+
+  const visibility =
+    editContext === "my_commitments" && membership.role === "MEMBER"
+      ? "PRIVATE"
+      : parsed.data.visibility === "private"
+        ? "PRIVATE"
+        : "PUBLIC";
+
   await updateTaskDomain({
     taskId: parsed.data.taskId,
     parishId,
@@ -558,7 +590,7 @@ export async function updateTask(
     ownerId: parsed.data.ownerId,
     volunteersNeeded: parsed.data.volunteersNeeded,
     dueAt: parsed.data.dueAt,
-    visibility: parsed.data.visibility === "private" ? "PRIVATE" : "PUBLIC"
+    visibility
   });
 
   revalidatePath("/tasks");

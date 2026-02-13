@@ -58,6 +58,8 @@ export default async function GroupsPage({
         parishId={parishId}
         actorUserId={actorUserId}
         canManageGroups={isLeader}
+        canRequestParishSupport={membership.role === "MEMBER"}
+        requesterEmail={session.user.email ?? ""}
       />
     </ParishionerPageLayout>
   );
