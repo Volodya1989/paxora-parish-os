@@ -8,7 +8,7 @@ import Card from "@/components/ui/Card";
 import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
 import GratitudeSpotlightAdminPanel from "@/components/this-week/admin/GratitudeSpotlightAdminPanel";
-import { useLocale, useTranslations } from "@/lib/i18n/provider";
+import { useTranslations } from "@/lib/i18n/provider";
 
 type GratitudeSpotlightAdminSectionProps = {
   weekId: string;
@@ -43,7 +43,6 @@ export default function GratitudeSpotlightAdminSection({
 }: GratitudeSpotlightAdminSectionProps) {
   const searchParams = useSearchParams();
   const t = useTranslations();
-  const locale = useLocale();
   const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   useEffect(() => {
@@ -61,7 +60,6 @@ export default function GratitudeSpotlightAdminSection({
           limit={spotlight.limit}
           items={spotlight.items}
           showCta
-          locale={locale}
         />
       </div>
     );
@@ -78,7 +76,6 @@ export default function GratitudeSpotlightAdminSection({
           limit={spotlight.limit}
           items={spotlight.items}
           showCta
-          locale={locale}
           headerActions={
             <Button
               type="button"

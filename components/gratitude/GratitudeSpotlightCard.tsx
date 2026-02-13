@@ -1,9 +1,10 @@
+"use client";
+
 import type { ReactNode } from "react";
 import Card from "@/components/ui/Card";
 import Link from "next/link";
 import { routes } from "@/lib/navigation/routes";
-import type { Locale } from "@/lib/i18n/config";
-import { getTranslations } from "@/lib/i18n/server";
+import { useTranslations } from "@/lib/i18n/provider";
 
 type GratitudeSpotlightCardProps = {
   enabled: boolean;
@@ -15,7 +16,6 @@ type GratitudeSpotlightCardProps = {
   }>;
   showCta?: boolean;
   headerActions?: ReactNode;
-  locale?: Locale;
 };
 
 export default function GratitudeSpotlightCard({
@@ -23,12 +23,10 @@ export default function GratitudeSpotlightCard({
   limit,
   items,
   showCta = false,
-  headerActions,
-  locale = "en"
+  headerActions
 }: GratitudeSpotlightCardProps) {
-    const t = getTranslations(locale);
+  const t = useTranslations();
 
-  // Don't render if not enabled or no items (reduces empty state clutter)
   if (!enabled || items.length === 0) {
     return null;
   }
