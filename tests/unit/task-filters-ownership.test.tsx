@@ -13,8 +13,8 @@ mock.module("next/navigation", {
 });
 
 test("TaskFilters hides ownership when showOwnership is false", async () => {
-  const module = await loadModuleFromRoot<any>("components/tasks/TaskFilters");
-  const TaskFilters = module.default ?? module;
+  const loaded = await loadModuleFromRoot<any>("components/tasks/TaskFilters");
+  const TaskFilters = loaded.default ?? loaded;
 
   const markup = renderToStaticMarkup(
     withI18n(
