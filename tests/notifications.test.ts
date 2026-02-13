@@ -2,7 +2,7 @@ import { before, after, beforeEach, test } from "node:test";
 import assert from "node:assert/strict";
 import { prisma } from "@/server/db/prisma";
 import { createTask } from "@/domain/tasks";
-import { getNotificationItems } from "@/lib/queries/notifications";
+import { getNotificationItems, getNotificationUnreadCount } from "@/lib/queries/notifications";
 import { notifyRequestAssignedInApp, notifyTaskCreatedInApp } from "@/lib/notifications/notify";
 import { applyMigrations } from "./_helpers/migrate";
 
@@ -193,4 +193,54 @@ dbTest("request assignment notifications route assignees to admin request board"
 
   assert.ok(notification);
   assert.equal(notification?.href, "/admin/requests?requestId=req_123");
+});
+
+
+dbTest("notification unread count returns zero when all stored notifications are read", async () => {
+  const parish = await prisma.parish.create({
+    data: { name: "St. Clare", slug: "st-clare" }
+  });
+
+  const user = await prisma.user.create({
+    data: {
+      email: "reader@example.com",
+      name: "Reader",
+      passwordHash: "hashed",
+      activeParishId: parish.id
+    }
+  });
+
+  await prisma.membership.create({
+    data: { parishId: parish.id, userId: user.id, role: "MEMBER" }
+  });
+
+  await prisma.notification.createMany({
+    data: [
+      {
+        userId: user.id,
+        parishId: parish.id,
+        type: "TASK",
+        title: "Task update",
+        href: "/tasks"
+      },
+      {
+        userId: user.id,
+        parishId: parish.id,
+        type: "EVENT",
+        title: "Event update",
+        href: "/calendar"
+      }
+    ]
+  });
+
+  const unreadBefore = await getNotificationUnreadCount(user.id, parish.id);
+  assert.equal(unreadBefore, 2);
+
+  await prisma.notification.updateMany({
+    where: { userId: user.id, parishId: parish.id },
+    data: { readAt: new Date() }
+  });
+
+  const unreadAfter = await getNotificationUnreadCount(user.id, parish.id);
+  assert.equal(unreadAfter, 0);
 });

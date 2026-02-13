@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/server/auth/options";
-import { getBadgeCount } from "@/lib/push/badge";
+import { getNotificationUnreadCount } from "@/lib/queries/notifications";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -11,7 +11,10 @@ export async function GET() {
   }
 
   try {
-    const count = await getBadgeCount(session.user.id, session.user.activeParishId);
+    const count = await getNotificationUnreadCount(session.user.id, session.user.activeParishId);
+    if (process.env.NODE_ENV !== "production") {
+      console.debug("[push/badge] unreadCount", count, "user", session.user.id);
+    }
     return NextResponse.json({ count });
   } catch (error) {
     console.error("[push/badge] Error computing badge count:", error);

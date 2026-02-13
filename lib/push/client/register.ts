@@ -1,5 +1,6 @@
 
 import { isRunningStandalone, requestNotificationPermission } from "@/lib/pwa";
+import { updateAppBadge } from "@/lib/push/client/badge";
 
 /**
  * Service worker registration + push subscription management (client-side).
@@ -151,30 +152,14 @@ export async function hasActivePushSubscription(): Promise<boolean> {
  * Set the home screen badge count. Feature-detected, no-op on unsupported platforms.
  */
 export async function setAppBadge(count: number): Promise<void> {
-  try {
-    if ("setAppBadge" in navigator) {
-      if (count > 0) {
-        await (navigator as unknown as { setAppBadge: (count: number) => Promise<void> }).setAppBadge(count);
-      } else {
-        await (navigator as unknown as { clearAppBadge: () => Promise<void> }).clearAppBadge();
-      }
-    }
-  } catch {
-    // Badge API not available or failed — silent fallback
-  }
+  await updateAppBadge(count, "setAppBadge");
 }
 
 /**
  * Clear the home screen badge. Feature-detected, no-op on unsupported platforms.
  */
 export async function clearAppBadge(): Promise<void> {
-  try {
-    if ("clearAppBadge" in navigator) {
-      await (navigator as unknown as { clearAppBadge: () => Promise<void> }).clearAppBadge();
-    }
-  } catch {
-    // Silent fallback
-  }
+  await updateAppBadge(0, "clearAppBadge");
 }
 
 /**
@@ -186,7 +171,10 @@ export async function refreshBadge(): Promise<number> {
     if (!response.ok) return 0;
 
     const { count } = await response.json();
-    await setAppBadge(count ?? 0);
+    await updateAppBadge(count ?? 0, "refreshBadge");
+    if (process.env.NODE_ENV !== "production") {
+      console.debug("[badge] refreshBadge unreadCount", count ?? 0);
+    }
     return count ?? 0;
   } catch {
     return 0;

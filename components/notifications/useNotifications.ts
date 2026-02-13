@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { NotificationCategory, NotificationItem } from "@/lib/queries/notifications";
+import { updateAppBadge } from "@/lib/push/client/badge";
+import { countUnreadItems } from "@/components/notifications/unreadCount";
 
 type NotificationsState = {
   items: NotificationItem[];
@@ -24,7 +26,12 @@ export function useNotifications() {
       const res = await fetch("/api/notifications");
       if (!res.ok) return;
       const data = await res.json();
-      setState({ items: data.items ?? [], count: data.count ?? 0, loading: false });
+      const unreadCount = data.count ?? 0;
+      setState({ items: data.items ?? [], count: unreadCount, loading: false });
+      void updateAppBadge(unreadCount, "notifications.fetch");
+      if (process.env.NODE_ENV !== "production") {
+        console.debug("[notifications] fetch unreadCount", unreadCount);
+      }
     } catch {
       setState((prev) => ({ ...prev, loading: false }));
     }
@@ -38,6 +45,10 @@ export function useNotifications() {
             ...item,
             readAt: item.readAt ?? new Date().toISOString()
           }));
+          void updateAppBadge(0, "notifications.markAllRead.optimistic");
+          if (process.env.NODE_ENV !== "production") {
+            console.debug("[notifications] mark-all-read optimistic");
+          }
           return { ...prev, items: updatedItems, count: 0 };
         }
         const updatedItems = prev.items.map((item) =>
@@ -45,7 +56,8 @@ export function useNotifications() {
             ? { ...item, readAt: item.readAt ?? new Date().toISOString() }
             : item
         );
-        const unreadCount = updatedItems.filter((item) => !item.readAt).length;
+        const unreadCount = countUnreadItems(updatedItems);
+        void updateAppBadge(unreadCount, "notifications.markCategoryRead.optimistic");
         return { ...prev, items: updatedItems, count: unreadCount };
       });
       try {
@@ -72,7 +84,8 @@ export function useNotifications() {
             ? { ...item, readAt: item.readAt ?? new Date().toISOString() }
             : item
         );
-        const unreadCount = updatedItems.filter((item) => !item.readAt).length;
+        const unreadCount = countUnreadItems(updatedItems);
+        void updateAppBadge(unreadCount, "notifications.markOne.optimistic");
         return { ...prev, items: updatedItems, count: unreadCount };
       });
       try {

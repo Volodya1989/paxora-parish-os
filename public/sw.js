@@ -52,9 +52,17 @@ sw.addEventListener("push", (event) => {
     }
   };
 
-  // Update badge count if provided
-  if (payload.badge !== undefined && typeof navigator.setAppBadge === "function") {
-    navigator.setAppBadge(payload.badge).catch(() => {});
+  // Update badge count if provided by server
+  if (payload.badge !== undefined) {
+    const badgeCount = Number(payload.badge);
+    if (Number.isFinite(badgeCount) && badgeCount <= 0 && typeof navigator.clearAppBadge === "function") {
+      navigator.clearAppBadge().catch(() => {});
+    } else if (Number.isFinite(badgeCount) && typeof navigator.setAppBadge === "function") {
+      navigator.setAppBadge(badgeCount).catch(() => {});
+    }
+    if (typeof console !== "undefined") {
+      console.debug("[sw] push badge update", badgeCount);
+    }
   }
 
   event.waitUntil(sw.registration.showNotification(title, options));
