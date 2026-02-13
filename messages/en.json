@@ -210,7 +210,14 @@
     },
     "todayAt": "Today at {time}",
     "nextEventAt": "Next Event at {time} • {day}",
-    "noUpcomingEvents": "No upcoming events"
+    "noUpcomingEvents": "No upcoming events",
+    "gratitudeSpotlight": {
+      "title": "Gratitude Spotlight",
+      "subtitle": "This week's gratitude highlights",
+      "viewBoard": "View board",
+      "fallbackNominee": "Parishioner",
+      "moreHighlights": "+{count} more highlights"
+    }
   },
   "announcements": {
     "title": "Announcements",
@@ -571,5 +578,17 @@
     "gotIt": "Got it",
     "howToAdd": "How to add",
     "notNow": "Not now"
+  },
+  "gratitudeBoard": {
+    "title": "Hours & Gratitude Board",
+    "description": "Celebrate the week’s hours offered and gratitude highlights.",
+    "groupBreakdownTitle": "Group breakdown",
+    "groupBreakdownDescription": "Hours shared by ministry this week.",
+    "noGroupHours": "No group hours logged yet this week.",
+    "hoursAbbrev": "hrs",
+    "adminPanelTitle": "Gratitude Spotlight (Admin)",
+    "emptyAdminTitle": "Gratitude list for this week",
+    "emptyAdminDescription": "No published spotlight nominations yet.",
+    "addNominee": "Add nominee"
   }
 }

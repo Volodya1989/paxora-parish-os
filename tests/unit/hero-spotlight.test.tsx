@@ -3,10 +3,12 @@ import assert from "node:assert/strict";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import GratitudeSpotlightCard from "@/components/gratitude/GratitudeSpotlightCard";
+import { withI18n } from "@/tests/utils/i18n";
 
 test("Gratitude spotlight renders nominees and respects limit", () => {
   const markup = renderToStaticMarkup(
-    createElement(GratitudeSpotlightCard, {
+    withI18n(
+      createElement(GratitudeSpotlightCard, {
       enabled: true,
       limit: 2,
       items: [
@@ -15,6 +17,7 @@ test("Gratitude spotlight renders nominees and respects limit", () => {
         { id: "nom-3", nomineeName: "Jordan K.", reason: "Helped with setup." }
       ]
     })
+    )
   );
 
   assert.match(markup, /Ava L\./);

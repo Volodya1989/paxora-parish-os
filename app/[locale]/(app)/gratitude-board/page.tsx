@@ -14,11 +14,16 @@ import { isParishLeader } from "@/lib/permissions";
 import { prisma } from "@/server/db/prisma";
 import PageHeader from "@/components/header/PageHeader";
 import { getGratitudeAdminData } from "@/lib/queries/gratitude";
+import { getLocaleFromParam } from "@/lib/i18n/routing";
+import { getTranslator } from "@/lib/i18n/translator";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default async function GratitudeBoardPage() {
+export default async function GratitudeBoardPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale: localeParam } = await params;
+  const locale = getLocaleFromParam(localeParam);
+  const t = getTranslator(locale);
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -55,8 +60,8 @@ export default async function GratitudeBoardPage() {
   return (
     <div className="section-gap">
       <PageShell
-        title="Hours & Gratitude Board"
-        description="Celebrate the week’s hours offered and gratitude highlights."
+        title={t("gratitudeBoard.title")}
+        description={t("gratitudeBoard.description")}
       />
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -70,8 +75,8 @@ export default async function GratitudeBoardPage() {
 
       <Card className="space-y-3">
         <div>
-          <p className="text-sm font-semibold text-ink-900">Group breakdown</p>
-          <p className="text-xs text-ink-500">Hours shared by ministry this week.</p>
+          <p className="text-sm font-semibold text-ink-900">{t("gratitudeBoard.groupBreakdownTitle")}</p>
+          <p className="text-xs text-ink-500">{t("gratitudeBoard.groupBreakdownDescription")}</p>
         </div>
         {summary.groupBreakdown.length ? (
           <ul className="space-y-2 text-sm text-ink-700">
@@ -82,13 +87,13 @@ export default async function GratitudeBoardPage() {
               >
                 <span>{group.groupName}</span>
                 <span className="text-xs font-semibold text-ink-600">
-                  {group.hours.toFixed(1)} hrs
+                  {group.hours.toFixed(1)} {t("gratitudeBoard.hoursAbbrev")}
                 </span>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="text-xs text-ink-500">No group hours logged yet this week.</p>
+          <p className="text-xs text-ink-500">{t("gratitudeBoard.noGroupHours")}</p>
         )}
       </Card>
 

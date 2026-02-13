@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "@/lib/i18n/provider";
 import GratitudeSpotlightCard from "@/components/gratitude/GratitudeSpotlightCard";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
@@ -41,6 +42,7 @@ export default function GratitudeSpotlightAdminSection({
   admin
 }: GratitudeSpotlightAdminSectionProps) {
   const searchParams = useSearchParams();
+  const t = useTranslations();
   const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   useEffect(() => {
@@ -63,7 +65,7 @@ export default function GratitudeSpotlightAdminSection({
     );
   }
 
-  const panelTitle = "Gratitude Spotlight (Admin)";
+  const panelTitle = t("gratitudeBoard.adminPanelTitle");
   const hasPublishedItems = spotlight.enabled && spotlight.items.length > 0;
 
   return (
@@ -83,15 +85,15 @@ export default function GratitudeSpotlightAdminSection({
               onClick={() => setShowAdminPanel(true)}
               aria-expanded={showAdminPanel}
             >
-              Add nominee
+              {t("gratitudeBoard.addNominee")}
             </Button>
           }
         />
       ) : (
         <Card className="space-y-3 border border-dashed border-rose-200 bg-rose-50/50 p-4">
           <div>
-            <p className="text-sm font-semibold text-rose-900">Gratitude list for this week</p>
-            <p className="text-xs text-rose-700">No published spotlight nominations yet.</p>
+            <p className="text-sm font-semibold text-rose-900">{t("gratitudeBoard.emptyAdminTitle")}</p>
+            <p className="text-xs text-rose-700">{t("gratitudeBoard.emptyAdminDescription")}</p>
           </div>
           <Button
             type="button"
@@ -101,7 +103,7 @@ export default function GratitudeSpotlightAdminSection({
             onClick={() => setShowAdminPanel(true)}
             aria-expanded={showAdminPanel}
           >
-            Add nominee
+            {t("gratitudeBoard.addNominee")}
           </Button>
         </Card>
       )}

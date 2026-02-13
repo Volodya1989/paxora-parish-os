@@ -210,7 +210,14 @@
     },
     "todayAt": "Сьогодні о {time}",
     "nextEventAt": "Наступна подія о {time} • {day}",
-    "noUpcomingEvents": "Немає запланованих подій"
+    "noUpcomingEvents": "Немає запланованих подій",
+    "gratitudeSpotlight": {
+      "title": "Фокус вдячності",
+      "subtitle": "Головні подяки цього тижня",
+      "viewBoard": "Переглянути дошку",
+      "fallbackNominee": "Парафіянин",
+      "moreHighlights": "+ще {count} подяк"
+    }
   },
   "announcements": {
     "title": "Оголошення",
@@ -571,5 +578,17 @@
     "gotIt": "Зрозуміло",
     "howToAdd": "Як додати",
     "notNow": "Не зараз"
+  },
+  "gratitudeBoard": {
+    "title": "Години та дошка вдячності",
+    "description": "Відзначайте години служіння за тиждень і подяки спільноти.",
+    "groupBreakdownTitle": "Розподіл за групами",
+    "groupBreakdownDescription": "Години, віддані служінням цього тижня.",
+    "noGroupHours": "Цього тижня ще немає зафіксованих годин у групах.",
+    "hoursAbbrev": "год",
+    "adminPanelTitle": "Фокус вдячності (адмін)",
+    "emptyAdminTitle": "Список вдячності цього тижня",
+    "emptyAdminDescription": "Ще немає опублікованих номінацій у фокусі вдячності.",
+    "addNominee": "Додати номінанта"
   }
 }
