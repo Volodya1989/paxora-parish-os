@@ -51,6 +51,7 @@ type TasksViewProps = {
   viewMode?: "all" | "opportunities" | "mine";
   canManageTasks?: boolean;
   canAccessLeaderBoard?: boolean;
+  showGroupFilterHint?: boolean;
 };
 
 export default function TasksView({
@@ -71,7 +72,8 @@ export default function TasksView({
   rejectAccessAction,
   viewMode = "all",
   canManageTasks = true,
-  canAccessLeaderBoard = false
+  canAccessLeaderBoard = false,
+  showGroupFilterHint = false
 }: TasksViewProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -281,11 +283,12 @@ export default function TasksView({
               <TaskFilters
                 filters={filters}
                 groupOptions={groupOptions}
-                showOwnership={viewMode !== "opportunities"}
+                showOwnership={viewMode !== "opportunities" && (canManageTasks || viewMode !== "mine")}
                 layout="stacked"
                 searchPlaceholder={
                   viewMode === "opportunities" ? t("tasks.filters.searchOpportunities") : undefined
                 }
+                groupDisabledHint={showGroupFilterHint ? "Join a group to filter" : undefined}
               />
             </div>
           </FiltersDrawer>
@@ -320,7 +323,7 @@ export default function TasksView({
             >
               {canManageTasks ? ctaLabel : t("thisWeek.addPrivateTask")}
             </Button>
-            {!canManageTasks && (
+            {!canManageTasks && viewMode !== "mine" && (
               <Button
                 type="button"
                 variant="secondary"
@@ -349,11 +352,12 @@ export default function TasksView({
         <TaskFilters
           filters={filters}
           groupOptions={groupOptions}
-          showOwnership={viewMode !== "opportunities"}
+          showOwnership={viewMode !== "opportunities" && (canManageTasks || viewMode !== "mine")}
           layout="inline"
           searchPlaceholder={
             viewMode === "opportunities" ? t("tasks.filters.searchOpportunities") : undefined
           }
+          groupDisabledHint={showGroupFilterHint ? "Join a group to filter" : undefined}
         />
       </div>
 
@@ -461,8 +465,8 @@ export default function TasksView({
       )}
 
       {/* Quick add (admin only, outside of opportunities view) */}
-      {canManageTasks && viewMode !== "opportunities" && (
-        <TaskQuickAdd weekId={weekId} />
+      {(canManageTasks || viewMode === "mine") && viewMode !== "opportunities" && (
+        <TaskQuickAdd weekId={weekId} creationContext={viewMode === "mine" ? "my_commitments" : "default"} />
       )}
 
       {/* Tasks */}
@@ -475,7 +479,9 @@ export default function TasksView({
         groupOptions={groupOptions}
         memberOptions={memberOptions}
         currentUserId={currentUserId}
-        initialVisibility={createVisibility}
+        initialVisibility={!canManageTasks && viewMode === "mine" ? "private" : createVisibility}
+        forcePrivate={!canManageTasks && viewMode === "mine"}
+        creationContext={!canManageTasks && viewMode === "mine" ? "my_commitments" : "default"}
       />
     </div>
   );

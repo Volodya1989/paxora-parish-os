@@ -22,19 +22,24 @@ import { useTranslations } from "@/lib/i18n/provider";
 import { useLocale } from "@/lib/i18n/provider";
 import QuoteCard from "@/components/app/QuoteCard";
 import { buildLocalePathname } from "@/lib/i18n/routing";
+import ParishionerRequestButton from "@/components/requests/ParishionerRequestButton";
 
 type GroupsViewProps = {
   groups: GroupListItem[];
   parishId: string;
   actorUserId: string;
   canManageGroups: boolean;
+  canRequestParishSupport: boolean;
+  requesterEmail: string;
 };
 
 export default function GroupsView({
   groups,
   parishId,
   actorUserId,
-  canManageGroups
+  canManageGroups,
+  canRequestParishSupport,
+  requesterEmail
 }: GroupsViewProps) {
   const t = useTranslations();
   const locale = useLocale();
@@ -285,6 +290,12 @@ export default function GroupsView({
         <Button onClick={openCreateDialog} className="hidden h-9 px-3 text-sm sm:inline-flex">
           {canManageGroups ? t("groups.startGroup") : t("groups.suggestGroup")}
         </Button>
+        <ParishionerRequestButton
+          canRequest={canRequestParishSupport}
+          requesterEmail={requesterEmail}
+          contextType="GROUP"
+          className="hidden h-9 px-3 text-sm sm:inline-flex"
+        />
         <div className="md:hidden">
           <FiltersDrawer title={t("groups.filters.title")}>
             <GroupFilters

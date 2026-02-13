@@ -82,6 +82,8 @@ export async function createTask(
     visibility: fd(formData, "visibility")
   });
 
+  const creationContext = fd(formData, "creationContext") === "my_commitments" ? "my_commitments" : "default";
+
 
   if (!parsed.success) {
     return {
@@ -152,7 +154,11 @@ export async function createTask(
     }
   }
 
-  const visibility = parsed.data.visibility === "public" ? "PUBLIC" : "PRIVATE";
+  const requestedVisibility = parsed.data.visibility === "public" ? "PUBLIC" : "PRIVATE";
+  const visibility =
+    creationContext === "my_commitments" && membership.role === "MEMBER"
+      ? "PRIVATE"
+      : requestedVisibility;
   const approvalStatus =
     visibility === "PRIVATE" || isParishLeader(membership.role) ? "APPROVED" : "PENDING";
   const volunteersNeeded = visibility === "PRIVATE" ? 1 : parsed.data.volunteersNeeded;

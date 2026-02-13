@@ -40,6 +40,8 @@ type TaskCreateDialogProps = {
   memberOptions: Array<{ id: string; name: string; label?: string }>;
   currentUserId: string;
   initialVisibility?: "private" | "public";
+  forcePrivate?: boolean;
+  creationContext?: "default" | "my_commitments";
 };
 
 export default function TaskCreateDialog({
@@ -49,7 +51,9 @@ export default function TaskCreateDialog({
   groupOptions,
   memberOptions,
   currentUserId,
-  initialVisibility = "private"
+  initialVisibility = "private",
+  forcePrivate = false,
+  creationContext = "default"
 }: TaskCreateDialogProps) {
   const router = useRouter();
   const { addToast } = useToast();
@@ -136,6 +140,7 @@ export default function TaskCreateDialog({
       }}
     >
       <input type="hidden" name="weekId" value={weekId} />
+      <input type="hidden" name="creationContext" value={creationContext} />
 
       {/* Accent header banner */}
       <div className="rounded-xl border-l-4 border-l-sky-400 bg-sky-50/60 px-4 py-3">
@@ -182,31 +187,40 @@ export default function TaskCreateDialog({
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor={visibilityId}>Visibility</Label>
-        <SelectMenu
-          id={visibilityId}
-          name="visibility"
-          value={visibility}
-          onValueChange={(nextValue) => {
-            const nextVisibility = nextValue === "public" ? "public" : "private";
-            setVisibility(nextVisibility);
-            if (nextVisibility === "private") {
-              setVolunteersNeeded("1");
-            }
-          }}
-          options={[
-            { value: "private", label: "Private (just you)" },
-            { value: "public", label: "Public (shared with the parish)" }
-          ]}
-        />
-        <p className="text-xs text-ink-400">
-          {visibility === "public"
-            ? "Public tasks created by members require approval before they appear for everyone."
-            : "Private tasks stay assigned to you by default."}
-        </p>
-      </div>
-      {visibility === "private" ? (
+      {forcePrivate ? (
+        <>
+          <input type="hidden" name="visibility" value="private" />
+          <p className="rounded-xl border border-mist-200 bg-mist-50 px-3 py-2 text-xs text-ink-500">
+            Private commitment only. This stays in your personal commitments view.
+          </p>
+        </>
+      ) : (
+        <div className="space-y-1.5">
+          <Label htmlFor={visibilityId}>Visibility</Label>
+          <SelectMenu
+            id={visibilityId}
+            name="visibility"
+            value={visibility}
+            onValueChange={(nextValue) => {
+              const nextVisibility = nextValue === "public" ? "public" : "private";
+              setVisibility(nextVisibility);
+              if (nextVisibility === "private") {
+                setVolunteersNeeded("1");
+              }
+            }}
+            options={[
+              { value: "private", label: "Private (just you)" },
+              { value: "public", label: "Public (shared with the parish)" }
+            ]}
+          />
+          <p className="text-xs text-ink-400">
+            {visibility === "public"
+              ? "Public tasks created by members require approval before they appear for everyone."
+              : "Private tasks stay assigned to you by default."}
+          </p>
+        </div>
+      )}
+      {visibility === "private" || forcePrivate ? (
         <>
           <input type="hidden" name="volunteersNeeded" value="1" />
           <input type="hidden" name="ownerId" value={currentUserId} />

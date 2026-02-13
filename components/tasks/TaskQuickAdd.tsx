@@ -11,9 +11,10 @@ import { useTranslations } from "@/lib/i18n/provider";
 
 type TaskQuickAddProps = {
   weekId: string;
+  creationContext?: "default" | "my_commitments";
 };
 
-export default function TaskQuickAdd({ weekId }: TaskQuickAddProps) {
+export default function TaskQuickAdd({ weekId, creationContext = "default" }: TaskQuickAddProps) {
   const t = useTranslations();
   const [state, formAction] = useActionState<TaskActionState, FormData>(
     createTask,
@@ -71,6 +72,7 @@ export default function TaskQuickAdd({ weekId }: TaskQuickAddProps) {
       <input type="hidden" name="weekId" value={weekId} />
       <input type="hidden" name="visibility" value="private" />
       <input type="hidden" name="volunteersNeeded" value="1" />
+      <input type="hidden" name="creationContext" value={creationContext} />
       <Input
         name="title"
         placeholder={t("tasks.quickAdd.placeholder")}

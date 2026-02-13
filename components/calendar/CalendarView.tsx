@@ -10,7 +10,7 @@ import CalendarGridMonth from "@/components/calendar/CalendarGridMonth";
 import CalendarDayList from "@/components/calendar/CalendarDayList";
 import EventDetailPanel from "@/components/calendar/EventDetailPanel";
 import EventCreateDialog from "@/components/calendar/EventCreateDialog";
-import EventRequestDialog from "@/components/shared/EventRequestDialog";
+import ParishionerRequestButton from "@/components/requests/ParishionerRequestButton";
 import ScheduleView from "@/components/calendar/ScheduleView";
 import EventRequestApprovals from "@/components/calendar/EventRequestApprovals";
 import PageShell from "@/components/app/page-shell";
@@ -47,6 +47,8 @@ type CalendarViewProps = {
   groupOptions: Array<{ id: string; name: string }>;
   viewerGroupIds: string[];
   pendingEventRequests: PendingEventRequest[];
+  canRequestParishSupport?: boolean;
+  requesterEmail?: string;
 };
 
 type CalendarViewValue = "week" | "month";
@@ -83,7 +85,9 @@ export default function CalendarView({
   canManageEventRequests,
   groupOptions,
   viewerGroupIds,
-  pendingEventRequests
+  pendingEventRequests,
+  canRequestParishSupport = false,
+  requesterEmail = ""
 }: CalendarViewProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -95,7 +99,6 @@ export default function CalendarView({
   const [groupFilter, setGroupFilter] = useState<GroupFilter>("all");
   const [createOpen, setCreateOpen] = useState(false);
   const [createType, setCreateType] = useState<"SERVICE" | "EVENT">("SERVICE");
-  const [requestOpen, setRequestOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
   const weekDays = useMemo(() => getWeekDays(weekRange.start), [weekRange.start]);
@@ -192,14 +195,12 @@ export default function CalendarView({
           {t("calendar.addService")}
         </Button>
       ) : null}
-      {!canManageEventRequests && (
-        <Button
-          variant={canCreateEvents ? "secondary" : "primary"}
-          onClick={() => setRequestOpen(true)}
-        >
-          {t("calendar.requestEvent")}
-        </Button>
-      )}
+      <ParishionerRequestButton
+        canRequest={canRequestParishSupport}
+        requesterEmail={requesterEmail}
+        contextType="EVENT"
+        className={canCreateEvents ? "h-9 px-3 text-sm" : "h-9 px-3 text-sm"}
+      />
     </div>
   );
 
@@ -252,15 +253,12 @@ export default function CalendarView({
               <FiltersDrawer title={t("calendar.scheduleFilters")}>{scheduleFilters}</FiltersDrawer>
             </div>
           ) : null}
-          {!canManageEventRequests && (
-            <Button
-              type="button"
-              onClick={() => setRequestOpen(true)}
-              className="hidden h-9 px-3 text-sm sm:inline-flex"
-            >
-              {t("calendar.requestEvent")}
-            </Button>
-          )}
+          <ParishionerRequestButton
+            canRequest={canRequestParishSupport}
+            requesterEmail={requesterEmail}
+            contextType="EVENT"
+            className="hidden h-9 px-3 text-sm sm:inline-flex"
+          />
           {canCreateEvents && (
             <>
               <button
@@ -422,10 +420,6 @@ export default function CalendarView({
         canCreatePrivateEvents={canCreatePrivateEvents}
         canCreateGroupEvents={canCreateGroupEvents}
         defaultType={createType}
-      />
-      <EventRequestDialog
-        open={requestOpen}
-        onOpenChange={setRequestOpen}
       />
     </Tabs>
   );

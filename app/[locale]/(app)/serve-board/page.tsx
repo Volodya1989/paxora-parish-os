@@ -121,6 +121,7 @@ export default async function ServeBoardPage({
         currentUserId={session.user.id}
         isLeader={isLeader}
         canRequestOpportunity={canRequestOpportunity(membership.role)}
+        requesterEmail={session.user.email ?? ""}
       />
     </ParishionerPageLayout>
   );

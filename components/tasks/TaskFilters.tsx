@@ -14,6 +14,7 @@ type TaskFiltersProps = {
   groupOptions: Array<{ id: string; name: string }>;
   showOwnership?: boolean;
   searchPlaceholder?: string;
+  groupDisabledHint?: string;
   layout?: "inline" | "stacked";
 };
 
@@ -22,6 +23,7 @@ export default function TaskFilters({
   groupOptions,
   showOwnership = true,
   searchPlaceholder,
+  groupDisabledHint,
   layout = "inline"
 }: TaskFiltersProps) {
   const t = useTranslations();
@@ -106,12 +108,16 @@ export default function TaskFilters({
         <SelectMenu
           id={groupId}
           value={filters.groupId ?? "all"}
+          disabled={groupOptions.length === 0 && Boolean(groupDisabledHint)}
           onValueChange={(value) => updateParam("group", value)}
           options={[
             { value: "all", label: t("tasks.filters.allGroups") },
             ...groupOptions.map((group) => ({ value: group.id, label: group.name }))
           ]}
         />
+        {groupOptions.length === 0 && groupDisabledHint ? (
+          <p className="text-xs text-ink-500">{groupDisabledHint}</p>
+        ) : null}
       </div>
 
       <div className="space-y-2">
