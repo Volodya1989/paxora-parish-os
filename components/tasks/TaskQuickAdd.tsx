@@ -11,9 +11,10 @@ import { useTranslations } from "@/lib/i18n/provider";
 
 type TaskQuickAddProps = {
   weekId: string;
+  creationContext?: "default" | "my_commitments";
 };
 
-export default function TaskQuickAdd({ weekId }: TaskQuickAddProps) {
+export default function TaskQuickAdd({ weekId, creationContext = "default" }: TaskQuickAddProps) {
   const t = useTranslations();
   const [state, formAction] = useActionState<TaskActionState, FormData>(
     createTask,
@@ -25,21 +26,29 @@ export default function TaskQuickAdd({ weekId }: TaskQuickAddProps) {
   const [title, setTitle] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
   const lastSubmittedTitle = useRef("");
+  const handledSuccess = useRef(false);
 
   useEffect(() => {
-    if (state.status === "success") {
-      formRef.current?.reset();
-      setTitle("");
-      setLocalError(null);
-      lastSubmittedTitle.current = "";
-      addToast({
-        title: t("tasks.quickAdd.added"),
-        description: state.message ?? t("tasks.quickAdd.ready"),
-        status: "success"
-      });
-      router.refresh();
+    if (state.status !== "success") {
+      return;
     }
-  }, [addToast, router, state, t]);
+
+    if (handledSuccess.current) {
+      return;
+    }
+
+    handledSuccess.current = true;
+    formRef.current?.reset();
+    setTitle("");
+    setLocalError(null);
+    lastSubmittedTitle.current = "";
+    addToast({
+      title: t("tasks.quickAdd.added"),
+      description: state.message ?? t("tasks.quickAdd.ready"),
+      status: "success"
+    });
+    router.refresh();
+  }, [addToast, router, state.message, state.status, t]);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     const trimmedTitle = title.trim();
@@ -49,6 +58,7 @@ export default function TaskQuickAdd({ weekId }: TaskQuickAddProps) {
       setLocalError(t("tasks.quickAdd.addTitle"));
       return;
     }
+    handledSuccess.current = false;
     setLocalError(null);
   };
 
@@ -71,6 +81,7 @@ export default function TaskQuickAdd({ weekId }: TaskQuickAddProps) {
       <input type="hidden" name="weekId" value={weekId} />
       <input type="hidden" name="visibility" value="private" />
       <input type="hidden" name="volunteersNeeded" value="1" />
+      <input type="hidden" name="creationContext" value={creationContext} />
       <Input
         name="title"
         placeholder={t("tasks.quickAdd.placeholder")}

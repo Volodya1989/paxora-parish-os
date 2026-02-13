@@ -66,6 +66,36 @@ export async function listGroupsByParish(parishId: string) {
   } as any);
 }
 
+export async function listTaskFilterGroups(input: {
+  parishId: string;
+  userId: string;
+  role: "ADMIN" | "SHEPHERD" | "MEMBER";
+}) {
+  if (input.role === "ADMIN" || input.role === "SHEPHERD") {
+    return listGroupsByParish(input.parishId);
+  }
+
+  return prisma.group.findMany({
+    where: {
+      parishId: input.parishId,
+      archivedAt: null,
+      status: "ACTIVE",
+      memberships: {
+        some: {
+          userId: input.userId,
+          status: "ACTIVE"
+        }
+      }
+    },
+    orderBy: { name: "asc" },
+    select: {
+      id: true,
+      name: true,
+      description: true
+    }
+  } as any);
+}
+
 export async function getGroupByParishId(parishId: string, groupId: string) {
   return prisma.group.findFirst({
     where: {
