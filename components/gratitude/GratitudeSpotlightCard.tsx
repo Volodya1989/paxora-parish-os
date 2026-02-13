@@ -1,7 +1,10 @@
+"use client";
+
 import type { ReactNode } from "react";
 import Card from "@/components/ui/Card";
 import Link from "next/link";
 import { routes } from "@/lib/navigation/routes";
+import { useTranslations } from "@/lib/i18n/provider";
 
 type GratitudeSpotlightCardProps = {
   enabled: boolean;
@@ -22,7 +25,8 @@ export default function GratitudeSpotlightCard({
   showCta = false,
   headerActions
 }: GratitudeSpotlightCardProps) {
-  // Don't render if not enabled or no items (reduces empty state clutter)
+  const t = useTranslations();
+
   if (!enabled || items.length === 0) {
     return null;
   }
@@ -34,8 +38,8 @@ export default function GratitudeSpotlightCard({
     <Card className="space-y-4 border-emerald-100 bg-gradient-to-br from-white to-emerald-50/30">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="font-semibold text-ink-900">Gratitude Spotlight</p>
-          <p className="text-sm text-ink-500">This week&apos;s gratitude highlights</p>
+          <p className="font-semibold text-ink-900">{t("thisWeek.gratitudeSpotlight.title")}</p>
+          <p className="text-sm text-ink-500">{t("thisWeek.gratitudeSpotlight.subtitle")}</p>
         </div>
         {showCta || headerActions ? (
           <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
@@ -45,7 +49,7 @@ export default function GratitudeSpotlightCard({
                 href={routes.gratitudeBoard}
                 className="rounded-button bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-200"
               >
-                View board
+                {t("thisWeek.gratitudeSpotlight.viewBoard")}
               </Link>
             ) : null}
           </div>
@@ -61,7 +65,7 @@ export default function GratitudeSpotlightCard({
             <span className="mt-0.5 text-lg">&#10024;</span>
             <div className="min-w-0 flex-1">
               <p className="font-medium text-emerald-900">
-                {item.nomineeName || "Parishioner"}
+                {item.nomineeName || t("thisWeek.gratitudeSpotlight.parishioner")}
               </p>
               <p className="mt-0.5 text-sm text-emerald-700">{item.reason}</p>
             </div>
@@ -70,7 +74,9 @@ export default function GratitudeSpotlightCard({
       </ul>
 
       {remainingCount > 0 && (
-        <p className="text-center text-sm text-ink-400">+{remainingCount} more highlights</p>
+        <p className="text-center text-sm text-ink-400">
+          {t("thisWeek.gratitudeSpotlight.moreHighlights").replace("{count}", String(remainingCount))}
+        </p>
       )}
     </Card>
   );

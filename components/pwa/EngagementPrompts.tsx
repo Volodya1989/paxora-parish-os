@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "@/lib/i18n/provider";
 import EngagementModal from "@/components/pwa/EngagementModal";
 import { subscribeToPush } from "@/lib/push/client/register";
 import {
@@ -27,6 +28,7 @@ import {
 
 export default function EngagementPrompts() {
   const pathname = usePathname();
+  const t = useTranslations();
   const [sessionCount, setSessionCount] = useState(0);
   const [isStandalone, setIsStandalone] = useState(false);
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | "unsupported">(
@@ -191,49 +193,48 @@ export default function EngagementPrompts() {
 
   const a2hsPrimaryLabel = installAvailable
     ? installBusy
-      ? "Installing..."
-      : "Install"
+      ? t("pwa.installing")
+      : t("pwa.install")
     : showInstructions
-      ? "Got it"
-      : "How to add";
+      ? t("pwa.gotIt")
+      : t("pwa.howToAdd");
 
-  const a2hsDescription =
-    "Install Paxora for a faster, app-like experience and more reliable notifications.";
+  const a2hsDescription = t("pwa.addToHomeScreen.description");
 
   const a2hsBody = showInstructions ? (
     <div className="space-y-3">
       <p className="text-sm text-ink-600">
         {isIOS
-          ? "On iPhone or iPad, installation happens from the Share menu in Safari."
-          : "On Android and desktop Chrome, install from the browser menu."}
+          ? t("pwa.addToHomeScreen.iosHint")
+          : t("pwa.addToHomeScreen.otherHint")}
       </p>
       <ol className="list-decimal space-y-2 pl-5 text-sm text-ink-700">
         {isIOS ? (
           <>
-            <li>Open Paxora in Safari.</li>
-            <li>Tap the Share icon.</li>
-            <li>Select “Add to Home Screen”.</li>
-            <li>Launch Paxora from your home screen.</li>
+            <li>{t("pwa.addToHomeScreen.iosSteps.openSafari")}</li>
+            <li>{t("pwa.addToHomeScreen.iosSteps.tapShare")}</li>
+            <li>{t("pwa.addToHomeScreen.iosSteps.selectAdd")}</li>
+            <li>{t("pwa.addToHomeScreen.iosSteps.launch")}</li>
           </>
         ) : (
           <>
-            <li>Open the browser menu (⋮ or ⋯).</li>
-            <li>Select “Install app” or “Add to Home screen”.</li>
-            <li>Confirm to add Paxora.</li>
+            <li>{t("pwa.addToHomeScreen.otherSteps.openMenu")}</li>
+            <li>{t("pwa.addToHomeScreen.otherSteps.selectInstall")}</li>
+            <li>{t("pwa.addToHomeScreen.otherSteps.confirm")}</li>
           </>
         )}
       </ol>
     </div>
   ) : (
     <p className="text-sm text-ink-600">
-      You’ll get a smoother experience and the ability to turn on notifications once installed.
+      {t("pwa.addToHomeScreen.followUp")}
     </p>
   );
 
-  const notifDescription = "Want alerts for announcements, schedule changes, and requests?";
+  const notifDescription = t("pwa.notifications.description");
   const notifBody = (
     <p className="text-sm text-ink-600">
-      You can manage push notifications anytime in Settings.
+      {t("pwa.notifications.body")}
     </p>
   );
 
@@ -242,11 +243,11 @@ export default function EngagementPrompts() {
       <EngagementModal
         open={a2hsOpen}
         variant="a2hs"
-        title="Add Paxora to your Home Screen"
+        title={t("pwa.addToHomeScreen.title")}
         description={a2hsDescription}
         body={a2hsBody}
         primaryLabel={a2hsPrimaryLabel}
-        secondaryLabel="Not now"
+        secondaryLabel={t("pwa.notNow")}
         onPrimary={handleA2hsPrimary}
         onSecondary={closeA2hs}
         onClose={closeA2hs}
@@ -254,12 +255,12 @@ export default function EngagementPrompts() {
       <EngagementModal
         open={notifOpen}
         variant="notifications"
-        title="Enable notifications"
+        title={t("pwa.notifications.title")}
         description={notifDescription}
         body={notifBody}
-        primaryLabel={notifBusy ? "Enabling..." : "Enable notifications"}
-        secondaryLabel="Not now"
-        tertiaryLabel="Don’t ask again"
+        primaryLabel={notifBusy ? t("pwa.notifications.enabling") : t("pwa.notifications.enable")}
+        secondaryLabel={t("pwa.notNow")}
+        tertiaryLabel={t("pwa.notifications.neverAsk")}
         onPrimary={handleNotificationsPrimary}
         onSecondary={handleNotificationsSecondary}
         onTertiary={handleNotificationsNeverAsk}

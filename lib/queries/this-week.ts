@@ -9,6 +9,7 @@ import { getWeekForSelection, type WeekSelection } from "@/domain/week";
 import { getNow } from "@/lib/time/getNow";
 import { getGratitudeSpotlight } from "@/lib/queries/gratitude";
 import { listUnreadCountsForRooms } from "@/lib/queries/chat";
+import { listEventsByRange } from "@/lib/queries/events";
 
 export type TaskPreview = {
   id: string;
@@ -47,6 +48,7 @@ export type ThisWeekData = {
   };
   tasks: TaskPreview[];
   events: EventPreview[];
+  nextUpcomingEvent?: EventPreview | null;
   announcements: AnnouncementPreview[];
   parishRole: ParishRole | null;
   memberGroups: Array<{
@@ -115,6 +117,7 @@ export async function getThisWeekDataForUser({
   const [
     tasks,
     events,
+    nextUpcomingEvent,
     announcements,
     memberGroups,
     publicGroupCount,
@@ -157,6 +160,24 @@ export async function getThisWeekDataForUser({
         endsAt: true,
         location: true
       }
+    }),
+    listEventsByRange({
+      parishId,
+      start: now,
+      end: new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000),
+      userId
+    }).then((calendarEvents) => {
+      const nextEvent = calendarEvents[0];
+      if (!nextEvent) {
+        return null;
+      }
+      return {
+        id: nextEvent.id,
+        title: nextEvent.title,
+        startsAt: nextEvent.startsAt,
+        endsAt: nextEvent.endsAt,
+        location: nextEvent.location
+      };
     }),
     prisma.announcement.findMany({
       where: {
@@ -325,6 +346,7 @@ export async function getThisWeekDataForUser({
     },
     tasks: taskPreviews,
     events,
+    nextUpcomingEvent,
     announcements: announcements.map((announcement) => ({
       id: announcement.id,
       title: announcement.title,

@@ -158,9 +158,9 @@
     "quote": "Teach us to number our days, that we may gain a heart of wisdom.",
     "quoteSource": "Psalm 90:12",
     "announcements": "Announcements",
-    "services": "Services",
+    "services": "Events",
     "community": "Community",
-    "opportunities": "Opportunities",
+    "opportunities": "Volunteers board",
     "findCommunity": "Find your community",
     "waysToHelp": "Ways to help",
     "approvalsNeeded": "{count} approval needed",
@@ -203,7 +203,23 @@
         "announcement": "Publish an announcement",
         "event": "Create an event",
         "requests": "Triage requests"
-      }
+      },
+      "title": "Start this week",
+      "dismiss": "Dismiss",
+      "markAsDone": "Mark as done"
+    },
+    "todayAt": "Today at {time}",
+    "nextEventAt": "Next Event at {time} • {day}",
+    "noUpcomingEvents": "No upcoming events",
+    "gratitudeSpotlight": {
+      "title": "Gratitude Spotlight",
+      "subtitle": "This week's gratitude highlights",
+      "viewBoard": "View board",
+      "parishioner": "Parishioner",
+      "moreHighlights": "+{count} more highlights",
+      "addNominee": "Add nominee",
+      "adminTitle": "Gratitude Spotlight (Admin)",
+      "noPublished": "No published spotlight nominations yet."
     }
   },
   "announcements": {
@@ -532,5 +548,38 @@
         "PRAYER": "Share any helpful context (avoid sensitive confessional details)."
       }
     }
+  },
+  "pwa": {
+    "addToHomeScreen": {
+      "title": "Add Paxora to your Home Screen",
+      "description": "Install Paxora for a faster, app-like experience and more reliable notifications.",
+      "followUp": "You’ll get a smoother experience and the ability to turn on notifications once installed.",
+      "iosHint": "On iPhone or iPad, installation happens from the Share menu in Safari.",
+      "otherHint": "On Android and desktop Chrome, install from the browser menu.",
+      "iosSteps": {
+        "openSafari": "Open Paxora in Safari.",
+        "tapShare": "Tap the Share icon.",
+        "selectAdd": "Select “Add to Home Screen”.",
+        "launch": "Launch Paxora from your home screen."
+      },
+      "otherSteps": {
+        "openMenu": "Open the browser menu (⋮ or ⋯).",
+        "selectInstall": "Select “Install app” or “Add to Home screen”.",
+        "confirm": "Confirm to add Paxora."
+      }
+    },
+    "notifications": {
+      "title": "Enable notifications",
+      "description": "Want alerts for announcements, schedule changes, and requests?",
+      "body": "You can manage push notifications anytime in Settings.",
+      "enable": "Enable notifications",
+      "enabling": "Enabling...",
+      "neverAsk": "Don’t ask again"
+    },
+    "install": "Install",
+    "installing": "Installing...",
+    "gotIt": "Got it",
+    "howToAdd": "How to add",
+    "notNow": "Not now"
   }
 }
