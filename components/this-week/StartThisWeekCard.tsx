@@ -57,7 +57,7 @@ export default function StartThisWeekCard({ userId, parishId, role, locale }: St
     <Card className="space-y-4 border-primary-200 bg-primary-50/40">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-sm font-semibold text-ink-900">Start this week</h2>
+          <h2 className="text-sm font-semibold text-ink-900">{t("thisWeek.startGuide.title")}</h2>
           <p className="mt-1 text-xs text-ink-600">
             {role === "MEMBER"
               ? t("thisWeek.startGuide.memberDescription")
@@ -65,7 +65,7 @@ export default function StartThisWeekCard({ userId, parishId, role, locale }: St
           </p>
         </div>
         <Button type="button" variant="ghost" onClick={dismissCard} className="h-8 px-2 text-xs">
-          Dismiss
+          {t("thisWeek.startGuide.dismiss")}
         </Button>
       </div>
 
@@ -82,7 +82,7 @@ export default function StartThisWeekCard({ userId, parishId, role, locale }: St
 
       <div className="flex justify-end">
         <Button type="button" size="sm" onClick={dismissCard}>
-          Mark as done
+          {t("thisWeek.startGuide.markAsDone")}
         </Button>
       </div>
     </Card>

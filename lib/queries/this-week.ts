@@ -47,6 +47,7 @@ export type ThisWeekData = {
   };
   tasks: TaskPreview[];
   events: EventPreview[];
+  nextUpcomingEvent?: EventPreview | null;
   announcements: AnnouncementPreview[];
   parishRole: ParishRole | null;
   memberGroups: Array<{
@@ -115,6 +116,7 @@ export async function getThisWeekDataForUser({
   const [
     tasks,
     events,
+    nextUpcomingEvent,
     announcements,
     memberGroups,
     publicGroupCount,
@@ -149,6 +151,22 @@ export async function getThisWeekDataForUser({
     }),
     prisma.event.findMany({
       where: { parishId, weekId: week.id },
+      orderBy: { startsAt: "asc" },
+      select: {
+        id: true,
+        title: true,
+        startsAt: true,
+        endsAt: true,
+        location: true
+      }
+    }),
+    prisma.event.findFirst({
+      where: {
+        parishId,
+        startsAt: {
+          gte: now
+        }
+      },
       orderBy: { startsAt: "asc" },
       select: {
         id: true,
@@ -325,6 +343,7 @@ export async function getThisWeekDataForUser({
     },
     tasks: taskPreviews,
     events,
+    nextUpcomingEvent,
     announcements: announcements.map((announcement) => ({
       id: announcement.id,
       title: announcement.title,
