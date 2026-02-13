@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import ChannelList from "@/components/chat/ChannelList";
 import ChatHeader from "@/components/chat/ChatHeader";
 import ChatThread from "@/components/chat/ChatThread";
@@ -61,7 +61,8 @@ function parseMessage(message: any): ChatMessage {
     parentMessage,
     replyCount: message.replyCount ?? 0,
     reactions: message.reactions ?? [],
-    attachments: message.attachments ?? []
+    attachments: message.attachments ?? [],
+    mentionEntities: message.mentionEntities ?? []
   } as ChatMessage;
 }
 
@@ -92,7 +93,7 @@ export default function ChatView({
   canPost: boolean;
   canModerate: boolean;
   currentUserId: string;
-  mentionableUsers?: { id: string; name: string }[];
+  mentionableUsers?: { id: string; name: string; email: string; avatarUrl?: string | null }[];
   channelMembers?: ChatChannelMember[];
   lastReadAt?: Date | null;
 }) {
@@ -114,6 +115,7 @@ export default function ChatView({
   const [threadRoot, setThreadRoot] = useState<ChatMessage | null>(null);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { addToast } = useToast();
   const t = useTranslations();
 
@@ -308,7 +310,7 @@ export default function ChatView({
     return data.attachments ?? [];
   };
 
-  const handleSend = async (body: string, files: File[]) => {
+  const handleSend = async (body: string, files: File[], mentionEntities: Array<{ userId: string; displayName: string; email: string; start: number; end: number }>) => {
     try {
       if (editingMessage) {
         if (files.length > 0) {
@@ -337,7 +339,7 @@ export default function ChatView({
       }
 
       const attachments = await uploadAttachments(files);
-      const created = await postMessage(channel.id, body, { attachments });
+      const created = await postMessage(channel.id, body, { attachments, mentionEntities });
       justSentRef.current = true;
       setMessages((prev) => {
         const next = [...prev, parseMessage(created)];
@@ -352,13 +354,14 @@ export default function ChatView({
     }
   };
 
-  const handleSendThread = async (body: string, files: File[]) => {
+  const handleSendThread = async (body: string, files: File[], mentionEntities: Array<{ userId: string; displayName: string; email: string; start: number; end: number }>) => {
     if (!threadRoot) return;
     try {
       const attachments = await uploadAttachments(files);
       const created = await postMessage(channel.id, body, {
         parentMessageId: threadRoot.id,
-        attachments
+        attachments,
+        mentionEntities
       });
       setMessages((prev) => {
         const next = [...prev, parseMessage(created)];
@@ -529,6 +532,37 @@ export default function ChatView({
     return unread?.id ?? null;
   }, [channelMessages, lastReadAt, currentUserId]);
 
+
+  const highlightedMessageId = searchParams.get("msg");
+
+
+  useEffect(() => {
+    if (!highlightedMessageId) return;
+    if (messages.some((message) => message.id === highlightedMessageId)) return;
+
+    const loadTarget = async () => {
+      const response = await fetch(`/api/chat/${channel.id}/poll?msg=${highlightedMessageId}`);
+      if (!response.ok) return;
+      const data = await response.json();
+      const incoming = (data.messages ?? []).map(parseMessage);
+      setMessages((prev) => sortMessages([...prev, ...incoming.filter((msg: ChatMessage) => !prev.some((cur) => cur.id === msg.id))]));
+    };
+
+    void loadTarget();
+  }, [channel.id, highlightedMessageId, messages]);
+
+  useEffect(() => {
+    if (!highlightedMessageId) return;
+    const node = document.querySelector(`[data-chat-message-id="${highlightedMessageId}"]`) as HTMLElement | null;
+    if (node) {
+      node.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    if (isPollingReady) {
+      addToast({ title: "Mention target no longer exists", status: "neutral" });
+    }
+  }, [addToast, highlightedMessageId, isPollingReady, messages.length]);
+
   const threadMessages = useMemo(() => {
     if (!threadRoot) return [];
     const root = messages.find((message) => message.id === threadRoot.id) ?? threadRoot;
@@ -596,6 +630,7 @@ export default function ChatView({
             onVotePoll={handleVotePoll}
             isLoading={!isPollingReady}
             firstUnreadMessageId={firstUnreadMessageId}
+            highlightedMessageId={highlightedMessageId}
           />
           <div ref={bottomRef} aria-hidden="true" />
         </div>
@@ -642,6 +677,7 @@ export default function ChatView({
                   onDelete={handleDelete}
                   onToggleReaction={handleToggleReaction}
                   isLoading={false}
+                  highlightedMessageId={highlightedMessageId}
                 />
                 <Composer
                   disabled={!canPost || Boolean(lockedAt)}
@@ -702,6 +738,7 @@ export default function ChatView({
                 onDelete={handleDelete}
                 onToggleReaction={handleToggleReaction}
                 isLoading={false}
+                highlightedMessageId={highlightedMessageId}
               />
             </Drawer>
           )}

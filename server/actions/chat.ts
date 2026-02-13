@@ -24,10 +24,21 @@ import {
   MAX_CHAT_ATTACHMENTS
 } from "@/lib/chat/attachments";
 import { notifyChatMessage } from "@/lib/push/notify";
-import { notifyChatMessageInApp } from "@/lib/notifications/notify";
+import { notifyChatMessageInApp, notifyMentionInApp } from "@/lib/notifications/notify";
+import { notifyMention } from "@/lib/push/notify";
+import { extractMentionedUserIds, mentionSnippet, normalizeMentionEntities } from "@/lib/mentions";
+import { listMentionableUsersForChannel } from "@/lib/mentions/permissions";
 
 const MESSAGE_EDIT_WINDOW_MS = 15 * 60 * 1000;
 const REACTION_SET = new Set(REACTION_EMOJIS);
+
+type ChatMentionInput = {
+  userId: string;
+  displayName: string;
+  email: string;
+  start: number;
+  end: number;
+};
 
 type ChatAttachmentInput = {
   url: string;
@@ -243,7 +254,7 @@ export async function postMessage(
   parentMessageIdOrGetNow?:
     | string
     | (() => Date)
-    | { parentMessageId?: string; attachments?: ChatAttachmentInput[]; getNow?: () => Date },
+    | { parentMessageId?: string; attachments?: ChatAttachmentInput[]; mentionEntities?: ChatMentionInput[]; getNow?: () => Date },
   getNow?: () => Date
 ) {
   const session = await getServerSession(authOptions);
@@ -259,6 +270,11 @@ export async function postMessage(
     parentMessageIdOrGetNow && typeof parentMessageIdOrGetNow === "object"
       ? parentMessageIdOrGetNow.attachments ?? []
       : [];
+  const mentionEntities =
+    parentMessageIdOrGetNow && typeof parentMessageIdOrGetNow === "object"
+      ? normalizeMentionEntities(parentMessageIdOrGetNow.mentionEntities)
+      : [];
+
   const resolveNow =
     typeof parentMessageIdOrGetNow === "function"
       ? parentMessageIdOrGetNow
@@ -315,6 +331,7 @@ export async function postMessage(
       authorId: userId,
       parentMessageId: parentMessage?.id ?? null,
       body: trimmed,
+      mentionEntities: mentionEntities.length ? mentionEntities : undefined,
       attachments: attachments.length
         ? {
             create: attachments.map((attachment) => ({
@@ -331,6 +348,7 @@ export async function postMessage(
     select: {
       id: true,
       body: true,
+      mentionEntities: true,
       createdAt: true,
       editedAt: true,
       deletedAt: true,
@@ -377,6 +395,7 @@ export async function postMessage(
   const result = {
     id: message.id,
     body: message.body,
+    mentionEntities: Array.isArray(message.mentionEntities) ? (message.mentionEntities as ChatMentionInput[]) : [],
     createdAt: message.createdAt,
     editedAt: message.editedAt,
     deletedAt: message.deletedAt,
@@ -410,6 +429,50 @@ export async function postMessage(
         }
       : null
   };
+
+
+  const mentionUserIds = extractMentionedUserIds(trimmed, mentionEntities);
+  if (mentionUserIds.length > 0) {
+    const mentionable = await listMentionableUsersForChannel({
+      parishId,
+      actorUserId: userId,
+      channelId,
+      query: ""
+    });
+    const allowedIds = new Set(mentionable.map((user) => user.id));
+    const recipients = mentionUserIds.filter((id) => allowedIds.has(id) && id !== userId);
+
+    if (recipients.length > 0) {
+      const href = `/community/chat?channel=${channelId}&msg=${message.id}`;
+      await prisma.mention.createMany({
+        data: recipients.map((mentionedUserId) => ({
+          parishId,
+          mentionedUserId,
+          actorUserId: userId,
+          contextType: "CHAT_MESSAGE",
+          contextId: message.id,
+          snippet: mentionSnippet(trimmed),
+          href
+        }))
+      });
+
+      await notifyMentionInApp({
+        parishId,
+        recipientIds: recipients,
+        actorName: message.author.name ?? message.author.email ?? "Parish member",
+        description: `${channel.type === "GROUP" ? "Group chat" : "Chat"}: ${mentionSnippet(trimmed)}`,
+        href
+      });
+
+      notifyMention({
+        parishId,
+        recipientIds: recipients,
+        actorName: message.author.name ?? message.author.email ?? "Parish member",
+        contextLabel: channel.type === "GROUP" ? "Group chat mention" : "Chat mention",
+        href
+      }).catch(() => {});
+    }
+  }
 
   // Fire-and-forget push notification
   notifyChatMessage({
@@ -550,6 +613,7 @@ export async function editMessage(messageId: string, body: string, getNow?: () =
     select: {
       id: true,
       body: true,
+      mentionEntities: true,
       createdAt: true,
       editedAt: true,
       deletedAt: true,
@@ -598,6 +662,7 @@ export async function editMessage(messageId: string, body: string, getNow?: () =
   return {
     id: updated.id,
     body: updated.body,
+    mentionEntities: Array.isArray(updated.mentionEntities) ? (updated.mentionEntities as ChatMentionInput[]) : [],
     createdAt: updated.createdAt,
     editedAt: updated.editedAt,
     deletedAt: updated.deletedAt,
@@ -904,6 +969,7 @@ export async function createPoll(
     select: {
       id: true,
       body: true,
+      mentionEntities: true,
       createdAt: true,
       editedAt: true,
       deletedAt: true,
@@ -944,6 +1010,7 @@ export async function createPoll(
   return {
     id: message.id,
     body: message.body,
+    mentionEntities: Array.isArray(message.mentionEntities) ? (message.mentionEntities as ChatMentionInput[]) : [],
     createdAt: message.createdAt,
     editedAt: message.editedAt,
     deletedAt: message.deletedAt,

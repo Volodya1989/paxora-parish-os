@@ -388,3 +388,47 @@ dbTest("deleted messages exclude attachments from listMessages", async () => {
   assert.ok(deletedMsg.deletedAt);
   assert.equal(deletedMsg.attachments.length, 0);
 });
+
+dbTest("chat mentions create mention notifications", async () => {
+  const parish = await prisma.parish.create({ data: { name: "St. Mention", slug: "st-mention" } });
+  const author = await prisma.user.create({
+    data: { email: "author@mention.test", name: "Author", passwordHash: "hashed", activeParishId: parish.id }
+  });
+  const target = await prisma.user.create({
+    data: { email: "target@mention.test", name: "Target User", passwordHash: "hashed", activeParishId: parish.id }
+  });
+
+  await prisma.membership.createMany({
+    data: [
+      { parishId: parish.id, userId: author.id, role: "ADMIN" },
+      { parishId: parish.id, userId: target.id, role: "MEMBER" }
+    ]
+  });
+
+  const channel = await prisma.chatChannel.create({
+    data: { parishId: parish.id, type: "PARISH", name: "General" }
+  });
+
+  session.user.id = author.id;
+  session.user.activeParishId = parish.id;
+
+  const body = "Hello @Target User";
+  await actions.postMessage(channel.id, body, {
+    mentionEntities: [
+      {
+        userId: target.id,
+        displayName: "Target User",
+        email: "target@mention.test",
+        start: 6,
+        end: 18
+      }
+    ]
+  });
+
+  const mention = await prisma.mention.findFirst({ where: { mentionedUserId: target.id } });
+  assert.ok(mention);
+
+  const notification = await prisma.notification.findFirst({ where: { userId: target.id, type: "MENTION" } });
+  assert.ok(notification);
+  assert.match(notification?.href ?? "", /msg=/);
+});

@@ -6,11 +6,10 @@ import { NotificationType } from "@prisma/client";
 
 type NotificationCategory = "task" | "announcement" | "event" | "message" | "request";
 
-const categoryToNotificationType: Record<NotificationCategory, NotificationType> = {
+const categoryToNotificationType: Record<Exclude<NotificationCategory, "message">, NotificationType> = {
   task: NotificationType.TASK,
   announcement: NotificationType.ANNOUNCEMENT,
   event: NotificationType.EVENT,
-  message: NotificationType.MESSAGE,
   request: NotificationType.REQUEST
 };
 
@@ -79,7 +78,9 @@ export async function POST(request: NextRequest) {
         where: {
           userId,
           parishId: session.user.activeParishId,
-          type: categoryToNotificationType[category],
+          ...(category === "message"
+            ? { type: { in: [NotificationType.MESSAGE, NotificationType.MENTION] } }
+            : { type: categoryToNotificationType[category as Exclude<NotificationCategory, "message">] }),
           readAt: null
         },
         data: { readAt: now }

@@ -7,7 +7,8 @@ const notificationPreferenceFieldByType = {
   [NotificationType.TASK]: "notifyTaskInApp",
   [NotificationType.ANNOUNCEMENT]: "notifyAnnouncementInApp",
   [NotificationType.EVENT]: "notifyEventInApp",
-  [NotificationType.REQUEST]: "notifyRequestInApp"
+  [NotificationType.REQUEST]: "notifyRequestInApp",
+  [NotificationType.MENTION]: "notifyMessageInApp"
 } as const;
 
 type NotificationCreateInput = {
@@ -267,5 +268,25 @@ export async function notifyRequestStatusUpdatedInApp(opts: {
     title: `Request ${getRequestStatusLabel(status).toLowerCase()}: ${requestTitle}`,
     description: "View the latest update.",
     href: `/requests/${requestId}`
+  });
+}
+
+
+export async function notifyMentionInApp(opts: {
+  parishId: string;
+  recipientIds: string[];
+  actorName: string;
+  description?: string | null;
+  href: string;
+}) {
+  const recipients = opts.recipientIds.filter(Boolean);
+  if (recipients.length === 0) return;
+
+  await createNotificationsForUsers(recipients, {
+    parishId: opts.parishId,
+    type: NotificationType.MENTION,
+    title: `You were mentioned by ${opts.actorName}`,
+    description: opts.description ?? null,
+    href: opts.href
   });
 }

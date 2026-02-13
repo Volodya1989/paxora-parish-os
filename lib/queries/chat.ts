@@ -51,6 +51,7 @@ export type ChatAttachmentItem = {
 export type ChatMessageItem = {
   id: string;
   body: string;
+  mentionEntities: Array<{ userId: string; displayName: string; email: string; start: number; end: number }>;
   createdAt: Date;
   editedAt?: Date | null;
   deletedAt: Date | null;
@@ -453,6 +454,7 @@ export async function listMessages({
         select: {
           id: true,
           body: true,
+          mentionEntities: true,
           createdAt: true,
           deletedAt: true,
           author: {
@@ -538,6 +540,7 @@ export async function listMessages({
     return {
       id: message.id,
       body: message.body,
+      mentionEntities: Array.isArray((message as any).mentionEntities) ? ((message as any).mentionEntities as any[]) : [],
       createdAt: message.createdAt,
       editedAt: message.editedAt,
       deletedAt: message.deletedAt,
@@ -617,6 +620,7 @@ export async function listOlderMessages({
         select: {
           id: true,
           body: true,
+          mentionEntities: true,
           createdAt: true,
           deletedAt: true,
           author: {
@@ -706,6 +710,7 @@ export async function listOlderMessages({
     return {
       id: message.id,
       body: message.body,
+      mentionEntities: Array.isArray((message as any).mentionEntities) ? ((message as any).mentionEntities as any[]) : [],
       createdAt: message.createdAt,
       editedAt: message.editedAt,
       deletedAt: message.deletedAt,
@@ -770,6 +775,7 @@ export async function getPinnedMessage(channelId: string, userId?: string) {
         select: {
           id: true,
           body: true,
+          mentionEntities: true,
           createdAt: true,
           editedAt: true,
           deletedAt: true,

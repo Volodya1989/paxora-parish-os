@@ -93,7 +93,7 @@ export default async function CommunityChatPage({ searchParams, params }: Commun
         canModerate={canModerate}
         currentUserId={userId}
         channelMembers={channelMembers}
-        mentionableUsers={channelMembers?.map((member) => ({ id: member.userId, name: member.name }))}
+        mentionableUsers={channelMembers?.map((member) => ({ id: member.userId, name: member.name, email: member.email }))}
         lastReadAt={lastReadAt}
       />
     </PageShell>

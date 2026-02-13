@@ -28,7 +28,8 @@ const notificationTypeMap: Record<NotificationType, NotificationCategory> = {
   TASK: "task",
   ANNOUNCEMENT: "announcement",
   EVENT: "event",
-  REQUEST: "request"
+  REQUEST: "request",
+  MENTION: "message"
 };
 
 function toNotificationCategory(type: NotificationType): NotificationCategory {

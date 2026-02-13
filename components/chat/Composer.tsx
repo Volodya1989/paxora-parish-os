@@ -29,17 +29,19 @@ export default function Composer({
   onCreatePoll
 }: {
   disabled: boolean;
-  onSend: (body: string, files: File[]) => Promise<void> | void;
+  onSend: (body: string, files: File[], mentionEntities: Array<{ userId: string; displayName: string; email: string; start: number; end: number }>) => Promise<void> | void;
   replyTo?: { id: string; authorName: string; body: string; deletedAt: Date | null } | null;
   onCancelReply?: () => void;
   editingMessage?: { id: string; body: string } | null;
   onCancelEdit?: () => void;
-  mentionableUsers?: { id: string; name: string }[];
+  mentionableUsers?: { id: string; name: string; email: string; avatarUrl?: string | null }[];
   onCreatePoll?: (question: string, options: string[]) => Promise<void> | void;
 }) {
   const [message, setMessage] = useState("");
   const [isPending, startTransition] = useTransition();
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [selectedMentions, setSelectedMentions] = useState<Array<{ userId: string; displayName: string; email: string }>>([]);
+  const [activeMentionIndex, setActiveMentionIndex] = useState(0);
   const [showPollComposer, setShowPollComposer] = useState(false);
   const [plusMenuOpen, setPlusMenuOpen] = useState(false);
   const [attachments, setAttachments] = useState<AttachmentDraft[]>([]);
@@ -69,10 +71,45 @@ export default function Composer({
     setMentionQuery(null);
   }, [message]);
 
+  useEffect(() => {
+    setActiveMentionIndex(0);
+  }, [mentionQuery]);
+
   const remaining = MAX_LENGTH - message.length;
   const isDisabled = disabled || isPending;
   const isEditing = Boolean(editingMessage);
   const canSend = !isDisabled && (message.trim().length > 0 || attachments.length > 0);
+
+
+  const buildMentionEntities = useCallback((text: string) => {
+    const entities: Array<{ userId: string; displayName: string; email: string; start: number; end: number }> = [];
+    const used = new Set<string>();
+
+    selectedMentions.forEach((mention) => {
+      const key = `${mention.userId}:${mention.displayName}`;
+      if (used.has(key)) return;
+      used.add(key);
+      const needle = `@${mention.displayName}`;
+      let from = 0;
+      while (from < text.length) {
+        const idx = text.indexOf(needle, from);
+        if (idx === -1) break;
+        const before = idx === 0 ? " " : text[idx - 1];
+        if (/\s|[([{"'`]/.test(before)) {
+          entities.push({
+            userId: mention.userId,
+            displayName: mention.displayName,
+            email: mention.email,
+            start: idx,
+            end: idx + needle.length
+          });
+        }
+        from = idx + needle.length;
+      }
+    });
+
+    return entities.sort((a, b) => a.start - b.start);
+  }, [selectedMentions]);
 
   const handleSend = useCallback(() => {
     if (isDisabled) return;
@@ -82,7 +119,8 @@ export default function Composer({
     startTransition(async () => {
       await onSend(
         trimmed,
-        attachments.map((attachment) => attachment.file)
+        attachments.map((attachment) => attachment.file),
+        buildMentionEntities(trimmed)
       );
       setMessage("");
       setAttachments((current) => {
@@ -90,7 +128,7 @@ export default function Composer({
         return [];
       });
     });
-  }, [attachments, isDisabled, message, onSend]);
+  }, [attachments, buildMentionEntities, isDisabled, message, onSend]);
 
   /** Auto-resize the textarea to fit content */
   const adjustHeight = useCallback(() => {
@@ -105,6 +143,24 @@ export default function Composer({
   }, [message, adjustHeight]);
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (mentionCandidates.length > 0) {
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setActiveMentionIndex((prev) => (prev + 1) % mentionCandidates.length);
+        return;
+      }
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        setActiveMentionIndex((prev) => (prev - 1 + mentionCandidates.length) % mentionCandidates.length);
+        return;
+      }
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        insertMention(mentionCandidates[activeMentionIndex] ?? mentionCandidates[0]!);
+        return;
+      }
+    }
+
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
       handleSend();
@@ -114,13 +170,16 @@ export default function Composer({
   const mentionCandidates =
     mentionQuery !== null && mentionableUsers?.length
       ? mentionableUsers
-          .filter((user) => user.name.toLowerCase().includes(mentionQuery.toLowerCase()))
+          .filter((user) => `${user.name} ${user.email}`.toLowerCase().includes(mentionQuery.toLowerCase()))
           .slice(0, 5)
       : [];
 
-  const insertMention = (name: string) => {
-    setMessage((prev) => prev.replace(/@[\w-]*$/, `@${name.replace(/\s+/g, " ")} `));
+  const insertMention = (user: { id: string; name: string; email: string }) => {
+    const cleaned = user.name.replace(/\s+/g, " ");
+    setMessage((prev) => prev.replace(/@[\w-]*$/, `@${cleaned} `));
+    setSelectedMentions((prev) => [...prev.filter((item) => item.userId !== user.id), { userId: user.id, displayName: cleaned, email: user.email }]);
     setMentionQuery(null);
+    setActiveMentionIndex(0);
     textareaRef.current?.focus();
   };
 
@@ -245,10 +304,10 @@ export default function Composer({
             <button
               key={user.id}
               type="button"
-              className="rounded-full border border-mist-200 px-2 py-1 text-xs font-medium text-ink-600 hover:border-mist-300 hover:text-ink-900"
-              onClick={() => insertMention(user.name)}
+              onClick={() => insertMention(user)}
+              className={`rounded-full border px-2 py-1 text-xs font-medium ${activeMentionIndex === mentionCandidates.findIndex((candidate) => candidate.id === user.id) ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-mist-200 text-ink-600 hover:border-mist-300 hover:text-ink-900"}`}
             >
-              @{user.name}
+              @{user.name} · {user.email}
             </button>
           ))}
         </div>

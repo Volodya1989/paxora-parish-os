@@ -23,6 +23,12 @@ enum NotificationType {
   ANNOUNCEMENT
   EVENT
   REQUEST
+  MENTION
+}
+
+enum MentionContextType {
+  CHAT_MESSAGE
+  TASK_COMMENT
 }
 
 enum AuditAction {
@@ -256,6 +262,7 @@ model Parish {
   chatChannels    ChatChannel[]
   emailLogs       EmailLog[]
   notifications   Notification[]
+  mentions        Mention[]
   hoursEntries    HoursEntry[]
   heroNominations HeroNomination[]
   parishInvites   ParishInvite[]
@@ -315,6 +322,8 @@ model User {
   createdAt                DateTime  @default(now())
 
   notifications            Notification[]
+  mentionsReceived         Mention[]               @relation("MentionRecipient")
+  mentionsSent             Mention[]               @relation("MentionActor")
   pushSubscriptions        PushSubscription[]
   memberships              Membership[]
   accessRequests           AccessRequest[]
@@ -375,6 +384,26 @@ model Notification {
   @@index([userId, parishId, createdAt])
   @@index([userId, parishId, readAt])
   @@index([userId, type, createdAt])
+}
+
+
+model Mention {
+  id              String             @id @default(cuid())
+  parishId        String
+  mentionedUserId String
+  actorUserId     String
+  contextType     MentionContextType
+  contextId       String
+  snippet         String?
+  href            String
+  createdAt       DateTime           @default(now())
+
+  parish        Parish @relation(fields: [parishId], references: [id], onDelete: Cascade)
+  mentionedUser User   @relation("MentionRecipient", fields: [mentionedUserId], references: [id], onDelete: Cascade)
+  actorUser     User   @relation("MentionActor", fields: [actorUserId], references: [id], onDelete: Cascade)
+
+  @@index([mentionedUserId, parishId, createdAt])
+  @@index([contextType, contextId])
 }
 
 model AuditLog {
@@ -661,6 +690,7 @@ model ChatMessage {
   authorId        String
   parentMessageId String?
   body            String
+  mentionEntities Json?
   createdAt       DateTime  @default(now())
   editedAt        DateTime?
   deletedAt       DateTime?
@@ -896,6 +926,7 @@ model TaskComment {
   taskId    String
   authorId  String
   body      String
+  mentionEntities Json?
   createdAt DateTime @default(now())
 
   task   Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
