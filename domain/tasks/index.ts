@@ -1308,15 +1308,17 @@ export async function addTaskComment({
   taskId,
   parishId,
   actorUserId,
-  body
-}: TaskActionInput & { body: string }) {
+  body,
+  mentionEntities
+}: TaskActionInput & { body: string; mentionEntities?: unknown }) {
   await assertTaskCommentAccess({ taskId, parishId, actorUserId });
 
   const comment = await prisma.taskComment.create({
     data: {
       taskId,
       authorId: actorUserId,
-      body
+      body,
+      mentionEntities: Array.isArray(mentionEntities) ? mentionEntities : undefined
     }
   });
 

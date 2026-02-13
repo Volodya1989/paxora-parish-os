@@ -190,7 +190,8 @@ export default function ChatThread({
   onVotePoll,
   initialReactionMenuMessageId,
   isLoading,
-  firstUnreadMessageId
+  firstUnreadMessageId,
+  highlightedMessageId
 }: {
   messages: ChatMessage[];
   pinnedMessage: ChatPinnedMessage | null;
@@ -207,6 +208,7 @@ export default function ChatThread({
   initialReactionMenuMessageId?: string | null;
   isLoading?: boolean;
   firstUnreadMessageId?: string | null;
+  highlightedMessageId?: string | null;
 }) {
   const [contextMenuMessageId, setContextMenuMessageId] = useState<string | null>(
     initialReactionMenuMessageId ?? null
@@ -361,7 +363,8 @@ function MessageRow({
   onViewThread,
   onVotePoll,
   firstUnreadMessageId,
-  showUnreadSeparator
+  showUnreadSeparator,
+  highlightedMessageId
 }: {
   message: ChatMessage;
   previousMessage: ChatMessage | null;
@@ -381,6 +384,7 @@ function MessageRow({
   onVotePoll?: (pollId: string, optionId: string) => Promise<void> | void;
   firstUnreadMessageId?: string | null;
   showUnreadSeparator: boolean;
+  highlightedMessageId?: string | null;
 }) {
   const t = useTranslations();
   const initials = getInitials(message.author.name) || "PS";
@@ -444,6 +448,28 @@ function MessageRow({
 
   // Normalised swipe progress 0..1 for animations
   const swipeProgress = Math.min(swipe.offsetX / SWIPE_THRESHOLD, 1);
+
+
+  const renderBody = () => {
+    if (isDeleted) return t("chat.deletedMessage");
+    const mentions = [...(message.mentionEntities ?? [])].sort((a, b) => a.start - b.start);
+    if (mentions.length === 0) return message.body;
+
+    const nodes: Array<string | JSX.Element> = [];
+    let cursor = 0;
+    mentions.forEach((mention, idx) => {
+      if (mention.start < cursor || mention.end > message.body.length) return;
+      if (mention.start > cursor) nodes.push(message.body.slice(cursor, mention.start));
+      nodes.push(
+        <span key={`${mention.userId}-${idx}`} className="rounded bg-emerald-100 px-1 text-emerald-800" title={`${mention.displayName} · ${mention.email}`}>
+          {message.body.slice(mention.start, mention.end)}
+        </span>
+      );
+      cursor = mention.end;
+    });
+    if (cursor < message.body.length) nodes.push(message.body.slice(cursor));
+    return nodes;
+  };
 
   return (
     <div>
@@ -590,7 +616,7 @@ function MessageRow({
                     : "text-ink-800"
               )}
             >
-              {isDeleted ? t("chat.deletedMessage") : message.body}
+              {renderBody()}
             </p>
           ) : null}
 

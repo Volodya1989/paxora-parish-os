@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Button from "@/components/ui/Button";
 import Textarea from "@/components/ui/Textarea";
 import { Drawer } from "@/components/ui/Drawer";
@@ -46,6 +46,31 @@ function formatDueDate(value?: string) {
   return formatTimestamp(value);
 }
 
+
+function renderMentionedText(
+  body: string,
+  mentions: Array<{ userId: string; displayName: string; email: string; start: number; end: number }>
+) {
+  if (!mentions.length) return body;
+  const nodes: Array<string | JSX.Element> = [];
+  let cursor = 0;
+  mentions
+    .slice()
+    .sort((a, b) => a.start - b.start)
+    .forEach((mention, idx) => {
+      if (mention.start < cursor || mention.end > body.length) return;
+      if (mention.start > cursor) nodes.push(body.slice(cursor, mention.start));
+      nodes.push(
+        <span key={`${mention.userId}-${idx}`} className="rounded bg-emerald-100 px-1 text-emerald-800" title={`${mention.displayName} · ${mention.email}`}>
+          {body.slice(mention.start, mention.end)}
+        </span>
+      );
+      cursor = mention.end;
+    });
+  if (cursor < body.length) nodes.push(body.slice(cursor));
+  return nodes;
+}
+
 function formatCompactName(name: string) {
   const trimmed = name.trim();
   if (!trimmed) {
@@ -66,11 +91,15 @@ export default function TaskDetailDialog({
 }: TaskDetailDialogProps) {
   const t = useTranslations();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { addToast } = useToast();
   const handleClose = useCallback(() => onOpenChange(false), [onOpenChange]);
   const [detail, setDetail] = useState<TaskDetail | null>(null);
   const [comment, setComment] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionUsers, setMentionUsers] = useState<Array<{ id: string; name: string; email: string; avatarUrl?: string | null }>>([]);
+  const [selectedMentions, setSelectedMentions] = useState<Array<{ userId: string; displayName: string; email: string }>>([]);
   const [, startTransition] = useTransition();
 
   const taskId = taskSummary?.id ?? null;
@@ -118,6 +147,53 @@ export default function TaskDetailDialog({
     }
   }, [open, taskId]);
 
+
+
+  useEffect(() => {
+    const match = comment.match(/@([\w-]*)$/);
+    setMentionQuery(match ? match[1] ?? "" : null);
+  }, [comment]);
+
+  useEffect(() => {
+    if (!taskId || mentionQuery === null) {
+      setMentionUsers([]);
+      return;
+    }
+
+    const controller = new AbortController();
+    const load = async () => {
+      const res = await fetch(`/api/mentions/users?taskId=${taskId}&q=${encodeURIComponent(mentionQuery)}`, { signal: controller.signal });
+      if (!res.ok) return;
+      const data = await res.json();
+      setMentionUsers(data.users ?? []);
+    };
+
+    void load();
+    return () => controller.abort();
+  }, [mentionQuery, taskId]);
+
+  const insertMention = (user: { id: string; name: string; email: string }) => {
+    const cleaned = user.name.replace(/\s+/g, " ");
+    setComment((prev) => prev.replace(/@[\w-]*$/, `@${cleaned} `));
+    setSelectedMentions((prev) => [...prev.filter((item) => item.userId !== user.id), { userId: user.id, displayName: cleaned, email: user.email }]);
+    setMentionQuery(null);
+  };
+
+  const buildMentionEntities = (text: string) => {
+    const entities: Array<{ userId: string; displayName: string; email: string; start: number; end: number }> = [];
+    selectedMentions.forEach((mention) => {
+      const token = `@${mention.displayName}`;
+      let from = 0;
+      while (from < text.length) {
+        const idx = text.indexOf(token, from);
+        if (idx === -1) break;
+        entities.push({ userId: mention.userId, displayName: mention.displayName, email: mention.email, start: idx, end: idx + token.length });
+        from = idx + token.length;
+      }
+    });
+    return entities.sort((a, b) => a.start - b.start);
+  };
+
   const handleAction = async (action: () => Promise<void>, successMessage: string) => {
     try {
       await action();
@@ -143,11 +219,25 @@ export default function TaskDetailDialog({
       return;
     }
     await handleAction(
-      () => addTaskComment({ taskId, body: comment.trim() }),
+      () => addTaskComment({ taskId, body: comment.trim(), mentionEntities: buildMentionEntities(comment.trim()) }),
       "Comment added"
     );
     setComment("");
   };
+
+  const highlightedCommentId = searchParams.get("comment");
+
+  useEffect(() => {
+    if (!open || !highlightedCommentId) return;
+    const node = document.querySelector(`[data-task-comment-id="${highlightedCommentId}"]`) as HTMLElement | null;
+    if (node) {
+      node.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    if (detail) {
+      addToast({ title: "Mention target no longer exists", status: "neutral" });
+    }
+  }, [addToast, detail, open, highlightedCommentId, detail?.comments.length]);
 
   const content = (
     <div className="space-y-6 text-sm text-ink-700">
@@ -334,13 +424,14 @@ export default function TaskDetailDialog({
             detail.comments.map((commentItem) => (
               <div
                 key={commentItem.id}
-                className="rounded-card border border-mist-100 bg-white px-3 py-2"
+                data-task-comment-id={commentItem.id}
+                className={`rounded-card border px-3 py-2 ${highlightedCommentId === commentItem.id ? "border-emerald-300 bg-emerald-50" : "border-mist-100 bg-white"}`}
               >
                 <div className="flex items-center gap-2 text-xs text-ink-500">
                   <span className="font-semibold text-ink-700">{commentItem.author.name}</span>
                   <span>· {formatTimestamp(commentItem.createdAt)}</span>
                 </div>
-                <p className="mt-2 text-sm text-ink-700">{commentItem.body}</p>
+                <p className="mt-2 text-sm text-ink-700">{renderMentionedText(commentItem.body, commentItem.mentionEntities ?? [])}</p>
               </div>
             ))
           ) : (
@@ -349,6 +440,21 @@ export default function TaskDetailDialog({
             </div>
           )}
         </div>
+        {mentionUsers.length ? (
+          <div className="flex flex-wrap items-center gap-2 text-xs text-ink-500">
+            <span className="text-ink-400">Mention</span>
+            {mentionUsers.map((user) => (
+              <button
+                key={user.id}
+                type="button"
+                className="rounded-full border border-mist-200 px-2 py-1 text-xs font-medium text-ink-600 hover:border-mist-300"
+                onClick={() => insertMention(user)}
+              >
+                @{user.name} · {user.email}
+              </button>
+            ))}
+          </div>
+        ) : null}
         <div className="space-y-2">
           <Textarea
             value={comment}

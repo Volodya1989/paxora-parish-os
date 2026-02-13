@@ -87,6 +87,7 @@ export async function GET(
 
   const { searchParams } = new URL(request.url);
   const cursorId = searchParams.get("cursor");
+  const targetMessageId = searchParams.get("msg");
 
   let cursor:
     | {
@@ -104,6 +105,31 @@ export async function GET(
     if (cursorMessage && cursorMessage.channelId === channelId) {
       cursor = { id: cursorMessage.id, createdAt: cursorMessage.createdAt };
     }
+  }
+
+
+
+  if (targetMessageId) {
+    const [messages, pinned, target] = await Promise.all([
+      listMessages({ channelId, cursor, limit: 50, userId }),
+      getPinnedMessage(channelId, userId),
+      prisma.chatMessage.findFirst({ where: { id: targetMessageId, channelId }, select: { id: true } })
+    ]);
+
+    if (target && !messages.some((message) => message.id === targetMessageId)) {
+      const around = await listMessages({ channelId, limit: 200, userId });
+      return NextResponse.json({
+        messages: around.map(serializeMessage),
+        pinnedMessage: serializePinned(pinned),
+        lockedAt: channel.lockedAt ? channel.lockedAt.toISOString() : null
+      });
+    }
+
+    return NextResponse.json({
+      messages: messages.map(serializeMessage),
+      pinnedMessage: serializePinned(pinned),
+      lockedAt: channel.lockedAt ? channel.lockedAt.toISOString() : null
+    });
   }
 
   const [messages, pinned] = await Promise.all([

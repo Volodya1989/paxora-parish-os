@@ -40,6 +40,7 @@ export type ChatAttachment = {
 export type ChatMessage = {
   id: string;
   body: string;
+  mentionEntities?: Array<{ userId: string; displayName: string; email: string; start: number; end: number }>;
   createdAt: Date;
   editedAt?: Date | null;
   deletedAt: Date | null;

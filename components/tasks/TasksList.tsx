@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import TaskEditDialog from "@/components/tasks/TaskEditDialog";
 import TaskDetailDialog from "@/components/tasks/TaskDetailDialog";
 import TaskCompletionDialog from "@/components/tasks/TaskCompletionDialog";
@@ -41,6 +41,7 @@ export default function TasksList({
   const t = useTranslations();
   const { addToast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
   const [editingTask, setEditingTask] = useState<TaskListItem | null>(null);
   const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
@@ -65,6 +66,16 @@ export default function TasksList({
     () => tasks.find((task) => task.id === completeTaskId) ?? null,
     [completeTaskId, tasks]
   );
+
+
+
+  useEffect(() => {
+    const taskIdFromUrl = searchParams.get("taskId");
+    if (!taskIdFromUrl) return;
+    if (tasks.some((task) => task.id === taskIdFromUrl)) {
+      setDetailTaskId(taskIdFromUrl);
+    }
+  }, [searchParams, tasks]);
 
   const refreshList = () => {
     startTransition(() => {

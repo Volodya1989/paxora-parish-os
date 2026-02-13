@@ -43,6 +43,10 @@ import {
 import type { TaskActionState } from "@/server/actions/taskState";
 import { prisma } from "@/server/db/prisma";
 import { getTaskDetail as getTaskDetailQuery } from "@/lib/queries/tasks";
+import { extractMentionedUserIds, mentionSnippet, normalizeMentionEntities } from "@/lib/mentions";
+import { listMentionableUsersForTask } from "@/lib/mentions/permissions";
+import { notifyMentionInApp } from "@/lib/notifications/notify";
+import { notifyMention } from "@/lib/push/notify";
 
 function assertSession(session: Session | null) {
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -320,10 +324,12 @@ export async function removeTaskVolunteer({
 
 export async function addTaskComment({
   taskId,
-  body
+  body,
+  mentionEntities
 }: {
   taskId: string;
   body: string;
+  mentionEntities?: unknown;
 }) {
   const session = await getServerSession(authOptions);
   const { userId, parishId } = assertSession(session);
@@ -337,12 +343,56 @@ export async function addTaskComment({
     throw new Error("Comment is required.");
   }
 
-  await addTaskCommentDomain({
+  const normalizedMentions = normalizeMentionEntities(mentionEntities);
+
+  const comment = await addTaskCommentDomain({
     taskId: parsed.data.taskId,
     parishId,
     actorUserId: userId,
-    body: body.trim()
+    body: body.trim(),
+    mentionEntities: normalizedMentions
   });
+
+  const mentionUserIds = extractMentionedUserIds(body.trim(), normalizedMentions);
+  if (mentionUserIds.length > 0) {
+    const mentionable = await listMentionableUsersForTask({ parishId, actorUserId: userId, taskId: parsed.data.taskId, query: "" });
+    const allowedIds = new Set(mentionable.map((user) => user.id));
+    const recipients = mentionUserIds.filter((id) => allowedIds.has(id) && id !== userId);
+
+    if (recipients.length > 0) {
+      const href = `/tasks?taskId=${parsed.data.taskId}&comment=${comment.id}`;
+      await prisma.mention.createMany({
+        data: recipients.map((mentionedUserId) => ({
+          parishId,
+          mentionedUserId,
+          actorUserId: userId,
+          contextType: "TASK_COMMENT",
+          contextId: comment.id,
+          snippet: mentionSnippet(body.trim()),
+          href
+        }))
+      });
+
+      const actor = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true } });
+      const actorName = actor?.name ?? actor?.email ?? "Parish member";
+
+      await notifyMentionInApp({
+        parishId,
+        recipientIds: recipients,
+        actorName,
+        description: `Serve card comment: ${mentionSnippet(body.trim())}`,
+        href
+      });
+
+      notifyMention({
+        parishId,
+        recipientIds: recipients,
+        actorName,
+        contextLabel: "Serve comment mention",
+        href
+      }).catch(() => {});
+    }
+  }
 
   revalidatePath("/tasks");
 }

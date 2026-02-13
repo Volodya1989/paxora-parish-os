@@ -130,7 +130,8 @@ export default async function GroupChatPage({ params }: GroupChatPageProps) {
         currentUserId={userId}
         mentionableUsers={groupMembers.map((member) => ({
           id: member.user.id,
-          name: member.user.name ?? member.user.email ?? "Parish member"
+          name: member.user.name ?? member.user.email ?? "Parish member",
+          email: member.user.email ?? ""
         }))}
         lastReadAt={lastReadAt}
       />

@@ -259,3 +259,24 @@ export async function notifyEventReminder(opts: {
 
   await sendPushToUsers(recipientIds, parishId, payload);
 }
+
+
+export async function notifyMention(opts: {
+  parishId: string;
+  recipientIds: string[];
+  actorName: string;
+  contextLabel: string;
+  href: string;
+}) {
+  const recipients = Array.from(new Set(opts.recipientIds.filter(Boolean)));
+  if (recipients.length === 0) return;
+
+  const payload: PushPayload = {
+    title: `${opts.actorName} mentioned you`,
+    body: opts.contextLabel,
+    url: opts.href,
+    tag: `mention-${opts.contextLabel.slice(0, 20)}`
+  };
+
+  await sendPushToUsers(recipients, opts.parishId, payload);
+}

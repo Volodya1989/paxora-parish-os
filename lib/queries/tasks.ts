@@ -119,6 +119,7 @@ export type TaskDetail = {
   comments: Array<{
     id: string;
     body: string;
+    mentionEntities: Array<{ userId: string; displayName: string; email: string; start: number; end: number }>;
     createdAt: string;
     author: { id: string; name: string; initials: string };
   }>;
@@ -638,6 +639,7 @@ export async function getTaskDetail({
         select: {
           id: true,
           body: true,
+          mentionEntities: true,
           createdAt: true,
           author: {
             select: {
@@ -727,6 +729,7 @@ export async function getTaskDetail({
       return {
         id: comment.id,
         body: comment.body,
+        mentionEntities: Array.isArray(comment.mentionEntities) ? (comment.mentionEntities as any[]) : [],
         createdAt: comment.createdAt.toISOString(),
         author: {
           id: comment.author.id,
