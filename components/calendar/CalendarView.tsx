@@ -10,7 +10,8 @@ import CalendarGridMonth from "@/components/calendar/CalendarGridMonth";
 import CalendarDayList from "@/components/calendar/CalendarDayList";
 import EventDetailPanel from "@/components/calendar/EventDetailPanel";
 import EventCreateDialog from "@/components/calendar/EventCreateDialog";
-import CreateContentRequestButton from "@/components/requests/CreateContentRequestButton";
+import EventRequestDialog from "@/components/shared/EventRequestDialog";
+import ParishionerAddButton from "@/components/shared/ParishionerAddButton";
 import ScheduleView from "@/components/calendar/ScheduleView";
 import EventRequestApprovals from "@/components/calendar/EventRequestApprovals";
 import PageShell from "@/components/app/page-shell";
@@ -96,6 +97,7 @@ export default function CalendarView({
   const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilter>("all");
   const [groupFilter, setGroupFilter] = useState<GroupFilter>("all");
   const [createOpen, setCreateOpen] = useState(false);
+  const [requestOpen, setRequestOpen] = useState(false);
   const [createType, setCreateType] = useState<"SERVICE" | "EVENT">("SERVICE");
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
@@ -193,12 +195,13 @@ export default function CalendarView({
           {t("calendar.addService")}
         </Button>
       ) : null}
-      <CreateContentRequestButton
-        canRequest={canRequestContentCreate}
-        sourceScreen="events"
-        groupOptions={groupOptions}
-        className="flex h-11 min-w-11 items-center justify-center rounded-full bg-primary-600 px-0 text-white shadow-sm transition hover:bg-primary-700"
-      />
+      {canRequestContentCreate ? (
+        <ParishionerAddButton
+          onClick={() => setRequestOpen(true)}
+          ariaLabel={t("calendar.addEvent")}
+          className="mx-auto"
+        />
+      ) : null}
     </div>
   );
 
@@ -277,14 +280,12 @@ export default function CalendarView({
                 {t("calendar.addEvent")}
               </Button>
             </>
-          ) : (
-            <CreateContentRequestButton
-              canRequest={canRequestContentCreate}
-              sourceScreen="events"
-              groupOptions={groupOptions}
-              className="ml-auto flex h-11 min-w-11 items-center justify-center rounded-full bg-primary-600 px-0 text-white shadow-sm transition hover:bg-primary-700"
+          ) : canRequestContentCreate ? (
+            <ParishionerAddButton
+              onClick={() => setRequestOpen(true)}
+              ariaLabel={t("calendar.addEvent")}
             />
-          )}
+          ) : null}
         </div>
 
         {/* Pending event request approvals — at top for leaders */}
@@ -421,6 +422,11 @@ export default function CalendarView({
         canCreatePrivateEvents={canCreatePrivateEvents}
         canCreateGroupEvents={canCreateGroupEvents}
         defaultType={createType}
+      />
+
+      <EventRequestDialog
+        open={requestOpen}
+        onOpenChange={setRequestOpen}
       />
     </Tabs>
   );

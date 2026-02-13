@@ -16,7 +16,7 @@ import type { PendingAccessRequest } from "@/lib/queries/access";
 import type { PendingTaskApproval } from "@/lib/queries/tasks";
 import { approveTask, rejectTask } from "@/server/actions/tasks";
 import TaskQuickAdd from "@/components/tasks/TaskQuickAdd";
-import CreateContentRequestButton from "@/components/requests/CreateContentRequestButton";
+import ParishionerAddButton from "@/components/shared/ParishionerAddButton";
 import { cn } from "@/lib/ui/cn";
 import Link from "next/link";
 import { routes } from "@/lib/navigation/routes";
@@ -82,6 +82,7 @@ export default function TasksView({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isRequestOpen, setIsRequestOpen] = useState(false);
   const [accessRoles, setAccessRoles] = useState<Record<string, string>>({});
   const [isApproving, startApprovalTransition] = useTransition();
   const [isAccessPending, startAccessTransition] = useTransition();
@@ -301,14 +302,12 @@ export default function TasksView({
             >
               <PlusIcon />
             </Button>
-          ) : (
-            <CreateContentRequestButton
-              canRequest={canRequestContentCreate}
-              sourceScreen="serve"
-              groupOptions={groupOptions}
-              className="ml-auto flex h-11 min-w-11 items-center justify-center rounded-full bg-primary-600 px-0 text-white shadow-sm transition hover:bg-primary-700"
+          ) : canRequestContentCreate ? (
+            <ParishionerAddButton
+              onClick={() => setIsRequestOpen(true)}
+              ariaLabel={t("serve.requestOpportunity")}
             />
-          )}
+          ) : null}
         </div>
 
         {/* + create (desktop buttons) */}
@@ -324,12 +323,11 @@ export default function TasksView({
           </>
         )}
 
-        {!canManageTasks ? (
-          <CreateContentRequestButton
-            canRequest={canRequestContentCreate}
-            sourceScreen="serve"
-            groupOptions={groupOptions}
-            className="ml-auto hidden h-11 min-w-11 items-center justify-center rounded-full bg-primary-600 px-0 text-white shadow-sm transition hover:bg-primary-700 md:flex"
+        {!canManageTasks && canRequestContentCreate ? (
+          <ParishionerAddButton
+            onClick={() => setIsRequestOpen(true)}
+            ariaLabel={t("serve.requestOpportunity")}
+            className="hidden md:flex"
           />
         ) : null}
 
@@ -480,6 +478,19 @@ export default function TasksView({
         initialVisibility="private"
         forcePrivate={!canManageTasks && viewMode === "mine"}
         creationContext={!canManageTasks && viewMode === "mine" ? "my_commitments" : "default"}
+      />
+
+
+      <TaskCreateDialog
+        open={isRequestOpen}
+        onOpenChange={setIsRequestOpen}
+        weekId={weekId}
+        groupOptions={groupOptions}
+        memberOptions={memberOptions}
+        currentUserId={currentUserId}
+        initialVisibility="public"
+        forcePublic
+        requestMode
       />
     </div>
   );

@@ -41,6 +41,8 @@ type TaskCreateDialogProps = {
   currentUserId: string;
   initialVisibility?: "private" | "public";
   forcePrivate?: boolean;
+  forcePublic?: boolean;
+  requestMode?: boolean;
   creationContext?: "default" | "my_commitments";
 };
 
@@ -53,6 +55,8 @@ export default function TaskCreateDialog({
   currentUserId,
   initialVisibility = "private",
   forcePrivate = false,
+  forcePublic = false,
+  requestMode = false,
   creationContext = "default"
 }: TaskCreateDialogProps) {
   const router = useRouter();
@@ -85,11 +89,12 @@ export default function TaskCreateDialog({
     if (open && !prevOpen.current) {
       handledSuccess.current = state.status === "success";
       prevStatus.current = state.status;
-      setVolunteersNeeded(initialVisibility === "public" ? "2" : "1");
-      setVisibility(initialVisibility);
+      const nextInitialVisibility = forcePublic ? "public" : initialVisibility;
+      setVolunteersNeeded(nextInitialVisibility === "public" ? "2" : "1");
+      setVisibility(nextInitialVisibility);
     }
     prevOpen.current = open;
-  }, [initialVisibility, open, state.status]);
+  }, [forcePublic, initialVisibility, open, state.status]);
 
   useEffect(() => {
     const wasSuccess = prevStatus.current === "success";
@@ -116,8 +121,12 @@ export default function TaskCreateDialog({
     drawerFormRef.current?.reset();
     setFormResetKey((prev) => prev + 1);
     addToast({
-      title: "Task saved",
-      description: state.message ?? "Your task is ready for the team.",
+      title: requestMode ? "Request submitted" : "Task saved",
+      description:
+        state.message ??
+        (requestMode
+          ? "Your serve task request has been sent for leader approval."
+          : "Your task is ready for the team."),
       status: "success"
     });
     onOpenChange(false);
@@ -125,7 +134,7 @@ export default function TaskCreateDialog({
       router.refresh();
     });
     prevStatus.current = state.status;
-  }, [addToast, onOpenChange, router, startTransition, state]);
+  }, [addToast, onOpenChange, requestMode, router, startTransition, state]);
 
   const renderForm = (formId: string, ref: RefObject<HTMLFormElement>) => (
     <form
@@ -145,7 +154,9 @@ export default function TaskCreateDialog({
       {/* Accent header banner */}
       <div className="rounded-xl border-l-4 border-l-sky-400 bg-sky-50/60 px-4 py-3">
         <p className="text-xs text-sky-700">
-          Capture what needs attention this week and assign it to the right owner.
+          {requestMode
+            ? "Share details for the serve task you want to add. Parish leadership will review your request."
+            : "Capture what needs attention this week and assign it to the right owner."}
         </p>
       </div>
 
@@ -194,6 +205,13 @@ export default function TaskCreateDialog({
           <input type="hidden" name="visibility" value="private" />
           <p className="rounded-xl border border-mist-200 bg-mist-50 px-3 py-2 text-xs text-ink-500">
             Private commitment only. This stays in your personal commitments view.
+          </p>
+        </>
+      ) : forcePublic ? (
+        <>
+          <input type="hidden" name="visibility" value="public" />
+          <p className="rounded-xl border border-primary-100 bg-primary-50 px-3 py-2 text-xs text-primary-800">
+            Public serve-task request. Leaders will approve before it appears to everyone.
           </p>
         </>
       ) : (
@@ -281,7 +299,10 @@ export default function TaskCreateDialog({
           {state.message}
         </p>
       ) : null}
-      <TaskCreateActions onCancel={() => onOpenChange(false)} />
+      <TaskCreateActions
+        onCancel={() => onOpenChange(false)}
+        submitLabel={requestMode ? "Send request" : "Create task"}
+      />
     </form>
   );
 
@@ -290,14 +311,14 @@ export default function TaskCreateDialog({
       <Modal
         open={open}
         onClose={() => onOpenChange(false)}
-        title="New task"
+        title={requestMode ? "Request a serve task" : "New task"}
       >
         {renderForm(modalFormId, modalFormRef)}
       </Modal>
       <Drawer
         open={open}
         onClose={() => onOpenChange(false)}
-        title="New task"
+        title={requestMode ? "Request a serve task" : "New task"}
       >
         {renderForm(drawerFormId, drawerFormRef)}
       </Drawer>
@@ -305,7 +326,13 @@ export default function TaskCreateDialog({
   );
 }
 
-function TaskCreateActions({ onCancel }: { onCancel: () => void }) {
+function TaskCreateActions({
+  onCancel,
+  submitLabel
+}: {
+  onCancel: () => void;
+  submitLabel: string;
+}) {
   const t = useTranslations();
   const { pending } = useFormStatus();
 
@@ -315,7 +342,7 @@ function TaskCreateActions({ onCancel }: { onCancel: () => void }) {
         {t("buttons.cancel")}
       </Button>
       <Button type="submit" isLoading={pending}>
-        Create task
+        {submitLabel}
       </Button>
     </div>
   );

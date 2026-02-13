@@ -22,7 +22,7 @@ import { useTranslations } from "@/lib/i18n/provider";
 import { useLocale } from "@/lib/i18n/provider";
 import QuoteCard from "@/components/app/QuoteCard";
 import { buildLocalePathname } from "@/lib/i18n/routing";
-import CreateContentRequestButton from "@/components/requests/CreateContentRequestButton";
+import ParishionerAddButton from "@/components/shared/ParishionerAddButton";
 
 type GroupsViewProps = {
   groups: GroupListItem[];
@@ -318,14 +318,12 @@ export default function GroupsView({
               {t("groups.startGroup")}
             </Button>
           </>
-        ) : (
-          <CreateContentRequestButton
-            canRequest={canRequestContentCreate}
-            sourceScreen="groups"
-            groupOptions={joinedGroupOptions}
-            className="ml-auto flex h-11 min-w-11 items-center justify-center rounded-full bg-primary-600 px-0 text-white shadow-sm transition hover:bg-primary-700"
+        ) : canRequestContentCreate ? (
+          <ParishionerAddButton
+            onClick={openCreateDialog}
+            ariaLabel={t("groups.startGroup")}
           />
-        )}
+        ) : null}
       </div>
 
       {/* Pending invites for the current user */}

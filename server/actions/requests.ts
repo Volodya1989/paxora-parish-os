@@ -47,18 +47,6 @@ export type RequestActionResult = { status: "success" | "error"; message?: strin
 const hashEmailPayload = (payload: Record<string, unknown>) =>
   crypto.createHash("sha256").update(JSON.stringify(payload)).digest("hex");
 
-const contentCreationRequestSchema = createRequestSchema.pick({
-  title: true,
-  description: true
-}).extend({
-  requestedEntityType: z.enum(["EVENT", "SERVE_TASK", "GROUP"]),
-  scope: z.enum(["PUBLIC", "GROUP"]).default("PUBLIC"),
-  groupId: z.string().trim().optional(),
-  sourceScreen: z.enum(["serve", "groups", "events"]).optional(),
-  eventDate: z.string().trim().optional(),
-  neededByDate: z.string().trim().optional()
-});
-
 const contextualRequestSchema = createRequestSchema.pick({
   title: true,
   description: true
@@ -172,106 +160,6 @@ export async function createRequest(formData: FormData): Promise<RequestActionRe
   return { status: "success" };
 }
 
-
-export async function submitContentCreationRequest(formData: FormData): Promise<RequestActionResult> {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user?.id || !session.user.activeParishId) {
-    return { status: "error", message: "Please sign in to submit a request." };
-  }
-
-  const parishId = session.user.activeParishId;
-  const requesterMembership = await prisma.membership.findUnique({
-    where: {
-      parishId_userId: {
-        parishId,
-        userId: session.user.id
-      }
-    },
-    select: { role: true }
-  });
-
-  if (!requesterMembership || requesterMembership.role !== "MEMBER") {
-    return { status: "error", message: "Only parishioners can submit this request." };
-  }
-
-  const parsed = contentCreationRequestSchema.safeParse({
-    title: formData.get("title")?.toString(),
-    description: formData.get("description")?.toString(),
-    requestedEntityType: formData.get("requestedEntityType")?.toString(),
-    scope: formData.get("scope")?.toString() ?? "PUBLIC",
-    groupId: formData.get("groupId")?.toString() ?? undefined,
-    sourceScreen: formData.get("sourceScreen")?.toString() ?? undefined,
-    eventDate: formData.get("eventDate")?.toString() ?? undefined,
-    neededByDate: formData.get("neededByDate")?.toString() ?? undefined
-  });
-
-  if (!parsed.success) {
-    return { status: "error", message: parsed.error.errors[0]?.message ?? "Invalid request." };
-  }
-
-  if (parsed.data.scope === "GROUP") {
-    if (!parsed.data.groupId) {
-      return { status: "error", message: "Group is required for group-scoped requests." };
-    }
-
-    const groupMembership = await prisma.groupMembership.findFirst({
-      where: {
-        groupId: parsed.data.groupId,
-        userId: session.user.id,
-        status: "ACTIVE",
-        group: {
-          parishId
-        }
-      },
-      select: { id: true }
-    });
-
-    if (!groupMembership) {
-      return { status: "error", message: "You can only request for groups you belong to." };
-    }
-
-    if (parsed.data.requestedEntityType === "GROUP") {
-      return { status: "error", message: "New group requests must use public scope." };
-    }
-  }
-
-  const requester = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { email: true, name: true }
-  });
-
-  if (!requester?.email) {
-    return { status: "error", message: "A valid email is required to submit a request." };
-  }
-
-  await prisma.request.create({
-    data: {
-      parishId,
-      createdByUserId: session.user.id,
-      type: "GENERIC",
-      visibilityScope: "ADMIN_ALL",
-      title: parsed.data.title,
-      details: {
-        requesterEmail: requester.email,
-        requesterName: requester.name ?? session.user.name ?? requester.email,
-        description: parsed.data.description,
-        requestKind: "CONTENT_CREATION",
-        requestedEntityType: parsed.data.requestedEntityType,
-        scope: parsed.data.scope,
-        groupId: parsed.data.groupId ?? null,
-        sourceScreen: parsed.data.sourceScreen ?? null,
-        eventDate: parsed.data.eventDate ?? null,
-        neededByDate: parsed.data.neededByDate ?? null
-      } as Prisma.InputJsonValue
-    }
-  });
-
-  revalidatePath("/requests");
-  revalidatePath("/admin/requests");
-
-  return { status: "success" };
-}
 
 export async function submitParishionerContextRequest(formData: FormData): Promise<RequestActionResult> {
   const session = await getServerSession(authOptions);
