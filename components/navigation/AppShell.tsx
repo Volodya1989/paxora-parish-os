@@ -31,9 +31,9 @@ export function AppShell({ children, parishRole, platformRole, impersonation }: 
         <PushRegistration />
         <EngagementPrompts />
         <InviteToastListener />
-        <div className="flex min-h-screen w-full">
+        <div className="flex min-h-screen w-full overflow-x-clip">
           <Sidebar currentPath={pathname} parishRole={parishRole} platformRole={platformRole} />
-          <div className="flex min-h-screen flex-1 flex-col">
+          <div className="flex min-h-screen min-w-0 flex-1 flex-col">
             {impersonation ? (
               <ImpersonationBanner parishName={impersonation.parishName} />
             ) : null}

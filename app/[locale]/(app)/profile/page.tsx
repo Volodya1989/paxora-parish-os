@@ -89,25 +89,25 @@ export default async function ProfilePage({
       gradientClass="from-primary-600 via-primary-500 to-emerald-500"
       icon={<SparklesIcon className="h-6 w-6 text-white" />}
     >
-      <div className="mx-auto w-full max-w-4xl space-y-4 overflow-x-hidden md:space-y-5">
+      <div className="mx-auto w-full max-w-4xl space-y-4 overflow-x-hidden pb-2 md:space-y-5">
         <Card>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
+          <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-ink-900">{t("profile.quickActions")}</p>
               <p className="text-sm text-ink-500">{t("profile.quickActionsDesc")}</p>
             </div>
-            <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
+            <div className="grid w-full min-w-0 grid-cols-1 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:justify-end">
               <a
                 href="#notification-settings"
                 className="inline-flex w-full min-h-[2.25rem] items-center justify-center rounded-button border border-mist-200 bg-white px-3 py-1.5 text-center text-xs font-medium leading-tight text-ink-900 transition hover:border-mist-300 hover:bg-mist-50 focus-ring whitespace-normal break-words sm:w-auto"
               >
-                {t("profile.notificationSettings")}
+                <span className="min-w-0 truncate">{t("profile.notificationSettings")}</span>
               </a>
               <a
                 href="#important-dates"
                 className="inline-flex w-full min-h-[2.25rem] items-center justify-center rounded-button border border-mist-200 bg-white px-3 py-1.5 text-center text-xs font-medium leading-tight text-ink-900 transition hover:border-mist-300 hover:bg-mist-50 focus-ring whitespace-normal break-words sm:w-auto"
               >
-                {t("profile.importantDates")}
+                <span className="min-w-0 truncate">{t("profile.importantDates")}</span>
               </a>
             </div>
           </div>

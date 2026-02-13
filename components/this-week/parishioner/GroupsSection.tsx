@@ -36,14 +36,14 @@ export default function GroupsSection({ groups, hasPublicGroups, className }: Gr
 
   return (
     <section className={cn("space-y-4", className)}>
-      <div className="flex items-center justify-between">
+      <div className="flex min-w-0 items-center justify-between gap-3">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-ink-500">
           {t("landing.yourGroups")}
         </h2>
         {groups.length > 0 && hasPublicGroups && (
           <Link
             href={buildLocalePathname(locale, routes.groups)}
-            className="text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline"
+            className="shrink-0 text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline"
           >
             {t("landing.viewAll")}
           </Link>
@@ -83,8 +83,8 @@ export default function GroupsSection({ groups, hasPublicGroups, className }: Gr
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium text-ink-900">{group.name}</p>
                 {group.lastMessage ? (
-                  <div className="flex items-baseline gap-2">
-                    <p className="truncate text-sm text-ink-500 flex-1">
+                  <div className="flex min-w-0 items-baseline gap-2">
+                    <p className="min-w-0 flex-1 truncate text-sm text-ink-500">
                       {group.lastMessageAuthor ? `${group.lastMessageAuthor}: ` : ""}{group.lastMessage}
                     </p>
                     <span className="shrink-0 text-xs text-ink-400">
@@ -95,7 +95,7 @@ export default function GroupsSection({ groups, hasPublicGroups, className }: Gr
                   <p className="truncate text-sm text-ink-500">{group.description}</p>
                 ) : null}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-center gap-2">
                 {group.unreadCount && group.unreadCount > 0 ? (
                   <Badge tone="warning">{group.unreadCount}</Badge>
                 ) : null}
