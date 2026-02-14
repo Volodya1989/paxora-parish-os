@@ -28,14 +28,17 @@ export async function listPendingEventRequests({
 }): Promise<PendingEventRequest[]> {
   const membership = await getParishMembership(parishId, actorUserId);
 
-  if (!membership || !isParishLeader(membership.role)) {
+  if (!membership) {
     return [];
   }
+
+  const canManage = isParishLeader(membership.role);
 
   return prisma.eventRequest.findMany({
     where: {
       parishId,
-      status: "PENDING"
+      status: "PENDING",
+      ...(canManage ? {} : { requesterId: actorUserId })
     },
     orderBy: { createdAt: "asc" },
     select: {

@@ -4,7 +4,7 @@ import { prisma } from "@/server/db/prisma";
 import { getParishMembership, listTaskFilterGroups } from "@/server/db/groups";
 import { getWeekForSelection, parseWeekSelection } from "@/domain/week";
 import { getNow } from "@/lib/time/getNow";
-import { listPendingTaskApprovals, listTasks, type TaskFilters } from "@/lib/queries/tasks";
+import { listMyPendingTaskRequests, listPendingTaskApprovals, listTasks, type TaskFilters } from "@/lib/queries/tasks";
 import { getPendingAccessRequests } from "@/lib/queries/access";
 import { getUserYtdHours } from "@/lib/queries/hours";
 import { getMilestoneTier } from "@/lib/hours/milestones";
@@ -120,7 +120,7 @@ export default async function TasksPage({
   const week = await getWeekForSelection(parishId, weekSelection, getNow());
   const filters = parseTaskFilters(resolvedSearchParams, viewMode);
 
-  const [taskList, groups, members, pendingRequests, pendingTaskApprovals, parish, ytdHours, coordinatorMembership] = await Promise.all([
+  const [taskList, groups, members, pendingRequests, pendingTaskApprovals, pendingMyTaskRequests, parish, ytdHours, coordinatorMembership] = await Promise.all([
     listTasks({
       parishId,
       actorUserId: session.user.id,
@@ -148,6 +148,11 @@ export default async function TasksPage({
     }),
     getPendingAccessRequests(),
     listPendingTaskApprovals({
+      parishId,
+      actorUserId: session.user.id,
+      weekId: week.id
+    }),
+    listMyPendingTaskRequests({
       parishId,
       actorUserId: session.user.id,
       weekId: week.id
@@ -212,6 +217,7 @@ export default async function TasksPage({
         currentUserId={session.user.id}
         pendingAccessRequests={pendingRequests}
         pendingTaskApprovals={pendingTaskApprovals}
+        pendingMyTaskRequests={pendingMyTaskRequests}
         approveAccessAction={approveParishAccess}
         rejectAccessAction={rejectParishAccess}
         viewMode={viewMode}

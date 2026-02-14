@@ -45,7 +45,7 @@ import { prisma } from "@/server/db/prisma";
 import { getTaskDetail as getTaskDetailQuery } from "@/lib/queries/tasks";
 import { extractMentionedUserIds, mentionSnippet, normalizeMentionEntities } from "@/lib/mentions";
 import { listMentionableUsersForTask } from "@/lib/mentions/permissions";
-import { notifyMentionInApp } from "@/lib/notifications/notify";
+import { notifyMentionInApp, notifyContentRequestDecisionInApp, notifyContentRequestSubmittedInApp } from "@/lib/notifications/notify";
 import { notifyMention } from "@/lib/push/notify";
 
 function assertSession(session: Session | null) {
@@ -186,6 +186,15 @@ export async function createTask(
     openToVolunteers,
     approvalStatus
   });
+
+  if (approvalStatus === "PENDING") {
+    await notifyContentRequestSubmittedInApp({
+      parishId,
+      requesterId: userId,
+      title: parsed.data.title,
+      href: "/tasks?pending=1"
+    });
+  }
 
   revalidatePath("/tasks");
   revalidatePath("/this-week");
@@ -665,7 +674,7 @@ export async function approveTask({ taskId }: { taskId: string }) {
 
   const task = await prisma.task.findUnique({
     where: { id: parsed.data.taskId },
-    select: { parishId: true, visibility: true, approvalStatus: true }
+    select: { parishId: true, visibility: true, approvalStatus: true, createdById: true, title: true }
   });
 
   if (!task || task.parishId !== parishId) {
@@ -683,6 +692,14 @@ export async function approveTask({ taskId }: { taskId: string }) {
   await prisma.task.update({
     where: { id: parsed.data.taskId },
     data: { approvalStatus: "APPROVED" }
+  });
+
+  await notifyContentRequestDecisionInApp({
+    parishId,
+    requesterId: task.createdById,
+    title: task.title,
+    decision: "APPROVED",
+    href: "/tasks?pending=1"
   });
 
   revalidatePath("/tasks");
@@ -715,7 +732,7 @@ export async function rejectTask({ taskId }: { taskId: string }) {
 
   const task = await prisma.task.findUnique({
     where: { id: parsed.data.taskId },
-    select: { parishId: true, visibility: true, approvalStatus: true }
+    select: { parishId: true, visibility: true, approvalStatus: true, createdById: true, title: true }
   });
 
   if (!task || task.parishId !== parishId) {
@@ -733,6 +750,14 @@ export async function rejectTask({ taskId }: { taskId: string }) {
   await prisma.task.update({
     where: { id: parsed.data.taskId },
     data: { approvalStatus: "REJECTED" }
+  });
+
+  await notifyContentRequestDecisionInApp({
+    parishId,
+    requesterId: task.createdById,
+    title: task.title,
+    decision: "DECLINED",
+    href: "/tasks?pending=1"
   });
 
   revalidatePath("/tasks");

@@ -4,7 +4,7 @@ import { useId, useState, type ReactNode } from "react";
 import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
-import { CheckCircleIcon } from "@/components/icons/ParishIcons";
+import RequestSuccessState from "@/components/shared/RequestSuccessState";
 
 export type RequestDialogProps = {
   open: boolean;
@@ -53,20 +53,12 @@ export default function RequestDialog({
   const renderContent = (formId: string) => {
     if (formState === "success") {
       return (
-        <div className="flex flex-col items-center gap-4 py-8 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100">
-            <CheckCircleIcon className="h-7 w-7 text-emerald-600" />
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-ink-900">{successTitle}</h3>
-            <p className="max-w-sm text-sm leading-relaxed text-ink-500">
-              {successMessage}
-            </p>
-          </div>
-          <Button onClick={handleClose} className="mt-2">
-            {doneLabel}
-          </Button>
-        </div>
+        <RequestSuccessState
+          title={successTitle}
+          message={typeof successMessage === "string" ? successMessage : "Your request was submitted successfully."}
+          doneLabel={doneLabel}
+          onDone={handleClose}
+        />
       );
     }
 

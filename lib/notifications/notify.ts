@@ -271,6 +271,47 @@ export async function notifyRequestStatusUpdatedInApp(opts: {
   });
 }
 
+export async function notifyContentRequestSubmittedInApp(opts: {
+  parishId: string;
+  requesterId: string;
+  title: string;
+  href: string;
+}) {
+  const leaders = await prisma.membership.findMany({
+    where: {
+      parishId: opts.parishId,
+      role: { in: ["ADMIN", "SHEPHERD"] }
+    },
+    select: { userId: true }
+  });
+
+  const recipients = leaders.map((member) => member.userId).filter((id) => id !== opts.requesterId);
+
+  await createNotificationsForUsers(recipients, {
+    parishId: opts.parishId,
+    type: NotificationType.REQUEST,
+    title: "New creation request submitted",
+    description: opts.title,
+    href: opts.href
+  });
+}
+
+export async function notifyContentRequestDecisionInApp(opts: {
+  parishId: string;
+  requesterId: string;
+  title: string;
+  decision: "APPROVED" | "DECLINED";
+  href: string;
+}) {
+  await createNotificationsForUsers([opts.requesterId], {
+    parishId: opts.parishId,
+    type: NotificationType.REQUEST,
+    title: `Request ${opts.decision.toLowerCase()}`,
+    description: opts.title,
+    href: opts.href
+  });
+}
+
 
 export async function notifyMentionInApp(opts: {
   parishId: string;
