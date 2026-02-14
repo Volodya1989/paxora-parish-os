@@ -507,14 +507,9 @@ export default function GroupsView({
               )}
             </section>
 
-            <section className="space-y-3">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-ink-500">Groups you can join</h2>
-              {discoverGroups.length === 0 ? (
-                <ListEmptyState
-                  title="No discoverable groups"
-                  description="Try a different filter or check back later."
-                />
-              ) : (
+            {discoverGroups.length > 0 ? (
+              <section className="space-y-3">
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-ink-500">Groups you can join</h2>
                 <div className="space-y-2">
                   {discoverGroups.map((group) => {
                     const status = optimisticMembershipStatus[group.id] ?? group.viewerMembershipStatus;
@@ -592,8 +587,8 @@ export default function GroupsView({
                     );
                   })}
                 </div>
-              )}
-            </section>
+              </section>
+            ) : null}
           </>
         ) : searchedArchivedGroups.length === 0 ? (
           renderArchivedEmptyState()
