@@ -126,6 +126,17 @@ export default function ChatHeader({
           </svg>
         </button>
 
+
+        {channel.group ? (
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/20 text-xs font-semibold text-white">
+            {channel.group.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={channel.group.avatarUrl} alt={channel.group.name} className="h-full w-full object-cover" />
+            ) : (
+              channel.group.name.slice(0, 2).toUpperCase()
+            )}
+          </div>
+        ) : null}
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-sm font-semibold text-white">{channel.name}</h2>
           {channel.description ? (

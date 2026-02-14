@@ -8,11 +8,12 @@ import { routes } from "@/lib/navigation/routes";
 import { useTranslations, useLocale } from "@/lib/i18n/provider";
 import { buildLocalePathname } from "@/lib/i18n/routing";
 import { cn } from "@/lib/ui/cn";
-import { formatMessageTime } from "@/lib/time/messageTime";
+import GroupListRow from "@/components/groups/GroupListRow";
 
 type GroupPreview = {
   id: string;
   name: string;
+  avatarUrl?: string | null;
   description: string | null;
   unreadCount?: number | null;
   lastMessage?: string | null;
@@ -75,32 +76,23 @@ export default function GroupsSection({ groups, hasPublicGroups, className }: Gr
             <Link
               key={group.id}
               href={buildLocalePathname(locale, `/groups/${group.id}/chat`)}
-              className="group flex items-center gap-3 rounded-xl border border-mist-100 bg-white px-4 py-3 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-mist-200 hover:shadow-md active:scale-[0.99]"
+              className="block transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.99]"
             >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-600 transition-colors group-hover:bg-sky-200">
-                <UsersIcon className="h-5 w-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-ink-900">{group.name}</p>
-                {group.lastMessage ? (
-                  <div className="flex min-w-0 items-baseline gap-2">
-                    <p className="min-w-0 flex-1 truncate text-sm text-ink-500">
-                      {group.lastMessageAuthor ? `${group.lastMessageAuthor}: ` : ""}{group.lastMessage}
-                    </p>
-                    <span className="shrink-0 text-xs text-ink-400">
-                      {formatMessageTime(group.lastMessageTime)}
-                    </span>
-                  </div>
-                ) : group.description ? (
-                  <p className="truncate text-sm text-ink-500">{group.description}</p>
-                ) : null}
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                {group.unreadCount && group.unreadCount > 0 ? (
-                  <Badge tone="warning">{group.unreadCount}</Badge>
-                ) : null}
-                <span className="text-ink-400 transition-transform group-hover:translate-x-0.5">›</span>
-              </div>
+              <GroupListRow
+                name={group.name}
+                avatarUrl={group.avatarUrl}
+                description={group.description}
+                lastMessage={group.lastMessage}
+                lastMessageAuthor={group.lastMessageAuthor}
+                lastMessageTime={group.lastMessageTime}
+                className="group flex items-center gap-3 rounded-xl border border-mist-100 bg-white px-4 py-3 shadow-sm transition-all duration-200 hover:border-mist-200 hover:shadow-md"
+                right={(
+                  <>
+                    {group.unreadCount && group.unreadCount > 0 ? <Badge tone="warning">{group.unreadCount}</Badge> : null}
+                    <span className="text-ink-400 transition-transform group-hover:translate-x-0.5">›</span>
+                  </>
+                )}
+              />
             </Link>
           ))}
           {groups.length > 4 && (

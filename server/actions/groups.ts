@@ -24,6 +24,7 @@ const ALLOW_GROUP_LEADS_TO_MANAGE_MEMBERSHIP = true;
 type GroupCreateResult = {
   status: "success" | "error";
   message?: string;
+  groupId?: string;
 };
 
 function assertSession(session: Session | null) {
@@ -290,7 +291,7 @@ export async function submitGroupCreationRequest(input: {
       });
     }
 
-    return { status: "success" };
+    return { status: "success", groupId: created.id };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to submit group request.";
     return { status: "error", message };

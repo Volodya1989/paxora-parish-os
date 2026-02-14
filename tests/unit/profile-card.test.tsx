@@ -8,11 +8,17 @@ import { ToastProvider } from "@/components/ui/Toast";
 
 test("ProfileCard renders name, email, and parish role", () => {
   const markup = renderToStaticMarkup(
-    createElement(ProfileCard, {
-      name: "Jordan Lee",
-      email: "jordan@example.com",
-      role: "ADMIN"
-    })
+    createElement(
+      ToastProvider,
+      null,
+      createElement(ProfileCard, {
+        userId: "user-1",
+        name: "Jordan Lee",
+        email: "jordan@example.com",
+        role: "ADMIN",
+        avatarUrl: null
+      })
+    )
   );
 
   assert.match(markup, /Jordan Lee/);

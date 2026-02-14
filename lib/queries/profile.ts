@@ -4,6 +4,7 @@ import { prisma } from "@/server/db/prisma";
 import { getUserYtdHours } from "@/lib/queries/hours";
 import { getMilestoneTier, type MilestoneTier } from "@/lib/hours/milestones";
 import { authOptions } from "@/server/auth/options";
+import { buildAvatarImagePath } from "@/lib/storage/avatar";
 
 export type CurrentUserProfile = {
   name: string | null;
@@ -16,7 +17,9 @@ export type CurrentUserProfile = {
 };
 
 export type ProfileSettings = {
+  userId: string;
   name: string | null;
+  avatarUrl: string | null;
   email: string;
   parishRole: ParishRole | null;
   notificationsEnabled: boolean;
@@ -45,8 +48,10 @@ export async function getProfileSettings({ userId, parishId, getNow }: GetProfil
     prisma.user.findUnique({
       where: { id: userId },
       select: {
+        id: true,
         name: true,
         email: true,
+        avatarKey: true,
         volunteerHoursOptIn: true,
         notifyMessageInApp: true,
         notifyTaskInApp: true,
@@ -100,8 +105,10 @@ export async function getProfileSettings({ userId, parishId, getNow }: GetProfil
   });
 
   const profile: ProfileSettings = {
+    userId: user.id,
     name: user.name,
     email: user.email,
+    avatarUrl: user.avatarKey ? buildAvatarImagePath(user.avatarKey) : null,
     parishRole: membership?.role ?? null,
     notificationsEnabled: membership?.notifyEmailEnabled ?? true,
     weeklyDigestEnabled: membership?.weeklyDigestEnabled ?? true,

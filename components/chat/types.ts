@@ -7,6 +7,7 @@ export type ChatChannelSummary = {
   group: {
     id: string;
     name: string;
+    avatarUrl?: string | null;
   } | null;
   unreadCount?: number | null;
   isMember: boolean;

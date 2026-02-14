@@ -113,7 +113,13 @@ export default async function ProfilePage({
           </div>
         </Card>
 
-        <ProfileCard name={profile.name} email={profile.email} role={profile.parishRole} />
+        <ProfileCard
+          userId={profile.userId}
+          name={profile.name}
+          email={profile.email}
+          role={profile.parishRole}
+          avatarUrl={profile.avatarUrl}
+        />
 
         <VolunteerHoursCard
           ytdHours={profile.ytdHours}

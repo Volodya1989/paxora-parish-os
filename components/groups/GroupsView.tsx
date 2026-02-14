@@ -399,7 +399,7 @@ export default function GroupsView({
         {filteredGroups.length === 0 ? (
           renderEmptyState()
         ) : (
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="space-y-2">
             {filteredGroups.map((group) => (
               <GroupCard
                 key={group.id}

@@ -297,6 +297,7 @@ model User {
   id                   String    @id @default(cuid())
   email                String    @unique
   name                 String?
+  avatarKey            String?
   passwordHash         String
   activeParishId       String?
   impersonatedParishId String?
@@ -627,6 +628,7 @@ model Group {
   parishId    String
   createdById String
   name        String
+  avatarKey   String?
   description String?
   visibility  GroupVisibility @default(PUBLIC)
   joinPolicy  GroupJoinPolicy @default(INVITE_ONLY)

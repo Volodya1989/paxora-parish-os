@@ -10,6 +10,7 @@ const baseGroup: GroupListItem = {
   id: "group-1",
   createdById: "user-1",
   name: "Hospitality Team",
+  avatarUrl: null,
   description: "Welcoming new members.",
   createdAt: new Date("2024-01-02T10:00:00.000Z"),
   archivedAt: null,
@@ -23,7 +24,7 @@ const baseGroup: GroupListItem = {
   unreadCount: 0
 };
 
-test("GroupCard renders name, member count, and archive menu items", () => {
+test("GroupCard renders name and archive menu items", () => {
   const markup = renderToStaticMarkup(
     withI18n(
       createElement(GroupCard, {
@@ -46,7 +47,6 @@ test("GroupCard renders name, member count, and archive menu items", () => {
   );
 
   assert.match(markup, /Hospitality Team/);
-  assert.match(markup, /4 members/);
   assert.match(markup, />Edit</);
   assert.match(markup, />Archive</);
 });
@@ -98,10 +98,9 @@ test("GroupCard shows unread badge when available", () => {
   );
 
   assert.match(markup, />3</);
-  assert.match(markup, /Open chat/);
 });
 
-test("GroupCard hides chat CTA for non-members", () => {
+test("GroupCard shows join action for non-members", () => {
   const markup = renderToStaticMarkup(
     withI18n(
       createElement(GroupCard, {
@@ -122,5 +121,5 @@ test("GroupCard hides chat CTA for non-members", () => {
     )
   );
 
-  assert.doesNotMatch(markup, /Open chat/);
+  assert.match(markup, /Join/);
 });

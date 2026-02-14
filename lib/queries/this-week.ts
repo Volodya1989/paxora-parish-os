@@ -10,6 +10,7 @@ import { getNow } from "@/lib/time/getNow";
 import { getGratitudeSpotlight } from "@/lib/queries/gratitude";
 import { listUnreadCountsForRooms } from "@/lib/queries/chat";
 import { listEventsByRange } from "@/lib/queries/events";
+import { buildAvatarImagePath } from "@/lib/storage/avatar";
 
 export type TaskPreview = {
   id: string;
@@ -18,6 +19,7 @@ export type TaskPreview = {
   dueBy: Date | null;
   owner: {
     name: string;
+    avatarUrl?: string | null;
     initials: string;
   };
 };
@@ -213,7 +215,29 @@ export async function getThisWeekDataForUser({
           select: {
             id: true,
             name: true,
-            description: true
+            description: true,
+            avatarKey: true,
+            chatChannels: {
+              where: { type: "GROUP" },
+              select: {
+                id: true,
+                messages: {
+                  where: { deletedAt: null },
+                  orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+                  take: 1,
+                  select: {
+                    body: true,
+                    createdAt: true,
+                    author: {
+                      select: {
+                        name: true,
+                        email: true
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -303,39 +327,6 @@ export async function getThisWeekDataForUser({
     }
   });
 
-  // Fetch last message for each group's chat channel
-  const lastMessages = await prisma.chatMessage.findMany({
-    where: {
-      channelId: {
-        in: groupChannels.map((ch) => ch.id)
-      }
-    },
-    orderBy: { createdAt: "desc" },
-    take: groupChannels.length,
-    select: {
-      channelId: true,
-      body: true,
-      createdAt: true,
-      author: {
-        select: {
-          name: true
-        }
-      }
-    }
-  });
-
-  // Create a map of channelId to last message data
-  const lastMessagesByChannel = new Map<string, { body: string; createdAt: Date; authorName: string | null }>();
-  lastMessages.forEach((msg) => {
-    if (!lastMessagesByChannel.has(msg.channelId)) {
-      lastMessagesByChannel.set(msg.channelId, {
-        body: msg.body,
-        createdAt: msg.createdAt,
-        authorName: msg.author?.name ?? null
-      });
-    }
-  });
-
   return {
     parishId,
     week: {
@@ -357,13 +348,16 @@ export async function getThisWeekDataForUser({
     parishRole: membership?.role ?? null,
     memberGroups: memberGroups.map((m) => {
       const channel = groupChannels.find((ch) => ch.groupId === m.group.id);
-      const lastMsg = channel ? lastMessagesByChannel.get(channel.id) : undefined;
+      const lastMsg = m.group.chatChannels?.[0]?.messages?.[0];
       return {
-        ...m.group,
+        id: m.group.id,
+        name: m.group.name,
+        description: m.group.description,
+        avatarUrl: m.group.avatarKey ? buildAvatarImagePath(m.group.avatarKey) : null,
         unreadCount: unreadCountByGroupId.get(m.group.id) ?? 0,
         lastMessage: lastMsg?.body ?? null,
         lastMessageTime: lastMsg?.createdAt ?? null,
-        lastMessageAuthor: lastMsg?.authorName ?? null
+        lastMessageAuthor: lastMsg?.author?.name ?? lastMsg?.author?.email ?? null
       };
     }),
     hasPublicGroups: publicGroupCount > 0,
