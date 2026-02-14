@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import GroupsView from "@/components/groups/GroupsView";
 import { authOptions } from "@/server/auth/options";
-import { listGroups } from "@/lib/queries/groups";
+import { listGroupInviteCandidates, listGroups } from "@/lib/queries/groups";
 import { getParishMembership } from "@/server/db/groups";
 import { isParishLeader } from "@/lib/permissions";
 import { prisma } from "@/server/db/prisma";
@@ -40,7 +40,10 @@ export default async function GroupsPage({
     throw new Error("Unauthorized");
   }
 
-  const groups = await listGroups(parishId, actorUserId, membership.role, true);
+  const [groups, inviteCandidates] = await Promise.all([
+    listGroups(parishId, actorUserId, membership.role, true),
+    listGroupInviteCandidates(parishId, actorUserId)
+  ]);
   const isLeader = isParishLeader(membership.role);
 
   return (
@@ -57,6 +60,7 @@ export default async function GroupsPage({
         groups={groups}
         parishId={parishId}
         actorUserId={actorUserId}
+        inviteCandidates={inviteCandidates}
         canManageGroups={isLeader}
         canRequestContentCreate={membership.role === "MEMBER"}
       />

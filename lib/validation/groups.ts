@@ -22,7 +22,8 @@ export const createGroupSchema = z.object({
     .max(280, "Description must be 280 characters or fewer.")
     .optional(),
   visibility: z.enum(["PUBLIC", "PRIVATE"]),
-  joinPolicy: z.enum(["INVITE_ONLY", "OPEN", "REQUEST_TO_JOIN"])
+  joinPolicy: z.enum(["INVITE_ONLY", "OPEN", "REQUEST_TO_JOIN"]),
+  inviteeUserIds: z.array(z.string().min(1)).max(50).optional()
 });
 
 export const updateGroupSchema = createGroupSchema.extend({

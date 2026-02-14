@@ -91,6 +91,7 @@ async function createGroupInternal(input: {
   description?: string | null;
   visibility: "PUBLIC" | "PRIVATE";
   joinPolicy: "INVITE_ONLY" | "OPEN" | "REQUEST_TO_JOIN";
+  inviteeUserIds?: string[];
 }) {
   const session = await getServerSession(authOptions);
   const { parishId, userId } = assertActorContext(session, input);
@@ -102,7 +103,8 @@ async function createGroupInternal(input: {
     name: input.name,
     description: input.description ?? undefined,
     visibility: input.visibility,
-    joinPolicy: input.joinPolicy
+    joinPolicy: input.joinPolicy,
+    inviteeUserIds: input.inviteeUserIds
   });
 
   if (!parsed.success) {
@@ -173,6 +175,38 @@ async function createGroupInternal(input: {
         });
       }
 
+      const inviteeUserIds = [...new Set((parsed.data.inviteeUserIds ?? []).filter((id) => id !== userId))];
+      if (inviteeUserIds.length > 0) {
+        const invitees = await tx.membership.findMany({
+          where: {
+            parishId,
+            userId: { in: inviteeUserIds }
+          },
+          select: {
+            userId: true,
+            user: {
+              select: {
+                email: true
+              }
+            }
+          }
+        });
+
+        if (invitees.length > 0) {
+          await tx.groupMembership.createMany({
+            data: invitees.map((invitee) => ({
+              groupId: createdGroup.id,
+              userId: invitee.userId,
+              role: "PARISHIONER",
+              status: "INVITED",
+              invitedByUserId: userId,
+              invitedEmail: invitee.user.email
+            })),
+            skipDuplicates: true
+          });
+        }
+      }
+
       return createdGroup;
     })
     .catch((error: unknown) => {
@@ -198,6 +232,7 @@ export async function createGroup(input: {
   description?: string | null;
   visibility: "PUBLIC" | "PRIVATE";
   joinPolicy: "INVITE_ONLY" | "OPEN" | "REQUEST_TO_JOIN";
+  inviteeUserIds?: string[];
 }) {
   return createGroupInternal(input);
 }
@@ -209,6 +244,7 @@ export async function submitGroupCreationRequest(input: {
   description?: string | null;
   visibility: "PUBLIC" | "PRIVATE";
   joinPolicy: "INVITE_ONLY" | "OPEN" | "REQUEST_TO_JOIN";
+  inviteeUserIds?: string[];
 }): Promise<GroupCreateResult> {
   try {
     const created = await createGroupInternal(input);

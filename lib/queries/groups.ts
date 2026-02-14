@@ -50,6 +50,12 @@ export type GroupListItem = {
   unreadCount?: number | null;
 };
 
+export type GroupInviteCandidate = {
+  id: string;
+  name: string;
+  email: string;
+};
+
 export async function listGroups(
   parishId: string,
   actorUserId: string,
@@ -168,4 +174,28 @@ export async function listGroups(
       ? unreadCounts.get(groupToRoomMap.get(group.id)!) ?? 0
       : null
   }));
+}
+
+export async function listGroupInviteCandidates(parishId: string, actorUserId: string) {
+  const memberships = await prisma.membership.findMany({
+    where: { parishId },
+    orderBy: [{ user: { name: "asc" } }, { user: { email: "asc" } }],
+    select: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true
+        }
+      }
+    }
+  });
+
+  return memberships
+    .filter((membership) => membership.user.id !== actorUserId)
+    .map((membership) => ({
+      id: membership.user.id,
+      name: membership.user.name ?? membership.user.email,
+      email: membership.user.email
+    }));
 }

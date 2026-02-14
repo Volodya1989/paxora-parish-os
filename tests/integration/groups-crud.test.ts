@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { prisma } from "@/server/db/prisma";
 import { loadModuleFromRoot } from "../_helpers/load-module";
 import { applyMigrations } from "../_helpers/migrate";
+import { listGroups as listVisibleGroups } from "@/lib/queries/groups";
+import { listTaskFilterGroups } from "@/server/db/groups";
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
 const dbTest = hasDatabase ? test : test.skip;
@@ -221,4 +223,119 @@ dbTest("edit group updates fields", async () => {
   assert.equal(updated?.description, "Updated description");
   assert.equal(updated?.visibility, "PRIVATE");
   assert.equal(updated?.joinPolicy, "REQUEST_TO_JOIN");
+});
+
+
+dbTest("create hidden group with invite only exposes invited user", async () => {
+  const parish = await prisma.parish.create({ data: { name: "St. Michael", slug: "st-michael" } });
+  const [leader, invitedUser, otherUser] = await Promise.all([
+    prisma.user.create({ data: { email: "leader2@example.com", name: "Leader", passwordHash: "hashed", activeParishId: parish.id } }),
+    prisma.user.create({ data: { email: "invited@example.com", name: "Invited", passwordHash: "hashed", activeParishId: parish.id } }),
+    prisma.user.create({ data: { email: "other@example.com", name: "Other", passwordHash: "hashed", activeParishId: parish.id } })
+  ]);
+
+  await prisma.membership.createMany({
+    data: [
+      { parishId: parish.id, userId: leader.id, role: "ADMIN" },
+      { parishId: parish.id, userId: invitedUser.id, role: "MEMBER" },
+      { parishId: parish.id, userId: otherUser.id, role: "MEMBER" }
+    ]
+  });
+
+  session.user.id = leader.id;
+  session.user.activeParishId = parish.id;
+
+  await actions.createGroup({
+    parishId: parish.id,
+    actorUserId: leader.id,
+    name: "Hidden Council",
+    visibility: "PRIVATE",
+    joinPolicy: "INVITE_ONLY",
+    inviteeUserIds: [invitedUser.id]
+  });
+
+  const invitedList = await listVisibleGroups(parish.id, invitedUser.id, "MEMBER", true);
+  const invitedRecord = invitedList.find((group) => group.name === "Hidden Council");
+  assert.equal(invitedRecord?.viewerMembershipStatus, "INVITED");
+
+  const otherList = await listVisibleGroups(parish.id, otherUser.id, "MEMBER", true);
+  assert.equal(otherList.some((group) => group.name === "Hidden Council"), false);
+});
+
+dbTest("create visible group with invite keeps invited state while remaining discoverable", async () => {
+  const parish = await prisma.parish.create({ data: { name: "St. Mark", slug: "st-mark" } });
+  const [leader, invitedUser, otherUser] = await Promise.all([
+    prisma.user.create({ data: { email: "leader3@example.com", name: "Leader", passwordHash: "hashed", activeParishId: parish.id } }),
+    prisma.user.create({ data: { email: "invited2@example.com", name: "Invited", passwordHash: "hashed", activeParishId: parish.id } }),
+    prisma.user.create({ data: { email: "other2@example.com", name: "Other", passwordHash: "hashed", activeParishId: parish.id } })
+  ]);
+
+  await prisma.membership.createMany({
+    data: [
+      { parishId: parish.id, userId: leader.id, role: "ADMIN" },
+      { parishId: parish.id, userId: invitedUser.id, role: "MEMBER" },
+      { parishId: parish.id, userId: otherUser.id, role: "MEMBER" }
+    ]
+  });
+
+  session.user.id = leader.id;
+  session.user.activeParishId = parish.id;
+
+  await actions.createGroup({
+    parishId: parish.id,
+    actorUserId: leader.id,
+    name: "Visible Choir",
+    visibility: "PUBLIC",
+    joinPolicy: "INVITE_ONLY",
+    inviteeUserIds: [invitedUser.id]
+  });
+
+  const invitedList = await listVisibleGroups(parish.id, invitedUser.id, "MEMBER", true);
+  const invitedRecord = invitedList.find((group) => group.name === "Visible Choir");
+  assert.equal(invitedRecord?.viewerMembershipStatus, "INVITED");
+
+  const otherList = await listVisibleGroups(parish.id, otherUser.id, "MEMBER", true);
+  const otherRecord = otherList.find((group) => group.name === "Visible Choir");
+  assert.ok(otherRecord);
+  assert.equal(otherRecord?.viewerMembershipStatus, null);
+});
+
+dbTest("task filter groups include only groups visible to current member context", async () => {
+  const parish = await prisma.parish.create({ data: { name: "St. Luke", slug: "st-luke" } });
+  const [leader, invitedUser, otherUser] = await Promise.all([
+    prisma.user.create({ data: { email: "leader4@example.com", name: "Leader", passwordHash: "hashed", activeParishId: parish.id } }),
+    prisma.user.create({ data: { email: "invited3@example.com", name: "Invited", passwordHash: "hashed", activeParishId: parish.id } }),
+    prisma.user.create({ data: { email: "other3@example.com", name: "Other", passwordHash: "hashed", activeParishId: parish.id } })
+  ]);
+
+  await prisma.membership.createMany({
+    data: [
+      { parishId: parish.id, userId: leader.id, role: "ADMIN" },
+      { parishId: parish.id, userId: invitedUser.id, role: "MEMBER" },
+      { parishId: parish.id, userId: otherUser.id, role: "MEMBER" }
+    ]
+  });
+
+  session.user.id = leader.id;
+  session.user.activeParishId = parish.id;
+
+  const hiddenGroup = await actions.createGroup({
+    parishId: parish.id,
+    actorUserId: leader.id,
+    name: "Hidden Team",
+    visibility: "PRIVATE",
+    joinPolicy: "INVITE_ONLY",
+    inviteeUserIds: [invitedUser.id]
+  });
+
+  await prisma.groupMembership.update({
+    where: { groupId_userId: { groupId: hiddenGroup.id, userId: invitedUser.id } },
+    data: { status: "ACTIVE", approvedByUserId: invitedUser.id }
+  });
+
+  const invitedGroupFilters = await listTaskFilterGroups({ parishId: parish.id, userId: invitedUser.id, role: "MEMBER" });
+  assert.equal(invitedGroupFilters.some((group) => group.name === "Hidden Team"), true);
+
+  const otherGroupFilters = await listTaskFilterGroups({ parishId: parish.id, userId: otherUser.id, role: "MEMBER" });
+  assert.equal(otherGroupFilters.some((group) => group.name === "Hidden Team"), false);
 });
