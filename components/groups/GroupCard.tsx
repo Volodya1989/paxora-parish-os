@@ -75,6 +75,34 @@ export default function GroupCard({
     }
   };
 
+  const handleCardClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!canOpenChat || typeof window === "undefined") {
+      return;
+    }
+
+    const target = event.target as HTMLElement | null;
+    const interactiveTarget = target?.closest(
+      "button, a, input, textarea, select, [role='button'], [role='menuitem']"
+    );
+
+    if (interactiveTarget && interactiveTarget !== event.currentTarget) {
+      return;
+    }
+
+    window.location.href = buildLocalePathname(locale, `/groups/${group.id}/chat`);
+  };
+
+  const handleCardKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!canOpenChat || typeof window === "undefined") {
+      return;
+    }
+
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      window.location.href = buildLocalePathname(locale, `/groups/${group.id}/chat`);
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -82,11 +110,10 @@ export default function GroupCard({
         canOpenChat && "cursor-pointer hover:-translate-y-0.5 hover:border-mist-200 hover:shadow-md",
         isBusy && "opacity-70"
       )}
-      onClick={() => {
-        if (!canOpenChat || typeof window === "undefined") return;
-        window.location.href = buildLocalePathname(locale, `/groups/${group.id}/chat`);
-      }}
+      onClick={handleCardClick}
+      onKeyDown={handleCardKeyDown}
       role={canOpenChat ? "button" : undefined}
+      tabIndex={canOpenChat ? 0 : undefined}
     >
       <GroupListRow
         name={group.name}
