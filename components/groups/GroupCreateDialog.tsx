@@ -55,6 +55,7 @@ export default function GroupCreateDialog({
   );
   const [inviteQuery, setInviteQuery] = useState("");
   const [selectedInviteeIds, setSelectedInviteeIds] = useState<string[]>([]);
+  const [showInvitePicker, setShowInvitePicker] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -96,6 +97,7 @@ export default function GroupCreateDialog({
     setJoinPolicy("INVITE_ONLY");
     setInviteQuery("");
     setSelectedInviteeIds([]);
+    setShowInvitePicker(false);
     setError(null);
     setSubmitted(false);
   };
@@ -254,13 +256,22 @@ export default function GroupCreateDialog({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor={`${formId}-invite-search`}>Invite members</Label>
-          <Input
-            id={`${formId}-invite-search`}
-            value={inviteQuery}
-            onChange={(event) => setInviteQuery(event.currentTarget.value)}
-            placeholder="Search by name or email"
-          />
+          <div className="flex items-center justify-between">
+            <Label>Invite members</Label>
+            <Button
+              type="button"
+              size="sm"
+              variant={showInvitePicker ? "ghost" : "secondary"}
+              onClick={() => setShowInvitePicker((current) => !current)}
+            >
+              {showInvitePicker
+                ? "Done"
+                : selectedInvitees.length > 0
+                  ? `Add members (${selectedInvitees.length})`
+                  : "Add members"}
+            </Button>
+          </div>
+
           {selectedInvitees.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {selectedInvitees.map((invitee) => (
@@ -278,25 +289,36 @@ export default function GroupCreateDialog({
               ))}
             </div>
           ) : null}
-          <div className="max-h-44 overflow-y-auto rounded-xl border border-mist-200 bg-white">
-            {filteredCandidates.slice(0, 30).map((candidate) => (
-              <button
-                key={candidate.id}
-                type="button"
-                className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-mist-50"
-                onClick={() => toggleInvitee(candidate.id)}
-              >
-                <span className="min-w-0">
-                  <span className="block truncate font-medium text-ink-900">{candidate.name}</span>
-                  <span className="block truncate text-xs text-ink-500">{candidate.email}</span>
-                </span>
-                <span className="ml-3 text-xs text-primary-600">Add</span>
-              </button>
-            ))}
-            {filteredCandidates.length === 0 ? (
-              <p className="px-3 py-2 text-sm text-ink-500">No matching parish members.</p>
-            ) : null}
-          </div>
+
+          {showInvitePicker ? (
+            <>
+              <Input
+                id={`${formId}-invite-search`}
+                value={inviteQuery}
+                onChange={(event) => setInviteQuery(event.currentTarget.value)}
+                placeholder="Search by name or email"
+              />
+              <div className="max-h-44 overflow-y-auto rounded-xl border border-mist-200 bg-white">
+                {filteredCandidates.slice(0, 30).map((candidate) => (
+                  <button
+                    key={candidate.id}
+                    type="button"
+                    className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-mist-50"
+                    onClick={() => toggleInvitee(candidate.id)}
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium text-ink-900">{candidate.name}</span>
+                      <span className="block truncate text-xs text-ink-500">{candidate.email}</span>
+                    </span>
+                    <span className="ml-3 text-xs text-primary-600">Add</span>
+                  </button>
+                ))}
+                {filteredCandidates.length === 0 ? (
+                  <p className="px-3 py-2 text-sm text-ink-500">No matching parish members.</p>
+                ) : null}
+              </div>
+            </>
+          ) : null}
         </div>
 
         {error ? (

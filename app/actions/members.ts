@@ -19,6 +19,7 @@ import {
 } from "@/lib/validation/members";
 import { isAdminClergy, requireCoordinatorOrAdmin } from "@/lib/authz/membership";
 import { ParishAuthError } from "@/server/auth/parish";
+import { notifyGroupInviteResponseInApp, notifyGroupInviteSentInApp } from "@/lib/notifications/notify";
 import type { MemberActionError, MemberActionState } from "@/lib/types/members";
 
 function buildError(message: string, error: MemberActionError): MemberActionState {
@@ -41,7 +42,7 @@ async function requireSession() {
 async function requireGroupInActiveParish(groupId: string, activeParishId: string) {
   const group = await prisma.group.findUnique({
     where: { id: groupId },
-    select: { id: true, parishId: true, joinPolicy: true, status: true }
+    select: { id: true, parishId: true, name: true, joinPolicy: true, status: true }
   });
 
   if (!group || group.parishId !== activeParishId) {
@@ -77,8 +78,9 @@ export async function inviteMember(input: {
     return buildError(parsed.error.errors[0]?.message ?? "Invalid invite", "VALIDATION_ERROR");
   }
 
+  let group;
   try {
-    await requireGroupInActiveParish(parsed.data.groupId, session.activeParishId);
+    group = await requireGroupInActiveParish(parsed.data.groupId, session.activeParishId);
   } catch {
     return buildError("Invite not found.", "NOT_FOUND");
   }
@@ -96,7 +98,7 @@ export async function inviteMember(input: {
 
   const targetUser = await prisma.user.findUnique({
     where: { email: parsed.data.email },
-    select: { id: true, email: true }
+    select: { id: true, email: true, name: true }
   });
 
   if (!targetUser) {
@@ -124,7 +126,7 @@ export async function inviteMember(input: {
         userId: targetUser.id
       }
     },
-    select: { status: true }
+    select: { status: true, invitedByUserId: true }
   });
 
   if (existing?.status === "ACTIVE") {
@@ -159,6 +161,20 @@ export async function inviteMember(input: {
     }
   });
 
+  const inviter = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { name: true, email: true }
+  });
+
+  await notifyGroupInviteSentInApp({
+    parishId: context.parishId,
+    groupId: parsed.data.groupId,
+    groupName: group.name,
+    inviteeUserId: targetUser.id,
+    inviterUserId: session.userId,
+    inviterName: inviter?.name ?? inviter?.email ?? "Parish leader"
+  });
+
   revalidatePath(`/groups/${parsed.data.groupId}/members`);
   revalidatePath(`/groups/${parsed.data.groupId}`);
 
@@ -176,8 +192,9 @@ export async function acceptInvite(input: { groupId: string }): Promise<MemberAc
     return buildError(parsed.error.errors[0]?.message ?? "Invalid invite", "VALIDATION_ERROR");
   }
 
+  let group;
   try {
-    await requireGroupInActiveParish(parsed.data.groupId, session.activeParishId);
+    group = await requireGroupInActiveParish(parsed.data.groupId, session.activeParishId);
   } catch {
     return buildError("Invite not found.", "NOT_FOUND");
   }
@@ -189,7 +206,7 @@ export async function acceptInvite(input: { groupId: string }): Promise<MemberAc
         userId: session.userId
       }
     },
-    select: { status: true }
+    select: { status: true, invitedByUserId: true }
   });
 
   if (!membership || membership.status !== "INVITED") {
@@ -211,6 +228,23 @@ export async function acceptInvite(input: { groupId: string }): Promise<MemberAc
     }
   });
 
+  const responder = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { name: true, email: true }
+  });
+
+  if (membership.invitedByUserId) {
+    await notifyGroupInviteResponseInApp({
+      parishId: group.parishId,
+      groupId: parsed.data.groupId,
+      groupName: group.name,
+      inviterUserId: membership.invitedByUserId,
+      responderUserId: session.userId,
+      responderName: responder?.name ?? responder?.email ?? "Parishioner",
+      response: "accepted"
+    });
+  }
+
   revalidatePath(`/groups/${parsed.data.groupId}/members`);
   revalidatePath(`/groups/${parsed.data.groupId}`);
   revalidatePath("/groups");
@@ -229,6 +263,13 @@ export async function declineInvite(input: { groupId: string }): Promise<MemberA
     return buildError(parsed.error.errors[0]?.message ?? "Invalid invite", "VALIDATION_ERROR");
   }
 
+  let group;
+  try {
+    group = await requireGroupInActiveParish(parsed.data.groupId, session.activeParishId);
+  } catch {
+    return buildError("Invite not found.", "NOT_FOUND");
+  }
+
   const membership = await prisma.groupMembership.findUnique({
     where: {
       groupId_userId: {
@@ -236,11 +277,28 @@ export async function declineInvite(input: { groupId: string }): Promise<MemberA
         userId: session.userId
       }
     },
-    select: { status: true }
+    select: { status: true, invitedByUserId: true }
   });
 
   if (!membership || membership.status !== "INVITED") {
     return buildError("Invite not found.", "NOT_FOUND");
+  }
+
+  const responder = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { name: true, email: true }
+  });
+
+  if (membership.invitedByUserId) {
+    await notifyGroupInviteResponseInApp({
+      parishId: group.parishId,
+      groupId: parsed.data.groupId,
+      groupName: group.name,
+      inviterUserId: membership.invitedByUserId,
+      responderUserId: session.userId,
+      responderName: responder?.name ?? responder?.email ?? "Parishioner",
+      response: "declined"
+    });
   }
 
   await prisma.groupMembership.delete({

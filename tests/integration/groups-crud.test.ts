@@ -29,6 +29,7 @@ mock.module("next/cache", {
 });
 
 async function resetDatabase() {
+  await prisma.notification.deleteMany();
   await prisma.announcement.deleteMany();
   await prisma.digest.deleteMany();
   await prisma.event.deleteMany();
@@ -253,6 +254,12 @@ dbTest("create hidden group with invite only exposes invited user", async () => 
     joinPolicy: "INVITE_ONLY",
     inviteeUserIds: [invitedUser.id]
   });
+
+  const creationInviteNotification = await prisma.notification.findFirst({
+    where: { userId: invitedUser.id, parishId: parish.id, title: "Group invite" },
+    orderBy: { createdAt: "desc" }
+  });
+  assert.ok(creationInviteNotification);
 
   const invitedList = await listVisibleGroups(parish.id, invitedUser.id, "MEMBER", true);
   const invitedRecord = invitedList.find((group) => group.name === "Hidden Council");
