@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { NotificationCategory, NotificationItem } from "@/lib/queries/notifications";
 import { useTranslations } from "@/lib/i18n/provider";
+import { useToast } from "@/components/ui/Toast";
+import { getSafeNotificationHref } from "@/lib/notifications/href";
 
 type NotificationPanelProps = {
   open: boolean;
@@ -48,25 +50,44 @@ function formatTimestamp(iso: string): string {
 function NotificationRow({
   item,
   onClose,
-  onMarkNotificationRead
+  onMarkNotificationRead,
+  onMissingHref
 }: {
   item: NotificationItem;
   onClose: () => void;
   onMarkNotificationRead: (notificationId: string) => void;
+  onMissingHref: () => void;
 }) {
-  const handleClick = () => {
+  const router = useRouter();
+  const safeHref = getSafeNotificationHref(item.href);
+
+  const handleRowClick = () => {
     onMarkNotificationRead(item.id);
+
+    if (!safeHref) {
+      onMissingHref();
+      return;
+    }
+
     onClose();
+    router.push(safeHref);
+  };
+
+  const handleDismiss = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onMarkNotificationRead(item.id);
   };
 
   const isUnread = !item.readAt;
 
   return (
-    <Link
-      href={item.href}
-      onClick={handleClick}
-      className="flex items-start gap-3 rounded-card px-3 py-3 transition hover:bg-mist-50 focus-ring"
-    >
+    <div className="flex items-start gap-2 rounded-card px-3 py-2 transition hover:bg-mist-50">
+      <button
+        type="button"
+        onClick={handleRowClick}
+        className="flex min-w-0 flex-1 items-start gap-3 py-1 text-left focus-ring"
+      >
       <span
         className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-[9px] font-semibold ${categoryColors[item.type]}`}
         aria-hidden="true"
@@ -87,7 +108,18 @@ function NotificationRow({
         )}
         <p className="mt-1 text-[10px] text-ink-400">{formatTimestamp(item.timestamp)}</p>
       </div>
-    </Link>
+      </button>
+      {isUnread && (
+        <button
+          type="button"
+          onClick={handleDismiss}
+          aria-label="Mark notification as read"
+          className="mt-1 rounded-full p-1 text-ink-400 transition hover:bg-mist-100 hover:text-ink-700 focus-ring"
+        >
+          <span aria-hidden="true">×</span>
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -105,7 +137,12 @@ export function NotificationPanel({
   onMarkNotificationRead
 }: NotificationPanelProps) {
   const t = useTranslations();
+  const { addToast } = useToast();
   const panelRef = useRef<HTMLDivElement>(null);
+
+  const handleMissingHref = () => {
+    addToast({ title: "This notification has no link.", status: "warning" });
+  };
 
   // Close on Escape
   useEffect(() => {
@@ -191,6 +228,7 @@ export function NotificationPanel({
                 item={item}
                 onClose={onClose}
                 onMarkNotificationRead={onMarkNotificationRead}
+                onMissingHref={handleMissingHref}
               />
             ))}
           </div>
