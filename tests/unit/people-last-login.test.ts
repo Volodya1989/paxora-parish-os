@@ -2,6 +2,7 @@ import { after, test, mock } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { loadModuleFromRoot } from "../_helpers/load-module";
+import { resolveFromRoot } from "../_helpers/resolve";
 
 after(() => {
   mock.restoreAll();
@@ -10,7 +11,7 @@ after(() => {
 const requireCalls: Array<{ userId: string; parishId: string }> = [];
 let shouldReject = false;
 
-mock.module("@/server/auth/permissions", {
+mock.module(resolveFromRoot("server/auth/permissions"), {
   namedExports: {
     requireAdminOrShepherd: async (userId: string, parishId: string) => {
       requireCalls.push({ userId, parishId });
@@ -22,7 +23,7 @@ mock.module("@/server/auth/permissions", {
   }
 });
 
-mock.module("@/server/db/prisma", {
+mock.module(resolveFromRoot("server/db/prisma"), {
   namedExports: {
     prisma: {
       membership: {

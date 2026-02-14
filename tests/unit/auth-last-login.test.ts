@@ -1,6 +1,7 @@
 import { after, test, mock } from "node:test";
 import assert from "node:assert/strict";
 import { loadModuleFromRoot } from "../_helpers/load-module";
+import { resolveFromRoot } from "../_helpers/resolve";
 
 after(() => {
   mock.restoreAll();
@@ -9,7 +10,7 @@ after(() => {
 const updateCalls: Array<{ where: { id: string }; data: { lastLoginAt: Date } }> = [];
 const bootstrapCalls: string[] = [];
 
-mock.module("@/server/db/prisma", {
+mock.module(resolveFromRoot("server/db/prisma"), {
   namedExports: {
     prisma: {
       user: {
@@ -23,7 +24,7 @@ mock.module("@/server/db/prisma", {
   }
 });
 
-mock.module("@/server/auth/bootstrap", {
+mock.module(resolveFromRoot("server/auth/bootstrap"), {
   namedExports: {
     ensureParishBootstrap: async (userId: string) => {
       bootstrapCalls.push(userId);
