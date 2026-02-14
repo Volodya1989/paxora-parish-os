@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import GroupCard from "@/components/groups/GroupCard";
+import GroupChatListCard from "@/components/groups/GroupChatListCard";
 import GroupCreateDialog from "@/components/groups/GroupCreateDialog";
 import GroupEditDialog from "@/components/groups/GroupEditDialog";
 import GroupFilters, { type GroupFilterTab } from "@/components/groups/GroupFilters";
@@ -17,6 +18,7 @@ import type { MemberActionState } from "@/lib/types/members";
 import type { GroupInviteCandidate, GroupListItem } from "@/lib/queries/groups";
 import FiltersDrawer from "@/components/app/filters-drawer";
 import Card from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
 import ListEmptyState from "@/components/app/list-empty-state";
 import { useTranslations } from "@/lib/i18n/provider";
 import { useLocale } from "@/lib/i18n/provider";
@@ -53,6 +55,7 @@ export default function GroupsView({
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
   const [pendingGroupId, setPendingGroupId] = useState<string | null>(null);
+  const [optimisticMembershipStatus, setOptimisticMembershipStatus] = useState<Record<string, "ACTIVE" | "REQUESTED">>({});
   const [, startTransition] = useTransition();
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
@@ -82,14 +85,6 @@ export default function GroupsView({
 
   const myInvites = useMemo(
     () => groups.filter((group) => group.viewerMembershipStatus === "INVITED" && group.status === "ACTIVE"),
-    [groups]
-  );
-
-  const joinedGroupOptions = useMemo(
-    () =>
-      groups
-        .filter((group) => group.viewerMembershipStatus === "ACTIVE")
-        .map((group) => ({ id: group.id, name: group.name })),
     [groups]
   );
 
@@ -222,9 +217,15 @@ export default function GroupsView({
   const handleMemberResult = async (
     groupId: string,
     action: () => Promise<MemberActionState>,
-    successTitle: string
+    successTitle: string,
+    optimisticStatus?: "ACTIVE" | "REQUESTED"
   ) => {
     setPendingGroupId(groupId);
+    const previousStatus = optimisticMembershipStatus[groupId];
+    if (optimisticStatus) {
+      setOptimisticMembershipStatus((current) => ({ ...current, [groupId]: optimisticStatus }));
+    }
+
     const result = await action();
     if (result.status === "error") {
       addToast({
@@ -233,6 +234,17 @@ export default function GroupsView({
         status: "error"
       });
       setPendingGroupId(null);
+      if (optimisticStatus) {
+        setOptimisticMembershipStatus((current) => {
+          const next = { ...current };
+          if (previousStatus) {
+            next[groupId] = previousStatus;
+          } else {
+            delete next[groupId];
+          }
+          return next;
+        });
+      }
       return;
     }
     addToast({
@@ -244,36 +256,57 @@ export default function GroupsView({
     refreshList();
   };
 
-  const filteredGroups = useMemo(() => {
+  const activeGroups = useMemo(
+    () => groups.filter((group) => !group.archivedAt && group.status === "ACTIVE"),
+    [groups]
+  );
+
+  const archivedGroups = useMemo(() => groups.filter((group) => Boolean(group.archivedAt)), [groups]);
+
+  const searchedActiveGroups = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) {
+      return activeGroups;
+    }
 
-    return groups.filter((group) => {
-      const matchesTab =
-        activeTab === "active"
-          ? !group.archivedAt && group.status === "ACTIVE"
-          : Boolean(group.archivedAt);
-      if (!matchesTab) return false;
-
-      if (!normalizedQuery) return true;
-
+    return activeGroups.filter((group) => {
       const haystack = `${group.name} ${group.description ?? ""}`.toLowerCase();
       return haystack.includes(normalizedQuery);
     });
-  }, [activeTab, groups, query]);
+  }, [activeGroups, query]);
 
-  const renderEmptyState = () => {
-    if (activeTab === "active" && counts.active === 0) {
-      return (
-        <ListEmptyState
-          title={t("empty.noGroups")}
-          description={canManageGroups ? t("groups.empty.startMessage") : t("groups.empty.requestMessage")}
-          action={canManageGroups ? <Button onClick={openCreateDialog}>{t("groups.startGroup")}</Button> : undefined}
-          variant="friendly"
-        />
-      );
+  const searchedArchivedGroups = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) {
+      return archivedGroups;
     }
 
-    if (activeTab === "archived" && counts.archived === 0) {
+    return archivedGroups.filter((group) => {
+      const haystack = `${group.name} ${group.description ?? ""}`.toLowerCase();
+      return haystack.includes(normalizedQuery);
+    });
+  }, [archivedGroups, query]);
+
+  const joinedGroups = useMemo(
+    () =>
+      searchedActiveGroups.filter(
+        (group) =>
+          (optimisticMembershipStatus[group.id] ?? group.viewerMembershipStatus) === "ACTIVE"
+      ),
+    [optimisticMembershipStatus, searchedActiveGroups]
+  );
+
+  const discoverGroups = useMemo(
+    () =>
+      searchedActiveGroups.filter((group) => {
+        const status = (optimisticMembershipStatus[group.id] ?? group.viewerMembershipStatus) as string | null;
+        return status !== "ACTIVE" && status !== "INVITED";
+      }),
+    [optimisticMembershipStatus, searchedActiveGroups]
+  );
+
+  const renderArchivedEmptyState = () => {
+    if (counts.archived === 0) {
       return <ListEmptyState title={t("groups.empty.noArchived")} description={t("groups.empty.noArchivedDesc")} />;
     }
 
@@ -394,21 +427,133 @@ export default function GroupsView({
         }
       />
 
-{/* Group cards — flat list, no wrapper */}
-      <div className="space-y-5">
-        {filteredGroups.length === 0 ? (
-          renderEmptyState()
+      <div className="space-y-6">
+        {activeTab === "active" ? (
+          <>
+            <section className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-ink-500">Your groups</h2>
+                <span className="text-xs text-ink-400">{joinedGroups.length}</span>
+              </div>
+
+              {joinedGroups.length === 0 ? (
+                <ListEmptyState title="No chats yet" description="Join a group to start." variant="friendly" />
+              ) : (
+                <div className="space-y-2">
+                  {joinedGroups.map((group) => (
+                    <GroupChatListCard
+                      key={group.id}
+                      name={group.name}
+                      avatarUrl={group.avatarUrl}
+                      description={group.description}
+                      lastMessage={group.lastMessage}
+                      lastMessageAuthor={group.lastMessageAuthor}
+                      lastMessageTime={group.lastMessageTime}
+                      unreadCount={group.unreadCount}
+                      href={buildLocalePathname(locale, `/groups/${group.id}/chat`)}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section className="space-y-3">
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-ink-500">Groups you can join</h2>
+              {discoverGroups.length === 0 ? (
+                <ListEmptyState
+                  title="No discoverable groups"
+                  description="Try a different filter or check back later."
+                />
+              ) : (
+                <div className="space-y-2">
+                  {discoverGroups.map((group) => {
+                    const status = optimisticMembershipStatus[group.id] ?? group.viewerMembershipStatus;
+                    const isRequested = status === "REQUESTED";
+                    const canJoin = group.joinPolicy === "OPEN";
+                    const canRequest = group.joinPolicy === "REQUEST_TO_JOIN";
+
+                    return (
+                      <div
+                        key={group.id}
+                        className="flex items-center gap-3 rounded-xl border border-mist-100 bg-white px-4 py-3 shadow-sm"
+                      >
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-sky-100 text-xs font-semibold text-sky-700">
+                          {group.avatarUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={group.avatarUrl} alt={group.name} className="h-full w-full object-cover" />
+                          ) : (
+                            group.name.slice(0, 2).toUpperCase()
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="truncate font-medium text-ink-900">{group.name}</p>
+                            <Badge tone={group.visibility === "PUBLIC" ? "success" : "neutral"}>
+                              {group.visibility === "PUBLIC" ? "Public" : "Invite only"}
+                            </Badge>
+                          </div>
+                          <p className="truncate text-sm text-ink-500">{group.description ?? "Connect with this community."}</p>
+                          {typeof group.memberCount === "number" ? (
+                            <p className="text-xs text-ink-400">{group.memberCount} members</p>
+                          ) : null}
+                        </div>
+                        <div className="shrink-0">
+                          {isRequested ? (
+                            <Badge tone="warning">Requested</Badge>
+                          ) : canJoin ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() =>
+                                void handleMemberResult(
+                                  group.id,
+                                  () => joinGroup({ groupId: group.id }),
+                                  "Joined",
+                                  "ACTIVE"
+                                )
+                              }
+                              disabled={pendingGroupId === group.id}
+                            >
+                              {t("groups.join")}
+                            </Button>
+                          ) : canRequest ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="secondary"
+                              onClick={() =>
+                                void handleMemberResult(
+                                  group.id,
+                                  () => requestToJoin({ groupId: group.id }),
+                                  "Request sent",
+                                  "REQUESTED"
+                                )
+                              }
+                              disabled={pendingGroupId === group.id}
+                            >
+                              {t("groups.requestToJoin")}
+                            </Button>
+                          ) : (
+                            <span className="text-xs font-medium text-ink-400">{t("groups.inviteOnly")}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          </>
+        ) : searchedArchivedGroups.length === 0 ? (
+          renderArchivedEmptyState()
         ) : (
           <div className="space-y-2">
-            {filteredGroups.map((group) => (
+            {searchedArchivedGroups.map((group) => (
               <GroupCard
                 key={group.id}
                 group={group}
                 canManageGroup={canManageGroups}
-                canManageMembers={
-                  (canManageGroups || group.viewerMembershipStatus === "ACTIVE") &&
-                  group.status === "ACTIVE"
-                }
+                canManageMembers={(canManageGroups || group.viewerMembershipStatus === "ACTIVE") && group.status === "ACTIVE"}
                 onEdit={() => handleEdit(group.id)}
                 onArchive={() => handleArchive(group.id)}
                 onRestore={() => handleRestore(group.id)}
