@@ -6,6 +6,7 @@ import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import GroupCard from "@/components/groups/GroupCard";
 import GroupChatListCard from "@/components/groups/GroupChatListCard";
+import Link from "next/link";
 import GroupCreateDialog from "@/components/groups/GroupCreateDialog";
 import GroupEditDialog from "@/components/groups/GroupEditDialog";
 import GroupFilters, { type GroupFilterTab } from "@/components/groups/GroupFilters";
@@ -26,6 +27,29 @@ import QuoteCard from "@/components/app/QuoteCard";
 import { buildLocalePathname } from "@/lib/i18n/routing";
 import ActionRow from "@/components/shared/ActionRow";
 import PendingRequestsSection from "@/components/shared/PendingRequestsSection";
+import {
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger
+} from "@/components/ui/Dropdown";
+
+
+function PrivateVisibilityIcon() {
+  return (
+    <span
+      className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-mist-200 bg-mist-50 text-ink-500"
+      title="Not publicly visible"
+      aria-label="Not publicly visible"
+    >
+      <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M1.5 8s2.2-3.5 6.5-3.5S14.5 8 14.5 8s-2.2 3.5-6.5 3.5S1.5 8 1.5 8Z" />
+        <circle cx="8" cy="8" r="1.8" />
+        <path d="M2 2l12 12" />
+      </svg>
+    </span>
+  );
+}
 
 type GroupsViewProps = {
   groups: GroupListItem[];
@@ -451,6 +475,32 @@ export default function GroupsView({
                       lastMessageTime={group.lastMessageTime}
                       unreadCount={group.unreadCount}
                       href={buildLocalePathname(locale, `/groups/${group.id}/chat`)}
+                      meta={group.visibility === "PRIVATE" ? <PrivateVisibilityIcon /> : null}
+                      menu={canManageGroups ? (
+                        <Dropdown>
+                          <DropdownTrigger asChild iconOnly aria-label={t("groups.optionsFor").replace("{name}", group.name)}>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="text-ink-500"
+                              onClick={(event) => event.stopPropagation()}
+                            >
+                              ⋯
+                            </Button>
+                          </DropdownTrigger>
+                          <DropdownMenu ariaLabel={t("groups.menuFor").replace("{name}", group.name)}>
+                            <DropdownItem asChild>
+                              <Link href={buildLocalePathname(locale, `/groups/${group.id}`)}>{t("groups.viewDetails")}</Link>
+                            </DropdownItem>
+                            <DropdownItem onClick={() => router.push(buildLocalePathname(locale, `/groups/${group.id}/members`))}>
+                              {t("groups.viewMembers")}
+                            </DropdownItem>
+                            <DropdownItem onClick={() => handleEdit(group.id)}>Edit</DropdownItem>
+                            <DropdownItem onClick={() => handleArchive(group.id)}>Archive</DropdownItem>
+                          </DropdownMenu>
+                        </Dropdown>
+                      ) : null}
                     />
                   ))}
                 </div>
@@ -488,6 +538,7 @@ export default function GroupsView({
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <p className="truncate font-medium text-ink-900">{group.name}</p>
+                            {group.visibility === "PRIVATE" ? <PrivateVisibilityIcon /> : null}
                             <Badge tone={group.visibility === "PUBLIC" ? "success" : "neutral"}>
                               {group.visibility === "PUBLIC" ? "Public" : "Invite only"}
                             </Badge>
