@@ -1,23 +1,25 @@
 "use client";
 
-import { useCallback, useEffect, useId, useState, useTransition, type FormEvent } from "react";
+import { useCallback, useEffect, useId, useMemo, useState, useTransition, type FormEvent } from "react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Label from "@/components/ui/Label";
 import SelectMenu from "@/components/ui/SelectMenu";
 import Textarea from "@/components/ui/Textarea";
+import Badge from "@/components/ui/Badge";
 import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { submitGroupCreationRequest } from "@/server/actions/groups";
 import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 import RequestSuccessState from "@/components/shared/RequestSuccessState";
+import type { GroupInviteCandidate } from "@/lib/queries/groups";
 
 const NAME_MAX_LENGTH = 80;
 const DESCRIPTION_MAX_LENGTH = 280;
 const visibilityOptions = [
-  { value: "PUBLIC", label: "Public · Anyone in the parish can see this group" },
-  { value: "PRIVATE", label: "Private · Only members can see this group" }
+  { value: "PUBLIC", label: "Visible to all · Listed in parish groups" },
+  { value: "PRIVATE", label: "Hidden · Invite-only visibility" }
 ];
 const joinPolicyOptions = [
   { value: "INVITE_ONLY", label: "Invite only" },
@@ -30,6 +32,7 @@ type GroupCreateDialogProps = {
   onOpenChange: (open: boolean) => void;
   parishId: string;
   actorUserId: string;
+  inviteCandidates: GroupInviteCandidate[];
   isRequest?: boolean;
   onCreated?: () => void;
 };
@@ -39,6 +42,7 @@ export default function GroupCreateDialog({
   onOpenChange,
   parishId,
   actorUserId,
+  inviteCandidates,
   isRequest = false,
   onCreated
 }: GroupCreateDialogProps) {
@@ -49,6 +53,9 @@ export default function GroupCreateDialog({
   const [joinPolicy, setJoinPolicy] = useState<"INVITE_ONLY" | "OPEN" | "REQUEST_TO_JOIN">(
     "INVITE_ONLY"
   );
+  const [inviteQuery, setInviteQuery] = useState("");
+  const [selectedInviteeIds, setSelectedInviteeIds] = useState<string[]>([]);
+  const [showInvitePicker, setShowInvitePicker] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -62,11 +69,35 @@ export default function GroupCreateDialog({
   const drawerJoinPolicyId = useId();
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
+  const selectedInvitees = useMemo(() => {
+    const selectedSet = new Set(selectedInviteeIds);
+    return inviteCandidates.filter((candidate) => selectedSet.has(candidate.id));
+  }, [inviteCandidates, selectedInviteeIds]);
+
+  const filteredCandidates = useMemo(() => {
+    const selectedSet = new Set(selectedInviteeIds);
+    const normalizedQuery = inviteQuery.trim().toLowerCase();
+
+    return inviteCandidates.filter((candidate) => {
+      if (selectedSet.has(candidate.id)) {
+        return false;
+      }
+      if (!normalizedQuery) {
+        return true;
+      }
+
+      return `${candidate.name} ${candidate.email}`.toLowerCase().includes(normalizedQuery);
+    });
+  }, [inviteCandidates, inviteQuery, selectedInviteeIds]);
+
   const resetForm = () => {
     setName("");
     setDescription("");
     setVisibility("PUBLIC");
     setJoinPolicy("INVITE_ONLY");
+    setInviteQuery("");
+    setSelectedInviteeIds([]);
+    setShowInvitePicker(false);
     setError(null);
     setSubmitted(false);
   };
@@ -76,6 +107,12 @@ export default function GroupCreateDialog({
       resetForm();
     }
   }, [open]);
+
+  const toggleInvitee = (userId: string) => {
+    setSelectedInviteeIds((current) =>
+      current.includes(userId) ? current.filter((id) => id !== userId) : [...current, userId]
+    );
+  };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -107,7 +144,8 @@ export default function GroupCreateDialog({
           name: trimmedName,
           description: trimmedDescription || undefined,
           visibility,
-          joinPolicy
+          joinPolicy,
+          inviteeUserIds: selectedInviteeIds
         });
         if (result.status === "error") {
           setError(result.message ?? "Unable to submit group request.");
@@ -168,61 +206,127 @@ export default function GroupCreateDialog({
         }}
       />
     ) : (
-    <form id={formId} className="space-y-4" onSubmit={handleSubmit}>
-      <div className="space-y-2">
-        <Label htmlFor={nameId}>Group name</Label>
-        <Input
-          id={nameId}
-          name="name"
-          value={name}
-          onChange={(event) => setName(event.currentTarget.value)}
-          placeholder="e.g. Hospitality Team"
-          maxLength={NAME_MAX_LENGTH}
-          aria-invalid={Boolean(error) || undefined}
-          required
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor={descriptionId}>Description (optional)</Label>
-        <Textarea
-          id={descriptionId}
-          name="description"
-          value={description}
-          onChange={(event) => setDescription(event.currentTarget.value)}
-          placeholder="Share what this group is responsible for."
-          maxLength={DESCRIPTION_MAX_LENGTH}
-          rows={4}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor={visibilityId}>Visibility</Label>
-        <SelectMenu
-          id={visibilityId}
-          name="visibility"
-          value={visibility}
-          onValueChange={(value) => setVisibility(value as "PUBLIC" | "PRIVATE")}
-          options={visibilityOptions}
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor={joinPolicyId}>Join settings</Label>
-        <SelectMenu
-          id={joinPolicyId}
-          name="joinPolicy"
-          value={joinPolicy}
-          onValueChange={(value) =>
-            setJoinPolicy(value as "INVITE_ONLY" | "OPEN" | "REQUEST_TO_JOIN")
-          }
-          options={joinPolicyOptions}
-        />
-      </div>
+      <form id={formId} className="space-y-4" onSubmit={handleSubmit}>
+        <div className="space-y-2">
+          <Label htmlFor={nameId}>Group name</Label>
+          <Input
+            id={nameId}
+            name="name"
+            value={name}
+            onChange={(event) => setName(event.currentTarget.value)}
+            placeholder="e.g. Hospitality Team"
+            maxLength={NAME_MAX_LENGTH}
+            aria-invalid={Boolean(error) || undefined}
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={descriptionId}>Description (optional)</Label>
+          <Textarea
+            id={descriptionId}
+            name="description"
+            value={description}
+            onChange={(event) => setDescription(event.currentTarget.value)}
+            placeholder="Share what this group is responsible for."
+            maxLength={DESCRIPTION_MAX_LENGTH}
+            rows={4}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={visibilityId}>Discoverability</Label>
+          <SelectMenu
+            id={visibilityId}
+            name="visibility"
+            value={visibility}
+            onValueChange={(value) => setVisibility(value as "PUBLIC" | "PRIVATE")}
+            options={visibilityOptions}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={joinPolicyId}>Join settings</Label>
+          <SelectMenu
+            id={joinPolicyId}
+            name="joinPolicy"
+            value={joinPolicy}
+            onValueChange={(value) =>
+              setJoinPolicy(value as "INVITE_ONLY" | "OPEN" | "REQUEST_TO_JOIN")
+            }
+            options={joinPolicyOptions}
+          />
+        </div>
 
-      {error ? (
-        <p role="alert" className="text-sm text-rose-600">
-          {error}
-        </p>
-      ) : null}
-    </form>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label>Invite members</Label>
+            <Button
+              type="button"
+              size="sm"
+              variant={showInvitePicker ? "ghost" : "secondary"}
+              onClick={() => setShowInvitePicker((current) => !current)}
+            >
+              {showInvitePicker
+                ? "Done"
+                : selectedInvitees.length > 0
+                  ? `Add members (${selectedInvitees.length})`
+                  : "Add members"}
+            </Button>
+          </div>
+
+          {selectedInvitees.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {selectedInvitees.map((invitee) => (
+                <Badge key={invitee.id} tone="neutral">
+                  <span className="mr-1">{invitee.name}</span>
+                  <button
+                    type="button"
+                    className="text-ink-500 hover:text-ink-900"
+                    onClick={() => toggleInvitee(invitee.id)}
+                    aria-label={`Remove ${invitee.name}`}
+                  >
+                    ×
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          ) : null}
+
+          {showInvitePicker ? (
+            <>
+              <Input
+                id={`${formId}-invite-search`}
+                value={inviteQuery}
+                onChange={(event) => setInviteQuery(event.currentTarget.value)}
+                placeholder="Search by name or email"
+              />
+              <div className="max-h-44 overflow-y-auto rounded-xl border border-mist-200 bg-white">
+                {filteredCandidates.slice(0, 30).map((candidate) => (
+                  <button
+                    key={candidate.id}
+                    type="button"
+                    className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-mist-50"
+                    onClick={() => toggleInvitee(candidate.id)}
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium text-ink-900">{candidate.name}</span>
+                      <span className="block truncate text-xs text-ink-500">{candidate.email}</span>
+                    </span>
+                    <span className="ml-3 text-xs text-primary-600">Add</span>
+                  </button>
+                ))}
+                {filteredCandidates.length === 0 ? (
+                  <p className="px-3 py-2 text-sm text-ink-500">No matching parish members.</p>
+                ) : null}
+              </div>
+            </>
+          ) : null}
+        </div>
+
+        {error ? (
+          <p role="alert" className="text-sm text-rose-600">
+            {error}
+          </p>
+        ) : null}
+      </form>
     )
   );
 

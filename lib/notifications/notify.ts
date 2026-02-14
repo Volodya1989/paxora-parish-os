@@ -51,6 +51,51 @@ async function createNotificationsForUsers(
   });
 }
 
+
+export async function notifyGroupInviteSentInApp(opts: {
+  parishId: string;
+  groupId: string;
+  groupName: string;
+  inviteeUserId: string;
+  inviterUserId: string;
+  inviterName: string;
+}) {
+  const { parishId, groupId, groupName, inviteeUserId, inviterUserId, inviterName } = opts;
+  if (inviteeUserId === inviterUserId) return;
+
+  await createNotificationsForUsers([inviteeUserId], {
+    parishId,
+    type: NotificationType.REQUEST,
+    title: "Group invite",
+    description: `${inviterName} invited you to join ${groupName}`,
+    href: `/groups/${groupId}`
+  });
+}
+
+export async function notifyGroupInviteResponseInApp(opts: {
+  parishId: string;
+  groupId: string;
+  groupName: string;
+  inviterUserId: string;
+  responderUserId: string;
+  responderName: string;
+  response: "accepted" | "declined";
+}) {
+  const { parishId, groupId, groupName, inviterUserId, responderUserId, responderName, response } = opts;
+  if (inviterUserId === responderUserId) return;
+
+  await createNotificationsForUsers([inviterUserId], {
+    parishId,
+    type: NotificationType.REQUEST,
+    title: response === "accepted" ? "Group invite accepted" : "Group invite declined",
+    description:
+      response === "accepted"
+        ? `${responderName} accepted your invite to ${groupName}`
+        : `${responderName} declined your invite to ${groupName}`,
+    href: `/groups/${groupId}/members`
+  });
+}
+
 export async function notifyChatMessageInApp(opts: {
   channelId: string;
   authorId: string;

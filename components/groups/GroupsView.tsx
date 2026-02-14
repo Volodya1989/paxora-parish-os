@@ -14,7 +14,7 @@ import { Drawer } from "@/components/ui/Drawer";
 import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 import { acceptInvite, declineInvite, joinGroup, leaveGroup, requestToJoin } from "@/app/actions/members";
 import type { MemberActionState } from "@/lib/types/members";
-import type { GroupListItem } from "@/lib/queries/groups";
+import type { GroupInviteCandidate, GroupListItem } from "@/lib/queries/groups";
 import FiltersDrawer from "@/components/app/filters-drawer";
 import Card from "@/components/ui/Card";
 import ListEmptyState from "@/components/app/list-empty-state";
@@ -29,6 +29,7 @@ type GroupsViewProps = {
   groups: GroupListItem[];
   parishId: string;
   actorUserId: string;
+  inviteCandidates: GroupInviteCandidate[];
   canManageGroups: boolean;
   canRequestContentCreate: boolean;
 };
@@ -37,6 +38,7 @@ export default function GroupsView({
   groups,
   parishId,
   actorUserId,
+  inviteCandidates,
   canManageGroups,
   canRequestContentCreate
 }: GroupsViewProps) {
@@ -461,7 +463,8 @@ export default function GroupsView({
         onOpenChange={(open) => (open ? setIsCreateOpen(true) : closeCreateDialog())}
         parishId={parishId}
         actorUserId={actorUserId}
-        isRequest={!canManageGroups}
+        inviteCandidates={inviteCandidates}
+        isRequest={!canManageGroups && canRequestContentCreate}
         onCreated={refreshList}
       />
 

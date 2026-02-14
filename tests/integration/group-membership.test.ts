@@ -27,6 +27,7 @@ mock.module("next/cache", {
 });
 
 async function resetDatabase() {
+  await prisma.notification.deleteMany();
   await prisma.groupMembership.deleteMany();
   await prisma.membership.deleteMany();
   await prisma.group.deleteMany();
@@ -150,6 +151,12 @@ dbTest("invite, join requests, approvals, role changes, and leave", async () => 
 
   assert.equal(inviteResult.status, "success");
 
+  const inviteNotification = await prisma.notification.findFirst({
+    where: { userId: parishioner.id, parishId: parish.id, title: "Group invite" },
+    orderBy: { createdAt: "desc" }
+  });
+  assert.ok(inviteNotification);
+
   const cancelInviteResult = await actions.inviteMember({
     groupId: group.id,
     email: outsider.email,
@@ -192,6 +199,12 @@ dbTest("invite, join requests, approvals, role changes, and leave", async () => 
 
   const acceptResult = await actions.acceptInvite({ groupId: group.id });
   assert.equal(acceptResult.status, "success");
+
+  const acceptResponseNotification = await prisma.notification.findFirst({
+    where: { userId: admin.id, parishId: parish.id, title: "Group invite accepted" },
+    orderBy: { createdAt: "desc" }
+  });
+  assert.ok(acceptResponseNotification);
 
   const activeMembership = await prisma.groupMembership.findUnique({
     where: {
@@ -243,6 +256,28 @@ dbTest("invite, join requests, approvals, role changes, and leave", async () => 
   });
 
   assert.equal(removedMembership, null);
+
+  const inviteForDecline = await actions.inviteMember({
+    groupId: group.id,
+    email: requesterTwo.email,
+    role: "PARISHIONER"
+  });
+  assert.equal(inviteForDecline.status, "success");
+
+  session.user.id = requesterTwo.id;
+  session.user.activeParishId = parish.id;
+
+  const declineResult = await actions.declineInvite({ groupId: group.id });
+  assert.equal(declineResult.status, "success");
+
+  session.user.id = admin.id;
+  session.user.activeParishId = parish.id;
+
+  const declineResponseNotification = await prisma.notification.findFirst({
+    where: { userId: admin.id, parishId: parish.id, title: "Group invite declined" },
+    orderBy: { createdAt: "desc" }
+  });
+  assert.ok(declineResponseNotification);
 
   session.user.id = requester.id;
   session.user.activeParishId = parish.id;
