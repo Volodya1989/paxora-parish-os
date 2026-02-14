@@ -315,6 +315,7 @@ model User {
   anniversaryMonth     Int?
   anniversaryDay       Int?
   greetingsOptIn           Boolean   @default(false)
+  lastLoginAt              DateTime?
   lastSeenAnnouncementsAt  DateTime?
   lastSeenEventsAt         DateTime?
   lastSeenTasksAt          DateTime?
