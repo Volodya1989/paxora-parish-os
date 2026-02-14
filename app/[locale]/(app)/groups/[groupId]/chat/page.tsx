@@ -8,6 +8,7 @@ import { getGroupMembership, getParishMembership, isCoordinatorForGroup } from "
 import { canModerateChatChannel, canPostGroupChannel, isParishLeader } from "@/lib/permissions";
 import { listChannelsForUser, listMessages, getPinnedMessage, getLastReadAt } from "@/lib/queries/chat";
 import { buildLocalePathname, getLocaleFromParam } from "@/lib/i18n/routing";
+import { buildAvatarImagePath } from "@/lib/storage/avatar";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -36,7 +37,8 @@ export default async function GroupChatPage({ params }: GroupChatPageProps) {
     },
     select: {
       id: true,
-      name: true
+      name: true,
+      avatarKey: true
     }
   });
 
@@ -88,7 +90,8 @@ export default async function GroupChatPage({ params }: GroupChatPageProps) {
       lockedAt: channelRecord.lockedAt,
       group: {
         id: group.id,
-        name: group.name
+        name: group.name,
+        avatarUrl: group.avatarKey ? buildAvatarImagePath(group.avatarKey) : null
       },
       isMember: true
     };

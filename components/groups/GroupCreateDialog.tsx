@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useMemo, useState, useTransition, type FormEvent } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, useTransition, type FormEvent } from "react";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Label from "@/components/ui/Label";
@@ -57,6 +57,8 @@ export default function GroupCreateDialog({
   const [selectedInviteeIds, setSelectedInviteeIds] = useState<string[]>([]);
   const [showInvitePicker, setShowInvitePicker] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const [submitted, setSubmitted] = useState(false);
   const [isPending, startTransition] = useTransition();
   const modalNameId = useId();
@@ -100,6 +102,8 @@ export default function GroupCreateDialog({
     setShowInvitePicker(false);
     setError(null);
     setSubmitted(false);
+    setAvatarFile(null);
+    if (avatarInputRef.current) avatarInputRef.current.value = "";
   };
 
   useEffect(() => {
@@ -163,6 +167,18 @@ export default function GroupCreateDialog({
           return;
         }
 
+        if (avatarFile && result.groupId) {
+          const formData = new FormData();
+          formData.append("file", avatarFile);
+          const avatarResponse = await fetch(`/api/groups/${result.groupId}/avatar`, {
+            method: "POST",
+            body: formData
+          });
+          if (!avatarResponse.ok) {
+            throw new Error("Group created, but photo upload failed.");
+          }
+        }
+
         addToast({
           title: isRequest ? "Request submitted" : "Group created",
           description: isRequest
@@ -220,6 +236,23 @@ export default function GroupCreateDialog({
             required
           />
         </div>
+        <div className="space-y-2">
+          <Label>Group photo (optional)</Label>
+          <div className="flex items-center gap-2">
+            <Button type="button" size="sm" variant="secondary" onClick={() => avatarInputRef.current?.click()}>
+              {avatarFile ? "Change photo" : "Upload photo"}
+            </Button>
+            {avatarFile ? <span className="text-xs text-ink-500">{avatarFile.name}</span> : null}
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={(event) => setAvatarFile(event.currentTarget.files?.[0] ?? null)}
+            />
+          </div>
+        </div>
+
         <div className="space-y-2">
           <Label htmlFor={descriptionId}>Description (optional)</Label>
           <Textarea

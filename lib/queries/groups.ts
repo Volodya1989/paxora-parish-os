@@ -9,11 +9,13 @@ import type {
 import { isAdminClergy } from "@/lib/authz/membership";
 import { prisma } from "@/server/db/prisma";
 import { listUnreadCountsForRooms } from "@/lib/queries/chat";
+import { buildAvatarImagePath } from "@/lib/storage/avatar";
 
 type GroupListRecord = {
   id: string;
   createdById: string;
   name: string;
+  avatarKey: string | null;
   description: string | null;
   createdAt: Date;
   archivedAt: Date | null;
@@ -28,12 +30,24 @@ type GroupListRecord = {
   _count?: {
     memberships: number;
   };
+  chatChannels?: Array<{
+    id: string;
+    messages: Array<{
+      body: string;
+      createdAt: Date;
+      author: {
+        name: string | null;
+        email: string;
+      };
+    }>;
+  }>;
 };
 
 export type GroupListItem = {
   id: string;
   createdById: string;
   name: string;
+  avatarUrl: string | null;
   description: string | null;
   createdAt: Date;
   archivedAt: Date | null;
@@ -48,6 +62,9 @@ export type GroupListItem = {
   viewerMembershipStatus: GroupMembershipStatus | null;
   viewerMembershipRole: GroupRole | null;
   unreadCount?: number | null;
+  lastMessage?: string | null;
+  lastMessageTime?: Date | null;
+  lastMessageAuthor?: string | null;
 };
 
 export type GroupInviteCandidate = {
@@ -105,6 +122,7 @@ export async function listGroups(
       id: true,
       createdById: true,
       name: true,
+      avatarKey: true,
       description: true,
       createdAt: true,
       archivedAt: true,
@@ -130,6 +148,31 @@ export async function listGroups(
         select: {
           memberships: {
             where: { status: "ACTIVE" }
+          }
+        }
+      },
+      chatChannels: {
+        where: {
+          type: "GROUP"
+        },
+        select: {
+          id: true,
+          messages: {
+            where: {
+              deletedAt: null
+            },
+            orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+            take: 1,
+            select: {
+              body: true,
+              createdAt: true,
+              author: {
+                select: {
+                  name: true,
+                  email: true
+                }
+              }
+            }
           }
         }
       }
@@ -160,6 +203,7 @@ export async function listGroups(
     id: group.id,
     createdById: group.createdById,
     name: group.name,
+    avatarUrl: group.avatarKey ? buildAvatarImagePath(group.avatarKey) : null,
     description: group.description,
     createdAt: group.createdAt,
     archivedAt: group.archivedAt,
@@ -172,7 +216,13 @@ export async function listGroups(
     viewerMembershipRole: group.memberships?.[0]?.role ?? null,
     unreadCount: groupToRoomMap.has(group.id)
       ? unreadCounts.get(groupToRoomMap.get(group.id)!) ?? 0
-      : null
+      : null,
+    lastMessage: group.chatChannels?.[0]?.messages?.[0]?.body ?? null,
+    lastMessageTime: group.chatChannels?.[0]?.messages?.[0]?.createdAt ?? null,
+    lastMessageAuthor:
+      group.chatChannels?.[0]?.messages?.[0]?.author?.name ??
+      group.chatChannels?.[0]?.messages?.[0]?.author?.email ??
+      null
   }));
 }
 

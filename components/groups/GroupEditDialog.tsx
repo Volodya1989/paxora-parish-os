@@ -10,6 +10,7 @@ import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import { updateGroup } from "@/server/actions/groups";
+import AvatarUploadField from "@/components/shared/AvatarUploadField";
 import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 
 const NAME_MAX_LENGTH = 80;
@@ -35,6 +36,7 @@ type GroupEditDialogProps = {
     description?: string | null;
     visibility: "PUBLIC" | "PRIVATE";
     joinPolicy: "INVITE_ONLY" | "OPEN" | "REQUEST_TO_JOIN";
+    avatarUrl?: string | null;
   };
   onUpdated?: () => void;
 };
@@ -136,6 +138,15 @@ export default function GroupEditDialog({
     joinPolicyId: string
   ) => (
     <form id={formId} className="space-y-4" onSubmit={handleSubmit}>
+      <AvatarUploadField
+        label="Group photo"
+        currentUrl={group.avatarUrl ?? null}
+        fallbackText={group.name}
+        uploadEndpoint={`/api/groups/${group.id}/avatar`}
+        deleteEndpoint={`/api/groups/${group.id}/avatar`}
+        onUpdated={() => onUpdated?.()}
+      />
+
       <div className="space-y-2">
         <Label htmlFor={nameId}>Group name</Label>
         <Input

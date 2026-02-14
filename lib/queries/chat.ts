@@ -8,6 +8,7 @@ import { prisma } from "@/server/db/prisma";
 import { isParishLeader } from "@/lib/permissions";
 import { getNow as defaultGetNow } from "@/lib/time/getNow";
 import { REACTION_EMOJIS } from "@/lib/chat/reactions";
+import { buildAvatarImagePath } from "@/lib/storage/avatar";
 
 export type ChatChannelListItem = {
   id: string;
@@ -18,6 +19,7 @@ export type ChatChannelListItem = {
   group: {
     id: string;
     name: string;
+    avatarUrl?: string | null;
   } | null;
   unreadCount?: number | null;
   isMember: boolean;
@@ -318,7 +320,8 @@ export async function listChannelsForUser(parishId: string, userId: string) {
       group: {
         select: {
           id: true,
-          name: true
+          name: true,
+          avatarKey: true
         }
       },
       memberships: {
@@ -359,7 +362,15 @@ export async function listChannelsForUser(parishId: string, userId: string) {
       description: channel.description ?? null,
       type: channel.type,
       lockedAt: channel.lockedAt,
-      group: channel.group ? { id: channel.group.id, name: channel.group.name } : null,
+      group: channel.group
+        ? {
+            id: channel.group.id,
+            name: channel.group.name,
+            avatarUrl: channel.group.avatarKey
+              ? buildAvatarImagePath(channel.group.avatarKey)
+              : null
+          }
+        : null,
       isMember:
         channel.type === "GROUP"
           ? true
@@ -397,7 +408,8 @@ export async function getChannelById(parishId: string, channelId: string) {
       group: {
         select: {
           id: true,
-          name: true
+          name: true,
+          avatarKey: true
         }
       }
     }

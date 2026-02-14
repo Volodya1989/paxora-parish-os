@@ -1,9 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import {
@@ -16,36 +14,7 @@ import type { GroupListItem } from "@/lib/queries/groups";
 import { cn } from "@/lib/ui/cn";
 import { useLocale, useTranslations } from "@/lib/i18n/provider";
 import { buildLocalePathname } from "@/lib/i18n/routing";
-
-const placeholderNames = ["Alex", "Jordan", "Casey", "Morgan", "Riley", "Quinn", "Harper"];
-
-function getInitials(name: string) {
-  return name
-    .split(" ")
-    .map((part) => part.trim()[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
-}
-
-function hashString(value: string) {
-  return value.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-}
-
-function buildAvatarInitials(name: string, memberCount: number | null) {
-  const baseInitials = getInitials(name) || "GR";
-  const avatarCount = memberCount && memberCount > 0 ? Math.min(3, memberCount) : 2;
-  const seed = hashString(name);
-  const initials = [baseInitials];
-
-  for (let i = 1; i < avatarCount; i += 1) {
-    const placeholder = placeholderNames[(seed + i) % placeholderNames.length];
-    initials.push(getInitials(placeholder));
-  }
-
-  return initials;
-}
+import GroupListRow from "@/components/groups/GroupListRow";
 
 type GroupCardProps = {
   group: GroupListItem;
@@ -85,22 +54,10 @@ export default function GroupCard({
   const t = useTranslations();
   const locale = useLocale();
   const [menuOpen, setMenuOpen] = useState(false);
-  const router = useRouter();
   const isArchived = Boolean(group.archivedAt);
   const isPending = group.status === "PENDING_APPROVAL";
   const isRejected = group.status === "REJECTED";
   const open = forceMenuOpen ?? menuOpen;
-
-  const avatarInitials = useMemo(
-    () => buildAvatarInitials(group.name, group.memberCount),
-    [group.memberCount, group.name]
-  );
-
-  const memberCountLabel = group.memberCount ?? "—";
-  const memberSuffix =
-    typeof group.memberCount === "number" && group.memberCount === 1
-      ? t("groups.memberSingular")
-      : t("groups.memberPlural");
   const isMember = group.viewerMembershipStatus === "ACTIVE";
   const canOpenChat = isMember && !isArchived && group.status === "ACTIVE";
   const isInvited = group.viewerMembershipStatus === "INVITED";
@@ -119,30 +76,38 @@ export default function GroupCard({
   };
 
   const handleCardClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (!canOpenChat) return;
+    if (!canOpenChat || typeof window === "undefined") {
+      return;
+    }
+
     const target = event.target as HTMLElement | null;
     const interactiveTarget = target?.closest(
-      "button, a, input, textarea, select, [role='button']"
+      "button, a, input, textarea, select, [role='button'], [role='menuitem']"
     );
+
     if (interactiveTarget && interactiveTarget !== event.currentTarget) {
       return;
     }
-    router.push(buildLocalePathname(locale, `/groups/${group.id}/chat`));
+
+    window.location.href = buildLocalePathname(locale, `/groups/${group.id}/chat`);
   };
 
   const handleCardKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (!canOpenChat) return;
+    if (!canOpenChat || typeof window === "undefined") {
+      return;
+    }
+
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      router.push(buildLocalePathname(locale, `/groups/${group.id}/chat`));
+      window.location.href = buildLocalePathname(locale, `/groups/${group.id}/chat`);
     }
   };
 
   return (
-    <Card
+    <div
       className={cn(
-        "space-y-3 p-3 sm:p-4",
-        canOpenChat && "cursor-pointer transition hover:border-primary-200 hover:bg-primary-50/40",
+        "group flex items-center gap-3 rounded-xl border border-mist-100 bg-white px-4 py-3 shadow-sm transition-all duration-200",
+        canOpenChat && "cursor-pointer hover:-translate-y-0.5 hover:border-mist-200 hover:shadow-md",
         isBusy && "opacity-70"
       )}
       onClick={handleCardClick}
@@ -150,142 +115,63 @@ export default function GroupCard({
       role={canOpenChat ? "button" : undefined}
       tabIndex={canOpenChat ? 0 : undefined}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 space-y-1.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <h3 className="text-base font-semibold text-ink-900 break-words">{group.name}</h3>
+      <GroupListRow
+        name={group.name}
+        avatarUrl={group.avatarUrl}
+        description={group.description}
+        lastMessage={group.lastMessage}
+        lastMessageAuthor={group.lastMessageAuthor}
+        lastMessageTime={group.lastMessageTime}
+        className="min-w-0 flex flex-1 items-center gap-3"
+        meta={(
+          <>
             {isArchived ? <Badge tone="warning">Archived</Badge> : null}
             {isPending ? <Badge tone="warning">Pending</Badge> : null}
             {isRejected ? <Badge tone="neutral">Not approved</Badge> : null}
-            {group.unreadCount && group.unreadCount > 0 ? (
-              <Badge tone="warning">{group.unreadCount} new</Badge>
-            ) : null}
-          </div>
-          {group.description?.trim() ? (
-            <p className="text-xs leading-relaxed text-ink-500 break-words line-clamp-2">{group.description}</p>
-          ) : null}
-          <div className="flex items-center gap-3 text-xs text-ink-400">
-            <div className="flex items-center gap-1.5">
-              <div className="flex -space-x-1.5">
-                {avatarInitials.slice(0, 3).map((initials, index) => (
-                  <span
-                    key={`${initials}-${index}`}
-                    className="flex h-5 w-5 items-center justify-center rounded-full border border-white bg-emerald-100 text-[8px] font-semibold text-emerald-800"
-                  >
-                    {initials}
-                  </span>
-                ))}
-              </div>
-              <span>{memberCountLabel === "—" ? "—" : `${memberCountLabel} ${memberSuffix}`}</span>
-            </div>
-            {isMember ? (
-              <span className="font-medium text-primary-600">{t("groups.joined")}</span>
-            ) : null}
-            {isInvited ? (
-              <span className="font-medium text-amber-600">{t("groups.invited")}</span>
-            ) : null}
-            {isRequested ? (
-              <span className="font-medium text-amber-600">{t("groups.requestPending")}</span>
-            ) : null}
-          </div>
-        </div>
+            {isMember ? <span className="text-xs font-medium text-primary-600">{t("groups.joined")}</span> : null}
+          </>
+        )}
+      />
+      <div className="flex shrink-0 items-center gap-2">
+        {group.unreadCount && group.unreadCount > 0 ? <Badge tone="warning">{group.unreadCount}</Badge> : null}
+        {isInvited ? (
+          <>
+            <Button type="button" size="sm" onClick={(e) => { e.stopPropagation(); onAcceptInvite(); }} disabled={isBusy}>{t("groups.accept")}</Button>
+            <Button type="button" size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); onDeclineInvite(); }} disabled={isBusy}>{t("groups.decline")}</Button>
+          </>
+        ) : null}
+        {showJoinActions ? (
+          group.joinPolicy === "INVITE_ONLY" ? (
+            <span className="text-xs font-medium text-ink-400">{t("groups.inviteOnly")}</span>
+          ) : (
+            <Button type="button" size="sm" onClick={(e) => { e.stopPropagation(); joinAction(); }}>
+              {group.joinPolicy === "OPEN" ? t("groups.join") : t("groups.requestToJoin")}
+            </Button>
+          )
+        ) : null}
 
-        <div className="flex shrink-0 items-center gap-1">
-          {/* Accept / Decline for invited users */}
-          {isInvited ? (
-            <div className="flex items-center gap-1">
-              <Button
-                type="button"
-                size="sm"
-                onClick={(e) => { e.stopPropagation(); onAcceptInvite(); }}
-                disabled={isBusy}
-              >
-                {t("groups.accept")}
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                onClick={(e) => { e.stopPropagation(); onDeclineInvite(); }}
-                disabled={isBusy}
-              >
-                {t("groups.decline")}
-              </Button>
-            </div>
-          ) : null}
-
-          {/* Join/Request button — kept visible for discoverability */}
-          {showJoinActions ? (
-            group.joinPolicy === "INVITE_ONLY" ? (
-              <span className="text-xs font-medium text-ink-400">{t("groups.inviteOnly")}</span>
-            ) : (
-              <Button
-                type="button"
-                size="sm"
-                onClick={(e) => { e.stopPropagation(); joinAction(); }}
-              >
-                  {group.joinPolicy === "OPEN" ? t("groups.join") : t("groups.requestToJoin")}
-              </Button>
-            )
-          ) : null}
-
-          {/* Three-dot menu with all secondary actions */}
-          {showMenu || !showJoinActions ? (
-            <Dropdown
-              open={open}
-              onOpenChange={(nextOpen) => {
-                if (forceMenuOpen === undefined) {
-                  setMenuOpen(nextOpen);
-                }
-              }}
-            >
-                <DropdownTrigger asChild iconOnly aria-label={t("groups.optionsFor").replace("{name}", group.name)}>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="text-ink-500"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  ⋯
-                </Button>
-              </DropdownTrigger>
-                <DropdownMenu ariaLabel={t("groups.menuFor").replace("{name}", group.name)}>
-                  <DropdownItem asChild>
-                  <Link href={buildLocalePathname(locale, `/groups/${group.id}`)}>{t("groups.viewDetails")}</Link>
-                  </DropdownItem>
-                {canManageMembers ? (
-                  <DropdownItem onClick={onManageMembers}>{t("groups.viewMembers")}</DropdownItem>
-                ) : null}
-                {canManageGroup ? <DropdownItem onClick={onEdit}>Edit</DropdownItem> : null}
-                {canManageGroup ? (
-                  isArchived ? (
-                    <>
-                      <DropdownItem onClick={onRestore}>Restore</DropdownItem>
-                      <DropdownItem
-                        onClick={onDelete}
-                        className="text-rose-600 hover:bg-rose-50 focus-visible:bg-rose-50"
-                      >
-                        Delete permanently
-                      </DropdownItem>
-                    </>
-                  ) : (
-                    <DropdownItem onClick={onArchive}>Archive</DropdownItem>
-                  )
-                ) : null}
-                {isMember && !isArchived ? (
-                  <DropdownItem
-                    onClick={onLeave}
-                    className="text-rose-600 hover:bg-rose-50 focus-visible:bg-rose-50"
-                  >
-                    Leave group
-                  </DropdownItem>
-                ) : null}
-              </DropdownMenu>
-            </Dropdown>
-          ) : null}
-        </div>
+        {showMenu || !showJoinActions ? (
+          <Dropdown
+            open={open}
+            onOpenChange={(nextOpen) => {
+              if (forceMenuOpen === undefined) setMenuOpen(nextOpen);
+            }}
+          >
+            <DropdownTrigger asChild iconOnly aria-label={t("groups.optionsFor").replace("{name}", group.name)}>
+              <Button type="button" variant="ghost" size="sm" className="text-ink-500" onClick={(e) => e.stopPropagation()}>⋯</Button>
+            </DropdownTrigger>
+            <DropdownMenu ariaLabel={t("groups.menuFor").replace("{name}", group.name)}>
+              <DropdownItem asChild>
+                <Link href={buildLocalePathname(locale, `/groups/${group.id}`)}>{t("groups.viewDetails")}</Link>
+              </DropdownItem>
+              {canManageMembers ? <DropdownItem onClick={onManageMembers}>{t("groups.viewMembers")}</DropdownItem> : null}
+              {canManageGroup ? <DropdownItem onClick={onEdit}>Edit</DropdownItem> : null}
+              {canManageGroup ? (isArchived ? <><DropdownItem onClick={onRestore}>Restore</DropdownItem><DropdownItem onClick={onDelete} className="text-rose-600 hover:bg-rose-50 focus-visible:bg-rose-50">Delete permanently</DropdownItem></> : <DropdownItem onClick={onArchive}>Archive</DropdownItem>) : null}
+              {isMember && !isArchived ? <DropdownItem onClick={onLeave} className="text-rose-600 hover:bg-rose-50 focus-visible:bg-rose-50">Leave group</DropdownItem> : null}
+            </DropdownMenu>
+          </Dropdown>
+        ) : null}
       </div>
-    </Card>
+    </div>
   );
 }

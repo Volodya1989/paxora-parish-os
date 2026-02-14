@@ -1,11 +1,14 @@
 import React from "react";
 import Card, { CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { SignOutButton } from "@/components/navigation/SignOutButton";
+import AvatarUploadField from "@/components/shared/AvatarUploadField";
 
 type ProfileCardProps = {
+  userId: string;
   name: string | null;
   email: string;
   role?: string | null;
+  avatarUrl?: string | null;
 };
 
 const roleLabels: Record<string, string> = {
@@ -19,7 +22,7 @@ const formatRole = (role?: string | null) => {
   return roleLabels[role] ?? role;
 };
 
-export function ProfileCard({ name, email, role }: ProfileCardProps) {
+export function ProfileCard({ userId, name, email, role, avatarUrl }: ProfileCardProps) {
   const displayRole = formatRole(role);
 
   return (
@@ -31,6 +34,14 @@ export function ProfileCard({ name, email, role }: ProfileCardProps) {
             Review your identity and sign-in details for this parish.
           </CardDescription>
         </CardHeader>
+
+        <AvatarUploadField
+          label="Profile photo"
+          currentUrl={avatarUrl ?? null}
+          fallbackText={name ?? email}
+          uploadEndpoint={`/api/users/${userId}/avatar`}
+          deleteEndpoint={`/api/users/${userId}/avatar`}
+        />
 
         <dl className="grid gap-4 sm:grid-cols-2">
           <div>
