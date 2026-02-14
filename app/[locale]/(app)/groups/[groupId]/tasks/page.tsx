@@ -165,6 +165,7 @@ export default async function GroupTasksPage({ params }: GroupTasksPageProps) {
       currentUserId={actorUserId}
       pendingAccessRequests={pendingRequests}
       pendingTaskApprovals={pendingTaskApprovals}
+      pendingMyTaskRequests={[]}
       approveAccessAction={approveParishAccess}
       rejectAccessAction={rejectParishAccess}
     />

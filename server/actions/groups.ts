@@ -133,8 +133,8 @@ async function createGroupInternal(input: {
           }
         });
 
-        if (requestCount >= 2) {
-          throw new Error("You can request up to two groups per month.");
+        if (requestCount >= 4) {
+          throw new Error("You can request up to four groups per month.");
         }
       }
 

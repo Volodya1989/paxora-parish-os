@@ -192,7 +192,7 @@ export async function createTask(
       parishId,
       requesterId: userId,
       title: parsed.data.title,
-      href: "/serve?pending=1"
+      href: "/tasks?pending=1"
     });
   }
 
@@ -699,7 +699,7 @@ export async function approveTask({ taskId }: { taskId: string }) {
     requesterId: task.createdById,
     title: task.title,
     decision: "APPROVED",
-    href: "/serve?pending=1"
+    href: "/tasks?pending=1"
   });
 
   revalidatePath("/tasks");
@@ -757,7 +757,7 @@ export async function rejectTask({ taskId }: { taskId: string }) {
     requesterId: task.createdById,
     title: task.title,
     decision: "DECLINED",
-    href: "/serve?pending=1"
+    href: "/tasks?pending=1"
   });
 
   revalidatePath("/tasks");

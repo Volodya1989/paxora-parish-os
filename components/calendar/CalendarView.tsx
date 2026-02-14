@@ -292,7 +292,7 @@ export default function CalendarView({
         />
 
         {/* Pending event request approvals — at top for leaders */}
-        {canManageEventRequests && pendingEventRequests.length > 0 && (
+        {pendingEventRequests.length > 0 && (
           <PendingRequestsSection
             entityType="EVENT"
             items={pendingRequestItems}

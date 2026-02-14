@@ -97,6 +97,18 @@ export type PendingTaskApproval = {
   } | null;
 };
 
+
+export type PendingTaskRequest = {
+  id: string;
+  title: string;
+  notes: string | null;
+  createdAt: Date;
+  group: {
+    id: string;
+    name: string;
+  } | null;
+};
+
 export type TaskDetail = {
   id: string;
   title: string;
@@ -583,6 +595,46 @@ export async function listPendingTaskApprovals({
       name: getDisplayName(task.createdBy.name, task.createdBy.email)
     },
     createdByRole: task.createdBy.memberships[0]?.role ?? null,
+    group: task.group ? { id: task.group.id, name: task.group.name } : null
+  }));
+}
+
+
+export async function listMyPendingTaskRequests({
+  parishId,
+  actorUserId,
+  weekId
+}: {
+  parishId: string;
+  actorUserId: string;
+  weekId?: string;
+}): Promise<PendingTaskRequest[]> {
+  const effectiveWeekId = weekId ?? (await getOrCreateCurrentWeek(parishId, getNow())).id;
+
+  const requests = await prisma.task.findMany({
+    where: {
+      parishId,
+      weekId: effectiveWeekId,
+      archivedAt: null,
+      visibility: "PUBLIC",
+      approvalStatus: "PENDING",
+      createdById: actorUserId
+    },
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      title: true,
+      notes: true,
+      createdAt: true,
+      group: { select: { id: true, name: true } }
+    }
+  });
+
+  return requests.map((task) => ({
+    id: task.id,
+    title: task.title,
+    notes: task.notes ?? null,
+    createdAt: task.createdAt,
     group: task.group ? { id: task.group.id, name: task.group.name } : null
   }));
 }

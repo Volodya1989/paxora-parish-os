@@ -13,7 +13,7 @@ import ListEmptyState from "@/components/app/list-empty-state";
 import QuoteCard from "@/components/app/QuoteCard";
 import type { TaskFilters as TaskFiltersState, TaskListItem, TaskListSummary } from "@/lib/queries/tasks";
 import type { PendingAccessRequest } from "@/lib/queries/access";
-import type { PendingTaskApproval } from "@/lib/queries/tasks";
+import type { PendingTaskApproval, PendingTaskRequest } from "@/lib/queries/tasks";
 import { approveTask, rejectTask } from "@/server/actions/tasks";
 import TaskQuickAdd from "@/components/tasks/TaskQuickAdd";
 import ActionRow from "@/components/shared/ActionRow";
@@ -39,6 +39,7 @@ type TasksViewProps = {
   currentUserId: string;
   pendingAccessRequests: PendingAccessRequest[];
   pendingTaskApprovals: PendingTaskApproval[];
+  pendingMyTaskRequests: PendingTaskRequest[];
   approveAccessAction: (formData: FormData) => Promise<void>;
   rejectAccessAction: (formData: FormData) => Promise<void>;
   viewMode?: "all" | "opportunities" | "mine";
@@ -62,6 +63,7 @@ export default function TasksView({
   currentUserId,
   pendingAccessRequests,
   pendingTaskApprovals,
+  pendingMyTaskRequests,
   approveAccessAction,
   rejectAccessAction,
   viewMode = "all",
@@ -144,6 +146,26 @@ export default function TasksView({
     });
   };
 
+  const pendingTaskRequestItems = useMemo(
+    () =>
+      pendingTaskApprovals.map((task) => ({
+        id: task.id,
+        title: task.title,
+        description: `by ${task.createdBy.name} · ${task.owner?.name ?? "Unassigned"}${task.group ? ` · ${task.group.name}` : ""}`
+      })),
+    [pendingTaskApprovals]
+  );
+
+  const pendingOwnTaskRequestItems = useMemo(
+    () =>
+      pendingMyTaskRequests.map((task) => ({
+        id: task.id,
+        title: task.title,
+        description: task.group ? `Group: ${task.group.name}` : "Awaiting leader review"
+      })),
+    [pendingMyTaskRequests]
+  );
+
   const handleViewChange = (nextView: "opportunities" | "mine" | "all") => {
     const params = new URLSearchParams(searchParams?.toString() ?? "");
     if (nextView === "all") {
@@ -159,17 +181,6 @@ export default function TasksView({
     }
     router.replace(`?${params.toString()}`, { scroll: false });
   };
-
-  const pendingTaskRequestItems = useMemo(
-    () =>
-      pendingTaskApprovals.map((task) => ({
-        id: task.id,
-        title: task.title,
-        description: `by ${task.createdBy.name} · ${task.owner?.name ?? "Unassigned"}${task.group ? ` · ${task.group.name}` : ""}`
-      })),
-    [pendingTaskApprovals]
-  );
-
   useEffect(() => {
     if (createParam === "task" && showCreateButton) {
       setIsCreateOpen(true);
@@ -328,9 +339,9 @@ export default function TasksView({
 
             <PendingRequestsSection
         entityType="SERVE_TASK"
-        items={pendingTaskRequestItems}
+        items={canManageTasks ? pendingTaskRequestItems : pendingOwnTaskRequestItems}
         canManage={canManageTasks}
-        busyId={isApproving ? "*" : null}
+        busyId={canManageTasks && isApproving ? "*" : null}
         onApprove={(id) => handleApproveTask(id)}
         onDecline={(id) => handleRejectTask(id)}
       />
