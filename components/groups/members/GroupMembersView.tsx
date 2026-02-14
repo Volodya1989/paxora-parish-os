@@ -28,6 +28,7 @@ import {
   requestToJoin
 } from "@/app/actions/members";
 import type { GroupMemberRecord, PendingInviteRecord } from "@/lib/queries/members";
+import type { GroupInviteCandidate } from "@/lib/queries/groups";
 import type { MemberActionState } from "@/lib/types/members";
 
 const EMPTY_MEMBERS_MESSAGE = "Add parishioners to build a calm, coordinated team.";
@@ -59,6 +60,7 @@ type GroupMembersViewProps = {
   members: GroupMemberRecord[];
   pendingInvites: PendingInviteRecord[];
   canManage: boolean;
+  inviteCandidates: GroupInviteCandidate[];
   viewer: {
     id: string;
     status: "ACTIVE" | "INVITED" | "REQUESTED" | null;
@@ -70,6 +72,7 @@ export default function GroupMembersView({
   members,
   pendingInvites,
   canManage,
+  inviteCandidates,
   viewer
 }: GroupMembersViewProps) {
   const t = useTranslations();
@@ -219,6 +222,16 @@ export default function GroupMembersView({
       return haystack.includes(normalized);
     });
   }, [pendingInvites, query]);
+
+  const availableInviteCandidates = useMemo(() => {
+    const existingUserIds = new Set([
+      ...members.map((member) => member.userId),
+      ...pendingInvites.map((invite) => invite.userId)
+    ]);
+
+    return inviteCandidates.filter((candidate) => !existingUserIds.has(candidate.id));
+  }, [inviteCandidates, members, pendingInvites]);
+
 
   return (
     <div className="space-y-6">
@@ -373,6 +386,7 @@ export default function GroupMembersView({
           open={inviteOpen}
           onClose={() => setInviteOpen(false)}
           onInvite={handleInvite}
+          candidates={availableInviteCandidates}
         />
       ) : null}
     </div>
