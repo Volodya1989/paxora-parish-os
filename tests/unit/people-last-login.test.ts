@@ -1,7 +1,11 @@
-import { test, mock } from "node:test";
+import { after, test, mock } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { loadModuleFromRoot } from "../_helpers/load-module";
+
+after(() => {
+  mock.restoreAll();
+});
 
 const requireCalls: Array<{ userId: string; parishId: string }> = [];
 let shouldReject = false;

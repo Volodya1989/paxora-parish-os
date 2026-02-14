@@ -1,6 +1,10 @@
-import { test, mock } from "node:test";
+import { after, test, mock } from "node:test";
 import assert from "node:assert/strict";
 import { loadModuleFromRoot } from "../_helpers/load-module";
+
+after(() => {
+  mock.restoreAll();
+});
 
 const updateCalls: Array<{ where: { id: string }; data: { lastLoginAt: Date } }> = [];
 const bootstrapCalls: string[] = [];
