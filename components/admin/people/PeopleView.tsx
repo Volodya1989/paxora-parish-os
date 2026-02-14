@@ -50,6 +50,22 @@ const handleResult = (
   return true;
 };
 
+const lastLoginFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  hour: "numeric",
+  minute: "2-digit"
+});
+
+function formatLastLogin(lastLoginAt?: Date | null) {
+  if (!lastLoginAt) {
+    return "Never";
+  }
+
+  return lastLoginFormatter.format(lastLoginAt);
+}
+
 type PeopleViewProps = {
   members: ParishMemberRecord[];
   invites: ParishInviteRecord[];
@@ -181,6 +197,7 @@ export default function PeopleView({ members, invites, viewerId, parishId }: Peo
           <div>
             <p className="text-sm font-semibold text-ink-900">{displayName}</p>
             <p className="text-xs text-ink-500">{member.email}</p>
+            <p className="text-xs text-ink-500">Last login: {formatLastLogin(member.lastLoginAt)}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <RoleChip role={member.role} />

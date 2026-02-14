@@ -47,6 +47,15 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user }) {
       if (user?.id) {
+        try {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { lastLoginAt: new Date() }
+          });
+        } catch (error) {
+          console.error("[auth] failed to update lastLoginAt", error);
+        }
+
         await ensureParishBootstrap(user.id);
       }
       return true;

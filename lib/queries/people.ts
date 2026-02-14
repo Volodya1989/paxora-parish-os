@@ -1,5 +1,6 @@
 import type { ParishRole } from "@prisma/client";
 import { prisma } from "@/server/db/prisma";
+import { requireAdminOrShepherd } from "@/server/auth/permissions";
 
 export type ParishMemberRecord = {
   id: string;
@@ -7,6 +8,7 @@ export type ParishMemberRecord = {
   name: string | null;
   email: string;
   role: ParishRole;
+  lastLoginAt?: Date | null;
 };
 
 export type ParishInviteRecord = {
@@ -43,6 +45,43 @@ export async function getPeopleList(parishId: string): Promise<ParishMemberRecor
     name: membership.user.name,
     email: membership.user.email,
     role: membership.role
+  }));
+}
+
+export async function getPeopleListForAdmin(
+  viewerUserId: string,
+  parishId: string
+): Promise<ParishMemberRecord[]> {
+  await requireAdminOrShepherd(viewerUserId, parishId);
+
+  const memberships = await prisma.membership.findMany({
+    where: { parishId },
+    orderBy: [
+      { user: { lastLoginAt: "desc" } },
+      { user: { name: "asc" } },
+      { user: { email: "asc" } }
+    ],
+    select: {
+      id: true,
+      role: true,
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          lastLoginAt: true
+        }
+      }
+    }
+  });
+
+  return memberships.map((membership) => ({
+    id: membership.id,
+    userId: membership.user.id,
+    name: membership.user.name,
+    email: membership.user.email,
+    role: membership.role,
+    lastLoginAt: membership.user.lastLoginAt
   }));
 }
 
