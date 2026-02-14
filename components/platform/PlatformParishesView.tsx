@@ -4,7 +4,6 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import Card, { CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
-import SectionTitle from "@/components/ui/SectionTitle";
 import Input from "@/components/ui/Input";
 import Textarea from "@/components/ui/Textarea";
 import Label from "@/components/ui/Label";
@@ -13,6 +12,7 @@ import Badge from "@/components/ui/Badge";
 import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
+import ListEmptyState from "@/components/app/list-empty-state";
 import type { PlatformParishRecord } from "@/lib/queries/platformParishes";
 import { locales } from "@/lib/i18n/config";
 import { createPlatformParish, updatePlatformParish } from "@/app/actions/platformParishes";
@@ -196,16 +196,18 @@ export default function PlatformParishesView({
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <SectionTitle
-          title="Platform parishes"
-          subtitle="Manage parish profiles, defaults, and impersonation contexts."
-        />
-        <Button type="button" onClick={openCreate}>
-          Add parish
-        </Button>
-      </div>
+    <div className="mx-auto w-full max-w-4xl space-y-4 overflow-x-hidden pb-2 md:space-y-5">
+      <Card>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium text-ink-900">Quick actions</p>
+            <p className="text-sm text-ink-500">Create or edit parish spaces for platform operations.</p>
+          </div>
+          <Button type="button" onClick={openCreate}>
+            Add parish
+          </Button>
+        </div>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -216,39 +218,51 @@ export default function PlatformParishesView({
               : "Create your first parish to get started."}
           </CardDescription>
         </CardHeader>
-        <div className="space-y-4 px-6 pb-6">
+        <div className="space-y-3">
           {sortedParishes.length === 0 ? (
-            <div className="rounded-card border border-dashed border-mist-200 bg-white px-6 py-6 text-sm text-ink-500">
-              No parishes yet.
-            </div>
+            <ListEmptyState
+              title="No parishes yet"
+              description="Add a parish to begin managing platform-level defaults."
+              action={
+                <Button type="button" variant="secondary" onClick={openCreate}>
+                  Add parish
+                </Button>
+              }
+            />
           ) : (
             sortedParishes.map((parish) => {
               const isImpersonated = parish.id === impersonatedParishId;
               return (
                 <div
                   key={parish.id}
-                  className="flex flex-col gap-3 rounded-card border border-mist-200 bg-white px-4 py-4 shadow-sm"
+                  className="flex flex-col gap-4 rounded-card border border-mist-200 bg-white p-4 shadow-card"
                 >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-ink-900">{parish.name}</p>
-                      <p className="text-xs text-ink-500">Slug: {parish.slug}</p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <img
+                        src={parish.logoUrl?.trim() || "/icon.png"}
+                        alt={`${parish.name} logo`}
+                        className="h-10 w-10 rounded-full border border-mist-200 bg-mist-50 object-cover"
+                        onError={(event) => {
+                          event.currentTarget.src = "/icon.png";
+                        }}
+                      />
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-ink-900 sm:text-base">{parish.name}</p>
+                        <p className="text-xs text-ink-500">Slug: {parish.slug}</p>
+                      </div>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center justify-end gap-2">
                       <Badge tone="neutral">{parish.defaultLocale.toUpperCase()}</Badge>
                       <Badge tone="neutral">{parish.timezone}</Badge>
                       {isImpersonated ? <Badge tone="warning">Impersonating</Badge> : null}
                     </div>
                   </div>
-                  <div className="text-xs text-ink-600">
+
+                  <div className="text-sm text-ink-500">
                     <p>{parish.address || "No address set."}</p>
-                    <p className="mt-1">
-                      Logo:{" "}
-                      <span className="text-ink-500">
-                        {parish.logoUrl ? parish.logoUrl : "Not provided"}
-                      </span>
-                    </p>
                   </div>
+
                   <div className="flex flex-wrap items-center gap-2">
                     <Button type="button" variant="secondary" size="sm" onClick={() => openEdit(parish)}>
                       Edit
@@ -256,7 +270,7 @@ export default function PlatformParishesView({
                     <Button
                       type="button"
                       size="sm"
-                      variant={isImpersonated ? "ghost" : "primary"}
+                      variant={isImpersonated ? "secondary" : "primary"}
                       onClick={() => handleImpersonate(parish.id, parish.name)}
                       disabled={isImpersonating || isImpersonated}
                     >

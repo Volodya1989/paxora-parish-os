@@ -7,7 +7,6 @@ import Button from "@/components/ui/Button";
 import Card, { CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import EmptyState from "@/components/ui/EmptyState";
-import SectionTitle from "@/components/ui/SectionTitle";
 import Input from "@/components/ui/Input";
 import Label from "@/components/ui/Label";
 import SelectMenu from "@/components/ui/SelectMenu";
@@ -147,10 +146,10 @@ export default function PeopleView({ members, invites, viewerId, parishId }: Peo
     return (
       <div
         key={invite.id}
-        className="flex flex-wrap items-start justify-between gap-3 rounded-card border border-mist-200 bg-white px-4 py-3"
+        className="flex flex-col gap-3 rounded-card border border-mist-200 bg-white p-4 shadow-card sm:flex-row sm:items-start sm:justify-between"
       >
         <div>
-          <p className="text-sm font-semibold text-ink-900">{invite.email}</p>
+          <p className="text-sm font-semibold text-ink-900 sm:text-base">{invite.email}</p>
           <p className="text-xs text-ink-500">Invited by {invitedBy}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs text-ink-400">
@@ -191,12 +190,12 @@ export default function PeopleView({ members, invites, viewerId, parishId }: Peo
     return (
       <div
         key={member.id}
-        className="flex flex-col gap-2 rounded-card border border-mist-200 bg-white px-4 py-3"
+        className="flex flex-col gap-3 rounded-card border border-mist-200 bg-white p-4 shadow-card"
       >
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-sm font-semibold text-ink-900">{displayName}</p>
-            <p className="text-xs text-ink-500">{member.email}</p>
+            <p className="text-sm font-semibold text-ink-900 sm:text-base">{displayName}</p>
+            <p className="text-sm text-ink-500">{member.email}</p>
             <p className="text-xs text-ink-500">Last login: {formatLastLogin(member.lastLoginAt)}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -240,17 +239,15 @@ export default function PeopleView({ members, invites, viewerId, parishId }: Peo
   });
 
   return (
-    <div className="space-y-6">
-      <SectionTitle
-        title="People"
-        subtitle="Manage parish members, permissions, and access to your community."
-      />
+    <div className="mx-auto w-full max-w-4xl space-y-4 overflow-x-hidden pb-2 md:space-y-5">
 
       <Card>
-        <div className="space-y-6">
+        <div className="space-y-5">
           <CardHeader>
             <CardTitle>Members</CardTitle>
-            <CardDescription>{members.length} total members</CardDescription>
+            <CardDescription>
+              Review active parish members, their role assignments, and recent sign-in activity.
+            </CardDescription>
           </CardHeader>
           {members.length === 0 ? (
             <EmptyState
@@ -269,7 +266,7 @@ export default function PeopleView({ members, invites, viewerId, parishId }: Peo
       </Card>
 
       <Card>
-        <div className="space-y-6">
+        <div className="space-y-5">
           <CardHeader>
             <CardTitle>Invites</CardTitle>
             <CardDescription>Track outstanding invitations to join your parish.</CardDescription>
@@ -294,7 +291,7 @@ export default function PeopleView({ members, invites, viewerId, parishId }: Peo
       </Card>
 
       <Card>
-        <div className="space-y-6">
+        <div className="space-y-5">
           <CardHeader>
             <CardTitle>Security</CardTitle>
             <CardDescription>Manage parish account sessions for this admin team.</CardDescription>
