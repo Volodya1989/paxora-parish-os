@@ -35,7 +35,7 @@ export default function InviteDrawer({ open, onClose, onInvite }: InviteDrawerPr
     if (!email.trim()) {
       addToast({
         title: "Email required",
-        description: "Enter an email address to send an invite.",
+        description: "Enter an email address to add a member.",
         status: "warning"
       });
       return;
@@ -45,7 +45,7 @@ export default function InviteDrawer({ open, onClose, onInvite }: InviteDrawerPr
       const result = await onInvite({ email: email.trim(), role });
       if (result.status === "error") {
         addToast({
-          title: "Invite failed",
+          title: "Could not add member",
           description: result.message,
           status: "error"
         });
@@ -53,8 +53,8 @@ export default function InviteDrawer({ open, onClose, onInvite }: InviteDrawerPr
       }
 
       addToast({
-        title: "Invite sent",
-        description: "We let them know how to join the group.",
+        title: "Member added",
+        description: "They now belong to this group.",
         status: "success"
       });
       setEmail("");
@@ -68,20 +68,20 @@ export default function InviteDrawer({ open, onClose, onInvite }: InviteDrawerPr
     <Drawer
       open={open}
       onClose={onClose}
-      title="Invite a parishioner"
+      title="Add a parishioner"
       footer={
         <>
           <Button type="button" variant="ghost" onClick={onClose} disabled={isPending}>
             Cancel
           </Button>
           <Button type="button" onClick={handleSubmit} isLoading={isPending}>
-            Send invite
+            Add member
           </Button>
         </>
       }
     >
       <p className="mb-4 text-sm text-ink-500">
-        Send a calm invitation to join this ministry group.
+        Add a parishioner directly to this ministry group.
       </p>
       <div className="space-y-4">
         <div className="space-y-2">

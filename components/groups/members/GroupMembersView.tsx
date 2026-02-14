@@ -245,7 +245,7 @@ export default function GroupMembersView({
         <div className="flex flex-wrap items-center gap-2">
           {canManage ? (
             <Button type="button" onClick={() => setInviteOpen(true)}>
-              Invite member
+              Add member
             </Button>
           ) : null}
           {viewer.status === "ACTIVE" ? (

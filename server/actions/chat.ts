@@ -29,7 +29,7 @@ import { notifyMention } from "@/lib/push/notify";
 import { extractMentionedUserIds, mentionSnippet, normalizeMentionEntities } from "@/lib/mentions";
 import { listMentionableUsersForChannel } from "@/lib/mentions/permissions";
 
-const MESSAGE_EDIT_WINDOW_MS = 15 * 60 * 1000;
+const MESSAGE_EDIT_WINDOW_MS = 24 * 60 * 60 * 1000;
 const REACTION_SET = new Set(REACTION_EMOJIS);
 
 type ChatMentionInput = {

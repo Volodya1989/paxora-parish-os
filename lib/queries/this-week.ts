@@ -56,6 +56,7 @@ export type ThisWeekData = {
   memberGroups: Array<{
     id: string;
     name: string;
+    visibility: "PUBLIC" | "PRIVATE";
     description: string | null;
     unreadCount?: number | null;
     lastMessage?: string | null;
@@ -215,6 +216,7 @@ export async function getThisWeekDataForUser({
           select: {
             id: true,
             name: true,
+            visibility: true,
             description: true,
             avatarKey: true,
             chatChannels: {
@@ -352,6 +354,7 @@ export async function getThisWeekDataForUser({
       return {
         id: m.group.id,
         name: m.group.name,
+        visibility: m.group.visibility,
         description: m.group.description,
         avatarUrl: m.group.avatarKey ? buildAvatarImagePath(m.group.avatarKey) : null,
         unreadCount: unreadCountByGroupId.get(m.group.id) ?? 0,

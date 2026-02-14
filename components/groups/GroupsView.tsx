@@ -33,23 +33,7 @@ import {
   DropdownMenu,
   DropdownTrigger
 } from "@/components/ui/Dropdown";
-
-
-function PrivateVisibilityIcon() {
-  return (
-    <span
-      className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-mist-200 bg-mist-50 text-ink-500"
-      title="Not publicly visible"
-      aria-label="Not publicly visible"
-    >
-      <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M1.5 8s2.2-3.5 6.5-3.5S14.5 8 14.5 8s-2.2 3.5-6.5 3.5S1.5 8 1.5 8Z" />
-        <circle cx="8" cy="8" r="1.8" />
-        <path d="M2 2l12 12" />
-      </svg>
-    </span>
-  );
-}
+import HiddenGroupIcon from "@/components/groups/HiddenGroupIcon";
 
 type GroupsViewProps = {
   groups: GroupListItem[];
@@ -475,7 +459,7 @@ export default function GroupsView({
                       lastMessageTime={group.lastMessageTime}
                       unreadCount={group.unreadCount}
                       href={buildLocalePathname(locale, `/groups/${group.id}/chat`)}
-                      meta={group.visibility === "PRIVATE" ? <PrivateVisibilityIcon /> : null}
+                      meta={group.visibility === "PRIVATE" ? <HiddenGroupIcon /> : null}
                       menu={canManageGroups ? (
                         <Dropdown>
                           <DropdownTrigger asChild iconOnly aria-label={t("groups.optionsFor").replace("{name}", group.name)}>
@@ -522,7 +506,7 @@ export default function GroupsView({
                         key={group.id}
                         className="flex items-center gap-3 rounded-xl border border-mist-100 bg-white px-4 py-3 shadow-sm"
                       >
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-sky-100 text-xs font-semibold text-sky-700">
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-sky-100 text-xs font-semibold text-sky-700">
                           {group.avatarUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img src={group.avatarUrl} alt={group.name} className="h-full w-full object-cover" />
@@ -533,7 +517,7 @@ export default function GroupsView({
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <p className="truncate font-medium text-ink-900">{group.name}</p>
-                            {group.visibility === "PRIVATE" ? <PrivateVisibilityIcon /> : null}
+                            {group.visibility === "PRIVATE" ? <HiddenGroupIcon /> : null}
                             <Badge tone={group.visibility === "PUBLIC" ? "success" : "neutral"}>
                               {group.visibility === "PUBLIC" ? "Public" : "Invite only"}
                             </Badge>

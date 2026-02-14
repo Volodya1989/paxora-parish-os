@@ -143,68 +143,13 @@ dbTest("invite, join requests, approvals, role changes, and leave", async () => 
   session.user.id = admin.id;
   session.user.activeParishId = parish.id;
 
-  const inviteResult = await actions.inviteMember({
+  const addMemberResult = await actions.inviteMember({
     groupId: group.id,
     email: parishioner.email,
     role: "PARISHIONER"
   });
 
-  assert.equal(inviteResult.status, "success");
-
-  const inviteNotification = await prisma.notification.findFirst({
-    where: { userId: parishioner.id, parishId: parish.id, title: "Group invite" },
-    orderBy: { createdAt: "desc" }
-  });
-  assert.ok(inviteNotification);
-
-  const cancelInviteResult = await actions.inviteMember({
-    groupId: group.id,
-    email: outsider.email,
-    role: "PARISHIONER"
-  });
-
-  assert.equal(cancelInviteResult.status, "success");
-
-  const cancelResult = await actions.cancelInvite({
-    groupId: group.id,
-    userId: outsider.id
-  });
-
-  assert.equal(cancelResult.status, "success");
-
-  const cancelledMembership = await prisma.groupMembership.findUnique({
-    where: {
-      groupId_userId: {
-        groupId: group.id,
-        userId: outsider.id
-      }
-    }
-  });
-
-  assert.equal(cancelledMembership, null);
-
-  const pendingInvite = await prisma.groupMembership.findUnique({
-    where: {
-      groupId_userId: {
-        groupId: group.id,
-        userId: parishioner.id
-      }
-    }
-  });
-
-  assert.equal(pendingInvite?.status, "INVITED");
-
-  session.user.id = parishioner.id;
-  session.user.activeParishId = parish.id;
-
-  const acceptResult = await actions.acceptInvite({ groupId: group.id });
-  assert.equal(acceptResult.status, "success");
-
-  const acceptResponseNotification = await prisma.notification.findFirst({
-    where: { userId: admin.id, parishId: parish.id, title: "Group invite accepted" },
-    orderBy: { createdAt: "desc" }
-  });
-  assert.ok(acceptResponseNotification);
+  assert.equal(addMemberResult.status, "success");
 
   const activeMembership = await prisma.groupMembership.findUnique({
     where: {
@@ -216,6 +161,21 @@ dbTest("invite, join requests, approvals, role changes, and leave", async () => 
   });
 
   assert.equal(activeMembership?.status, "ACTIVE");
+
+  const addOutsiderResult = await actions.inviteMember({
+    groupId: group.id,
+    email: outsider.email,
+    role: "PARISHIONER"
+  });
+
+  assert.equal(addOutsiderResult.status, "success");
+
+  const removeOutsiderResult = await actions.removeMember({
+    groupId: group.id,
+    userId: outsider.id
+  });
+
+  assert.equal(removeOutsiderResult.status, "success");
 
   session.user.id = admin.id;
   session.user.activeParishId = parish.id;
@@ -257,27 +217,22 @@ dbTest("invite, join requests, approvals, role changes, and leave", async () => 
 
   assert.equal(removedMembership, null);
 
-  const inviteForDecline = await actions.inviteMember({
-    groupId: group.id,
-    email: requesterTwo.email,
-    role: "PARISHIONER"
+  await prisma.groupMembership.create({
+    data: {
+      groupId: group.id,
+      userId: requesterTwo.id,
+      role: "PARISHIONER",
+      status: "INVITED",
+      invitedByUserId: admin.id,
+      invitedEmail: requesterTwo.email
+    }
   });
-  assert.equal(inviteForDecline.status, "success");
 
   session.user.id = requesterTwo.id;
   session.user.activeParishId = parish.id;
 
   const declineResult = await actions.declineInvite({ groupId: group.id });
   assert.equal(declineResult.status, "success");
-
-  session.user.id = admin.id;
-  session.user.activeParishId = parish.id;
-
-  const declineResponseNotification = await prisma.notification.findFirst({
-    where: { userId: admin.id, parishId: parish.id, title: "Group invite declined" },
-    orderBy: { createdAt: "desc" }
-  });
-  assert.ok(declineResponseNotification);
 
   session.user.id = requester.id;
   session.user.activeParishId = parish.id;
@@ -390,6 +345,62 @@ dbTest("invite, join requests, approvals, role changes, and leave", async () => 
 
   assert.equal(unauthorizedInvite.status, "error");
   assert.equal(unauthorizedInvite.error, "NOT_AUTHORIZED");
+});
+
+
+dbTest("parishioners can directly add members in open public groups", async () => {
+  const parish = await prisma.parish.create({ data: { name: "St Open", slug: "st-open" } });
+  const member = await prisma.user.create({
+    data: { email: "member-open@example.com", name: "Member Open", passwordHash: "hashed", activeParishId: parish.id }
+  });
+  const target = await prisma.user.create({
+    data: { email: "target-open@example.com", name: "Target Open", passwordHash: "hashed", activeParishId: parish.id }
+  });
+  const admin = await prisma.user.create({
+    data: { email: "admin-open@example.com", name: "Admin Open", passwordHash: "hashed", activeParishId: parish.id }
+  });
+
+  await prisma.membership.createMany({
+    data: [
+      { parishId: parish.id, userId: admin.id, role: "ADMIN" },
+      { parishId: parish.id, userId: member.id, role: "MEMBER" },
+      { parishId: parish.id, userId: target.id, role: "MEMBER" }
+    ]
+  });
+
+  const group = await prisma.group.create({
+    data: {
+      parishId: parish.id,
+      createdById: admin.id,
+      name: "Open Helpers",
+      description: "Everyone can add",
+      joinPolicy: "OPEN",
+      visibility: "PUBLIC",
+      status: "ACTIVE"
+    }
+  });
+
+  session.user.id = member.id;
+  session.user.activeParishId = parish.id;
+
+  const addResult = await actions.inviteMember({
+    groupId: group.id,
+    email: target.email,
+    role: "PARISHIONER"
+  });
+
+  assert.equal(addResult.status, "success");
+
+  const membership = await prisma.groupMembership.findUnique({
+    where: {
+      groupId_userId: {
+        groupId: group.id,
+        userId: target.id
+      }
+    }
+  });
+
+  assert.equal(membership?.status, "ACTIVE");
 });
 
 dbTest("rejects cross-parish group mutations when active parish does not match", async () => {

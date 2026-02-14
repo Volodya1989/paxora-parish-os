@@ -140,3 +140,39 @@ export async function upsertGroupMembership(input: {
     }
   });
 }
+
+
+export async function ensureGroupMembership(input: {
+  groupId: string;
+  userId: string;
+  role?: "COORDINATOR" | "PARISHIONER";
+  addedByUserId: string;
+}) {
+  return prisma.groupMembership.upsert({
+    where: {
+      groupId_userId: {
+        groupId: input.groupId,
+        userId: input.userId
+      }
+    },
+    update: {
+      role: input.role ?? "PARISHIONER",
+      status: "ACTIVE",
+      invitedByUserId: null,
+      invitedEmail: null,
+      approvedByUserId: input.addedByUserId
+    },
+    create: {
+      groupId: input.groupId,
+      userId: input.userId,
+      role: input.role ?? "PARISHIONER",
+      status: "ACTIVE",
+      approvedByUserId: input.addedByUserId
+    },
+    select: {
+      id: true,
+      role: true,
+      status: true
+    }
+  });
+}

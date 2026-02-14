@@ -9,7 +9,7 @@ import { REACTION_EMOJIS } from "@/lib/chat/reactions";
 import { cn } from "@/lib/ui/cn";
 import { useTranslations } from "@/lib/i18n/provider";
 
-const EDIT_WINDOW_MS = 15 * 60 * 1000;
+const EDIT_WINDOW_MS = 24 * 60 * 60 * 1000;
 const GROUP_WINDOW_MS = 2 * 60 * 1000;
 const LONG_PRESS_MS = 500;
 const SWIPE_THRESHOLD = 60;
