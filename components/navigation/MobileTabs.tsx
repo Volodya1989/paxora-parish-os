@@ -7,6 +7,7 @@ import MoreDrawer from "@/components/navigation/MoreDrawer";
 import { getPrimaryNavItems, type NavRole, type PlatformNavRole } from "@/components/navigation/navItems";
 import { buildLocalePathname, stripLocale } from "@/lib/i18n/routing";
 import { useLocale, useTranslations } from "@/lib/i18n/provider";
+import { useKeyboardOpen } from "@/lib/ui/useKeyboardOpen";
 
 type MobileTabsProps = {
   currentPath?: string;
@@ -32,6 +33,7 @@ export function MobileTabs({
   const [internalOpen, setInternalOpen] = useState(false);
   const open = isMoreOpen ?? internalOpen;
   const normalizedPath = stripLocale(currentPath);
+  const isKeyboardOpen = useKeyboardOpen();
 
   const setOpen = (nextOpen: boolean) => {
     onMoreOpenChange?.(nextOpen);
@@ -52,7 +54,11 @@ export function MobileTabs({
     <>
       <nav
         aria-label="Primary"
-        className="fixed bottom-0 left-0 right-0 z-30 border-t border-mist-200 bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-card md:hidden"
+        className={`fixed bottom-0 left-0 right-0 z-30 border-t border-mist-200 bg-white/95 pb-[env(safe-area-inset-bottom)] shadow-card transition-all duration-200 md:hidden ${
+          isKeyboardOpen
+            ? "pointer-events-none translate-y-[calc(100%+env(safe-area-inset-bottom))] opacity-0"
+            : "translate-y-0 opacity-100"
+        }`}
       >
         <div className="flex items-center justify-around px-2 py-2">
           {items.map((item) => {
