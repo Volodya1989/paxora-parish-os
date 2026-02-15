@@ -86,6 +86,7 @@ export default async function ThisWeekPage({
       parishLogoUrl={parishLogoUrl}
       userName={userName}
       startGuide={startGuide}
+      now={now}
     />
   ) : (
     <ThisWeekParishionerView

@@ -8,6 +8,7 @@ import Card from "@/components/ui/Card";
 import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
 import GratitudeSpotlightAdminPanel from "@/components/this-week/admin/GratitudeSpotlightAdminPanel";
+import { HandHeartIcon } from "@/components/icons/ParishIcons";
 import { useTranslations } from "@/lib/i18n/provider";
 
 type GratitudeSpotlightAdminSectionProps = {
@@ -90,21 +91,24 @@ export default function GratitudeSpotlightAdminSection({
           }
         />
       ) : (
-        <Card className="space-y-3 border border-dashed border-rose-200 bg-rose-50/50 p-4">
-          <div>
-            <p className="text-sm font-semibold text-rose-900">{t("thisWeek.gratitudeCard.title")}</p>
-            <p className="text-xs text-rose-700">{t("thisWeek.gratitudeSpotlight.noPublished")}</p>
-          </div>
-          <Button
+        <Card className="border border-rose-200 bg-gradient-to-r from-rose-50 via-pink-50 to-amber-50 p-4 shadow-sm">
+          <button
             type="button"
-            size="sm"
-            variant="secondary"
-            className="w-full sm:w-auto"
+            className="group flex w-full items-center gap-3 text-left"
             onClick={() => setShowAdminPanel(true)}
             aria-expanded={showAdminPanel}
           >
-            {t("thisWeek.gratitudeSpotlight.addNominee")}
-          </Button>
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600">
+              <HandHeartIcon className="h-5 w-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-rose-900">{t("thisWeek.gratitudeCard.title")}</p>
+              <p className="text-xs text-rose-700">{t("thisWeek.gratitudeCard.description")}</p>
+            </div>
+            <span className="text-sm font-semibold text-rose-500 transition group-hover:text-rose-700">
+              {t("thisWeek.gratitudeCard.cta")}
+            </span>
+          </button>
         </Card>
       )}
 
