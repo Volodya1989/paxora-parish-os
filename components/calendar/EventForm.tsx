@@ -88,8 +88,17 @@ export default function EventForm({
     if (event?.startsAt) {
       return formatDateInput(event.startsAt);
     }
+    // Smart default: next Sunday for SERVICE, today for EVENT
+    if (defaultType === "SERVICE") {
+      const now = new Date();
+      const dayOfWeek = now.getDay(); // 0 = Sunday
+      const daysUntilSunday = dayOfWeek === 0 ? 7 : 7 - dayOfWeek;
+      const nextSunday = new Date(now);
+      nextSunday.setDate(now.getDate() + daysUntilSunday);
+      return formatDateInput(nextSunday);
+    }
     return formatDateInput(new Date());
-  }, [event]);
+  }, [defaultType, event]);
 
   const initialStartTimeValue = useMemo(() => {
     if (event?.startsAt) {
@@ -293,138 +302,144 @@ export default function EventForm({
   };
 
   return (
-    <form ref={formRef} className="space-y-4" action={formAction}>
+    <form ref={formRef} className="space-y-3" action={formAction}>
       {event?.id ? <input type="hidden" name="eventId" value={event.id} /> : null}
-      <div className="space-y-2">
-        <Label htmlFor={titleId}>Title</Label>
-        <Input
-          id={titleId}
-          name="title"
-          placeholder="e.g. Divine Liturgy"
-          defaultValue={event?.title ?? ""}
-          required
-        />
-      </div>
 
-      <div className="space-y-2">
-        <Label htmlFor={typeId}>Type</Label>
-        <SelectMenu
-          id={typeId}
-          name="type"
-          value={type}
-          onValueChange={(value) => setType(value as "SERVICE" | "EVENT")}
-          options={[
-            { value: "SERVICE", label: "Service / Liturgy" },
-            { value: "EVENT", label: "Event / Gathering" }
-          ]}
-        />
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="space-y-2">
-          <Label htmlFor={dateId}>Date</Label>
-          <Input
-            id={dateId}
-            type="date"
-            value={dateValue}
-            onChange={(eventValue) => setDateValue(eventValue.currentTarget.value)}
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={startTimeId}>Start time</Label>
-          <Input
-            id={startTimeId}
-            type="time"
-            value={startTimeValue}
-            onChange={(eventValue) => setStartTimeValue(eventValue.currentTarget.value)}
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={endTimeId}>End time</Label>
-          <Input
-            id={endTimeId}
-            type="time"
-            value={endTimeValue}
-            onChange={(eventValue) => setEndTimeValue(eventValue.currentTarget.value)}
-            required
-          />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor={recurrenceId}>Repeats</Label>
-        <SelectMenu
-          id={recurrenceId}
-          name="recurrencePattern"
-          value={recurrencePattern}
-          onValueChange={(value) =>
-            setRecurrencePattern(value as "NONE" | "DAILY" | "WEEKLY" | "CUSTOM")
-          }
-          options={recurrenceOptions}
-        />
-        <p className="text-xs text-ink-400">
-          Set a daily, weekly, or custom weekday rhythm for this event.
-        </p>
-      </div>
-
-      {recurrencePattern === "WEEKLY" || recurrencePattern === "CUSTOM" ? (
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
-            Repeat on
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {weekdayOptions.map((day) => {
-              const isActive = recurrenceDays.includes(day.value);
-              return (
-                <button
-                  key={day.value}
-                  type="button"
-                  onClick={() => toggleWeekday(day.value)}
-                  className={`rounded-full border px-3 py-1 text-xs font-medium transition focus-ring ${
-                    isActive
-                      ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-                      : "border-mist-200 bg-white text-ink-600 hover:border-mist-300"
-                  }`}
-                >
-                  {day.label}
-                </button>
-              );
-            })}
+      {/* Section: Basics */}
+      <fieldset className="space-y-3 rounded-xl border border-mist-100 bg-mist-50/40 p-3">
+        <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+          <div className="space-y-1.5">
+            <Label htmlFor={titleId}>Title</Label>
+            <Input
+              id={titleId}
+              name="title"
+              placeholder="e.g. Divine Liturgy"
+              defaultValue={event?.title ?? ""}
+              required
+              autoFocus
+            />
           </div>
-        </div>
-      ) : null}
-
-      {recurrencePattern !== "NONE" ? (
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor={recurrenceEndsId}>Ends</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor={typeId}>Type</Label>
             <SelectMenu
-              id={recurrenceEndsId}
-              name="recurrenceEnds"
-              value={recurrenceEnds}
-              onValueChange={(value) => setRecurrenceEnds(value as "NEVER" | "ON")}
+              id={typeId}
+              name="type"
+              value={type}
+              onValueChange={(value) => setType(value as "SERVICE" | "EVENT")}
               options={[
-                { value: "NEVER", label: "Never" },
-                { value: "ON", label: "On date" }
+                { value: "SERVICE", label: "Service / Liturgy" },
+                { value: "EVENT", label: "Event / Gathering" }
               ]}
             />
           </div>
-          {recurrenceEnds === "ON" ? (
-            <div className="space-y-2">
-              <Label htmlFor={recurrenceUntilId}>End date</Label>
-              <Input
-                id={recurrenceUntilId}
-                type="date"
-                value={recurrenceUntil}
-                onChange={(eventValue) => setRecurrenceUntil(eventValue.currentTarget.value)}
-                required
+        </div>
+      </fieldset>
+
+      {/* Section: Date & Time */}
+      <fieldset className="space-y-3 rounded-xl border border-mist-100 bg-mist-50/40 p-3">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="space-y-1.5">
+            <Label htmlFor={dateId}>Date</Label>
+            <Input
+              id={dateId}
+              type="date"
+              value={dateValue}
+              onChange={(eventValue) => setDateValue(eventValue.currentTarget.value)}
+              required
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor={startTimeId}>Start</Label>
+            <Input
+              id={startTimeId}
+              type="time"
+              value={startTimeValue}
+              onChange={(eventValue) => setStartTimeValue(eventValue.currentTarget.value)}
+              required
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor={endTimeId}>End</Label>
+            <Input
+              id={endTimeId}
+              type="time"
+              value={endTimeValue}
+              onChange={(eventValue) => setEndTimeValue(eventValue.currentTarget.value)}
+              required
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor={recurrenceId}>Repeats</Label>
+          <SelectMenu
+            id={recurrenceId}
+            name="recurrencePattern"
+            value={recurrencePattern}
+            onValueChange={(value) =>
+              setRecurrencePattern(value as "NONE" | "DAILY" | "WEEKLY" | "CUSTOM")
+            }
+            options={recurrenceOptions}
+          />
+        </div>
+
+        {recurrencePattern === "WEEKLY" || recurrencePattern === "CUSTOM" ? (
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
+              Repeat on
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {weekdayOptions.map((day) => {
+                const isActive = recurrenceDays.includes(day.value);
+                return (
+                  <button
+                    key={day.value}
+                    type="button"
+                    onClick={() => toggleWeekday(day.value)}
+                    className={`rounded-full border px-3 py-1 text-xs font-medium transition focus-ring ${
+                      isActive
+                        ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                        : "border-mist-200 bg-white text-ink-600 hover:border-mist-300"
+                    }`}
+                  >
+                    {day.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+
+        {recurrencePattern !== "NONE" ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor={recurrenceEndsId}>Ends</Label>
+              <SelectMenu
+                id={recurrenceEndsId}
+                name="recurrenceEnds"
+                value={recurrenceEnds}
+                onValueChange={(value) => setRecurrenceEnds(value as "NEVER" | "ON")}
+                options={[
+                  { value: "NEVER", label: "Never" },
+                  { value: "ON", label: "On date" }
+                ]}
               />
             </div>
-          ) : null}
-        </div>
-      ) : null}
+            {recurrenceEnds === "ON" ? (
+              <div className="space-y-1.5">
+                <Label htmlFor={recurrenceUntilId}>End date</Label>
+                <Input
+                  id={recurrenceUntilId}
+                  type="date"
+                  value={recurrenceUntil}
+                  onChange={(eventValue) => setRecurrenceUntil(eventValue.currentTarget.value)}
+                  required
+                />
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </fieldset>
 
       <input type="hidden" name="date" value={dateValue} />
       <input type="hidden" name="startTime" value={startTimeValue} />
@@ -442,62 +457,67 @@ export default function EventForm({
         value={recurrenceEnds === "ON" ? recurrenceUntil : ""}
       />
 
-      <div className="space-y-2">
-        <Label htmlFor={locationId}>Location</Label>
-        <Input
-          id={locationId}
-          name="location"
-          placeholder="Sanctuary, parish hall, livestream"
-          defaultValue={event?.location ?? ""}
-        />
+      {/* Section: Details */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor={locationId}>Location</Label>
+          <Input
+            id={locationId}
+            name="location"
+            placeholder="Sanctuary, parish hall, livestream"
+            defaultValue={event?.location ?? ""}
+          />
+        </div>
+        <div className="space-y-1.5 sm:col-span-2">
+          <Label htmlFor={summaryId}>Summary</Label>
+          <Textarea
+            id={summaryId}
+            name="summary"
+            placeholder="Add a short description for the schedule view."
+            rows={3}
+            defaultValue={event?.summary ?? ""}
+          />
+        </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor={summaryId}>Summary</Label>
-        <Textarea
-          id={summaryId}
-          name="summary"
-          placeholder="Add a short description for the schedule view."
-          rows={4}
-          defaultValue={event?.summary ?? ""}
-        />
-      </div>
+      {/* Section: Visibility */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor={visibilityId}>Visibility</Label>
+          <SelectMenu
+            id={visibilityId}
+            name="visibility"
+            value={visibility}
+            onValueChange={(value) => setVisibility(value as "PUBLIC" | "GROUP" | "PRIVATE")}
+            options={visibilityOptions}
+          />
+          {visibility === "GROUP" ? (
+            <p className="text-xs text-ink-400">
+              Group-only events appear for members of the selected ministry.
+            </p>
+          ) : null}
+        </div>
 
-      <div className="space-y-2">
-        <Label htmlFor={visibilityId}>Visibility</Label>
-        <SelectMenu
-          id={visibilityId}
-          name="visibility"
-          value={visibility}
-          onValueChange={(value) => setVisibility(value as "PUBLIC" | "GROUP" | "PRIVATE")}
-          options={visibilityOptions}
-        />
         {visibility === "GROUP" ? (
-          <p className="text-xs text-ink-400">
-            Group-only events appear for members of the selected ministry.
-          </p>
+          <div className="space-y-1.5">
+            <Label htmlFor={groupId}>Group</Label>
+            <SelectMenu
+              id={groupId}
+              name="groupId"
+              value={selectedGroupId}
+              onValueChange={(value) => setSelectedGroupId(value)}
+              placeholder={groupOptions.length ? "Select a group" : "No groups available"}
+              options={groupOptions.map((group) => ({
+                value: group.id,
+                label: group.name
+              }))}
+            />
+          </div>
         ) : null}
       </div>
 
-      {visibility === "GROUP" ? (
-        <div className="space-y-2">
-          <Label htmlFor={groupId}>Group</Label>
-          <SelectMenu
-            id={groupId}
-            name="groupId"
-            value={selectedGroupId}
-            onValueChange={(value) => setSelectedGroupId(value)}
-            placeholder={groupOptions.length ? "Select a group" : "No groups available"}
-            options={groupOptions.map((group) => ({
-              value: group.id,
-              label: group.name
-            }))}
-          />
-        </div>
-      ) : null}
-
       {state.status === "error" ? (
-        <p role="alert" className="text-sm text-rose-600">
+        <p role="alert" className="rounded-xl border border-rose-100 bg-rose-50/60 px-3 py-2 text-xs text-rose-700">
           {state.message}
         </p>
       ) : null}
@@ -517,7 +537,7 @@ function EventFormActions({
   const { pending } = useFormStatus();
 
   return (
-    <div className="mt-6 flex justify-end gap-2">
+    <div className="sticky bottom-0 mt-4 flex justify-end gap-2 border-t border-mist-100 bg-white pb-1 pt-3">
       {onCancel ? (
         <Button type="button" variant="ghost" onClick={onCancel} disabled={pending}>
           Cancel

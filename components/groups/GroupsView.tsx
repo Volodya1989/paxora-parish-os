@@ -17,7 +17,6 @@ import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 import { acceptInvite, declineInvite, joinGroup, leaveGroup, requestToJoin } from "@/app/actions/members";
 import type { MemberActionState } from "@/lib/types/members";
 import type { GroupInviteCandidate, GroupListItem } from "@/lib/queries/groups";
-import FiltersDrawer from "@/components/app/filters-drawer";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import ListEmptyState from "@/components/app/list-empty-state";
@@ -25,7 +24,7 @@ import { useTranslations } from "@/lib/i18n/provider";
 import { useLocale } from "@/lib/i18n/provider";
 import QuoteCard from "@/components/app/QuoteCard";
 import { buildLocalePathname } from "@/lib/i18n/routing";
-import ActionRow from "@/components/shared/ActionRow";
+import HeaderActionBar from "@/components/shared/HeaderActionBar";
 import PendingRequestsSection from "@/components/shared/PendingRequestsSection";
 import {
   Dropdown,
@@ -60,6 +59,7 @@ export default function GroupsView({
   const [activeTab, setActiveTab] = useState<GroupFilterTab>("active");
   const [query, setQuery] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
   const [pendingGroupId, setPendingGroupId] = useState<string | null>(null);
@@ -334,38 +334,41 @@ export default function GroupsView({
         tone="primary"
       />
 
-      {/* Action bar */}
-      <ActionRow
-        addAriaLabel={t("groups.startGroup")}
-        showAddButton={canManageGroups || canRequestContentCreate}
-        onAdd={openCreateDialog}
-        left={(
-          <>
-            <div className="md:hidden">
-              <FiltersDrawer title={t("groups.filters.title")}>
-                <GroupFilters
-                  activeTab={activeTab}
-                  onTabChange={setActiveTab}
-                  query={query}
-                  onQueryChange={setQuery}
-                  counts={counts}
-                  layout="stacked"
-                />
-              </FiltersDrawer>
-            </div>
-            <div className="hidden md:flex md:items-center md:gap-2">
-              <GroupFilters
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-                query={query}
-                onQueryChange={setQuery}
-                counts={counts}
-                layout="inline"
-              />
-            </div>
-          </>
-        )}
+      {/* Unified header action bar */}
+      <HeaderActionBar
+        onFilterClick={() => setFiltersOpen(true)}
+        filterActive={activeTab !== "active" || query.length > 0}
+        onAddClick={canManageGroups || canRequestContentCreate ? openCreateDialog : undefined}
+        addLabel={t("groups.startGroup")}
+        left={
+          <div className="hidden md:flex md:items-center md:gap-2">
+            <GroupFilters
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              query={query}
+              onQueryChange={setQuery}
+              counts={counts}
+              layout="inline"
+            />
+          </div>
+        }
       />
+
+      {/* Mobile filter drawer */}
+      <Drawer
+        open={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        title={t("groups.filters.title")}
+      >
+        <GroupFilters
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          query={query}
+          onQueryChange={setQuery}
+          counts={counts}
+          layout="stacked"
+        />
+      </Drawer>
 
       {/* Pending invites for the current user */}
       {myInvites.length > 0 ? (
