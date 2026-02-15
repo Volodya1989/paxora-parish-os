@@ -2,6 +2,7 @@ import type { EventPreview } from "@/lib/queries/this-week";
 import { PARISH_TIMEZONE } from "@/lib/time/parish";
 import { formatTime } from "@/lib/this-week/formatters";
 import type { Locale } from "@/lib/i18n/config";
+import { getUpcomingEventsSnapshot } from "@/lib/this-week/upcomingEvents";
 
 function getParishDateKey(date: Date) {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -37,11 +38,11 @@ export function buildEventsSummary({
   t: (key: string) => string;
   fallbackEvent?: EventPreview | null;
 }) {
-  const upcoming = [...events]
-    .filter((event) => event.startsAt >= now)
-    .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
-
-  const nextEvent = upcoming[0] ?? fallbackEvent ?? null;
+  const { upcomingEvents: upcoming, nextUpcomingEvent: nextEvent } = getUpcomingEventsSnapshot({
+    events,
+    fallbackEvent,
+    now
+  });
 
   if (!nextEvent) {
     return t("thisWeek.noUpcomingEvents");

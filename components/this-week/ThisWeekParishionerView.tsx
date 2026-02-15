@@ -17,6 +17,7 @@ import { getTranslations } from "@/lib/i18n/server";
 import type { Locale } from "@/lib/i18n/config";
 import { buildLocalePathname } from "@/lib/i18n/routing";
 import { buildEventsSummary } from "@/lib/this-week/eventsSummary";
+import { getUpcomingEventsSnapshot } from "@/lib/this-week/upcomingEvents";
 
 type ThisWeekParishionerViewProps = {
   data: ThisWeekData;
@@ -66,8 +67,11 @@ export default function ThisWeekParishionerView({
     return a.title.localeCompare(b.title);
   });
 
-  // Filter events to future only
-  const upcomingEvents = data.events.filter((event) => event.startsAt >= now);
+  const { upcomingCount } = getUpcomingEventsSnapshot({
+    events: data.events,
+    fallbackEvent: data.nextUpcomingEvent,
+    now
+  });
 
   // Generate summaries for quick blocks
   const announcementsSummary =
@@ -126,7 +130,7 @@ export default function ThisWeekParishionerView({
             label: t("thisWeek.services"),
             href: routes.calendar,
             summary: servicesSummary,
-            count: upcomingEvents.length > 0 ? upcomingEvents.length : data.nextUpcomingEvent ? 1 : 0,
+            count: upcomingCount,
             icon: <CalendarIcon className="h-4 w-4" />,
             accentClass: "border-emerald-200 bg-emerald-50/70 text-emerald-700"
           },

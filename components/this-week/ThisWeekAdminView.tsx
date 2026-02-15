@@ -21,10 +21,10 @@ import {
   formatShortDate,
   formatTime,
 } from "@/lib/this-week/formatters";
-import { getNow } from "@/lib/time/getNow";
 import { getTranslations } from "@/lib/i18n/server";
 import type { Locale } from "@/lib/i18n/config";
 import { buildEventsSummary } from "@/lib/this-week/eventsSummary";
+import { getUpcomingEventsSnapshot } from "@/lib/this-week/upcomingEvents";
 
 type ThisWeekAdminViewProps = {
   data: ThisWeekData;
@@ -47,6 +47,7 @@ type ThisWeekAdminViewProps = {
   parishLogoUrl?: string | null;
   userName?: string;
   startGuide?: ReactNode;
+  now: Date;
 };
 
 /* ---------- lightweight inline icons ---------- */
@@ -139,26 +140,6 @@ function AnnouncementRow({ item }: { item: AnnouncementPreview }) {
 }
 
 
-function GratitudeEntryCard({ t }: { t: (key: string) => string }) {
-  return (
-    <Link
-      href={`${routes.thisWeek}?view=admin&openNominees=1#gratitude-spotlight`}
-      className="group flex items-center gap-3 rounded-2xl border border-rose-200 bg-gradient-to-r from-rose-50 via-pink-50 to-amber-50 px-4 py-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-    >
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-100 text-rose-600">
-        <HandHeartIcon className="h-5 w-5" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-rose-900">{t("thisWeek.gratitudeCard.title")}</p>
-        <p className="text-xs text-rose-700">
-          {t("thisWeek.gratitudeCard.description")}
-        </p>
-      </div>
-      <span className="text-sm font-semibold text-rose-500 transition group-hover:text-rose-700">{t("thisWeek.gratitudeCard.cta")}</span>
-    </Link>
-  );
-}
-
 /* ---------- section header ---------- */
 
 function SectionHeader({ title, count, countLabel, href, linkLabel = "View all" }: {
@@ -189,6 +170,7 @@ export default function ThisWeekAdminView({
   viewToggle,
   spotlightAdmin,
   startGuide,
+  now,
   parishName = "Mother of God Ukrainian Catholic Church",
   parishLogoUrl,
   userName
@@ -260,8 +242,11 @@ export default function ThisWeekAdminView({
   const tasksInProgress = data.tasks.filter((t) => t.status === "IN_PROGRESS").length;
   const tasksOpen = data.tasks.filter((t) => t.status === "OPEN").length;
 
-  const now = getNow();
-  const upcomingEvents = data.events.filter((event) => event.startsAt >= now);
+  const { upcomingEvents, upcomingCount } = getUpcomingEventsSnapshot({
+    events: data.events,
+    fallbackEvent: data.nextUpcomingEvent,
+    now
+  });
 
   const announcementsSummary =
     publishedAnnouncements.length > 0
@@ -318,7 +303,7 @@ export default function ThisWeekAdminView({
             label: t("thisWeek.services"),
             href: routes.calendar,
             summary: servicesSummary,
-            count: upcomingEvents.length > 0 ? upcomingEvents.length : data.nextUpcomingEvent ? 1 : 0,
+            count: upcomingCount,
             icon: <CalendarIcon className="h-4 w-4" />,
             accentClass: "border-emerald-200 bg-emerald-50/70 text-emerald-700"
           },
@@ -351,9 +336,6 @@ export default function ThisWeekAdminView({
 
       {/* Admin alerts — compact, only when there are pending actions */}
       {alerts.length > 0 && <AdminAlertBanner alerts={alerts} />}
-
-      {/* Gratitude board entry point for clergy/admin */}
-      {spotlightAdmin ? <GratitudeEntryCard t={t} /> : null}
 
       {/* ──── Admin sections: borderless, compact ──── */}
 
@@ -398,7 +380,7 @@ export default function ThisWeekAdminView({
       <section className="space-y-2">
         <SectionHeader
           title={t("thisWeek.services")}
-          count={upcomingEvents.length}
+          count={upcomingCount}
           countLabel="upcoming"
           href={routes.calendar}
           linkLabel={t("landing.viewAll")}
