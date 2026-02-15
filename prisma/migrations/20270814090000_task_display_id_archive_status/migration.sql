@@ -28,10 +28,6 @@ FROM ranked_tasks
 WHERE t."id" = ranked_tasks."id"
   AND t."displayId" IS NULL;
 
-UPDATE "Task"
-SET "status" = 'ARCHIVED'
-WHERE "archivedAt" IS NOT NULL
-  AND "status" <> 'ARCHIVED';
 
 INSERT INTO "TaskSequence" ("id", "parishId", "nextValue", "createdAt", "updatedAt")
 SELECT
