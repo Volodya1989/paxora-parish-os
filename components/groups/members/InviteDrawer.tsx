@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -9,6 +9,7 @@ import SelectMenu from "@/components/ui/SelectMenu";
 import { Drawer } from "@/components/ui/Drawer";
 import { useToast } from "@/components/ui/Toast";
 import type { MemberActionState } from "@/lib/types/members";
+import type { GroupInviteCandidate } from "@/lib/queries/groups";
 
 const roleOptions = [
   { value: "PARISHIONER", label: "Parishioner" },
@@ -22,30 +23,44 @@ type InviteDrawerProps = {
     email: string;
     role: "COORDINATOR" | "PARISHIONER";
   }) => Promise<MemberActionState>;
+  candidates: GroupInviteCandidate[];
 };
 
-export default function InviteDrawer({ open, onClose, onInvite }: InviteDrawerProps) {
+export default function InviteDrawer({ open, onClose, onInvite, candidates }: InviteDrawerProps) {
   const router = useRouter();
   const { addToast } = useToast();
-  const [email, setEmail] = useState("");
+  const [query, setQuery] = useState("");
+  const [selectedCandidate, setSelectedCandidate] = useState<GroupInviteCandidate | null>(null);
   const [role, setRole] = useState<"COORDINATOR" | "PARISHIONER">("PARISHIONER");
   const [isPending, startTransition] = useTransition();
 
+  const filteredCandidates = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+
+    return candidates.filter((candidate) => {
+      if (!normalizedQuery) {
+        return true;
+      }
+
+      return `${candidate.name} ${candidate.email}`.toLowerCase().includes(normalizedQuery);
+    });
+  }, [candidates, query]);
+
   const handleSubmit = () => {
-    if (!email.trim()) {
+    if (!selectedCandidate?.email) {
       addToast({
-        title: "Email required",
-        description: "Enter an email address to send an invite.",
+        title: "Member required",
+        description: "Select a parishioner from the list.",
         status: "warning"
       });
       return;
     }
 
     startTransition(async () => {
-      const result = await onInvite({ email: email.trim(), role });
+      const result = await onInvite({ email: selectedCandidate.email, role });
       if (result.status === "error") {
         addToast({
-          title: "Invite failed",
+          title: "Could not add member",
           description: result.message,
           status: "error"
         });
@@ -53,11 +68,12 @@ export default function InviteDrawer({ open, onClose, onInvite }: InviteDrawerPr
       }
 
       addToast({
-        title: "Invite sent",
-        description: "We let them know how to join the group.",
+        title: "Member added",
+        description: "They now belong to this group.",
         status: "success"
       });
-      setEmail("");
+      setQuery("");
+      setSelectedCandidate(null);
       setRole("PARISHIONER");
       onClose();
       router.refresh();
@@ -68,32 +84,58 @@ export default function InviteDrawer({ open, onClose, onInvite }: InviteDrawerPr
     <Drawer
       open={open}
       onClose={onClose}
-      title="Invite a parishioner"
-      footer={
+      title="Add a parishioner"
+      footer={(
         <>
           <Button type="button" variant="ghost" onClick={onClose} disabled={isPending}>
             Cancel
           </Button>
           <Button type="button" onClick={handleSubmit} isLoading={isPending}>
-            Send invite
+            Add member
           </Button>
         </>
-      }
+      )}
     >
       <p className="mb-4 text-sm text-ink-500">
-        Send a calm invitation to join this ministry group.
+        Add a parishioner directly to this ministry group.
       </p>
       <div className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="invite-email">Email</Label>
+          <Label htmlFor="invite-member-search">Select parishioner</Label>
           <Input
-            id="invite-email"
-            type="email"
-            placeholder="name@example.com"
-            value={email}
-            onChange={(event) => setEmail(event.currentTarget.value)}
+            id="invite-member-search"
+            placeholder="Search by name or email"
+            value={query}
+            onChange={(event) => setQuery(event.currentTarget.value)}
           />
+          <div className="max-h-44 overflow-y-auto rounded-xl border border-mist-200 bg-white">
+            {filteredCandidates.slice(0, 30).map((candidate) => {
+              const isSelected = selectedCandidate?.id === candidate.id;
+              return (
+                <button
+                  key={candidate.id}
+                  type="button"
+                  className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm ${
+                    isSelected ? "bg-primary-50" : "hover:bg-mist-50"
+                  }`}
+                  onClick={() => setSelectedCandidate(candidate)}
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium text-ink-900">{candidate.name}</span>
+                    <span className="block truncate text-xs text-ink-500">{candidate.email}</span>
+                  </span>
+                  <span className="ml-3 text-xs font-medium text-primary-600">
+                    {isSelected ? "Selected" : "Select"}
+                  </span>
+                </button>
+              );
+            })}
+            {filteredCandidates.length === 0 ? (
+              <p className="px-3 py-2 text-sm text-ink-500">No matching parish members.</p>
+            ) : null}
+          </div>
         </div>
+
         <div className="space-y-2">
           <Label htmlFor="invite-role">Role</Label>
           <SelectMenu

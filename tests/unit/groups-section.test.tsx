@@ -14,6 +14,7 @@ test("GroupsSection renders shared group row with message metadata", () => {
           {
             id: "group-1",
             name: "Care Team",
+            visibility: "PRIVATE",
             avatarUrl: "/api/images/groups/group-1/avatar/test.jpg",
             description: "Helping neighbors",
             lastMessage: "See you Sunday",

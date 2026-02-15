@@ -3,6 +3,7 @@ import GroupMembersView from "@/components/groups/members/GroupMembersView";
 import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
 import { getGroupMembers, getPendingInvites } from "@/lib/queries/members";
+import { listGroupInviteCandidates } from "@/lib/queries/groups";
 import { isAdminClergy } from "@/lib/authz/membership";
 
 type GroupMembersPageProps = {
@@ -76,9 +77,10 @@ export default async function GroupMembersPage({ params }: GroupMembersPageProps
     throw new Error("Unauthorized");
   }
 
-  const [members, pendingInvites] = await Promise.all([
+  const [members, pendingInvites, inviteCandidates] = await Promise.all([
     getGroupMembers(group.id),
-    canViewPending ? getPendingInvites(group.id) : Promise.resolve([])
+    canViewPending ? getPendingInvites(group.id) : Promise.resolve([]),
+    listGroupInviteCandidates(group.parishId, session.user.id)
   ]);
 
   return (
@@ -87,6 +89,7 @@ export default async function GroupMembersPage({ params }: GroupMembersPageProps
       members={members}
       pendingInvites={pendingInvites}
       canManage={canManage}
+      inviteCandidates={inviteCandidates}
       viewer={{
         id: session.user.id,
         status: groupMembership?.status ?? null

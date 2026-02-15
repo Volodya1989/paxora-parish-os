@@ -15,6 +15,7 @@ import { cn } from "@/lib/ui/cn";
 import { useLocale, useTranslations } from "@/lib/i18n/provider";
 import { buildLocalePathname } from "@/lib/i18n/routing";
 import GroupListRow from "@/components/groups/GroupListRow";
+import HiddenGroupIcon from "@/components/groups/HiddenGroupIcon";
 
 type GroupCardProps = {
   group: GroupListItem;
@@ -125,6 +126,7 @@ export default function GroupCard({
         className="min-w-0 flex flex-1 items-center gap-3"
         meta={(
           <>
+            {group.visibility === "PRIVATE" ? <HiddenGroupIcon /> : null}
             {isArchived ? <Badge tone="warning">Archived</Badge> : null}
             {isPending ? <Badge tone="warning">Pending</Badge> : null}
             {isRejected ? <Badge tone="neutral">Not approved</Badge> : null}

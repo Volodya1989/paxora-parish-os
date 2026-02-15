@@ -8,10 +8,12 @@ import { useTranslations, useLocale } from "@/lib/i18n/provider";
 import { buildLocalePathname } from "@/lib/i18n/routing";
 import { cn } from "@/lib/ui/cn";
 import GroupChatListCard from "@/components/groups/GroupChatListCard";
+import HiddenGroupIcon from "@/components/groups/HiddenGroupIcon";
 
 type GroupPreview = {
   id: string;
   name: string;
+  visibility: "PUBLIC" | "PRIVATE";
   avatarUrl?: string | null;
   description: string | null;
   unreadCount?: number | null;
@@ -81,6 +83,7 @@ export default function GroupsSection({ groups, hasPublicGroups, className }: Gr
               lastMessageAuthor={group.lastMessageAuthor}
               lastMessageTime={group.lastMessageTime}
               unreadCount={group.unreadCount}
+              meta={group.visibility === "PRIVATE" ? <HiddenGroupIcon /> : null}
               href={buildLocalePathname(locale, `/groups/${group.id}/chat`)}
             />
           ))}

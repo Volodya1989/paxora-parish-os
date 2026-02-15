@@ -255,21 +255,15 @@ dbTest("create hidden group with invite only exposes invited user", async () => 
     inviteeUserIds: [invitedUser.id]
   });
 
-  const creationInviteNotification = await prisma.notification.findFirst({
-    where: { userId: invitedUser.id, parishId: parish.id, title: "Group invite" },
-    orderBy: { createdAt: "desc" }
-  });
-  assert.ok(creationInviteNotification);
-
   const invitedList = await listVisibleGroups(parish.id, invitedUser.id, "MEMBER", true);
   const invitedRecord = invitedList.find((group) => group.name === "Hidden Council");
-  assert.equal(invitedRecord?.viewerMembershipStatus, "INVITED");
+  assert.equal(invitedRecord?.viewerMembershipStatus, "ACTIVE");
 
   const otherList = await listVisibleGroups(parish.id, otherUser.id, "MEMBER", true);
   assert.equal(otherList.some((group) => group.name === "Hidden Council"), false);
 });
 
-dbTest("create visible group with invite keeps invited state while remaining discoverable", async () => {
+dbTest("create visible group with add members keeps group discoverable", async () => {
   const parish = await prisma.parish.create({ data: { name: "St. Mark", slug: "st-mark" } });
   const [leader, invitedUser, otherUser] = await Promise.all([
     prisma.user.create({ data: { email: "leader3@example.com", name: "Leader", passwordHash: "hashed", activeParishId: parish.id } }),
@@ -299,7 +293,7 @@ dbTest("create visible group with invite keeps invited state while remaining dis
 
   const invitedList = await listVisibleGroups(parish.id, invitedUser.id, "MEMBER", true);
   const invitedRecord = invitedList.find((group) => group.name === "Visible Choir");
-  assert.equal(invitedRecord?.viewerMembershipStatus, "INVITED");
+  assert.equal(invitedRecord?.viewerMembershipStatus, "ACTIVE");
 
   const otherList = await listVisibleGroups(parish.id, otherUser.id, "MEMBER", true);
   const otherRecord = otherList.find((group) => group.name === "Visible Choir");
@@ -333,11 +327,6 @@ dbTest("task filter groups include only groups visible to current member context
     visibility: "PRIVATE",
     joinPolicy: "INVITE_ONLY",
     inviteeUserIds: [invitedUser.id]
-  });
-
-  await prisma.groupMembership.update({
-    where: { groupId_userId: { groupId: hiddenGroup.id, userId: invitedUser.id } },
-    data: { status: "ACTIVE", approvedByUserId: invitedUser.id }
   });
 
   const invitedGroupFilters = await listTaskFilterGroups({ parishId: parish.id, userId: invitedUser.id, role: "MEMBER" });

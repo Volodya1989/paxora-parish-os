@@ -61,7 +61,7 @@ test("Parishioner view renders quick blocks and ordered sections", () => {
         ],
         parishRole: "MEMBER",
         memberGroups: [
-          { id: "group-1", name: "Choir", description: "Weekly rehearsal" }
+          { id: "group-1", name: "Choir", visibility: "PRIVATE", description: "Weekly rehearsal" }
         ],
         hasPublicGroups: true,
         stats: {

@@ -19,7 +19,8 @@ import {
 } from "@/lib/validation/members";
 import { isAdminClergy, requireCoordinatorOrAdmin } from "@/lib/authz/membership";
 import { ParishAuthError } from "@/server/auth/parish";
-import { notifyGroupInviteResponseInApp, notifyGroupInviteSentInApp } from "@/lib/notifications/notify";
+import { ensureGroupMembership } from "@/server/db/groups";
+import { notifyGroupInviteResponseInApp } from "@/lib/notifications/notify";
 import type { MemberActionError, MemberActionState } from "@/lib/types/members";
 
 function buildError(message: string, error: MemberActionError): MemberActionState {
@@ -42,7 +43,7 @@ async function requireSession() {
 async function requireGroupInActiveParish(groupId: string, activeParishId: string) {
   const group = await prisma.group.findUnique({
     where: { id: groupId },
-    select: { id: true, parishId: true, name: true, joinPolicy: true, status: true }
+    select: { id: true, parishId: true, name: true, joinPolicy: true, visibility: true, status: true }
   });
 
   if (!group || group.parishId !== activeParishId) {
@@ -75,25 +76,50 @@ export async function inviteMember(input: {
   const parsed = inviteMemberSchema.safeParse(input);
 
   if (!parsed.success) {
-    return buildError(parsed.error.errors[0]?.message ?? "Invalid invite", "VALIDATION_ERROR");
+    return buildError(parsed.error.errors[0]?.message ?? "Invalid member", "VALIDATION_ERROR");
   }
 
   let group;
   try {
     group = await requireGroupInActiveParish(parsed.data.groupId, session.activeParishId);
   } catch {
-    return buildError("Invite not found.", "NOT_FOUND");
+    return buildError("Group not found.", "NOT_FOUND");
   }
 
-  let context;
-  try {
-    context = await requireCoordinatorOrAdminInActiveParish(
-      session.userId,
-      parsed.data.groupId,
-      session.activeParishId
-    );
-  } catch (error) {
-    return buildError("You do not have permission to invite members.", "NOT_AUTHORIZED");
+  const actorParishMembership = await prisma.membership.findUnique({
+    where: {
+      parishId_userId: {
+        parishId: group.parishId,
+        userId: session.userId
+      }
+    },
+    select: { role: true }
+  });
+
+  if (!actorParishMembership) {
+    return buildError("You are not approved in this parish.", "NOT_AUTHORIZED");
+  }
+
+  const actorGroupMembership = await prisma.groupMembership.findUnique({
+    where: {
+      groupId_userId: {
+        groupId: parsed.data.groupId,
+        userId: session.userId
+      }
+    },
+    select: { status: true, role: true }
+  });
+
+  const canManageAsLeader =
+    isAdminClergy(actorParishMembership.role) ||
+    (actorGroupMembership?.status === "ACTIVE" && actorGroupMembership.role === "COORDINATOR");
+  const canAddForOpenPublicGroup =
+    group.visibility === "PUBLIC" &&
+    group.joinPolicy === "OPEN" &&
+    actorParishMembership.role === "MEMBER";
+
+  if (!canManageAsLeader && !canAddForOpenPublicGroup) {
+    return buildError("You do not have permission to add members.", "NOT_AUTHORIZED");
   }
 
   const targetUser = await prisma.user.findUnique({
@@ -108,7 +134,7 @@ export async function inviteMember(input: {
   const parishMembership = await prisma.membership.findUnique({
     where: {
       parishId_userId: {
-        parishId: context.parishId,
+        parishId: group.parishId,
         userId: targetUser.id
       }
     },
@@ -126,61 +152,29 @@ export async function inviteMember(input: {
         userId: targetUser.id
       }
     },
-    select: { status: true, invitedByUserId: true }
+    select: { status: true }
   });
 
   if (existing?.status === "ACTIVE") {
     return buildError("That parishioner is already in this group.", "ALREADY_MEMBER");
   }
-  if (existing?.status === "INVITED" || existing?.status === "REQUESTED") {
-    return buildError("That parishioner already has a pending invite or request.", "ALREADY_PENDING");
-  }
 
   const role = parsed.data.role ?? "PARISHIONER";
 
-  await prisma.groupMembership.upsert({
-    where: {
-      groupId_userId: {
-        groupId: parsed.data.groupId,
-        userId: targetUser.id
-      }
-    },
-    update: {
-      role,
-      status: "INVITED",
-      invitedByUserId: session.userId,
-      invitedEmail: targetUser.email
-    },
-    create: {
-      groupId: parsed.data.groupId,
-      userId: targetUser.id,
-      role,
-      status: "INVITED",
-      invitedByUserId: session.userId,
-      invitedEmail: targetUser.email
-    }
-  });
-
-  const inviter = await prisma.user.findUnique({
-    where: { id: session.userId },
-    select: { name: true, email: true }
-  });
-
-  await notifyGroupInviteSentInApp({
-    parishId: context.parishId,
+  await ensureGroupMembership({
     groupId: parsed.data.groupId,
-    groupName: group.name,
-    inviteeUserId: targetUser.id,
-    inviterUserId: session.userId,
-    inviterName: inviter?.name ?? inviter?.email ?? "Parish leader"
+    userId: targetUser.id,
+    role,
+    addedByUserId: session.userId
   });
 
   revalidatePath(`/groups/${parsed.data.groupId}/members`);
   revalidatePath(`/groups/${parsed.data.groupId}`);
+  revalidatePath("/groups");
 
   return {
     status: "success",
-    message: "Invite sent."
+    message: "Member added."
   };
 }
 

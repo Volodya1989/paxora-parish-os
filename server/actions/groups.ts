@@ -16,7 +16,7 @@ import {
 } from "@/lib/validation/groups";
 import { getParishMembership } from "@/server/db/groups";
 import { isParishLeader } from "@/lib/permissions";
-import { notifyContentRequestDecisionInApp, notifyContentRequestSubmittedInApp, notifyGroupInviteSentInApp } from "@/lib/notifications/notify";
+import { notifyContentRequestDecisionInApp, notifyContentRequestSubmittedInApp } from "@/lib/notifications/notify";
 
 // TODO: Wire to parish policy once stored in the database.
 const ALLOW_GROUP_LEADS_TO_MANAGE_MEMBERSHIP = true;
@@ -177,50 +177,46 @@ async function createGroupInternal(input: {
       }
 
       const inviteeUserIds = [...new Set((parsed.data.inviteeUserIds ?? []).filter((id) => id !== userId))];
-      if (inviteeUserIds.length > 0) {
+      if (isLeader && createdGroup.status === "ACTIVE" && inviteeUserIds.length > 0) {
         const invitees = await tx.membership.findMany({
           where: {
             parishId,
             userId: { in: inviteeUserIds }
           },
           select: {
-            userId: true,
-            user: {
-              select: {
-                email: true
-              }
-            }
+            userId: true
           }
         });
 
-        if (invitees.length > 0) {
-          await tx.groupMembership.createMany({
-            data: invitees.map((invitee) => ({
-              groupId: createdGroup.id,
-              userId: invitee.userId,
-              role: "PARISHIONER",
-              status: "INVITED",
-              invitedByUserId: userId,
-              invitedEmail: invitee.user.email
-            })),
-            skipDuplicates: true
-          });
-        }
+        await Promise.all(
+          invitees.map((invitee) =>
+            tx.groupMembership.upsert({
+              where: {
+                groupId_userId: {
+                  groupId: createdGroup.id,
+                  userId: invitee.userId
+                }
+              },
+              update: {
+                role: "PARISHIONER",
+                status: "ACTIVE",
+                invitedByUserId: null,
+                invitedEmail: null,
+                approvedByUserId: userId
+              },
+              create: {
+                groupId: createdGroup.id,
+                userId: invitee.userId,
+                role: "PARISHIONER",
+                status: "ACTIVE",
+                approvedByUserId: userId
+              }
+            })
+          )
+        );
       }
 
-      const createdInvites = await tx.groupMembership.findMany({
-        where: {
-          groupId: createdGroup.id,
-          status: "INVITED",
-          invitedByUserId: userId
-        },
-        select: { userId: true }
-      });
-
-      return {
-        ...createdGroup,
-        invitedUserIds: createdInvites.map((invite) => invite.userId)
-      };
+      return createdGroup;
     })
     .catch((error: unknown) => {
       if (
@@ -231,26 +227,6 @@ async function createGroupInternal(input: {
       }
       throw error;
     });
-
-  if (group.status === "ACTIVE" && group.invitedUserIds.length > 0) {
-    const inviter = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { name: true, email: true }
-    });
-
-    await Promise.all(
-      group.invitedUserIds.map((inviteeUserId: string) =>
-        notifyGroupInviteSentInApp({
-          parishId,
-          groupId: group.id,
-          groupName: group.name,
-          inviteeUserId,
-          inviterUserId: userId,
-          inviterName: inviter?.name ?? inviter?.email ?? "Parish leader"
-        })
-      )
-    );
-  }
 
   revalidatePath("/groups");
 

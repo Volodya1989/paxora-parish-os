@@ -26,7 +26,7 @@ export default function GroupListRow({
 }: GroupListRowProps) {
   return (
     <div className={className ?? "group flex items-center gap-3 rounded-xl border border-mist-100 bg-white px-4 py-3 shadow-sm"}>
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-sky-100 text-xs font-semibold text-sky-700">
+      <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-sky-100 text-sm font-semibold text-sky-700">
         {avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={avatarUrl} alt={name} className="h-full w-full object-cover" />
