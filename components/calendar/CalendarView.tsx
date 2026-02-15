@@ -11,12 +11,11 @@ import CalendarDayList from "@/components/calendar/CalendarDayList";
 import EventDetailPanel from "@/components/calendar/EventDetailPanel";
 import EventCreateDialog from "@/components/calendar/EventCreateDialog";
 import EventRequestDialog from "@/components/shared/EventRequestDialog";
-import ActionRow from "@/components/shared/ActionRow";
+import HeaderActionBar from "@/components/shared/HeaderActionBar";
 import ParishionerAddButton from "@/components/shared/ParishionerAddButton";
 import PendingRequestsSection from "@/components/shared/PendingRequestsSection";
 import ScheduleView from "@/components/calendar/ScheduleView";
-import PageShell from "@/components/app/page-shell";
-import FiltersDrawer from "@/components/app/filters-drawer";
+import { Drawer } from "@/components/ui/Drawer";
 import Card from "@/components/ui/Card";
 import ListEmptyState from "@/components/app/list-empty-state";
 import QuoteCard from "@/components/app/QuoteCard";
@@ -98,6 +97,7 @@ export default function CalendarView({
   const [scheduleRange, setScheduleRange] = useState<ScheduleRange>("week");
   const [visibilityFilter, setVisibilityFilter] = useState<VisibilityFilter>("all");
   const [groupFilter, setGroupFilter] = useState<GroupFilter>("all");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [requestOpen, setRequestOpen] = useState(false);
   const [createType, setCreateType] = useState<"SERVICE" | "EVENT">("SERVICE");
@@ -105,25 +105,17 @@ export default function CalendarView({
   const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
+  const hasActiveFilters = visibilityFilter !== "all" || groupFilter !== "mine";
+
   const weekDays = useMemo(() => getWeekDays(weekRange.start), [weekRange.start]);
   const monthDays = useMemo(
     () => getMonthGridDays(monthRange.start, monthRange.end),
     [monthRange.end, monthRange.start]
   );
 
-  const weekEventsByDay = useMemo(() => groupEventsByDay(weekEvents), [weekEvents]);
-  const monthEventsByDay = useMemo(() => groupEventsByDay(monthEvents), [monthEvents]);
-
-  const activeEvents = view === "week" ? weekEvents : monthEvents;
-  const scheduleEvents = useMemo(() => {
-    const rangeEvents =
-      scheduleRange === "week"
-        ? weekEvents
-        : scheduleRange === "next"
-          ? nextWeekEvents
-          : monthEvents;
-
-    let filtered = rangeEvents;
+  // Apply filters to calendar view events
+  const applyFilters = (events: CalendarEvent[]) => {
+    let filtered = events;
 
     if (visibilityFilter !== "all") {
       filtered = filtered.filter((event) => event.visibility === visibilityFilter);
@@ -137,7 +129,35 @@ export default function CalendarView({
       );
     }
 
-    return [...filtered].sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
+    return filtered;
+  };
+
+  const filteredWeekEvents = useMemo(
+    () => applyFilters(weekEvents),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [weekEvents, visibilityFilter, groupFilter, viewerGroupIds]
+  );
+
+  const filteredMonthEvents = useMemo(
+    () => applyFilters(monthEvents),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [monthEvents, visibilityFilter, groupFilter, viewerGroupIds]
+  );
+
+  const weekEventsByDay = useMemo(() => groupEventsByDay(filteredWeekEvents), [filteredWeekEvents]);
+  const monthEventsByDay = useMemo(() => groupEventsByDay(filteredMonthEvents), [filteredMonthEvents]);
+
+  const activeEvents = view === "week" ? filteredWeekEvents : filteredMonthEvents;
+  const scheduleEvents = useMemo(() => {
+    const rangeEvents =
+      scheduleRange === "week"
+        ? weekEvents
+        : scheduleRange === "next"
+          ? nextWeekEvents
+          : monthEvents;
+
+    return applyFilters(rangeEvents).sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     groupFilter,
     monthEvents,
@@ -209,16 +229,19 @@ export default function CalendarView({
     </div>
   );
 
-  const scheduleFilters = (
+  // Shared filter controls used in both filter drawer and schedule sidebar
+  const filterControls = (
     <div className="space-y-3">
-      <Select
-        value={scheduleRange}
-        onChange={(event) => setScheduleRange(event.target.value as ScheduleRange)}
-      >
-        <option value="week">{t("calendar.thisWeekRange")}</option>
-        <option value="next">{t("calendar.nextWeekRange")}</option>
-        <option value="month">{t("calendar.thisMonth")}</option>
-      </Select>
+      {surface === "schedule" ? (
+        <Select
+          value={scheduleRange}
+          onChange={(event) => setScheduleRange(event.target.value as ScheduleRange)}
+        >
+          <option value="week">{t("calendar.thisWeekRange")}</option>
+          <option value="next">{t("calendar.nextWeekRange")}</option>
+          <option value="month">{t("calendar.thisMonth")}</option>
+        </Select>
+      ) : null}
       {isEditor ? (
         <Select
           value={visibilityFilter}
@@ -238,6 +261,9 @@ export default function CalendarView({
       ) : null}
     </div>
   );
+
+  // Whether filters are available (editor or has groups)
+  const hasFilterOptions = isEditor || viewerGroupIds.length > 0;
 
   const pendingRequestItems = useMemo(
     () =>
@@ -276,20 +302,33 @@ export default function CalendarView({
           <TabsTrigger value="month">{t("calendar.month")}</TabsTrigger>
         </TabsList>
 
-        {/* Action row: Filters left, Add right */}
-        <ActionRow
-          addAriaLabel={t("calendar.addEvent")}
-          showAddButton={canCreateEvents || canRequestContentCreate}
-          onAdd={() => {
-            if (canCreateEvents) {
-              setCreateType("SERVICE");
-              setCreateOpen(true);
-              return;
-            }
-            setRequestOpen(true);
-          }}
-          left={surface === "schedule" ? <FiltersDrawer title={t("calendar.scheduleFilters")}>{scheduleFilters}</FiltersDrawer> : undefined}
+        {/* Unified header action bar */}
+        <HeaderActionBar
+          onFilterClick={hasFilterOptions ? () => setFiltersOpen(true) : undefined}
+          filterActive={hasActiveFilters}
+          onAddClick={
+            canCreateEvents || canRequestContentCreate
+              ? () => {
+                  if (canCreateEvents) {
+                    setCreateType("SERVICE");
+                    setCreateOpen(true);
+                    return;
+                  }
+                  setRequestOpen(true);
+                }
+              : undefined
+          }
+          addLabel={t("calendar.addEvent")}
         />
+
+        {/* Filter drawer (mobile + desktop) */}
+        <Drawer
+          open={filtersOpen}
+          onClose={() => setFiltersOpen(false)}
+          title={t("calendar.filters")}
+        >
+          {filterControls}
+        </Drawer>
 
         {/* Pending event request approvals — at top for leaders */}
         {pendingEventRequests.length > 0 && (
@@ -312,7 +351,7 @@ export default function CalendarView({
                     <CalendarIcon className="h-4 w-4" />
                     {t("calendar.filters")}
                   </div>
-                  {scheduleFilters}
+                  {filterControls}
                 </Card>
               </aside>
               <div className="section-gap">
@@ -352,7 +391,7 @@ export default function CalendarView({
           ) : (
             <div className="section-gap">
               <TabsPanel value="week">
-                {weekEvents.length === 0 ? (
+                {filteredWeekEvents.length === 0 ? (
                   <ListEmptyState
                     title={t("calendar.emptyWeek")}
                     description={t("calendar.emptyWeekDesc")}
@@ -383,7 +422,7 @@ export default function CalendarView({
                 )}
               </TabsPanel>
               <TabsPanel value="month">
-                {monthEvents.length === 0 ? (
+                {filteredMonthEvents.length === 0 ? (
                   <ListEmptyState
                     title={t("calendar.emptyMonth")}
                     description={t("calendar.emptyMonthDesc")}

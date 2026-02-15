@@ -222,72 +222,80 @@ export default function GroupCreateDialog({
         }}
       />
     ) : (
-      <form id={formId} className="space-y-4" onSubmit={handleSubmit}>
-        <div className="space-y-2">
-          <Label htmlFor={nameId}>Group name</Label>
-          <Input
-            id={nameId}
-            name="name"
-            value={name}
-            onChange={(event) => setName(event.currentTarget.value)}
-            placeholder="e.g. Hospitality Team"
-            maxLength={NAME_MAX_LENGTH}
-            aria-invalid={Boolean(error) || undefined}
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Group photo (optional)</Label>
-          <div className="flex items-center gap-2">
-            <Button type="button" size="sm" variant="secondary" onClick={() => avatarInputRef.current?.click()}>
-              {avatarFile ? "Change photo" : "Upload photo"}
-            </Button>
-            {avatarFile ? <span className="text-xs text-ink-500">{avatarFile.name}</span> : null}
-            <input
-              ref={avatarInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="hidden"
-              onChange={(event) => setAvatarFile(event.currentTarget.files?.[0] ?? null)}
+      <form id={formId} className="space-y-3" onSubmit={handleSubmit}>
+        {/* Section: Identity */}
+        <fieldset className="space-y-3 rounded-xl border border-mist-100 bg-mist-50/40 p-3">
+          <div className="space-y-1.5">
+            <Label htmlFor={nameId}>Group name</Label>
+            <Input
+              id={nameId}
+              name="name"
+              value={name}
+              onChange={(event) => setName(event.currentTarget.value)}
+              placeholder="e.g. Hospitality Team"
+              maxLength={NAME_MAX_LENGTH}
+              aria-invalid={Boolean(error) || undefined}
+              required
+              autoFocus
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor={descriptionId}>Description (optional)</Label>
+            <Textarea
+              id={descriptionId}
+              name="description"
+              value={description}
+              onChange={(event) => setDescription(event.currentTarget.value)}
+              placeholder="Share what this group is responsible for."
+              maxLength={DESCRIPTION_MAX_LENGTH}
+              rows={3}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Group photo (optional)</Label>
+            <div className="flex items-center gap-2">
+              <Button type="button" size="sm" variant="secondary" onClick={() => avatarInputRef.current?.click()}>
+                {avatarFile ? "Change photo" : "Upload photo"}
+              </Button>
+              {avatarFile ? <span className="text-xs text-ink-500">{avatarFile.name}</span> : null}
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={(event) => setAvatarFile(event.currentTarget.files?.[0] ?? null)}
+              />
+            </div>
+          </div>
+        </fieldset>
+
+        {/* Section: Settings */}
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor={visibilityId}>Discoverability</Label>
+            <SelectMenu
+              id={visibilityId}
+              name="visibility"
+              value={visibility}
+              onValueChange={(value) => setVisibility(value as "PUBLIC" | "PRIVATE")}
+              options={visibilityOptions}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor={joinPolicyId}>Join settings</Label>
+            <SelectMenu
+              id={joinPolicyId}
+              name="joinPolicy"
+              value={joinPolicy}
+              onValueChange={(value) =>
+                setJoinPolicy(value as "INVITE_ONLY" | "OPEN" | "REQUEST_TO_JOIN")
+              }
+              options={joinPolicyOptions}
             />
           </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor={descriptionId}>Description (optional)</Label>
-          <Textarea
-            id={descriptionId}
-            name="description"
-            value={description}
-            onChange={(event) => setDescription(event.currentTarget.value)}
-            placeholder="Share what this group is responsible for."
-            maxLength={DESCRIPTION_MAX_LENGTH}
-            rows={4}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={visibilityId}>Discoverability</Label>
-          <SelectMenu
-            id={visibilityId}
-            name="visibility"
-            value={visibility}
-            onValueChange={(value) => setVisibility(value as "PUBLIC" | "PRIVATE")}
-            options={visibilityOptions}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor={joinPolicyId}>Join settings</Label>
-          <SelectMenu
-            id={joinPolicyId}
-            name="joinPolicy"
-            value={joinPolicy}
-            onValueChange={(value) =>
-              setJoinPolicy(value as "INVITE_ONLY" | "OPEN" | "REQUEST_TO_JOIN")
-            }
-            options={joinPolicyOptions}
-          />
-        </div>
-
+        {/* Section: Invitations */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label>Invite members</Label>
@@ -306,7 +314,7 @@ export default function GroupCreateDialog({
           </div>
 
           {selectedInvitees.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {selectedInvitees.map((invitee) => (
                 <Badge key={invitee.id} tone="neutral">
                   <span className="mr-1">{invitee.name}</span>
@@ -331,7 +339,7 @@ export default function GroupCreateDialog({
                 onChange={(event) => setInviteQuery(event.currentTarget.value)}
                 placeholder="Search by name or email"
               />
-              <div className="max-h-44 overflow-y-auto rounded-xl border border-mist-200 bg-white">
+              <div className="max-h-40 overflow-y-auto rounded-xl border border-mist-200 bg-white">
                 {filteredCandidates.slice(0, 30).map((candidate) => (
                   <button
                     key={candidate.id}
@@ -355,7 +363,7 @@ export default function GroupCreateDialog({
         </div>
 
         {error ? (
-          <p role="alert" className="text-sm text-rose-600">
+          <p role="alert" className="rounded-xl border border-rose-100 bg-rose-50/60 px-3 py-2 text-xs text-rose-700">
             {error}
           </p>
         ) : null}

@@ -38,8 +38,15 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
     }
 
     const previousActive = document.activeElement as HTMLElement | null;
-    const focusable = getFocusableElements(dialog);
-    (focusable[0] ?? dialog)?.focus();
+
+    // Autofocus first input/textarea if present, otherwise first focusable
+    const firstInput = dialog.querySelector<HTMLElement>("input:not([type=hidden]), textarea, select");
+    if (firstInput) {
+      firstInput.focus();
+    } else {
+      const focusable = getFocusableElements(dialog);
+      (focusable[0] ?? dialog)?.focus();
+    }
 
     const handleKeyDown = (event: KeyboardEvent) => {
       // Guard against the dialog becoming hidden between renders

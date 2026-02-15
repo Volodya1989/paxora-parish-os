@@ -155,7 +155,7 @@ export default function TaskCreateDialog({
       key={`${formId}-${formResetKey}`}
       ref={ref}
       id={formId}
-      className="space-y-4"
+      className="space-y-3"
       action={formAction}
       onSubmit={() => {
         handledSuccess.current = false;
@@ -166,7 +166,7 @@ export default function TaskCreateDialog({
       <input type="hidden" name="creationContext" value={creationContext} />
 
       {/* Accent header banner */}
-      <div className="rounded-xl border-l-4 border-l-sky-400 bg-sky-50/60 px-4 py-3">
+      <div className="rounded-xl border-l-4 border-l-sky-400 bg-sky-50/60 px-3 py-2">
         <p className="text-xs text-sky-700">
           {requestMode
             ? "Share details for the serve task you want to add. Parish leadership will review your request."
@@ -174,24 +174,28 @@ export default function TaskCreateDialog({
         </p>
       </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor={titleId}>Title</Label>
-        <Input id={titleId} name="title" placeholder="Add a clear task title" required />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor={notesId}>Notes (optional)</Label>
-        <Textarea
-          id={notesId}
-          name="notes"
-          placeholder="Include links, dependencies, or context for the team."
-          rows={3}
-        />
-      </div>
+      {/* Section: Basics */}
+      <fieldset className="space-y-3 rounded-xl border border-mist-100 bg-mist-50/40 p-3">
+        <div className="space-y-1.5">
+          <Label htmlFor={titleId}>Title</Label>
+          <Input id={titleId} name="title" placeholder="Add a clear task title" required autoFocus />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor={notesId}>Notes (optional)</Label>
+          <Textarea
+            id={notesId}
+            name="notes"
+            placeholder="Include links, dependencies, or context for the team."
+            rows={2}
+          />
+        </div>
+      </fieldset>
 
+      {/* Section: Timing */}
       <div className="grid gap-3 sm:grid-cols-2">
         {!forcePrivate ? (
           <div className="space-y-1.5">
-            <Label htmlFor={estimatedHoursId}>Estimated hours (optional)</Label>
+            <Label htmlFor={estimatedHoursId}>Estimated hours</Label>
             <Input
               id={estimatedHoursId}
               name="estimatedHours"
@@ -210,15 +214,15 @@ export default function TaskCreateDialog({
             type="date"
             defaultValue={formatDateInput(getDefaultDueAt())}
           />
-          <p className="text-xs text-ink-400">Defaults to two weeks from today.</p>
         </div>
       </div>
 
+      {/* Section: Visibility & Assignment */}
       {forcePrivate ? (
         <>
           <input type="hidden" name="visibility" value="private" />
           <p className="rounded-xl border border-mist-200 bg-mist-50 px-3 py-2 text-xs text-ink-500">
-            Private commitment only. This stays in your personal commitments view.
+            Private commitment — stays in your personal view.
           </p>
         </>
       ) : forcePublic ? (
@@ -249,7 +253,7 @@ export default function TaskCreateDialog({
           />
           <p className="text-xs text-ink-400">
             {visibility === "public"
-              ? "Public tasks created by members require approval before they appear for everyone."
+              ? "Public tasks require approval before they appear for everyone."
               : "Private tasks stay assigned to you by default."}
           </p>
         </div>
@@ -272,9 +276,6 @@ export default function TaskCreateDialog({
               value={volunteersNeeded}
               onChange={(event) => setVolunteersNeeded(event.target.value)}
             />
-            <p className="text-xs text-ink-400">
-              Set this above 1 to allow multiple volunteers to join.
-            </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
@@ -309,7 +310,7 @@ export default function TaskCreateDialog({
       )}
 
       {state.status === "error" ? (
-        <p role="alert" className="rounded-xl border border-rose-100 bg-rose-50/60 px-3 py-2.5 text-xs text-rose-700">
+        <p role="alert" className="rounded-xl border border-rose-100 bg-rose-50/60 px-3 py-2 text-xs text-rose-700">
           {state.message}
         </p>
       ) : null}
@@ -352,7 +353,7 @@ function TaskCreateActions({
   const { pending } = useFormStatus();
 
   return (
-    <div className="mt-6 flex justify-end gap-2">
+    <div className="sticky bottom-0 mt-4 flex justify-end gap-2 border-t border-mist-100 bg-white pb-1 pt-3">
       <Button type="button" variant="ghost" onClick={onCancel} disabled={pending}>
         {t("buttons.cancel")}
       </Button>
