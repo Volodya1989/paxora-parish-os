@@ -36,6 +36,8 @@ export default function TaskFilters({
   const ownerId = useId();
   const groupId = useId();
   const searchId = useId();
+  const dateFromId = useId();
+  const dateToId = useId();
 
   useEffect(() => {
     setQueryValue(filters.query ?? "");
@@ -72,7 +74,7 @@ export default function TaskFilters({
       className={
         layout === "stacked"
           ? "flex flex-col gap-4"
-          : "grid gap-4 md:grid-cols-[repeat(4,minmax(0,1fr))_auto]"
+          : "grid gap-4 md:grid-cols-[repeat(6,minmax(0,1fr))_auto]"
       }
     >
       <div className="space-y-2">
@@ -85,7 +87,8 @@ export default function TaskFilters({
             { value: "all", label: t("tasks.view.all") },
             { value: "open", label: t("common.todo") },
             { value: "in-progress", label: t("common.inProgress") },
-            { value: "done", label: t("common.done") }
+            { value: "done", label: t("common.done") },
+            { value: "archived", label: t("groups.filters.archived") }
           ]}
         />
       </div>
@@ -124,6 +127,26 @@ export default function TaskFilters({
         </div>
       ) : null}
 
+
+      <div className="space-y-2">
+        <Label htmlFor={dateFromId}>{t("tasks.filters.dateFrom")}</Label>
+        <Input
+          id={dateFromId}
+          type="date"
+          value={filters.dateFrom ?? ""}
+          onChange={(event) => updateParam("dateFrom", event.target.value || undefined)}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor={dateToId}>{t("tasks.filters.dateTo")}</Label>
+        <Input
+          id={dateToId}
+          type="date"
+          value={filters.dateTo ?? ""}
+          onChange={(event) => updateParam("dateTo", event.target.value || undefined)}
+        />
+      </div>
       <div className="space-y-2">
         <Label htmlFor={searchId}>{t("tasks.filters.search")}</Label>
         <Input

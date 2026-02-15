@@ -287,7 +287,7 @@ export async function getThisWeekDataForUser({
     return {
       id: task.id,
       title: task.title,
-      status: task.status,
+      status: task.status === "ARCHIVED" ? "DONE" : task.status,
       dueBy: dueBy ?? dueByDefault,
       owner: {
         name: ownerName,

@@ -85,6 +85,7 @@ dbTest("getHomeSummary returns stable week completion data", async () => {
       weekId: week.id,
       ownerId: user.id,
       createdById: user.id,
+      displayId: "SERV-1",
       title: "Prepare worship slides",
       status: "DONE"
     }
@@ -96,6 +97,7 @@ dbTest("getHomeSummary returns stable week completion data", async () => {
       weekId: week.id,
       ownerId: user.id,
       createdById: user.id,
+      displayId: "SERV-2",
       title: "Confirm volunteers",
       status: "OPEN"
     }

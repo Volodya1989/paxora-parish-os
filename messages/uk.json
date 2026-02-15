@@ -326,14 +326,16 @@
       "title": "Фільтри",
       "tip": "Звузьте список служінь за статусом, групою або пошуком.",
       "searchOpportunities": "Пошук можливостей",
-      "searchServeItems": "Пошук служінь або нотаток",
+      "searchServeItems": "Пошук за ID або назвою",
       "status": "Статус",
       "ownership": "Належність",
       "mine": "Мої",
       "group": "Група",
       "allGroups": "Усі групи",
       "search": "Пошук",
-      "searchButton": "Шукати"
+      "searchButton": "Шукати",
+      "dateFrom": "Від",
+      "dateTo": "До"
     },
     "hoursBoard": "Дошка годин і вдячності",
     "quickAdd": {

@@ -27,6 +27,8 @@ type TaskSearchParams = {
   owner?: string | string[];
   group?: string | string[];
   q?: string | string[];
+  dateFrom?: string | string[];
+  dateTo?: string | string[];
   view?: string | string[];
   create?: string;
 };
@@ -44,8 +46,10 @@ function parseTaskFilters(
   const owner = resolveParam(searchParams?.owner);
   const group = resolveParam(searchParams?.group);
   const query = resolveParam(searchParams?.q);
+  const dateFrom = resolveParam(searchParams?.dateFrom);
+  const dateTo = resolveParam(searchParams?.dateTo);
   const normalizedStatus =
-    status === "open" || status === "done" || status === "in-progress" ? status : "all";
+    status === "open" || status === "done" || status === "in-progress" || status === "archived" ? status : "all";
 
   return {
     status: normalizedStatus,
@@ -58,7 +62,9 @@ function parseTaskFilters(
             ? "mine"
             : "all",
     groupId: group && group !== "all" ? group : undefined,
-    query: query?.trim() ? query.trim() : undefined
+    query: query?.trim() ? query.trim() : undefined,
+    dateFrom: dateFrom?.trim() ? dateFrom.trim() : undefined,
+    dateTo: dateTo?.trim() ? dateTo.trim() : undefined
   };
 }
 

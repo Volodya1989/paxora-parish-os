@@ -97,6 +97,7 @@ dbTest("completing a task logs estimated hours when V < N", async () => {
       weekId: week.id,
       ownerId: owner.id,
       createdById: owner.id,
+      displayId: "SERV-1",
       title: "Set up chairs",
       estimatedHours: 2,
       volunteersNeeded: 5,

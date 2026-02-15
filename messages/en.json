@@ -326,14 +326,16 @@
       "title": "Filters",
       "tip": "Narrow down your serve list by status, group, or search.",
       "searchOpportunities": "Search opportunities",
-      "searchServeItems": "Search serve items or notes",
+      "searchServeItems": "Search by ID or title",
       "status": "Status",
       "ownership": "Ownership",
       "mine": "Mine",
       "group": "Group",
       "allGroups": "All groups",
       "search": "Search",
-      "searchButton": "Search"
+      "searchButton": "Search",
+      "dateFrom": "From",
+      "dateTo": "To"
     },
     "hoursBoard": "Hours & Gratitude Board",
     "quickAdd": {
