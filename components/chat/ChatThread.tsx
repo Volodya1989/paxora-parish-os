@@ -1,12 +1,15 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import ListSkeleton from "@/components/app/list-skeleton";
 import ChatPollCard from "@/components/chat/ChatPollCard";
 import PinnedBanner from "@/components/chat/PinnedBanner";
 import type { ChatMessage, ChatPinnedMessage } from "@/components/chat/types";
+import { containsEmoji } from "@/lib/chat/emoji";
 import { REACTION_EMOJIS } from "@/lib/chat/reactions";
+import { getUserColor } from "@/lib/chat/userColor";
+import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 import { cn } from "@/lib/ui/cn";
 import { useTranslations } from "@/lib/i18n/provider";
 
@@ -16,6 +19,51 @@ const LONG_PRESS_MS = 500;
 const SWIPE_THRESHOLD = 60;
 const SWIPE_MAX = 80;
 const DIRECTION_LOCK_DELTA = 10;
+
+const EMOJI_EFFECT_STORAGE_KEY = "paxora.chat.emojiEffectPlayed";
+const EMOJI_EFFECT_DURATION_MS = 650;
+
+let playedEmojiEffectsCache: Set<string> | null = null;
+
+function getPlayedEmojiEffects() {
+  if (playedEmojiEffectsCache) {
+    return playedEmojiEffectsCache;
+  }
+
+  if (typeof window === "undefined") {
+    playedEmojiEffectsCache = new Set<string>();
+    return playedEmojiEffectsCache;
+  }
+
+  try {
+    const stored = window.localStorage.getItem(EMOJI_EFFECT_STORAGE_KEY);
+    const parsed = stored ? (JSON.parse(stored) as string[]) : [];
+    playedEmojiEffectsCache = new Set(Array.isArray(parsed) ? parsed : []);
+  } catch {
+    playedEmojiEffectsCache = new Set<string>();
+  }
+
+  return playedEmojiEffectsCache;
+}
+
+function markEmojiEffectPlayed(messageId: string) {
+  const played = getPlayedEmojiEffects();
+  if (played.has(messageId)) {
+    return false;
+  }
+
+  played.add(messageId);
+
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(EMOJI_EFFECT_STORAGE_KEY, JSON.stringify(Array.from(played)));
+    } catch {
+      // localStorage may be unavailable in private browsing modes.
+    }
+  }
+
+  return true;
+}
 
 function getInitials(name: string) {
   return name
@@ -279,38 +327,41 @@ export default function ChatThread({
               <span className="text-xs font-semibold text-ink-400">{group.label}</span>
               <div className="h-px flex-1 bg-mist-100" />
             </div>
-            <div className="space-y-1">
-              {group.messages.map((message, messageIndex) => (
-                <MessageRow
-                  key={message.id}
-                  message={message}
-                  previousMessage={messageIndex > 0 ? group.messages[messageIndex - 1] : null}
-                  isMine={Boolean(currentUserId && message.author.id === currentUserId)}
-                  currentUserId={currentUserId}
-                  canModerate={canModerate}
-                  contextMenuOpen={contextMenuMessageId === message.id}
-                  onOpenContextMenu={() => setContextMenuMessageId(message.id)}
-                  onCloseContextMenu={() => setContextMenuMessageId(null)}
-                  onOpenAttachment={(attachment) =>
-                    setLightboxImage({ url: attachment.url, alt: "Chat image attachment" })
-                  }
-                  onReply={onReply}
-                  onEdit={onEdit}
-                  onPin={onPin}
-                  onDelete={onDelete}
-                  onToggleReaction={onToggleReaction}
-                  onViewThread={onViewThread}
-                  onVotePoll={onVotePoll}
-                  firstUnreadMessageId={firstUnreadMessageId}
-                  showUnreadSeparator={(() => {
-                    if (firstUnreadMessageId && !unreadRendered && message.id === firstUnreadMessageId) {
-                      unreadRendered = true;
-                      return true;
+            <div className="space-y-1.5">
+              {group.messages.map((message, messageIndex) => {
+                const showUnreadSeparator = Boolean(
+                  firstUnreadMessageId && !unreadRendered && message.id === firstUnreadMessageId
+                );
+                if (showUnreadSeparator) {
+                  unreadRendered = true;
+                }
+
+                return (
+                  <MessageRow
+                    key={message.id}
+                    message={message}
+                    previousMessage={messageIndex > 0 ? group.messages[messageIndex - 1] : null}
+                    isMine={Boolean(currentUserId && message.author.id === currentUserId)}
+                    currentUserId={currentUserId}
+                    canModerate={canModerate}
+                    contextMenuOpen={contextMenuMessageId === message.id}
+                    onOpenContextMenu={() => setContextMenuMessageId(message.id)}
+                    onCloseContextMenu={() => setContextMenuMessageId(null)}
+                    onOpenAttachment={(attachment) =>
+                      setLightboxImage({ url: attachment.url, alt: "Chat image attachment" })
                     }
-                    return false;
-                  })()}
-                />
-              ))}
+                    onReply={onReply}
+                    onEdit={onEdit}
+                    onPin={onPin}
+                    onDelete={onDelete}
+                    onToggleReaction={onToggleReaction}
+                    onViewThread={onViewThread}
+                    onVotePoll={onVotePoll}
+                    isUnreadMessage={Boolean(firstUnreadMessageId && unreadRendered)}
+                    showUnreadSeparator={showUnreadSeparator}
+                  />
+                );
+              })}
             </div>
           </div>
         ))}
@@ -375,8 +426,8 @@ function MessageRow({
   onToggleReaction,
   onViewThread,
   onVotePoll,
-  firstUnreadMessageId,
   showUnreadSeparator,
+  isUnreadMessage,
   highlightedMessageId
 }: {
   message: ChatMessage;
@@ -395,8 +446,8 @@ function MessageRow({
   onToggleReaction?: (messageId: string, emoji: string) => void;
   onViewThread?: (message: ChatMessage) => void;
   onVotePoll?: (pollId: string, optionId: string) => Promise<void> | void;
-  firstUnreadMessageId?: string | null;
   showUnreadSeparator: boolean;
+  isUnreadMessage: boolean;
   highlightedMessageId?: string | null;
 }) {
   const t = useTranslations();
@@ -421,6 +472,56 @@ function MessageRow({
   const hasReactions = reactions.length > 0;
   const canReact = Boolean(onToggleReaction && !isDeleted);
   const hasActions = canReply || canModify || canModerate || canReact;
+  const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+  const [hasPlayedEmojiEffect, setHasPlayedEmojiEffect] = useState(false);
+  const [isEmojiVisible, setIsEmojiVisible] = useState(isMine);
+  const shouldTriggerEmojiEffect =
+    !isDeleted &&
+    containsEmoji(message.body) &&
+    (isMine || isUnreadMessage);
+
+  useEffect(() => {
+    if (isMine || !shouldTriggerEmojiEffect || prefersReducedMotion) {
+      setIsEmojiVisible(isMine);
+      return;
+    }
+
+    const target = bubbleRef.current;
+    if (!target || typeof IntersectionObserver === "undefined") {
+      setIsEmojiVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.55)) {
+          setIsEmojiVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: [0.55] }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [isMine, prefersReducedMotion, shouldTriggerEmojiEffect]);
+
+  useEffect(() => {
+    if (prefersReducedMotion || !shouldTriggerEmojiEffect || !isEmojiVisible) {
+      return;
+    }
+
+    if (!markEmojiEffectPlayed(message.id)) {
+      return;
+    }
+
+    setHasPlayedEmojiEffect(true);
+    const timer = window.setTimeout(() => {
+      setHasPlayedEmojiEffect(false);
+    }, EMOJI_EFFECT_DURATION_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [isEmojiVisible, message.id, prefersReducedMotion, shouldTriggerEmojiEffect]);
 
   const isGrouped = isSameGroup(previousMessage, message);
   const showAuthorBlock = !isGrouped;
@@ -525,7 +626,7 @@ function MessageRow({
         className={cn(
           "group relative flex animate-chat-message-in",
           isMine ? "justify-end" : "justify-start",
-          isGrouped ? "mt-0.5" : "mt-4 first:mt-0"
+          isGrouped ? "mt-1" : "mt-5 first:mt-0"
         )}
       >
         {/* Swipe-to-reply indicator — appears behind the message as user swipes right */}
@@ -555,7 +656,7 @@ function MessageRow({
         {/* Left-side avatar for other users */}
         {!isMine ? (
           <div
-            className="mr-2 w-9 shrink-0 self-end"
+            className="mr-2 w-9 shrink-0 self-start pt-0.5"
             style={swipe.offsetX > 0 ? { transform: `translateX(${swipe.offsetX}px)` } : undefined}
           >
             {showAuthorBlock ? (
@@ -575,7 +676,8 @@ function MessageRow({
         <div
           ref={bubbleRef}
           className={cn(
-            "relative w-fit min-w-[60px] max-w-[85%] px-3.5 py-2.5 select-none",
+            "relative w-fit min-w-[60px] max-w-[85%] px-4 py-2.5 select-none",
+            hasPlayedEmojiEffect && "chat-emoji-bounce-once",
             isMine
               ? "rounded-2xl rounded-br-sm bg-emerald-100 shadow-sm"
               : "rounded-2xl rounded-bl-sm bg-white border border-mist-100 shadow-sm",
@@ -619,7 +721,10 @@ function MessageRow({
           {showAuthorBlock ? (
             <div className="mb-1 flex items-center gap-2">
               {!isMine ? (
-                <span className="text-[13px] font-bold text-ink-900">
+                <span
+                  className="text-[14px] font-normal"
+                  style={{ color: getUserColor(message.author.id) }}
+                >
                   {formatDisplayName(message.author.name)}
                 </span>
               ) : null}
@@ -646,7 +751,7 @@ function MessageRow({
           {isDeleted || message.body ? (
             <p
               className={cn(
-                "whitespace-pre-wrap text-[16px] font-medium leading-snug [overflow-wrap:anywhere] [word-break:break-word]",
+                "whitespace-pre-wrap text-[16px] font-normal leading-snug tracking-[0.0125em] [overflow-wrap:anywhere] [word-break:break-word]",
                 isDeleted
                   ? "italic font-normal text-ink-400"
                   : "text-ink-900"
@@ -717,7 +822,7 @@ function MessageRow({
                   key={`${message.id}-${reaction.emoji}`}
                   type="button"
                   className={cn(
-                    "inline-flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-xs shadow-sm",
+                    "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-sm shadow-sm",
                     reaction.reactedByMe
                       ? "border-emerald-200 bg-emerald-50 font-semibold text-emerald-800"
                       : "border-mist-200 bg-white font-medium text-ink-600"
@@ -727,8 +832,8 @@ function MessageRow({
                     onToggleReaction?.(message.id, reaction.emoji);
                   }}
                 >
-                  <span aria-hidden="true">{reaction.emoji}</span>
-                  <span>{reaction.count}</span>
+                  <span aria-hidden="true" className="text-[1.2rem] leading-none">{reaction.emoji}</span>
+                  <span className="text-[13px] leading-none">{reaction.count}</span>
                 </button>
               ))}
             </div>
