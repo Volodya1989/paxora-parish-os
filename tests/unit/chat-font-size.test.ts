@@ -6,12 +6,13 @@ import {
   clampChatFontSize
 } from "@/lib/chat/useChatFontSize";
 
-test("clampChatFontSize enforces 9..18 guardrails", () => {
+test("clampChatFontSize enforces 9..22 guardrails", () => {
   assert.equal(clampChatFontSize(5), 9);
   assert.equal(clampChatFontSize(9), 9);
   assert.equal(clampChatFontSize(13.4), 13);
   assert.equal(clampChatFontSize(18.2), 18);
-  assert.equal(clampChatFontSize(30), 18);
+  assert.equal(clampChatFontSize(22), 22);
+  assert.equal(clampChatFontSize(30), 22);
 });
 
 test("clampChatFontSize falls back to default for invalid values", () => {

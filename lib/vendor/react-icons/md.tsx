@@ -2,6 +2,14 @@ import type { SVGProps } from "react";
 
 type IconProps = SVGProps<SVGSVGElement>;
 
+export function MdTextFields(props: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+      <path d="M2.5 7.5V5h8v2.5H8V19H5V7.5zm10 4V9h9v2.5h-3V19h-3v-7.5z" />
+    </svg>
+  );
+}
+
 export function MdTextIncrease(props: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>

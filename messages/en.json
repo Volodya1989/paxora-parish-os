@@ -449,7 +449,8 @@
     "fontSize": {
       "groupLabel": "Message font size controls",
       "increase": "Increase message font size",
-      "decrease": "Decrease message font size"
+      "decrease": "Decrease message font size",
+      "open": "Open message font size controls"
     }
   },
   "requests": {
