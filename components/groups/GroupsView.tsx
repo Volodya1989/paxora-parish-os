@@ -320,8 +320,8 @@ export default function GroupsView({
 
     return (
       <ListEmptyState
-        title="No groups found"
-        description="Try a different search or browse all groups."
+        title={t("emptyStates.noMatches")}
+        description={t("emptyStates.noMatchesDesc")}
       />
     );
   };
@@ -448,7 +448,18 @@ export default function GroupsView({
               </div>
 
               {joinedGroups.length === 0 ? (
-                <ListEmptyState title="No chats yet" description="Join a group to start." variant="friendly" />
+                <ListEmptyState
+                  title={t("empty.noGroups")}
+                  description={canManageGroups ? t("groups.empty.startMessage") : t("empty.noGroupsDesc")}
+                  action={
+                    canManageGroups || canRequestContentCreate ? (
+                      <Button type="button" onClick={openCreateDialog}>
+                        {t("groups.startGroup")}
+                      </Button>
+                    ) : null
+                  }
+                  variant="friendly"
+                />
               ) : (
                 <div className="space-y-2">
                   {joinedGroups.map((group) => (

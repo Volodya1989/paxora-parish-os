@@ -584,6 +584,14 @@
       "addAria": "Add creation request"
     }
   },
+  "emptyStates": {
+    "noMatches": "No matches found",
+    "noMatchesDesc": "Try adjusting your filters or search.",
+    "clearFilters": "Clear filters",
+    "createFirstServe": "Create your first serve item",
+    "createFirstEvent": "Add an event",
+    "createFirstGroup": "Create your first group"
+  },
   "confirm": {
     "removeMember": "Are you sure you want to remove {name} from this group?",
     "removeButton": "Remove",

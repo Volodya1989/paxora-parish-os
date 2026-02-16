@@ -584,6 +584,14 @@
       "addAria": "Додати запит на створення"
     }
   },
+  "emptyStates": {
+    "noMatches": "Нічого не знайдено",
+    "noMatchesDesc": "Спробуйте змінити фільтри або пошук.",
+    "clearFilters": "Очистити фільтри",
+    "createFirstServe": "Створіть перше завдання служіння",
+    "createFirstEvent": "Додати подію",
+    "createFirstGroup": "Створіть свою першу групу"
+  },
   "confirm": {
     "removeMember": "Ви впевнені, що хочете видалити {name} з цієї групи?",
     "removeButton": "Видалити",
