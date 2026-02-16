@@ -41,7 +41,7 @@ export function useNotificationContext() {
  * Multiple NotificationBell components can consume the context without duplicating polling.
  */
 export function NotificationProvider({ children }: { children: ReactNode }) {
-  const { items, count, loading, markCategoryRead, markAllRead, markNotificationRead } =
+  const { items, count, loading, markCategoryRead, markAllRead, markNotificationRead, deleteNotification } =
     useNotifications();
   const [panelOpen, setPanelOpen] = useState(false);
 
@@ -69,6 +69,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         onMarkAllRead={markAllRead}
         onMarkCategoryRead={markCategoryRead}
         onMarkNotificationRead={markNotificationRead}
+        onDeleteNotification={deleteNotification}
       />
       <NotificationAutoClear onMarkCategoryRead={markCategoryRead} />
     </NotificationContext.Provider>

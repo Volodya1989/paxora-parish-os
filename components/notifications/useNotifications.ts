@@ -102,6 +102,33 @@ export function useNotifications() {
     [fetchNotifications]
   );
 
+  const deleteNotification = useCallback(
+    async (notificationId: string) => {
+      setState((prev) => {
+        const updatedItems = prev.items.filter((item) => item.id !== notificationId);
+        const unreadCount = countUnreadItems(updatedItems);
+        void updateAppBadge(unreadCount, "notifications.deleteOne.optimistic");
+        return { ...prev, items: updatedItems, count: unreadCount };
+      });
+
+      try {
+        const response = await fetch(`/api/notifications/${notificationId}`, {
+          method: "DELETE"
+        });
+
+        if (!response.ok) {
+          await fetchNotifications();
+          return;
+        }
+
+        await fetchNotifications();
+      } catch {
+        await fetchNotifications();
+      }
+    },
+    [fetchNotifications]
+  );
+
   useEffect(() => {
     fetchNotifications();
 
@@ -125,6 +152,7 @@ export function useNotifications() {
     refresh: fetchNotifications,
     markCategoryRead,
     markAllRead,
-    markNotificationRead
+    markNotificationRead,
+    deleteNotification
   };
 }

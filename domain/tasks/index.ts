@@ -4,7 +4,11 @@ import { calculateEstimatedHoursPerParticipant } from "@/lib/hours/allocations";
 import { getGroupMembership, getParishMembership } from "@/server/db/groups";
 import { prisma } from "@/server/db/prisma";
 import { notifyTaskCreated, notifyTaskAssigned } from "@/lib/push/notify";
-import { notifyTaskAssignedInApp, notifyTaskCreatedInApp } from "@/lib/notifications/notify";
+import {
+  notifyTaskAssignedInApp,
+  notifyTaskCreatedInApp,
+  notifyTaskStatusChangedInApp
+} from "@/lib/notifications/notify";
 import { fromZonedTime, toZonedTime } from "date-fns-tz";
 
 const TASK_DISPLAY_PREFIX = "SERV";
@@ -375,6 +379,28 @@ async function createTaskActivity({
   });
 }
 
+async function notifyTaskStatusChange(opts: {
+  taskId: string;
+  parishId: string;
+  actorUserId: string;
+  taskTitle: string;
+  statusLabel: string;
+}) {
+  const actor = await prisma.user.findUnique({
+    where: { id: opts.actorUserId },
+    select: { name: true, email: true }
+  });
+
+  await notifyTaskStatusChangedInApp({
+    taskId: opts.taskId,
+    parishId: opts.parishId,
+    actorId: opts.actorUserId,
+    actorName: actor?.name ?? actor?.email ?? "Someone",
+    taskTitle: opts.taskTitle,
+    statusLabel: opts.statusLabel
+  });
+}
+
 export async function markTaskDone({
   taskId,
   parishId,
@@ -555,6 +581,18 @@ export async function markTaskDone({
     }
   }
 
+  try {
+    await notifyTaskStatusChange({
+      taskId,
+      parishId,
+      actorUserId,
+      taskTitle: taskDetails.title,
+      statusLabel: "done"
+    });
+  } catch (error) {
+    console.error("[tasks] Failed to create in-app task status notification:", error);
+  }
+
   return updated;
 }
 
@@ -588,6 +626,18 @@ export async function unmarkTaskDone({ taskId, parishId, actorUserId }: TaskActi
     return updatedTask;
   });
 
+  try {
+    await notifyTaskStatusChange({
+      taskId,
+      parishId,
+      actorUserId,
+      taskTitle: updated.title,
+      statusLabel: "open"
+    });
+  } catch (error) {
+    console.error("[tasks] Failed to create in-app task status notification:", error);
+  }
+
   return updated;
 }
 
@@ -620,6 +670,18 @@ export async function markTaskInProgress({ taskId, parishId, actorUserId }: Task
     description: "Moved task to in progress."
   });
 
+  try {
+    await notifyTaskStatusChange({
+      taskId,
+      parishId,
+      actorUserId,
+      taskTitle: updated.title,
+      statusLabel: "in progress"
+    });
+  } catch (error) {
+    console.error("[tasks] Failed to create in-app task status notification:", error);
+  }
+
   return updated;
 }
 
@@ -642,6 +704,18 @@ export async function markTaskOpen({ taskId, parishId, actorUserId }: TaskAction
     actorUserId,
     description: "Reset task to open."
   });
+
+  try {
+    await notifyTaskStatusChange({
+      taskId,
+      parishId,
+      actorUserId,
+      taskTitle: updated.title,
+      statusLabel: "open"
+    });
+  } catch (error) {
+    console.error("[tasks] Failed to create in-app task status notification:", error);
+  }
 
   return updated;
 }

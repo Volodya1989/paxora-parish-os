@@ -1,6 +1,14 @@
 import { prisma } from "@/server/db/prisma";
-import { NotificationType } from "@prisma/client";
+import { EventVisibility, NotificationType } from "@prisma/client";
 import { getRequestStatusLabel } from "@/lib/requests/utils";
+import {
+  filterEventAudienceForCandidates,
+  resolveAnnouncementAudience,
+  resolveChatAudience,
+  resolveEventAudience,
+  resolveTaskWatcherAudience,
+  type AudienceRecipient
+} from "@/lib/notifications/audience";
 
 const notificationPreferenceFieldByType = {
   [NotificationType.MESSAGE]: "notifyMessageInApp",
@@ -49,6 +57,16 @@ async function createNotificationsForUsers(
       createdAt: input.createdAt ?? new Date()
     }))
   });
+}
+
+async function createNotificationsForAudience(
+  recipients: AudienceRecipient[],
+  input: NotificationCreateInput
+) {
+  await createNotificationsForUsers(
+    recipients.map((recipient) => recipient.userId),
+    input
+  );
 }
 
 
@@ -105,53 +123,13 @@ export async function notifyChatMessageInApp(opts: {
   messageBody: string;
 }) {
   const { channelId, authorId, channelName, parishId, messageBody } = opts;
-
-  const channel = await prisma.chatChannel.findUnique({
-    where: { id: channelId },
-    select: { type: true, groupId: true, parishId: true }
-  });
-
-  if (!channel) return;
-
-  let recipientIds: string[] = [];
-
-  if (channel.type === "GROUP" && channel.groupId) {
-    const members = await prisma.groupMembership.findMany({
-      where: { groupId: channel.groupId, status: "ACTIVE" },
-      select: { userId: true }
-    });
-    recipientIds = members.map((m) => m.userId);
-  } else if (channel.type === "ANNOUNCEMENT") {
-    const members = await prisma.membership.findMany({
-      where: { parishId },
-      select: { userId: true }
-    });
-    recipientIds = members.map((m) => m.userId);
-  } else {
-    const channelMembers = await prisma.chatChannelMembership.findMany({
-      where: { channelId },
-      select: { userId: true }
-    });
-
-    if (channelMembers.length > 0) {
-      recipientIds = channelMembers.map((m) => m.userId);
-    } else {
-      const members = await prisma.membership.findMany({
-        where: { parishId },
-        select: { userId: true }
-      });
-      recipientIds = members.map((m) => m.userId);
-    }
-  }
-
-  recipientIds = recipientIds.filter((id) => id !== authorId);
-
-  if (recipientIds.length === 0) return;
+  const recipients = await resolveChatAudience({ channelId, actorId: authorId });
+  if (recipients.length === 0) return;
 
   const truncatedBody =
     messageBody.length > 100 ? `${messageBody.slice(0, 97)}...` : messageBody;
 
-  await createNotificationsForUsers(recipientIds, {
+  await createNotificationsForAudience(recipients, {
     parishId,
     type: NotificationType.MESSAGE,
     title: `${opts.authorName} in ${channelName}`,
@@ -208,16 +186,21 @@ export async function notifyAnnouncementPublishedInApp(opts: {
   parishId: string;
   publisherId: string;
 }) {
-  const { title, parishId, publisherId } = opts;
+  const { title, parishId, publisherId, announcementId } = opts;
 
-  const members = await prisma.membership.findMany({
-    where: { parishId },
-    select: { userId: true }
+  const announcement = await prisma.announcement.findFirst({
+    where: { id: announcementId, parishId },
+    select: { audienceUserIds: true }
+  });
+  if (!announcement) return;
+
+  const recipients = await resolveAnnouncementAudience({
+    parishId,
+    audienceUserIds: announcement.audienceUserIds,
+    actorId: publisherId
   });
 
-  const recipientIds = members.map((m) => m.userId).filter((id) => id !== publisherId);
-
-  await createNotificationsForUsers(recipientIds, {
+  await createNotificationsForAudience(recipients, {
     parishId,
     type: NotificationType.ANNOUNCEMENT,
     title: "New announcement",
@@ -231,30 +214,20 @@ export async function notifyEventCreatedInApp(opts: {
   eventTitle: string;
   parishId: string;
   creatorId: string;
-  visibility: string;
+  visibility: EventVisibility;
   groupId?: string | null;
 }) {
-  const { eventId: _eventId, eventTitle, parishId, creatorId, visibility, groupId } = opts;
+  const { eventId, eventTitle, parishId, creatorId, visibility, groupId } = opts;
 
-  let recipientIds: string[] = [];
+  const recipients = await resolveEventAudience({
+    parishId,
+    visibility,
+    groupId,
+    eventId,
+    actorId: creatorId
+  });
 
-  if (visibility === "GROUP" && groupId) {
-    const members = await prisma.groupMembership.findMany({
-      where: { groupId, status: "ACTIVE" },
-      select: { userId: true }
-    });
-    recipientIds = members.map((m) => m.userId);
-  } else if (visibility === "PUBLIC") {
-    const members = await prisma.membership.findMany({
-      where: { parishId },
-      select: { userId: true }
-    });
-    recipientIds = members.map((m) => m.userId);
-  }
-
-  recipientIds = recipientIds.filter((id) => id !== creatorId);
-
-  await createNotificationsForUsers(recipientIds, {
+  await createNotificationsForAudience(recipients, {
     parishId,
     type: NotificationType.EVENT,
     title: "New event",
@@ -270,9 +243,15 @@ export async function notifyEventReminderInApp(opts: {
   recipientIds: string[];
   startsAtLabel: string;
 }) {
-  const { eventTitle, parishId, recipientIds, startsAtLabel } = opts;
+  const { eventId, eventTitle, parishId, recipientIds, startsAtLabel } = opts;
 
-  await createNotificationsForUsers(recipientIds, {
+  const recipients = await filterEventAudienceForCandidates({
+    eventId,
+    parishId,
+    candidateUserIds: recipientIds
+  });
+
+  await createNotificationsForAudience(recipients, {
     parishId,
     type: NotificationType.EVENT,
     title: "Event reminder",
@@ -374,5 +353,56 @@ export async function notifyMentionInApp(opts: {
     title: `You were mentioned by ${opts.actorName}`,
     description: opts.description ?? null,
     href: opts.href
+  });
+}
+
+export async function notifyTaskCommentInApp(opts: {
+  taskId: string;
+  parishId: string;
+  actorId: string;
+  actorName: string;
+  body: string;
+  href?: string;
+}) {
+  const recipients = await resolveTaskWatcherAudience({
+    taskId: opts.taskId,
+    parishId: opts.parishId,
+    actorId: opts.actorId
+  });
+
+  if (recipients.length === 0) return;
+
+  const snippet = opts.body.length > 100 ? `${opts.body.slice(0, 97)}...` : opts.body;
+  await createNotificationsForAudience(recipients, {
+    parishId: opts.parishId,
+    type: NotificationType.TASK,
+    title: `${opts.actorName} commented on a serve card`,
+    description: snippet,
+    href: opts.href ?? `/tasks?taskId=${opts.taskId}`
+  });
+}
+
+export async function notifyTaskStatusChangedInApp(opts: {
+  taskId: string;
+  parishId: string;
+  actorId: string;
+  actorName: string;
+  taskTitle: string;
+  statusLabel: string;
+}) {
+  const recipients = await resolveTaskWatcherAudience({
+    taskId: opts.taskId,
+    parishId: opts.parishId,
+    actorId: opts.actorId
+  });
+
+  if (recipients.length === 0) return;
+
+  await createNotificationsForAudience(recipients, {
+    parishId: opts.parishId,
+    type: NotificationType.TASK,
+    title: `${opts.actorName} updated a serve card`,
+    description: `${opts.taskTitle} is now ${opts.statusLabel}`,
+    href: `/tasks?taskId=${opts.taskId}`
   });
 }

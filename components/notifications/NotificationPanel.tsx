@@ -14,6 +14,7 @@ type NotificationPanelProps = {
   onMarkAllRead: () => void;
   onMarkCategoryRead: (category: NotificationCategory) => void;
   onMarkNotificationRead: (notificationId: string) => void;
+  onDeleteNotification: (notificationId: string) => void;
 };
 
 const categoryIcons: Record<NotificationCategory, string> = {
@@ -51,11 +52,13 @@ function NotificationRow({
   item,
   onClose,
   onMarkNotificationRead,
+  onDeleteNotification,
   onMissingHref
 }: {
   item: NotificationItem;
   onClose: () => void;
   onMarkNotificationRead: (notificationId: string) => void;
+  onDeleteNotification: (notificationId: string) => void;
   onMissingHref: () => void;
 }) {
   const router = useRouter();
@@ -80,6 +83,11 @@ function NotificationRow({
   };
 
   const isUnread = !item.readAt;
+  const handleDelete = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onDeleteNotification(item.id);
+  };
 
   return (
     <div className="flex items-start gap-2 rounded-card px-3 py-2 transition hover:bg-mist-50">
@@ -109,16 +117,26 @@ function NotificationRow({
         <p className="mt-1 text-[10px] text-ink-400">{formatTimestamp(item.timestamp)}</p>
       </div>
       </button>
-      {isUnread && (
+      <div className="mt-1 flex items-center gap-1">
+        {isUnread && (
+          <button
+            type="button"
+            onClick={handleDismiss}
+            aria-label="Mark notification as read"
+            className="rounded-full p-1 text-ink-400 transition hover:bg-mist-100 hover:text-ink-700 focus-ring"
+          >
+            <span aria-hidden="true">✓</span>
+          </button>
+        )}
         <button
           type="button"
-          onClick={handleDismiss}
-          aria-label="Mark notification as read"
-          className="mt-1 rounded-full p-1 text-ink-400 transition hover:bg-mist-100 hover:text-ink-700 focus-ring"
+          onClick={handleDelete}
+          aria-label="Delete notification"
+          className="rounded-full p-1 text-ink-400 transition hover:bg-mist-100 hover:text-ink-700 focus-ring"
         >
-          <span aria-hidden="true">×</span>
+          <span aria-hidden="true">🗑</span>
         </button>
-      )}
+      </div>
     </div>
   );
 }
@@ -134,7 +152,8 @@ export function NotificationPanel({
   items,
   onMarkAllRead,
   onMarkCategoryRead,
-  onMarkNotificationRead
+  onMarkNotificationRead,
+  onDeleteNotification
 }: NotificationPanelProps) {
   const t = useTranslations();
   const { addToast } = useToast();
@@ -229,6 +248,7 @@ export function NotificationPanel({
                 onClose={onClose}
                 onMarkNotificationRead={onMarkNotificationRead}
                 onMissingHref={handleMissingHref}
+                onDeleteNotification={onDeleteNotification}
               />
             ))}
           </div>
