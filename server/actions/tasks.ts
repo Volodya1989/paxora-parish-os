@@ -804,7 +804,21 @@ export async function deferTask(formData: FormData) {
 
 export async function rolloverTasksForWeek(formData: FormData) {
   const session = await getServerSession(authOptions);
-  const { parishId } = assertSession(session);
+  const { userId, parishId } = assertSession(session);
+
+  const membership = await prisma.membership.findUnique({
+    where: {
+      parishId_userId: {
+        parishId,
+        userId
+      }
+    },
+    select: { role: true }
+  });
+
+  if (!membership || !isParishLeader(membership.role)) {
+    throw new Error("Unauthorized");
+  }
 
   const parsed = rolloverTasksSchema.safeParse({
     fromWeekId: formData.get("fromWeekId"),

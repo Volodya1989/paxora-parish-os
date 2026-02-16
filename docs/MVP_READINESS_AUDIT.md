@@ -143,7 +143,7 @@ Soft-delete events instead of hard delete
 BLOCKER
 1h
 R7
-Add permission check to rolloverTasksForWeek
+Add permission check to rolloverTasksForWeek — DONE (Ready for review)
 BLOCKER
 15min
 R4
@@ -191,7 +191,7 @@ IMPORTANT
 	3	Private group leak (R3) — listGroups server action exposes all groups
 	4	Push content leak (R5) — private messages visible on lock screens
 	5	Hard event deletion (R6) — accidental deletion = permanent data loss
-	6	Missing permission on task rollover (R7) — any member can manipulate the serve board
+	6	Missing permission on task rollover (R7) — Resolved (Ready for review)
 	7	Group chat channel not atomically created (R4) — groups can exist without chat
 
 ## Two-Week Action Plan
@@ -256,7 +256,7 @@ HIGH
 Open
 Task rollover missing permission check
 MEDIUM
-Open
+Done (Ready for review)
 Group detail returns 403 (leaks existence)
 LOW
 Open
@@ -274,7 +274,7 @@ Acceptable for MVP
 
 7. Suggested Implementation Order
 1. R1  — Cron auth             (Completed, ready for review)
-2. R7  — Rollover perms        (15 min)
+2. R7  — Rollover perms        (Completed, ready for review)
 3. R3  — listGroups fix        (30 min)
 4. R6  — Soft-delete events    (1 hr)
 5. R5  — Push content sanitize (2 hr)
