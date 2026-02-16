@@ -27,6 +27,25 @@ const config: Config = {
       boxShadow: {
         card: "0 1px 2px 0 rgb(15 23 42 / 0.06)",
         overlay: "0 10px 25px -5px rgb(15 23 42 / 0.2)"
+      },
+      keyframes: {
+        "chat-message-in": {
+          from: { opacity: "0", transform: "translateY(8px)" },
+          to: { opacity: "1", transform: "translateY(0)" }
+        },
+        "context-menu-in": {
+          from: { opacity: "0", transform: "scale(0.95)" },
+          to: { opacity: "1", transform: "scale(1)" }
+        },
+        "chat-fade-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" }
+        }
+      },
+      animation: {
+        "chat-message-in": "chat-message-in 0.2s ease-out both",
+        "context-menu-in": "context-menu-in 0.15s ease-out both",
+        "chat-fade-in": "chat-fade-in 0.3s ease-out both"
       }
     }
   },

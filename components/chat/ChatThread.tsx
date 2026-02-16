@@ -248,7 +248,7 @@ export default function ChatThread({
 
   return (
     <div
-      className="relative min-h-full rounded-card border border-mist-100 bg-emerald-50/30 p-3 shadow-sm touch-manipulation"
+      className="relative min-h-full rounded-card border border-mist-100 bg-emerald-50/30 px-3 py-4 shadow-sm touch-manipulation"
       style={{
         backgroundImage: "url('/chat-background.png')",
         backgroundRepeat: "no-repeat",
@@ -261,7 +261,7 @@ export default function ChatThread({
         }
       }}
     >
-      <div className="space-y-4">
+      <div className="space-y-5">
         {pinnedMessage ? (
           <PinnedBanner pinned={pinnedMessage} canModerate={canModerate} onUnpin={onUnpin} />
         ) : null}
@@ -272,13 +272,13 @@ export default function ChatThread({
           </div>
         ) : null}
         {grouped.map((group) => (
-          <div key={group.key} className="space-y-1">
+          <div key={group.key} className="space-y-1.5">
             <div className="flex items-center gap-3 py-2">
               <div className="h-px flex-1 bg-mist-100" />
               <span className="text-xs font-semibold text-ink-400">{group.label}</span>
               <div className="h-px flex-1 bg-mist-100" />
             </div>
-            <div className="space-y-0.5">
+            <div className="space-y-1">
               {group.messages.map((message, messageIndex) => (
                 <MessageRow
                   key={message.id}
@@ -315,31 +315,43 @@ export default function ChatThread({
         ))}
       </div>
 
-      {lightboxImage ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <button
-            type="button"
-            className="absolute inset-0"
-            aria-label="Close image preview"
-            onClick={() => setLightboxImage(null)}
-          />
-          <div className="relative z-10 max-h-full max-w-3xl">
+      {/* Lightbox overlay with smooth transition */}
+      <div
+        className={cn(
+          "fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 ease-out",
+          lightboxImage
+            ? "visible bg-black/80 opacity-100"
+            : "invisible bg-black/0 opacity-0 pointer-events-none"
+        )}
+        onClick={() => setLightboxImage(null)}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Image preview"
+      >
+        <div
+          className={cn(
+            "relative z-10 max-h-full max-w-3xl transition-transform duration-300 ease-out",
+            lightboxImage ? "scale-100" : "scale-90"
+          )}
+          onClick={(event) => event.stopPropagation()}
+        >
+          {lightboxImage ? (
             <img
               src={lightboxImage.url}
               alt={lightboxImage.alt}
-              className="max-h-[85vh] w-auto rounded-lg object-contain shadow-xl"
+              className="max-h-[90vh] w-auto rounded-xl object-contain shadow-2xl"
             />
-            <button
-              type="button"
-              className="absolute -right-3 -top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white text-lg text-ink-600 shadow"
-              aria-label="Close image preview"
-              onClick={() => setLightboxImage(null)}
-            >
-              ×
-            </button>
-          </div>
+          ) : null}
+          <button
+            type="button"
+            className="absolute -right-2 -top-2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-lg text-ink-700 shadow-lg backdrop-blur-sm transition hover:bg-white hover:scale-110"
+            aria-label="Close image preview"
+            onClick={() => setLightboxImage(null)}
+          >
+            ×
+          </button>
         </div>
-      ) : null}
+      </div>
     </div>
   );
 }
@@ -486,9 +498,9 @@ function MessageRow({
 
       <div
         className={cn(
-          "group relative flex",
+          "group relative flex animate-chat-message-in",
           isMine ? "justify-end" : "justify-start",
-          isGrouped ? "mt-0.5" : "mt-3 first:mt-0"
+          isGrouped ? "mt-0.5" : "mt-4 first:mt-0"
         )}
       >
         {/* Swipe-to-reply indicator — appears behind the message as user swipes right */}
@@ -518,13 +530,13 @@ function MessageRow({
         {/* Left-side avatar for other users */}
         {!isMine ? (
           <div
-            className="mr-2 w-9 shrink-0"
+            className="mr-2 w-9 shrink-0 self-end"
             style={swipe.offsetX > 0 ? { transform: `translateX(${swipe.offsetX}px)` } : undefined}
           >
             {showAuthorBlock ? (
               <button
                 type="button"
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-xs font-semibold text-emerald-800"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700 shadow-sm"
                 title={message.author.name}
                 aria-label={`View profile for ${message.author.name}`}
               >
@@ -537,11 +549,11 @@ function MessageRow({
         {/* Bubble */}
         <div
           className={cn(
-            "relative w-fit min-w-[60px] max-w-[75%] px-3 py-1.5 select-none",
+            "relative w-fit min-w-[60px] max-w-[85%] px-3.5 py-2.5 select-none",
             isMine
-              ? "rounded-2xl rounded-br-sm bg-emerald-100"
-              : "rounded-2xl rounded-bl-sm bg-gray-50 border border-gray-200",
-            contextMenuOpen && "ring-1 ring-primary-200",
+              ? "rounded-2xl rounded-br-sm bg-emerald-100 shadow-sm"
+              : "rounded-2xl rounded-bl-sm bg-white border border-mist-100 shadow-sm",
+            contextMenuOpen && "ring-2 ring-primary-200",
             swipe.offsetX > 0 && "transition-none"
           )}
           style={swipe.offsetX > 0 ? { transform: `translateX(${swipe.offsetX}px)` } : undefined}
@@ -579,14 +591,14 @@ function MessageRow({
         >
           {/* Author + time header (first in group only) */}
           {showAuthorBlock ? (
-            <div className="mb-0.5 flex items-center gap-2">
+            <div className="mb-1 flex items-center gap-2">
               {!isMine ? (
-                <span className="text-xs font-bold text-ink-900">
+                <span className="text-[13px] font-bold text-ink-900">
                   {formatDisplayName(message.author.name)}
                 </span>
               ) : null}
               <span className="sr-only">{message.author.name}</span>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-ink-400">
                 {formatTime(new Date(message.createdAt))}
               </span>
             </div>
@@ -594,7 +606,7 @@ function MessageRow({
 
           {/* Reply preview */}
           {message.parentMessage ? (
-            <div className="mb-1 rounded-md border border-mist-100 border-l-4 border-l-emerald-500/60 bg-emerald-50/50 px-2 py-1.5 text-xs text-ink-500">
+            <div className="mb-1.5 rounded-lg border-l-4 border-l-emerald-500/60 bg-emerald-50/60 px-2.5 py-2 text-[13px] text-ink-500">
               <p className="font-semibold text-ink-600">
                 {message.parentMessage.author.name}
               </p>
@@ -608,12 +620,12 @@ function MessageRow({
           {isDeleted || message.body ? (
             <p
               className={cn(
-                "whitespace-pre-wrap text-sm [overflow-wrap:anywhere] [word-break:break-word]",
+                "whitespace-pre-wrap text-[15px] leading-relaxed [overflow-wrap:anywhere] [word-break:break-word]",
                 isDeleted
                   ? "italic text-ink-400"
                   : isMine
                     ? "text-ink-700"
-                    : "text-ink-800"
+                    : "text-ink-900"
               )}
             >
               {renderBody()}
@@ -622,12 +634,17 @@ function MessageRow({
 
           {/* Attachments */}
           {!isDeleted && message.attachments.length > 0 ? (
-            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <div className={cn(
+              "mt-2",
+              message.attachments.length === 1
+                ? ""
+                : "grid grid-cols-2 gap-1.5"
+            )}>
               {message.attachments.map((attachment) => (
                 <button
                   key={attachment.id}
                   type="button"
-                  className="group relative overflow-hidden rounded-lg border border-mist-100 bg-mist-50"
+                  className="group relative overflow-hidden rounded-xl bg-mist-50"
                   onClick={(event) => {
                     event.stopPropagation();
                     onOpenAttachment(attachment);
@@ -636,7 +653,12 @@ function MessageRow({
                   <img
                     src={attachment.url}
                     alt="Chat attachment"
-                    className="h-28 w-full object-cover transition group-hover:scale-105"
+                    className={cn(
+                      "w-full object-cover transition-transform duration-200 group-hover:scale-[1.03]",
+                      message.attachments.length === 1
+                        ? "max-h-72 rounded-xl"
+                        : "h-40 rounded-xl"
+                    )}
                     loading="lazy"
                   />
                 </button>
@@ -694,7 +716,7 @@ function MessageRow({
           <>
             {/* Backdrop to close */}
             <div
-              className="fixed inset-0 z-20"
+              className="fixed inset-0 z-20 bg-black/5"
               onClick={(event) => {
                 event.stopPropagation();
                 onCloseContextMenu();
@@ -702,7 +724,7 @@ function MessageRow({
             />
             <div
               className={cn(
-                "absolute z-30 flex flex-col items-stretch overflow-hidden rounded-xl border border-mist-200 bg-white shadow-xl",
+                "absolute z-30 flex flex-col items-stretch overflow-hidden rounded-xl border border-mist-200 bg-white shadow-xl animate-context-menu-in",
                 isMine ? "right-0" : "left-11",
                 "top-0"
               )}

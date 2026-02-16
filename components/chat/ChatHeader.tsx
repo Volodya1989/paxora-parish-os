@@ -32,12 +32,15 @@ export default function ChatHeader({
   const handleBack = useCallback(() => {
     // Reliable back navigation: check if we have meaningful history,
     // otherwise fall back to the groups/community page.
+    // Use native history.back() for instant feel when possible.
     if (typeof window !== "undefined" && window.history.length > 1) {
-      router.back();
+      window.history.back();
+    } else if (channel.type === "GROUP" && channel.group) {
+      router.push(`/groups/${channel.group.id}`);
     } else {
       router.push("/community/chat");
     }
-  }, [router]);
+  }, [channel, router]);
 
   const openMenu = useCallback(() => {
     const btn = menuBtnRef.current;
@@ -104,7 +107,7 @@ export default function ChatHeader({
   return (
     <div className="rounded-t-card">
       {/* Emerald themed header bar */}
-      <div className="flex items-center gap-3 bg-emerald-600 px-3 py-3 touch-manipulation">
+      <div className="flex items-center gap-3 bg-emerald-600 px-3 py-3 touch-manipulation" style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}>
         <button
           type="button"
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-white/80 transition hover:bg-white/10 hover:text-white active:bg-white/20"

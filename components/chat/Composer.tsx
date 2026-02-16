@@ -243,7 +243,7 @@ export default function Composer({
   };
 
   return (
-    <div className="border-t border-mist-100 bg-white px-3 py-3 touch-manipulation">
+    <div className="border-t border-mist-100 bg-white px-3 py-3 touch-manipulation" style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
       {/* Poll composer (shown above the input row when active) */}
       {showPollComposer && onCreatePoll ? (
         <div className="mb-3">
@@ -314,7 +314,7 @@ export default function Composer({
       ) : null}
 
       {/* Input row */}
-      <div className="flex items-end gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2">
+      <div className="flex items-end gap-2 rounded-2xl border border-mist-200 bg-white px-3 py-2 shadow-sm">
         <input
           ref={fileInputRef}
           type="file"
@@ -423,8 +423,8 @@ export default function Composer({
           type="button"
           className={
             canSend
-              ? "flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm transition hover:bg-emerald-500 active:bg-emerald-700"
-              : "flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-200 text-gray-400 cursor-not-allowed"
+              ? "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow-sm transition-all duration-150 hover:bg-emerald-500 active:scale-90 active:bg-emerald-700"
+              : "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-200 text-gray-400 cursor-not-allowed"
           }
           aria-label={isEditing ? t("chat.save") : t("chat.send")}
           disabled={!canSend}
