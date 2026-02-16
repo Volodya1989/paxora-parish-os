@@ -73,9 +73,31 @@ export async function listGroups() {
   const { userId, parishId } = assertSession(session);
 
   const parishMembership = await requireParishMembership(userId, parishId);
+  const canSeeAllGroups = isParishLeader(parishMembership.role);
 
   return prisma.group.findMany({
-    where: { parishId },
+    where: canSeeAllGroups
+      ? { parishId }
+      : {
+          parishId,
+          OR: [
+            {
+              visibility: "PUBLIC",
+              status: "ACTIVE"
+            },
+            {
+              createdById: userId
+            },
+            {
+              memberships: {
+                some: {
+                  userId,
+                  status: { in: ["ACTIVE", "INVITED", "REQUESTED"] }
+                }
+              }
+            }
+          ]
+        },
     orderBy: { name: "asc" },
     select: {
       id: true,
