@@ -131,6 +131,7 @@ export default async function GroupChatPage({ params }: GroupChatPageProps) {
         canPost={canPost}
         canModerate={canModerate}
         currentUserId={userId}
+        parishId={parishId}
         mentionableUsers={groupMembers.map((member) => ({
           id: member.user.id,
           name: member.user.name ?? member.user.email ?? "Parish member",

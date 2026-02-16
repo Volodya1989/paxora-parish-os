@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { ChatChannelSummary } from "@/components/chat/types";
 import { cn } from "@/lib/ui/cn";
 import { useTranslations } from "@/lib/i18n/provider";
+import type { ReactNode } from "react";
 
 export default function ChatHeader({
   channel,
@@ -12,7 +13,8 @@ export default function ChatHeader({
   canModerate,
   onToggleLock,
   onManageMembers,
-  onChannelChange
+  onChannelChange,
+  chatFontSizeControl
 }: {
   channel: ChatChannelSummary;
   channels?: ChatChannelSummary[];
@@ -20,6 +22,7 @@ export default function ChatHeader({
   onToggleLock: () => void;
   onManageMembers?: () => void;
   onChannelChange?: (channelId: string) => void;
+  chatFontSizeControl?: ReactNode;
 }) {
   const router = useRouter();
   const t = useTranslations();
@@ -158,6 +161,8 @@ export default function ChatHeader({
               Locked
             </span>
           ) : null}
+
+          {chatFontSizeControl ? <div className="ml-1">{chatFontSizeControl}</div> : null}
 
           {/* Channel switcher icon */}
           {showSwitcher ? (

@@ -240,7 +240,8 @@ export default function ChatThread({
   initialReactionMenuMessageId,
   isLoading,
   firstUnreadMessageId,
-  highlightedMessageId
+  highlightedMessageId,
+  messageFontSize
 }: {
   messages: ChatMessage[];
   pinnedMessage: ChatPinnedMessage | null;
@@ -258,6 +259,7 @@ export default function ChatThread({
   isLoading?: boolean;
   firstUnreadMessageId?: string | null;
   highlightedMessageId?: string | null;
+  messageFontSize?: number;
 }) {
   const [contextMenuMessageId, setContextMenuMessageId] = useState<string | null>(
     initialReactionMenuMessageId ?? null
@@ -302,7 +304,8 @@ export default function ChatThread({
         backgroundImage: "url('/chat-background.png')",
         backgroundRepeat: "no-repeat",
         backgroundSize: "cover",
-        backgroundPosition: "center"
+        backgroundPosition: "center",
+        ["--chat-font-size" as string]: `${messageFontSize ?? 16}px`
       }}
       onClick={() => {
         if (contextMenuMessageId !== null) {
@@ -751,7 +754,7 @@ function MessageRow({
           {isDeleted || message.body ? (
             <p
               className={cn(
-                "whitespace-pre-wrap text-[16px] font-normal leading-snug tracking-[0.0125em] [overflow-wrap:anywhere] [word-break:break-word]",
+                "whitespace-pre-wrap text-[length:var(--chat-font-size)] font-normal leading-snug tracking-[0.0125em] transition-[font-size] duration-150 [overflow-wrap:anywhere] [word-break:break-word]",
                 isDeleted
                   ? "italic font-normal text-ink-400"
                   : "text-ink-900"
