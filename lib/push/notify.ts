@@ -18,7 +18,17 @@ export async function notifyChatMessage(opts: {
   // Get channel info to determine recipient strategy
   const channel = await prisma.chatChannel.findUnique({
     where: { id: channelId },
-    select: { type: true, groupId: true, parishId: true }
+    select: {
+      type: true,
+      groupId: true,
+      parishId: true,
+      group: {
+        select: {
+          name: true,
+          visibility: true
+        }
+      }
+    }
   });
 
   if (!channel) return;
@@ -65,10 +75,14 @@ export async function notifyChatMessage(opts: {
 
   const truncatedBody =
     messageBody.length > 100 ? `${messageBody.slice(0, 97)}...` : messageBody;
+  const sanitizedBody =
+    channel.type === "GROUP"
+      ? `New message in ${channel.group?.name ?? channelName}`
+      : truncatedBody;
 
   const payload: PushPayload = {
     title: `${opts.authorName} in ${channelName}`,
-    body: truncatedBody,
+    body: sanitizedBody,
     url: `/community/chat?channel=${channelId}`,
     tag: `chat-${channelId}`
   };
