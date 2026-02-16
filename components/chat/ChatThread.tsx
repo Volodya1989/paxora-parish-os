@@ -399,6 +399,8 @@ function MessageRow({
   highlightedMessageId?: string | null;
 }) {
   const t = useTranslations();
+  const bubbleRef = useRef<HTMLDivElement>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
   const initials = getInitials(message.author.name) || "PS";
   const isDeleted = Boolean(message.deletedAt);
   const now = Date.now();
@@ -422,15 +424,37 @@ function MessageRow({
   const isGrouped = isSameGroup(previousMessage, message);
   const showAuthorBlock = !isGrouped;
 
+  const openMenuAtBubble = useCallback(() => {
+    if (!hasActions) return;
+    const el = bubbleRef.current;
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      const menuWidth = 220;
+      // Position menu: for own messages align to right edge of bubble, for others align to left
+      const left = isMine
+        ? Math.max(8, rect.right - menuWidth)
+        : Math.min(rect.left, window.innerWidth - menuWidth - 8);
+      // Place below top of bubble, clamped so it doesn't go off-screen bottom
+      const top = Math.min(rect.top, window.innerHeight - 300);
+      setMenuPos({ top: Math.max(8, top), left });
+    }
+    onOpenContextMenu();
+  }, [hasActions, isMine, onOpenContextMenu]);
+
+  const closeMenu = useCallback(() => {
+    setMenuPos(null);
+    onCloseContextMenu();
+  }, [onCloseContextMenu]);
+
   const longPressHandlers = useLongPress(
     () => {
-      if (hasActions) onOpenContextMenu();
+      openMenuAtBubble();
     },
     () => {
       // Simple tap: toggle context menu on mobile, nothing on desktop
       if (hasActions) {
         if (contextMenuOpen) {
-          onCloseContextMenu();
+          closeMenu();
         }
       }
     }
@@ -548,6 +572,7 @@ function MessageRow({
 
         {/* Bubble */}
         <div
+          ref={bubbleRef}
           className={cn(
             "relative w-fit min-w-[60px] max-w-[85%] px-3.5 py-2.5 select-none",
             isMine
@@ -565,12 +590,12 @@ function MessageRow({
             if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
               if (hasActions) {
-                if (contextMenuOpen) onCloseContextMenu();
-                else onOpenContextMenu();
+                if (contextMenuOpen) closeMenu();
+                else openMenuAtBubble();
               }
             }
             if (event.key === "Escape" && contextMenuOpen) {
-              onCloseContextMenu();
+              closeMenu();
             }
           }}
           onTouchStart={mergedTouchStart}
@@ -709,23 +734,20 @@ function MessageRow({
           ) : null}
         </div>
 
-        {/* Context menu popover — WhatsApp/Telegram style */}
-        {contextMenuOpen && hasActions ? (
+        {/* Context menu popover — fixed position, viewport-aware */}
+        {contextMenuOpen && hasActions && menuPos ? (
           <>
             {/* Backdrop to close */}
             <div
-              className="fixed inset-0 z-20 bg-black/5"
+              className="fixed inset-0 z-[60] bg-black/10"
               onClick={(event) => {
                 event.stopPropagation();
-                onCloseContextMenu();
+                closeMenu();
               }}
             />
             <div
-              className={cn(
-                "absolute z-30 flex flex-col items-stretch overflow-hidden rounded-xl border border-mist-200 bg-white shadow-xl animate-context-menu-in",
-                isMine ? "right-0" : "left-11",
-                "top-0"
-              )}
+              className="fixed z-[70] w-56 flex flex-col items-stretch overflow-hidden rounded-xl border border-mist-200 bg-white shadow-xl animate-context-menu-in"
+              style={{ top: menuPos.top, left: menuPos.left }}
               onClick={(event) => event.stopPropagation()}
             >
               {/* Emoji quick-react row */}
@@ -739,7 +761,7 @@ function MessageRow({
                       aria-label={`React with ${emoji}`}
                       onClick={() => {
                         onToggleReaction?.(message.id, emoji);
-                        onCloseContextMenu();
+                        closeMenu();
                       }}
                     >
                       {emoji}
@@ -756,7 +778,7 @@ function MessageRow({
                     className="flex items-center gap-3 px-4 py-2.5 text-left text-sm text-ink-700 active:bg-mist-50"
                     onClick={() => {
                       onReply(message);
-                      onCloseContextMenu();
+                      closeMenu();
                     }}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-ink-400" aria-hidden="true">
@@ -771,7 +793,7 @@ function MessageRow({
                     className="flex items-center gap-3 px-4 py-2.5 text-left text-sm text-ink-700 active:bg-mist-50"
                     onClick={() => {
                       onEdit(message);
-                      onCloseContextMenu();
+                      closeMenu();
                     }}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-ink-400" aria-hidden="true">
@@ -786,7 +808,7 @@ function MessageRow({
                     className="flex items-center gap-3 px-4 py-2.5 text-left text-sm text-ink-700 active:bg-mist-50"
                     onClick={() => {
                       onPin(message.id);
-                      onCloseContextMenu();
+                      closeMenu();
                     }}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-ink-400" aria-hidden="true">
@@ -801,7 +823,7 @@ function MessageRow({
                     className="flex items-center gap-3 px-4 py-2.5 text-left text-sm text-rose-600 active:bg-rose-50"
                     onClick={() => {
                       onDelete(message.id);
-                      onCloseContextMenu();
+                      closeMenu();
                     }}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
