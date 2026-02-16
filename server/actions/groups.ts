@@ -605,7 +605,8 @@ export async function getGroupDetail(groupId: string) {
     const canView =
       group.visibility === "PUBLIC" || groupMembership?.status === "ACTIVE";
     if (!canView) {
-      throw new Error("Unauthorized");
+      // Return "Not found" instead of "Unauthorized" to avoid leaking private group existence
+      throw new Error("Not found");
     }
   }
   const visibilityWhere: Prisma.TaskWhereInput = {
