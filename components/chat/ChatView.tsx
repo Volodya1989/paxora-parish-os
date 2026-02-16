@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import ChannelList from "@/components/chat/ChannelList";
 import ChatHeader from "@/components/chat/ChatHeader";
 import ChatThread from "@/components/chat/ChatThread";
+import ChatFontSizeControl from "@/components/chat/ChatFontSizeControl";
 import Composer from "@/components/chat/Composer";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
@@ -33,6 +34,7 @@ import {
 } from "@/server/actions/chat";
 import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 import { useTranslations } from "@/lib/i18n/provider";
+import { useChatFontSize } from "@/lib/chat/useChatFontSize";
 
 function sortMessages(items: ChatMessage[]) {
   return [...items].sort((a, b) => {
@@ -82,6 +84,7 @@ export default function ChatView({
   canPost,
   canModerate,
   currentUserId,
+  parishId,
   mentionableUsers,
   channelMembers,
   lastReadAt
@@ -93,6 +96,7 @@ export default function ChatView({
   canPost: boolean;
   canModerate: boolean;
   currentUserId: string;
+  parishId: string;
   mentionableUsers?: { id: string; name: string; email: string; avatarUrl?: string | null }[];
   channelMembers?: ChatChannelMember[];
   lastReadAt?: Date | null;
@@ -119,6 +123,33 @@ export default function ChatView({
   const searchParams = useSearchParams();
   const { addToast } = useToast();
   const t = useTranslations();
+
+  const { fontSize, increase, decrease, min, max } = useChatFontSize({
+    userId: currentUserId,
+    parishId
+  });
+
+  const headerFontSizeControl = (
+    <ChatFontSizeControl
+      fontSize={fontSize}
+      min={min}
+      max={max}
+      onDecrease={decrease}
+      onIncrease={increase}
+      tone="light"
+    />
+  );
+
+  const sheetFontSizeControl = (
+    <ChatFontSizeControl
+      fontSize={fontSize}
+      min={min}
+      max={max}
+      onDecrease={decrease}
+      onIncrease={increase}
+      tone="dark"
+    />
+  );
 
   const messagesRef = useRef(messages);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -620,6 +651,7 @@ export default function ChatView({
             canModerate={canModerate}
             onToggleLock={handleToggleLock}
             onManageMembers={showMemberManagement ? () => setMembersOpen(true) : undefined}
+            chatFontSizeControl={headerFontSizeControl}
             onChannelChange={(channelId) => {
               const selected = channels.find((item) => item.id === channelId);
               if (selected?.type === "GROUP" && selected.group) {
@@ -672,6 +704,7 @@ export default function ChatView({
             isLoading={!isPollingReady}
             firstUnreadMessageId={firstUnreadMessageId}
             highlightedMessageId={highlightedMessageId}
+            messageFontSize={fontSize}
           />
           <div ref={bottomRef} aria-hidden="true" />
         </div>
@@ -701,6 +734,7 @@ export default function ChatView({
               open={Boolean(threadRoot)}
               onClose={() => setThreadRoot(null)}
               title={`Thread (${threadRoot.replyCount})`}
+              headerActions={sheetFontSizeControl}
             >
               <div className="space-y-4">
                 <ChatThread
@@ -720,6 +754,7 @@ export default function ChatView({
                   onToggleReaction={handleToggleReaction}
                   isLoading={false}
                   highlightedMessageId={highlightedMessageId}
+                  messageFontSize={fontSize}
                 />
                 <Composer
                   disabled={!canPost || Boolean(lockedAt)}
@@ -753,6 +788,7 @@ export default function ChatView({
               open={Boolean(threadRoot)}
               onClose={() => setThreadRoot(null)}
               title={`Thread (${threadRoot.replyCount})`}
+              headerActions={sheetFontSizeControl}
               footer={
                 <div className="w-full">
                   <Composer
@@ -800,6 +836,7 @@ export default function ChatView({
                 onToggleReaction={handleToggleReaction}
                 isLoading={false}
                 highlightedMessageId={highlightedMessageId}
+                messageFontSize={fontSize}
               />
             </Drawer>
           )}
