@@ -1,11 +1,8 @@
 import { getOrCreateCurrentWeek } from "@/domain/week";
-import { canManageGroupMembership } from "@/lib/permissions";
 import {
   getGroupByParishId,
-  getGroupMembership,
   getParishMembership,
-  listGroupsByParish,
-  upsertGroupMembership
+  listGroupsByParish
 } from "@/server/db/groups";
 import { prisma } from "@/server/db/prisma";
 
@@ -16,14 +13,6 @@ type GroupAccessInput = {
 
 type GroupDetailInput = GroupAccessInput & {
   groupId: string;
-};
-
-type UpdateGroupMembershipInput = {
-  parishId: string;
-  groupId: string;
-  targetUserId: string;
-  role: "COORDINATOR" | "PARISHIONER";
-  actorUserId: string;
 };
 
 export async function listGroups({ parishId, actorUserId }: GroupAccessInput) {
@@ -97,45 +86,4 @@ export async function getGroupDetail({ parishId, groupId, actorUserId }: GroupDe
     })),
     tasks
   };
-}
-
-export async function updateGroupMembership({
-  parishId,
-  groupId,
-  targetUserId,
-  role,
-  actorUserId
-}: UpdateGroupMembershipInput) {
-  const group = await getGroupByParishId(parishId, groupId);
-
-  if (!group) {
-    throw new Error("Group not found");
-  }
-
-  const [parishMembership, groupMembership, targetMembership] = await Promise.all([
-    getParishMembership(parishId, actorUserId),
-    getGroupMembership(groupId, actorUserId),
-    getParishMembership(parishId, targetUserId)
-  ]);
-
-  if (!parishMembership) {
-    throw new Error("Unauthorized");
-  }
-
-  const groupRole = groupMembership?.status === "ACTIVE" ? groupMembership.role : null;
-  if (!canManageGroupMembership(parishMembership.role, groupRole)) {
-    throw new Error("Forbidden");
-  }
-
-  if (!targetMembership) {
-    throw new Error("User not in parish");
-  }
-
-  await upsertGroupMembership({
-    groupId,
-    userId: targetUserId,
-    role
-  });
-
-  return { success: true };
 }

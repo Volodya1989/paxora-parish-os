@@ -7,6 +7,8 @@ import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import SelectMenu from "@/components/ui/SelectMenu";
 import Card from "@/components/ui/Card";
+import { Modal } from "@/components/ui/Modal";
+import { Drawer } from "@/components/ui/Drawer";
 import TaskDetailDialog from "@/components/tasks/TaskDetailDialog";
 import TaskCompletionDialog from "@/components/tasks/TaskCompletionDialog";
 import ParishionerRequestButton from "@/components/requests/ParishionerRequestButton";
@@ -26,6 +28,7 @@ import {
 } from "@/server/actions/serve-board";
 import type { TaskListItem } from "@/lib/queries/tasks";
 import { cn } from "@/lib/ui/cn";
+import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 
 const statusColumns = [
   { id: "OPEN", labelKey: "serve.status.helpNeeded", tone: "bg-sky-50 text-sky-700" },
@@ -76,7 +79,9 @@ export default function ServeBoardView({
   const router = useRouter();
   const t = useTranslations();
   const locale = useLocale();
+  const isDesktop = useMediaQuery("(min-width: 768px)");
   const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
+  const [deleteTaskTarget, setDeleteTaskTarget] = useState<TaskListItem | null>(null);
   const [ownershipFilter, setOwnershipFilter] = useState<"all" | "mine">("all");
   const [visibilityFilter, setVisibilityFilter] = useState<"all" | "public" | "private">("all");
   const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
@@ -278,8 +283,17 @@ export default function ServeBoardView({
   const handleLeaveVolunteer = (taskId: string) =>
     runTaskAction(taskId, () => leaveTaskVolunteer({ taskId }), t("serve.toasts.leftVolunteerList"));
 
-  const handleDelete = (taskId: string) =>
-    runTaskAction(taskId, () => deleteTask({ taskId }), t("serve.toasts.taskDeleted"));
+  const handleDeleteRequest = (taskId: string) => {
+    const target = tasks.find((task) => task.id === taskId) ?? null;
+    setDeleteTaskTarget(target);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (!deleteTaskTarget) return;
+    const taskId = deleteTaskTarget.id;
+    setDeleteTaskTarget(null);
+    void runTaskAction(taskId, () => deleteTask({ taskId }), t("serve.toasts.taskDeleted"));
+  };
 
   const updateOrderForStatus = (status: TaskStatus, order: string[]) => {
     setTaskOrderByStatus((prev) => {
@@ -659,7 +673,7 @@ export default function ServeBoardView({
                             type="button"
                             size="sm"
                             variant="danger"
-                            onClick={() => handleDelete(task.id)}
+                            onClick={() => handleDeleteRequest(task.id)}
                           >
                             {t("buttons.delete")}
                           </Button>
@@ -695,6 +709,43 @@ export default function ServeBoardView({
         }}
         onConfirm={handleConfirmComplete}
       />
+      {isDesktop ? (
+        <Modal
+          open={Boolean(deleteTaskTarget)}
+          onClose={() => setDeleteTaskTarget(null)}
+          title={t("confirm.deleteTaskTitle")}
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setDeleteTaskTarget(null)}>
+                {t("buttons.cancel")}
+              </Button>
+              <Button variant="danger" onClick={handleDeleteConfirm}>
+                {t("confirm.deleteButton")}
+              </Button>
+            </>
+          }
+        >
+          <p className="text-sm text-ink-600">{t("confirm.deleteTask")}</p>
+        </Modal>
+      ) : (
+        <Drawer
+          open={Boolean(deleteTaskTarget)}
+          onClose={() => setDeleteTaskTarget(null)}
+          title={t("confirm.deleteTaskTitle")}
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setDeleteTaskTarget(null)}>
+                {t("buttons.cancel")}
+              </Button>
+              <Button variant="danger" onClick={handleDeleteConfirm}>
+                {t("confirm.deleteButton")}
+              </Button>
+            </>
+          }
+        >
+          <p className="text-sm text-ink-600">{t("confirm.deleteTask")}</p>
+        </Drawer>
+      )}
     </div>
   );
 }

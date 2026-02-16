@@ -14,18 +14,10 @@ import { submitGroupCreationRequest } from "@/server/actions/groups";
 import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 import RequestSuccessState from "@/components/shared/RequestSuccessState";
 import type { GroupInviteCandidate } from "@/lib/queries/groups";
+import { useTranslations } from "@/lib/i18n/provider";
 
 const NAME_MAX_LENGTH = 80;
 const DESCRIPTION_MAX_LENGTH = 280;
-const visibilityOptions = [
-  { value: "PUBLIC", label: "Visible to all · Listed in parish groups" },
-  { value: "PRIVATE", label: "Hidden · Invite-only visibility" }
-];
-const joinPolicyOptions = [
-  { value: "INVITE_ONLY", label: "Invite only" },
-  { value: "OPEN", label: "Anyone can join instantly" },
-  { value: "REQUEST_TO_JOIN", label: "Request approval to join" }
-];
 
 type GroupCreateDialogProps = {
   open: boolean;
@@ -46,6 +38,7 @@ export default function GroupCreateDialog({
   isRequest = false,
   onCreated
 }: GroupCreateDialogProps) {
+  const t = useTranslations();
   const { addToast } = useToast();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -70,6 +63,21 @@ export default function GroupCreateDialog({
   const drawerVisibilityId = useId();
   const drawerJoinPolicyId = useId();
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const visibilityOptions = useMemo(
+    () => [
+      { value: "PUBLIC", label: t("groupCreate.publicDesc") },
+      { value: "PRIVATE", label: t("groupCreate.privateDesc") }
+    ],
+    [t]
+  );
+  const joinPolicyOptions = useMemo(
+    () => [
+      { value: "INVITE_ONLY", label: t("groupCreate.inviteOnly") },
+      { value: "OPEN", label: t("groupCreate.openJoin") },
+      { value: "REQUEST_TO_JOIN", label: t("groupCreate.requestToJoin") }
+    ],
+    [t]
+  );
 
   const selectedInvitees = useMemo(() => {
     const selectedSet = new Set(selectedInviteeIds);
@@ -215,7 +223,7 @@ export default function GroupCreateDialog({
   ) => (
     submitted ? (
       <RequestSuccessState
-        message="Your request is pending approval from parish leadership."
+        message={t("groupCreate.pendingApproval")}
         onDone={() => {
           resetForm();
           onOpenChange(false);
@@ -322,7 +330,7 @@ export default function GroupCreateDialog({
                     type="button"
                     className="text-ink-500 hover:text-ink-900"
                     onClick={() => toggleInvitee(invitee.id)}
-                    aria-label={`Remove ${invitee.name}`}
+                    aria-label={t("groupCreate.removeInviteeAria").replace("{name}", invitee.name)}
                   >
                     ×
                   </button>
@@ -418,7 +426,7 @@ export default function GroupCreateDialog({
     <Drawer
       open={open}
       onClose={handleClose}
-      title={isRequest ? "Request a new group" : "New group"}
+      title={isRequest ? t("groupCreate.requestNewGroup") : t("groupCreate.newGroup")}
       footer={renderFooter(drawerFormId)}
     >
       {formDescription}

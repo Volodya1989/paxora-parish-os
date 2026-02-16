@@ -19,6 +19,7 @@ import Textarea from "@/components/ui/Textarea";
 import { useToast } from "@/components/ui/Toast";
 import type { CalendarEvent, EventDetail } from "@/lib/queries/events";
 import type { EventActionState } from "@/server/actions/eventState";
+import { useTranslations } from "@/lib/i18n/provider";
 
 const pad = (value: number) => `${value}`.padStart(2, "0");
 
@@ -61,6 +62,7 @@ export default function EventForm({
   canCreateGroupEvents,
   defaultType = "EVENT"
 }: EventFormProps) {
+  const t = useTranslations();
   const { addToast } = useToast();
   const router = useRouter();
   const [state, formAction] = useActionState<EventActionState, FormData>(
@@ -242,21 +244,21 @@ export default function EventForm({
     if (canCreatePublicEvents || event?.visibility === "PUBLIC") {
       options.push({
         value: "PUBLIC",
-        label: "Public (visible to the whole parish)"
+        label: t("eventForm.visibilityPublic")
       });
     }
 
     if (canCreateGroupEvents || event?.visibility === "GROUP") {
       options.push({
         value: "GROUP",
-        label: "Group (visible only to a specific group)"
+        label: t("eventForm.visibilityGroup")
       });
     }
 
     if (canCreatePrivateEvents || event?.visibility === "PRIVATE") {
       options.push({
         value: "PRIVATE",
-        label: "Private (leaders only)"
+        label: t("eventForm.visibilityPrivate")
       });
     }
 
@@ -265,14 +267,15 @@ export default function EventForm({
     canCreateGroupEvents,
     canCreatePrivateEvents,
     canCreatePublicEvents,
-    event?.visibility
+    event?.visibility,
+    t
   ]);
 
   const recurrenceOptions = [
-    { value: "NONE", label: "Does not repeat" },
-    { value: "DAILY", label: "Daily" },
-    { value: "WEEKLY", label: "Weekly" },
-    { value: "CUSTOM", label: "Custom weekdays" }
+    { value: "NONE", label: t("eventForm.repeatNone") },
+    { value: "DAILY", label: t("eventForm.repeatDaily") },
+    { value: "WEEKLY", label: t("eventForm.repeatWeekly") },
+    { value: "CUSTOM", label: t("eventForm.repeatCustom") }
   ];
 
   const weekdayOptions = [
@@ -309,26 +312,26 @@ export default function EventForm({
       <fieldset className="space-y-3 rounded-xl border border-mist-100 bg-mist-50/40 p-3">
         <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
           <div className="space-y-1.5">
-            <Label htmlFor={titleId}>Title</Label>
+            <Label htmlFor={titleId}>{t("eventForm.title")}</Label>
             <Input
               id={titleId}
               name="title"
-              placeholder="e.g. Divine Liturgy"
+              placeholder={t("eventForm.titlePlaceholder")}
               defaultValue={event?.title ?? ""}
               required
               autoFocus
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor={typeId}>Type</Label>
+            <Label htmlFor={typeId}>{t("eventForm.type")}</Label>
             <SelectMenu
               id={typeId}
               name="type"
               value={type}
               onValueChange={(value) => setType(value as "SERVICE" | "EVENT")}
               options={[
-                { value: "SERVICE", label: "Service / Liturgy" },
-                { value: "EVENT", label: "Event / Gathering" }
+                { value: "SERVICE", label: t("eventForm.typeService") },
+                { value: "EVENT", label: t("eventForm.typeEvent") }
               ]}
             />
           </div>
@@ -339,7 +342,7 @@ export default function EventForm({
       <fieldset className="space-y-3 rounded-xl border border-mist-100 bg-mist-50/40 p-3">
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="space-y-1.5">
-            <Label htmlFor={dateId}>Date</Label>
+            <Label htmlFor={dateId}>{t("eventForm.date")}</Label>
             <Input
               id={dateId}
               type="date"
@@ -349,7 +352,7 @@ export default function EventForm({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor={startTimeId}>Start</Label>
+            <Label htmlFor={startTimeId}>{t("eventForm.start")}</Label>
             <Input
               id={startTimeId}
               type="time"
@@ -359,7 +362,7 @@ export default function EventForm({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor={endTimeId}>End</Label>
+            <Label htmlFor={endTimeId}>{t("eventForm.end")}</Label>
             <Input
               id={endTimeId}
               type="time"
@@ -371,7 +374,7 @@ export default function EventForm({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor={recurrenceId}>Repeats</Label>
+          <Label htmlFor={recurrenceId}>{t("eventForm.repeats")}</Label>
           <SelectMenu
             id={recurrenceId}
             name="recurrencePattern"
@@ -386,7 +389,7 @@ export default function EventForm({
         {recurrencePattern === "WEEKLY" || recurrencePattern === "CUSTOM" ? (
           <div className="space-y-1.5">
             <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
-              Repeat on
+              {t("eventForm.repeatOn")}
             </p>
             <div className="flex flex-wrap gap-1.5">
               {weekdayOptions.map((day) => {
@@ -413,21 +416,21 @@ export default function EventForm({
         {recurrencePattern !== "NONE" ? (
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor={recurrenceEndsId}>Ends</Label>
+              <Label htmlFor={recurrenceEndsId}>{t("eventForm.ends")}</Label>
               <SelectMenu
                 id={recurrenceEndsId}
                 name="recurrenceEnds"
                 value={recurrenceEnds}
                 onValueChange={(value) => setRecurrenceEnds(value as "NEVER" | "ON")}
                 options={[
-                  { value: "NEVER", label: "Never" },
-                  { value: "ON", label: "On date" }
+                  { value: "NEVER", label: t("eventForm.endsNever") },
+                  { value: "ON", label: t("eventForm.endsOnDate") }
                 ]}
               />
             </div>
             {recurrenceEnds === "ON" ? (
               <div className="space-y-1.5">
-                <Label htmlFor={recurrenceUntilId}>End date</Label>
+                <Label htmlFor={recurrenceUntilId}>{t("eventForm.endDate")}</Label>
                 <Input
                   id={recurrenceUntilId}
                   type="date"
@@ -460,20 +463,20 @@ export default function EventForm({
       {/* Section: Details */}
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor={locationId}>Location</Label>
+          <Label htmlFor={locationId}>{t("eventForm.location")}</Label>
           <Input
             id={locationId}
             name="location"
-            placeholder="Sanctuary, parish hall, livestream"
+            placeholder={t("eventForm.locationPlaceholder")}
             defaultValue={event?.location ?? ""}
           />
         </div>
         <div className="space-y-1.5 sm:col-span-2">
-          <Label htmlFor={summaryId}>Summary</Label>
+          <Label htmlFor={summaryId}>{t("eventForm.summary")}</Label>
           <Textarea
             id={summaryId}
             name="summary"
-            placeholder="Add a short description for the schedule view."
+            placeholder={t("eventForm.summaryPlaceholder")}
             rows={3}
             defaultValue={event?.summary ?? ""}
           />
@@ -483,7 +486,7 @@ export default function EventForm({
       {/* Section: Visibility */}
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <Label htmlFor={visibilityId}>Visibility</Label>
+          <Label htmlFor={visibilityId}>{t("eventForm.visibility")}</Label>
           <SelectMenu
             id={visibilityId}
             name="visibility"
@@ -493,20 +496,20 @@ export default function EventForm({
           />
           {visibility === "GROUP" ? (
             <p className="text-xs text-ink-400">
-              Group-only events appear for members of the selected ministry.
+              {t("eventForm.groupVisibilityHint")}
             </p>
           ) : null}
         </div>
 
         {visibility === "GROUP" ? (
           <div className="space-y-1.5">
-            <Label htmlFor={groupId}>Group</Label>
+            <Label htmlFor={groupId}>{t("eventForm.group")}</Label>
             <SelectMenu
               id={groupId}
               name="groupId"
               value={selectedGroupId}
               onValueChange={(value) => setSelectedGroupId(value)}
-              placeholder={groupOptions.length ? "Select a group" : "No groups available"}
+              placeholder={groupOptions.length ? t("eventForm.selectGroup") : t("eventForm.noGroups")}
               options={groupOptions.map((group) => ({
                 value: group.id,
                 label: group.name
@@ -534,13 +537,14 @@ function EventFormActions({
   onCancel?: () => void;
   submitLabel: string;
 }) {
+  const t = useTranslations();
   const { pending } = useFormStatus();
 
   return (
     <div className="sticky bottom-0 mt-4 flex justify-end gap-2 border-t border-mist-100 bg-white pb-1 pt-3">
       {onCancel ? (
         <Button type="button" variant="ghost" onClick={onCancel} disabled={pending}>
-          Cancel
+          {t("buttons.cancel")}
         </Button>
       ) : null}
       <Button type="submit" isLoading={pending}>

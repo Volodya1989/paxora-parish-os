@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getServerSession } from "next-auth";
+import { notFound } from "next/navigation";
 import Card from "@/components/ui/Card";
 import SectionTitle from "@/components/ui/SectionTitle";
 import ListRow from "@/components/ui/ListRow";
@@ -63,7 +64,7 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
   });
 
   if (!group) {
-    throw new Error("Group not found");
+    notFound();
   }
 
   const [parishMembership, groupMembership] = await Promise.all([
@@ -99,7 +100,7 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
     (group.status !== "ACTIVE" && (isLeader || group.createdById === actorUserId));
 
   if (!canView) {
-    throw new Error("Unauthorized");
+    notFound();
   }
 
   const canAccessChat = viewerStatus === "ACTIVE";
