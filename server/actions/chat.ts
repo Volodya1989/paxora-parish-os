@@ -460,7 +460,9 @@ export async function postMessage(
         parishId,
         recipientIds: recipients,
         actorName: message.author.name ?? message.author.email ?? "Parish member",
-        description: `${channel.type === "GROUP" ? "Group chat" : "Chat"}: ${mentionSnippet(trimmed)}`,
+        description: channel.type === "GROUP"
+          ? "Mentioned you in Group Chat"
+          : `Chat: ${mentionSnippet(trimmed)}`,
         href
       });
 
@@ -490,7 +492,8 @@ export async function postMessage(
     authorName: message.author.name ?? message.author.email ?? "Parish member",
     channelName: channel.type === "GROUP" ? "Group Chat" : "Parish Chat",
     parishId,
-    messageBody: trimmed || "Shared an image"
+    messageBody: trimmed || "Shared an image",
+    channelType: channel.type
   }).catch((error) => {
     console.error("[chat] Failed to create in-app notification:", error);
   });

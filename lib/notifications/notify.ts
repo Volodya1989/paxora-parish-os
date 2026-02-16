@@ -121,19 +121,24 @@ export async function notifyChatMessageInApp(opts: {
   channelName: string;
   parishId: string;
   messageBody: string;
+  channelType?: string;
 }) {
-  const { channelId, authorId, channelName, parishId, messageBody } = opts;
+  const { channelId, authorId, channelName, parishId, messageBody, channelType } = opts;
   const recipients = await resolveChatAudience({ channelId, actorId: authorId });
   if (recipients.length === 0) return;
 
   const truncatedBody =
     messageBody.length > 100 ? `${messageBody.slice(0, 97)}...` : messageBody;
+  const sanitizedBody =
+    channelType === "GROUP"
+      ? `New message in ${channelName}`
+      : truncatedBody;
 
   await createNotificationsForAudience(recipients, {
     parishId,
     type: NotificationType.MESSAGE,
     title: `${opts.authorName} in ${channelName}`,
-    description: truncatedBody,
+    description: sanitizedBody,
     href: `/community/chat?channel=${channelId}`
   });
 }
