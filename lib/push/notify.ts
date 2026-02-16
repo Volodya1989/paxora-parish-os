@@ -84,7 +84,8 @@ export async function notifyChatMessage(opts: {
     title: `${opts.authorName} in ${channelName}`,
     body: sanitizedBody,
     url: `/community/chat?channel=${channelId}`,
-    tag: `chat-${channelId}`
+    tag: `chat-${channelId}`,
+    category: "message"
   };
 
   await sendPushToUsers(recipientIds, parishId, payload);
@@ -109,7 +110,8 @@ export async function notifyTaskCreated(opts: {
     title: "New task assigned to you",
     body: `${creatorName} assigned you: ${taskTitle}`,
     url: `/tasks?taskId=${taskId}`,
-    tag: `task-${taskId}`
+    tag: `task-${taskId}`,
+    category: "task"
   };
 
   await sendPushToUsers([ownerId], parishId, payload);
@@ -134,7 +136,8 @@ export async function notifyTaskAssigned(opts: {
     title: "Task assigned to you",
     body: `${actorName} assigned you: ${taskTitle}`,
     url: `/tasks?taskId=${taskId}`,
-    tag: `task-${taskId}`
+    tag: `task-${taskId}`,
+    category: "task"
   };
 
   await sendPushToUsers([ownerId], parishId, payload);
@@ -165,7 +168,8 @@ export async function notifyAnnouncementPublished(opts: {
     title: "New Announcement",
     body: title,
     url: "/announcements",
-    tag: "announcement"
+    tag: "announcement",
+    category: "announcement"
   };
 
   await sendPushToUsers(recipientIds, parishId, payload);
@@ -209,7 +213,8 @@ export async function notifyEventCreated(opts: {
     title: "New Event",
     body: eventTitle,
     url: "/calendar",
-    tag: "event"
+    tag: "event",
+    category: "event"
   };
 
   await sendPushToUsers(recipientIds, parishId, payload);
@@ -227,7 +232,8 @@ export async function notifyRequestAssigned(opts: {
     title: "New request assigned to you",
     body: requestTitle,
     url: `/requests/${requestId}`,
-    tag: `request-${requestId}`
+    tag: `request-${requestId}`,
+    category: "request"
   };
 
   await sendPushToUsers([assigneeId], parishId, payload);
@@ -247,7 +253,8 @@ export async function notifyRequestReminder(opts: {
     title: "Request reminder",
     body: requestTitle,
     url: `/requests/${requestId}`,
-    tag: `request-reminder-${requestId}`
+    tag: `request-reminder-${requestId}`,
+    category: "request"
   };
 
   await sendPushToUsers(recipientIds, parishId, payload);
@@ -268,7 +275,8 @@ export async function notifyEventReminder(opts: {
     title: "Event reminder",
     body: `${eventTitle} · ${startsAtLabel}`,
     url: "/calendar",
-    tag: `event-reminder-${eventId}`
+    tag: `event-reminder-${eventId}`,
+    category: "event"
   };
 
   await sendPushToUsers(recipientIds, parishId, payload);

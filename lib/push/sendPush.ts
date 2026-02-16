@@ -3,16 +3,30 @@ import { recordDeliveryAttempt, toDeliveryTarget } from "@/lib/ops/deliveryAttem
 import { getConfiguredWebPush, isVapidConfigured } from "./vapid";
 import { getNotificationUnreadCount } from "@/lib/queries/notifications";
 
+export type PushCategory = "message" | "task" | "announcement" | "event" | "request" | "other";
+
 export type PushPayload = {
   title: string;
   body: string;
   url?: string;
   tag?: string;
   badge?: number;
+  /** Push notification category for per-type user preference gating */
+  category?: PushCategory;
+};
+
+/** Maps a push category to the User model field that gates it */
+const PUSH_PREF_FIELD: Record<Exclude<PushCategory, "other">, string> = {
+  message: "notifyMessagePush",
+  task: "notifyTaskPush",
+  announcement: "notifyAnnouncementPush",
+  event: "notifyEventPush",
+  request: "notifyRequestPush"
 };
 
 /**
  * Send a push notification to all subscriptions for a given user+parish.
+ * Respects per-category push preferences on the User model.
  * Silently removes stale subscriptions (410 Gone / 404).
  * Fire-and-forget: never throws.
  */
@@ -24,6 +38,17 @@ export async function sendPushToUser(
   if (!isVapidConfigured()) return;
 
   try {
+    // Check per-category push preference
+    const category = payload.category;
+    if (category && category !== "other") {
+      const prefField = PUSH_PREF_FIELD[category];
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { [prefField]: true }
+      });
+      if (user && (user as Record<string, unknown>)[prefField] === false) return;
+    }
+
     const subscriptions = await prisma.pushSubscription.findMany({
       where: { userId, parishId },
       select: { id: true, endpoint: true, p256dh: true, auth: true }

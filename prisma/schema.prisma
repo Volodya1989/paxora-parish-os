@@ -317,6 +317,11 @@ model User {
   notifyAnnouncementInApp Boolean       @default(true)
   notifyEventInApp        Boolean       @default(true)
   notifyRequestInApp      Boolean       @default(true)
+  notifyMessagePush       Boolean       @default(true)
+  notifyTaskPush          Boolean       @default(true)
+  notifyAnnouncementPush  Boolean       @default(true)
+  notifyEventPush         Boolean       @default(true)
+  notifyRequestPush       Boolean       @default(true)
   volunteerHoursOptIn     Boolean       @default(false)
   birthdayMonth           Int?
   birthdayDay             Int?
