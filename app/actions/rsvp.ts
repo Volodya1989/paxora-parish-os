@@ -28,7 +28,8 @@ export async function setRsvp({ eventId, response }: SetRsvpInput) {
   const event = await prisma.event.findFirst({
     where: {
       id: eventId,
-      parishId: session.user.activeParishId
+      parishId: session.user.activeParishId,
+      deletedAt: null
     },
     select: { id: true }
   });

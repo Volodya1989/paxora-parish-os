@@ -94,6 +94,7 @@ async function getNewEventsCount(userId: string, parishId: string): Promise<numb
   return prisma.event.count({
     where: {
       parishId,
+      deletedAt: null,
       createdAt: { gt: since },
       visibility: { in: ["PUBLIC", "GROUP"] }
     }

@@ -135,6 +135,7 @@ export async function sendEventReminders() {
 
   const events = (await prisma.event.findMany({
     where: {
+      deletedAt: null,
       OR: [
         {
           recurrenceFreq: "NONE",

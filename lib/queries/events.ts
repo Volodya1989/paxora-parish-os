@@ -264,6 +264,7 @@ export async function listEventsByRange({
   const events = (await prisma.event.findMany({
     where: {
       parishId,
+      deletedAt: null,
       OR: [
         {
           recurrenceFreq: "NONE",
@@ -396,7 +397,7 @@ export async function getEventById({
   userId
 }: GetEventByIdInput): Promise<EventDetail | null> {
   const event = await prisma.event.findFirst({
-    where: { id },
+    where: { id, deletedAt: null },
     select: {
       id: true,
       title: true,

@@ -986,6 +986,7 @@ model Event {
   recurrenceUntil     DateTime?
   createdAt           DateTime                 @default(now())
   updatedAt           DateTime                 @updatedAt
+  deletedAt           DateTime?
 
   parish       Parish          @relation(fields: [parishId], references: [id])
   week         Week            @relation(fields: [weekId], references: [id], onDelete: Cascade)
@@ -996,6 +997,7 @@ model Event {
 
   @@index([weekId])
   @@index([parishId, startsAt])
+  @@index([deletedAt])
   @@index([parishId, visibility])
 }
 

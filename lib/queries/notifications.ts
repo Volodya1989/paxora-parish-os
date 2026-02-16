@@ -287,6 +287,7 @@ async function getNewEventItems(
   const events = await prisma.event.findMany({
     where: {
       parishId,
+      deletedAt: null,
       createdAt: { gt: since },
       visibility: { in: ["PUBLIC", "GROUP"] }
     },

@@ -726,7 +726,7 @@ export async function scheduleRequest(input: {
   let eventId = existingSchedule?.eventId ?? null;
 
   if (existingSchedule?.eventId && !scheduleMatches) {
-    await prisma.event.delete({ where: { id: existingSchedule.eventId } }).catch(() => null);
+    await prisma.event.update({ where: { id: existingSchedule.eventId }, data: { deletedAt: new Date() } }).catch(() => null);
     eventId = null;
   }
 
@@ -929,7 +929,7 @@ export async function cancelRequest(input: {
   const details = parseRequestDetails(request.details);
   const scheduleEventId = details?.schedule?.eventId;
   if (scheduleEventId) {
-    await prisma.event.delete({ where: { id: scheduleEventId } }).catch(() => null);
+    await prisma.event.update({ where: { id: scheduleEventId }, data: { deletedAt: new Date() } }).catch(() => null);
   }
 
   const { schedule: _schedule, ...detailsWithoutSchedule } = details ?? {};
@@ -1170,7 +1170,7 @@ export async function respondToScheduledRequest(input: {
   });
 
   if (scheduleEventId) {
-    await prisma.event.delete({ where: { id: scheduleEventId } }).catch(() => null);
+    await prisma.event.update({ where: { id: scheduleEventId }, data: { deletedAt: new Date() } }).catch(() => null);
   }
 
   // Notify the assigned admin/clergy about the rejection via push notification
@@ -1249,7 +1249,7 @@ export async function cancelOwnRequest(input: {
   const details = parseRequestDetails(request.details);
   const scheduleEventId = details?.schedule?.eventId;
   if (scheduleEventId) {
-    await prisma.event.delete({ where: { id: scheduleEventId } }).catch(() => null);
+    await prisma.event.update({ where: { id: scheduleEventId }, data: { deletedAt: new Date() } }).catch(() => null);
   }
 
   const { schedule: _schedule, ...detailsWithoutSchedule } = details ?? {};
