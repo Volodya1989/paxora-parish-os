@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import ListSkeleton from "@/components/app/list-skeleton";
 import ChatPollCard from "@/components/chat/ChatPollCard";
 import PinnedBanner from "@/components/chat/PinnedBanner";
@@ -734,108 +735,111 @@ function MessageRow({
           ) : null}
         </div>
 
-        {/* Context menu popover — fixed position, viewport-aware */}
-        {contextMenuOpen && hasActions && menuPos ? (
-          <>
-            {/* Backdrop to close */}
-            <div
-              className="fixed inset-0 z-[60] bg-black/10"
-              onClick={(event) => {
-                event.stopPropagation();
-                closeMenu();
-              }}
-            />
-            <div
-              className="fixed z-[70] w-56 flex flex-col items-stretch overflow-hidden rounded-xl border border-mist-200 bg-white shadow-xl animate-context-menu-in"
-              style={{ top: menuPos.top, left: menuPos.left }}
-              onClick={(event) => event.stopPropagation()}
-            >
-              {/* Emoji quick-react row */}
-              {canReact ? (
-                <div className="flex items-center gap-0.5 border-b border-mist-100 px-2 py-1.5">
-                  {REACTION_EMOJIS.map((emoji) => (
-                    <button
-                      key={`ctx-${message.id}-${emoji}`}
-                      type="button"
-                      className="flex h-9 w-9 items-center justify-center rounded-full text-lg transition hover:bg-mist-50 active:scale-110"
-                      aria-label={`React with ${emoji}`}
-                      onClick={() => {
-                        onToggleReaction?.(message.id, emoji);
-                        closeMenu();
-                      }}
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
+        {/* Context menu — portaled to document.body to escape scroll container stacking context */}
+        {contextMenuOpen && hasActions && menuPos
+          ? createPortal(
+              <>
+                {/* Backdrop to close */}
+                <div
+                  className="fixed inset-0 z-[9998] bg-black/10"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    closeMenu();
+                  }}
+                />
+                <div
+                  className="fixed z-[9999] w-56 flex flex-col items-stretch overflow-hidden rounded-xl border border-mist-200 bg-white shadow-xl animate-context-menu-in"
+                  style={{ top: menuPos.top, left: menuPos.left }}
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  {/* Emoji quick-react row */}
+                  {canReact ? (
+                    <div className="flex items-center gap-0.5 border-b border-mist-100 px-2 py-1.5">
+                      {REACTION_EMOJIS.map((emoji) => (
+                        <button
+                          key={`ctx-${message.id}-${emoji}`}
+                          type="button"
+                          className="flex h-9 w-9 items-center justify-center rounded-full text-lg transition hover:bg-mist-50 active:scale-110"
+                          aria-label={`React with ${emoji}`}
+                          onClick={() => {
+                            onToggleReaction?.(message.id, emoji);
+                            closeMenu();
+                          }}
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
 
-              {/* Vertical action buttons */}
-              <div className="flex flex-col py-1">
-                {canReply ? (
-                  <button
-                    type="button"
-                    className="flex items-center gap-3 px-4 py-2.5 text-left text-sm text-ink-700 active:bg-mist-50"
-                    onClick={() => {
-                      onReply(message);
-                      closeMenu();
-                    }}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-ink-400" aria-hidden="true">
-                      <path fillRule="evenodd" d="M7.793 2.232a.75.75 0 01-.025 1.06L3.622 7.25h10.003a5.375 5.375 0 010 10.75H10.75a.75.75 0 010-1.5h2.875a3.875 3.875 0 000-7.75H3.622l4.146 3.957a.75.75 0 01-1.036 1.085l-5.5-5.25a.75.75 0 010-1.085l5.5-5.25a.75.75 0 011.06.025z" clipRule="evenodd" />
-                    </svg>
-                    Reply
-                  </button>
-                ) : null}
-                {canModify ? (
-                  <button
-                    type="button"
-                    className="flex items-center gap-3 px-4 py-2.5 text-left text-sm text-ink-700 active:bg-mist-50"
-                    onClick={() => {
-                      onEdit(message);
-                      closeMenu();
-                    }}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-ink-400" aria-hidden="true">
-                      <path d="M2.695 14.763l-1.262 3.154a.5.5 0 00.65.65l3.155-1.262a4 4 0 001.343-.885L17.5 5.5a2.121 2.121 0 00-3-3L3.58 13.42a4 4 0 00-.885 1.343z" />
-                    </svg>
-                    Edit
-                  </button>
-                ) : null}
-                {canModerate && !isDeleted ? (
-                  <button
-                    type="button"
-                    className="flex items-center gap-3 px-4 py-2.5 text-left text-sm text-ink-700 active:bg-mist-50"
-                    onClick={() => {
-                      onPin(message.id);
-                      closeMenu();
-                    }}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-ink-400" aria-hidden="true">
-                      <path d="M8.5 3.528v4.644c0 .729-.29 1.428-.805 1.944l-1.217 1.216a8.75 8.75 0 013.55.621l.502.201a7.25 7.25 0 004.178.365l-2.403-2.403a2.75 2.75 0 01-.805-1.944V3.528a40.205 40.205 0 00-3 0zm-1 0a41.695 41.695 0 00-2.765.17A.75.75 0 004 4.432v.084c0 .258.104.505.29.69L5.5 6.415V8.172c0 .331-.132.649-.366.883l-2.3 2.3a.75.75 0 00.326 1.264 9.56 9.56 0 003.611.71H8.5v3.92a.75.75 0 001.5 0v-3.92h1.729a9.56 9.56 0 003.611-.71.75.75 0 00.326-1.264l-2.3-2.3a1.25 1.25 0 01-.366-.883V6.415l1.21-1.21a.975.975 0 00.29-.69v-.083a.75.75 0 00-.735-.734 41.695 41.695 0 00-5.265-.17z" />
-                    </svg>
-                    Pin
-                  </button>
-                ) : null}
-                {canModify ? (
-                  <button
-                    type="button"
-                    className="flex items-center gap-3 px-4 py-2.5 text-left text-sm text-rose-600 active:bg-rose-50"
-                    onClick={() => {
-                      onDelete(message.id);
-                      closeMenu();
-                    }}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
-                      <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd" />
-                    </svg>
-                    Delete
-                  </button>
-                ) : null}
-              </div>
-            </div>
-          </>
-        ) : null}
+                  {/* Vertical action buttons */}
+                  <div className="flex flex-col py-1">
+                    {canReply ? (
+                      <button
+                        type="button"
+                        className="flex items-center gap-3 px-4 py-2.5 text-left text-sm text-ink-700 active:bg-mist-50"
+                        onClick={() => {
+                          onReply(message);
+                          closeMenu();
+                        }}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-ink-400" aria-hidden="true">
+                          <path fillRule="evenodd" d="M7.793 2.232a.75.75 0 01-.025 1.06L3.622 7.25h10.003a5.375 5.375 0 010 10.75H10.75a.75.75 0 010-1.5h2.875a3.875 3.875 0 000-7.75H3.622l4.146 3.957a.75.75 0 01-1.036 1.085l-5.5-5.25a.75.75 0 010-1.085l5.5-5.25a.75.75 0 011.06.025z" clipRule="evenodd" />
+                        </svg>
+                        Reply
+                      </button>
+                    ) : null}
+                    {canModify ? (
+                      <button
+                        type="button"
+                        className="flex items-center gap-3 px-4 py-2.5 text-left text-sm text-ink-700 active:bg-mist-50"
+                        onClick={() => {
+                          onEdit(message);
+                          closeMenu();
+                        }}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-ink-400" aria-hidden="true">
+                          <path d="M2.695 14.763l-1.262 3.154a.5.5 0 00.65.65l3.155-1.262a4 4 0 001.343-.885L17.5 5.5a2.121 2.121 0 00-3-3L3.58 13.42a4 4 0 00-.885 1.343z" />
+                        </svg>
+                        Edit
+                      </button>
+                    ) : null}
+                    {canModerate && !isDeleted ? (
+                      <button
+                        type="button"
+                        className="flex items-center gap-3 px-4 py-2.5 text-left text-sm text-ink-700 active:bg-mist-50"
+                        onClick={() => {
+                          onPin(message.id);
+                          closeMenu();
+                        }}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-ink-400" aria-hidden="true">
+                          <path d="M8.5 3.528v4.644c0 .729-.29 1.428-.805 1.944l-1.217 1.216a8.75 8.75 0 013.55.621l.502.201a7.25 7.25 0 004.178.365l-2.403-2.403a2.75 2.75 0 01-.805-1.944V3.528a40.205 40.205 0 00-3 0zm-1 0a41.695 41.695 0 00-2.765.17A.75.75 0 004 4.432v.084c0 .258.104.505.29.69L5.5 6.415V8.172c0 .331-.132.649-.366.883l-2.3 2.3a.75.75 0 00.326 1.264 9.56 9.56 0 003.611.71H8.5v3.92a.75.75 0 001.5 0v-3.92h1.729a9.56 9.56 0 003.611-.71.75.75 0 00.326-1.264l-2.3-2.3a1.25 1.25 0 01-.366-.883V6.415l1.21-1.21a.975.975 0 00.29-.69v-.083a.75.75 0 00-.735-.734 41.695 41.695 0 00-5.265-.17z" />
+                        </svg>
+                        Pin
+                      </button>
+                    ) : null}
+                    {canModify ? (
+                      <button
+                        type="button"
+                        className="flex items-center gap-3 px-4 py-2.5 text-left text-sm text-rose-600 active:bg-rose-50"
+                        onClick={() => {
+                          onDelete(message.id);
+                          closeMenu();
+                        }}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4" aria-hidden="true">
+                          <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z" clipRule="evenodd" />
+                        </svg>
+                        Delete
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              </>,
+              document.body
+            )
+          : null}
 
       </div>
     </div>
