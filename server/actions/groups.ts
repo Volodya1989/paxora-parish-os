@@ -17,6 +17,8 @@ import {
 import { getParishMembership } from "@/server/db/groups";
 import { isParishLeader } from "@/lib/permissions";
 import { notifyContentRequestDecisionInApp, notifyContentRequestSubmittedInApp } from "@/lib/notifications/notify";
+import { AUDIT_ACTIONS, AUDIT_TARGET_TYPES } from "@/lib/audit/actions";
+import { auditLog } from "@/lib/audit/log";
 
 // TODO: Wire to parish policy once stored in the database.
 const ALLOW_GROUP_LEADS_TO_MANAGE_MEMBERSHIP = true;
@@ -527,7 +529,7 @@ export async function deleteGroup(input: {
 
   const group = await prisma.group.findFirst({
     where: { id: parsed.data.groupId, parishId },
-    select: { id: true, archivedAt: true }
+    select: { id: true, name: true, visibility: true, archivedAt: true }
   });
 
   if (!group) {
@@ -544,6 +546,17 @@ export async function deleteGroup(input: {
     await tx.event.updateMany({ where: { groupId: group.id }, data: { groupId: null } });
     await tx.hoursEntry.updateMany({ where: { groupId: group.id }, data: { groupId: null } });
     await tx.group.delete({ where: { id: group.id } });
+    await auditLog(tx, {
+      parishId,
+      actorUserId: userId,
+      action: AUDIT_ACTIONS.GROUP_DELETED,
+      targetType: AUDIT_TARGET_TYPES.GROUP,
+      targetId: group.id,
+      metadata: {
+        groupName: group.name,
+        visibility: group.visibility
+      }
+    });
   });
 
   revalidatePath("/groups");
@@ -711,33 +724,87 @@ export async function updateGroupMembership(formData: FormData) {
   }
 
   if (parsed.data.role === "REMOVE") {
-    await prisma.groupMembership.deleteMany({
+    const existingMembership = await prisma.groupMembership.findUnique({
       where: {
-        groupId: group.id,
-        userId: parsed.data.userId
-      }
+        groupId_userId: {
+          groupId: group.id,
+          userId: parsed.data.userId
+        }
+      },
+      select: { role: true, status: true }
+    });
+
+    await prisma.$transaction(async (tx) => {
+      await tx.groupMembership.deleteMany({
+        where: {
+          groupId: group.id,
+          userId: parsed.data.userId
+        }
+      });
+
+      await auditLog(tx, {
+        parishId,
+        actorUserId: userId,
+        action: AUDIT_ACTIONS.GROUP_MEMBER_REMOVED,
+        targetType: AUDIT_TARGET_TYPES.GROUP_MEMBERSHIP,
+        targetId: `${group.id}:${parsed.data.userId}`,
+        metadata: {
+          groupId: group.id,
+          removedUserId: parsed.data.userId,
+          priorRole: existingMembership?.role ?? null,
+          priorStatus: existingMembership?.status ?? null
+        }
+      });
     });
 
     return { success: true };
   }
 
-  await prisma.groupMembership.upsert({
+  const nextRole = parsed.data.role === "COORDINATOR" ? "COORDINATOR" : "PARISHIONER";
+
+  const existingMembership = await prisma.groupMembership.findUnique({
     where: {
       groupId_userId: {
         groupId: group.id,
         userId: parsed.data.userId
       }
     },
-    update: {
-      role: parsed.data.role,
-      status: "ACTIVE"
-    },
-    create: {
-      groupId: group.id,
-      userId: parsed.data.userId,
-      role: parsed.data.role,
-      status: "ACTIVE"
-    }
+    select: { role: true }
+  });
+
+  await prisma.$transaction(async (tx) => {
+    await tx.groupMembership.upsert({
+      where: {
+        groupId_userId: {
+          groupId: group.id,
+          userId: parsed.data.userId
+        }
+      },
+      update: {
+        role: nextRole,
+        status: "ACTIVE"
+      },
+      create: {
+        groupId: group.id,
+        userId: parsed.data.userId,
+        role: nextRole,
+        status: "ACTIVE"
+      }
+    });
+
+    await auditLog(tx, {
+      parishId,
+      actorUserId: userId,
+      action: AUDIT_ACTIONS.GROUP_MEMBER_ROLE_CHANGED,
+      targetType: AUDIT_TARGET_TYPES.GROUP_MEMBERSHIP,
+      targetId: `${group.id}:${parsed.data.userId}`,
+      metadata: {
+        groupId: group.id,
+        memberUserId: parsed.data.userId,
+        fromRole: existingMembership?.role ?? null,
+        toRole: nextRole
+      }
+    });
   });
 
   return { success: true };

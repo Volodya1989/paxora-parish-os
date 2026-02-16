@@ -52,6 +52,8 @@ import {
   notifyTaskCommentInApp
 } from "@/lib/notifications/notify";
 import { notifyMention } from "@/lib/push/notify";
+import { AUDIT_ACTIONS, AUDIT_TARGET_TYPES } from "@/lib/audit/actions";
+import { auditLog } from "@/lib/audit/log";
 
 function assertSession(session: Session | null) {
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -703,9 +705,23 @@ export async function approveTask({ taskId }: { taskId: string }) {
     throw new Error("Task is not pending approval.");
   }
 
-  await prisma.task.update({
-    where: { id: parsed.data.taskId },
-    data: { approvalStatus: "APPROVED" }
+  await prisma.$transaction(async (tx) => {
+    await tx.task.update({
+      where: { id: parsed.data.taskId },
+      data: { approvalStatus: "APPROVED" }
+    });
+
+    await auditLog(tx, {
+      parishId,
+      actorUserId: userId,
+      action: AUDIT_ACTIONS.TASK_APPROVED,
+      targetType: AUDIT_TARGET_TYPES.TASK,
+      targetId: parsed.data.taskId,
+      metadata: {
+        taskId: parsed.data.taskId,
+        title: task.title
+      }
+    });
   });
 
   await notifyContentRequestDecisionInApp({
@@ -761,9 +777,24 @@ export async function rejectTask({ taskId }: { taskId: string }) {
     throw new Error("Task is not pending approval.");
   }
 
-  await prisma.task.update({
-    where: { id: parsed.data.taskId },
-    data: { approvalStatus: "REJECTED" }
+  await prisma.$transaction(async (tx) => {
+    await tx.task.update({
+      where: { id: parsed.data.taskId },
+      data: { approvalStatus: "REJECTED" }
+    });
+
+    await auditLog(tx, {
+      parishId,
+      actorUserId: userId,
+      action: AUDIT_ACTIONS.TASK_REJECTED,
+      targetType: AUDIT_TARGET_TYPES.TASK,
+      targetId: parsed.data.taskId,
+      metadata: {
+        taskId: parsed.data.taskId,
+        title: task.title,
+        reason: null
+      }
+    });
   });
 
   await notifyContentRequestDecisionInApp({

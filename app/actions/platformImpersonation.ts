@@ -6,6 +6,8 @@ import { revalidatePath } from "next/cache";
 import { authOptions } from "@/server/auth/options";
 import { requirePlatformAdmin } from "@/server/auth/permissions";
 import { prisma } from "@/server/db/prisma";
+import { AUDIT_ACTIONS, AUDIT_TARGET_TYPES } from "@/lib/audit/actions";
+import { auditLog } from "@/lib/audit/log";
 
 export type ImpersonationActionState =
   | { status: "success"; message: string }
@@ -44,19 +46,20 @@ export async function startImpersonation(parishId: string): Promise<Impersonatio
     return { status: "error", message: "Parish not found." };
   }
 
-  await prisma.$transaction([
-    prisma.user.update({
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
       where: { id: userId },
       data: { impersonatedParishId: parish.id }
-    }),
-    prisma.auditLog.create({
-      data: {
-        actorUserId: userId,
-        targetParishId: parish.id,
-        action: "IMPERSONATION_START"
-      }
-    })
-  ]);
+    });
+
+    await auditLog(tx, {
+      actorUserId: userId,
+      parishId: parish.id,
+      action: AUDIT_ACTIONS.IMPERSONATION_START,
+      targetType: AUDIT_TARGET_TYPES.IMPERSONATION,
+      targetId: parish.id
+    });
+  });
 
   revalidatePath("/platform/parishes");
 
@@ -80,19 +83,22 @@ export async function stopImpersonation(): Promise<ImpersonationActionState> {
     return { status: "success", message: "Impersonation already stopped." };
   }
 
-  await prisma.$transaction([
-    prisma.user.update({
+  const impersonatedParishId = user.impersonatedParishId;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
       where: { id: userId },
       data: { impersonatedParishId: null }
-    }),
-    prisma.auditLog.create({
-      data: {
-        actorUserId: userId,
-        targetParishId: user.impersonatedParishId,
-        action: "IMPERSONATION_END"
-      }
-    })
-  ]);
+    });
+
+    await auditLog(tx, {
+      actorUserId: userId,
+      parishId: impersonatedParishId,
+      action: AUDIT_ACTIONS.IMPERSONATION_END,
+      targetType: AUDIT_TARGET_TYPES.IMPERSONATION,
+      targetId: impersonatedParishId
+    });
+  });
 
   revalidatePath("/platform/parishes");
 

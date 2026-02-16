@@ -17,6 +17,8 @@ import { prisma } from "@/server/db/prisma";
 import type { EventActionState } from "@/server/actions/eventState";
 import { notifyEventCreated } from "@/lib/push/notify";
 import { notifyEventCreatedInApp } from "@/lib/notifications/notify";
+import { AUDIT_ACTIONS, AUDIT_TARGET_TYPES } from "@/lib/audit/actions";
+import { auditLog } from "@/lib/audit/log";
 
 function assertSession(session: Session | null) {
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -466,7 +468,9 @@ export async function deleteEvent(
     },
     select: {
       id: true,
-      groupId: true
+      groupId: true,
+      title: true,
+      startsAt: true
     }
   });
 
@@ -487,9 +491,23 @@ export async function deleteEvent(
     };
   }
 
-  await prisma.event.update({
-    where: { id: existing.id },
-    data: { deletedAt: new Date() }
+  await prisma.$transaction(async (tx) => {
+    await tx.event.update({
+      where: { id: existing.id },
+      data: { deletedAt: new Date() }
+    });
+
+    await auditLog(tx, {
+      parishId,
+      actorUserId: userId,
+      action: AUDIT_ACTIONS.EVENT_DELETED,
+      targetType: AUDIT_TARGET_TYPES.EVENT,
+      targetId: existing.id,
+      metadata: {
+        title: existing.title,
+        startsAt: existing.startsAt.toISOString()
+      }
+    });
   });
 
   revalidatePath("/calendar");

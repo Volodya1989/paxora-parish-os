@@ -22,6 +22,8 @@ import { ParishAuthError } from "@/server/auth/parish";
 import { ensureGroupMembership } from "@/server/db/groups";
 import { notifyGroupInviteResponseInApp } from "@/lib/notifications/notify";
 import type { MemberActionError, MemberActionState } from "@/lib/types/members";
+import { AUDIT_ACTIONS, AUDIT_TARGET_TYPES } from "@/lib/audit/actions";
+import { auditLog } from "@/lib/audit/log";
 
 function buildError(message: string, error: MemberActionError): MemberActionState {
   return { status: "error", message, error };
@@ -152,7 +154,7 @@ export async function inviteMember(input: {
         userId: targetUser.id
       }
     },
-    select: { status: true }
+    select: { status: true, role: true }
   });
 
   if (existing?.status === "ACTIVE") {
@@ -489,7 +491,7 @@ export async function leaveGroup(input: { groupId: string }): Promise<MemberActi
         userId: session.userId
       }
     },
-    select: { status: true }
+    select: { status: true, role: true }
   });
 
   if (!membership || membership.status !== "ACTIVE") {
@@ -656,20 +658,36 @@ export async function removeMember(input: {
         userId: parsed.data.userId
       }
     },
-    select: { id: true }
+    select: { role: true, status: true }
   });
 
   if (!target) {
     return buildError("Member not found.", "NOT_FOUND");
   }
 
-  await prisma.groupMembership.delete({
-    where: {
-      groupId_userId: {
-        groupId: parsed.data.groupId,
-        userId: parsed.data.userId
+  await prisma.$transaction(async (tx) => {
+    await tx.groupMembership.delete({
+      where: {
+        groupId_userId: {
+          groupId: parsed.data.groupId,
+          userId: parsed.data.userId
+        }
       }
-    }
+    });
+
+    await auditLog(tx, {
+      parishId: session.activeParishId,
+      actorUserId: session.userId,
+      action: AUDIT_ACTIONS.GROUP_MEMBER_REMOVED,
+      targetType: AUDIT_TARGET_TYPES.GROUP_MEMBERSHIP,
+      targetId: `${parsed.data.groupId}:${parsed.data.userId}`,
+      metadata: {
+        groupId: parsed.data.groupId,
+        removedUserId: parsed.data.userId,
+        priorRole: target.role,
+        priorStatus: target.status
+      }
+    });
   });
 
   revalidatePath(`/groups/${parsed.data.groupId}/members`);
@@ -771,24 +789,40 @@ export async function changeMemberRole(input: {
         userId: parsed.data.userId
       }
     },
-    select: { status: true }
+    select: { status: true, role: true }
   });
 
   if (!target || target.status !== "ACTIVE") {
     return buildError("Member not found.", "NOT_FOUND");
   }
 
-  await prisma.groupMembership.update({
-    where: {
-      groupId_userId: {
-        groupId: parsed.data.groupId,
-        userId: parsed.data.userId
+  await prisma.$transaction(async (tx) => {
+    await tx.groupMembership.update({
+      where: {
+        groupId_userId: {
+          groupId: parsed.data.groupId,
+          userId: parsed.data.userId
+        }
+      },
+      data: {
+        role: parsed.data.role,
+        status: "ACTIVE"
       }
-    },
-    data: {
-      role: parsed.data.role,
-      status: "ACTIVE"
-    }
+    });
+
+    await auditLog(tx, {
+      parishId: session.activeParishId,
+      actorUserId: session.userId,
+      action: AUDIT_ACTIONS.GROUP_MEMBER_ROLE_CHANGED,
+      targetType: AUDIT_TARGET_TYPES.GROUP_MEMBERSHIP,
+      targetId: `${parsed.data.groupId}:${parsed.data.userId}`,
+      metadata: {
+        groupId: parsed.data.groupId,
+        memberUserId: parsed.data.userId,
+        fromRole: target.role,
+        toRole: parsed.data.role
+      }
+    });
   });
 
   revalidatePath(`/groups/${parsed.data.groupId}/members`);

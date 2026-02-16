@@ -31,11 +31,6 @@ enum MentionContextType {
   TASK_COMMENT
 }
 
-enum AuditAction {
-  IMPERSONATION_START
-  IMPERSONATION_END
-}
-
 enum GroupRole {
   COORDINATOR
   PARISHIONER
@@ -420,17 +415,21 @@ model Mention {
 }
 
 model AuditLog {
-  id             String      @id @default(cuid())
-  actorUserId    String
-  targetParishId String
-  action         AuditAction
-  createdAt      DateTime    @default(now())
+  id          String   @id @default(cuid())
+  parishId    String
+  actorUserId String
+  action      String
+  targetType  String
+  targetId    String
+  metadata    Json?
+  createdAt   DateTime @default(now())
 
-  actorUser    User   @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: Cascade)
-  targetParish Parish @relation("ParishAuditLogs", fields: [targetParishId], references: [id], onDelete: Cascade)
+  actorUser User   @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: Cascade)
+  parish    Parish @relation("ParishAuditLogs", fields: [parishId], references: [id], onDelete: Cascade)
 
-  @@index([actorUserId, createdAt])
-  @@index([targetParishId, createdAt])
+  @@index([parishId])
+  @@index([actorUserId])
+  @@index([createdAt])
 }
 
 model Membership {
