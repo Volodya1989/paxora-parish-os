@@ -724,7 +724,7 @@ function MessageRow({
           {isDeleted || message.body ? (
             <p
               className={cn(
-                "whitespace-pre-wrap text-[16px] font-medium leading-snug tracking-[0.0125em] [overflow-wrap:anywhere] [word-break:break-word]",
+                "whitespace-pre-wrap text-[16px] font-normal leading-snug tracking-[0.0125em] [overflow-wrap:anywhere] [word-break:break-word]",
                 isDeleted
                   ? "italic font-normal text-ink-400"
                   : "text-ink-900"
