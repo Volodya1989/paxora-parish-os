@@ -135,7 +135,7 @@ Fix listGroups server action visibility leak — DONE (Ready for review)
 BLOCKER
 30min
 R5
-Sanitize push notification content for private channels
+Sanitize push notification content for private channels — DONE (Ready for review)
 BLOCKER
 2h
 R6
@@ -189,7 +189,7 @@ IMPORTANT
 	1	Cron endpoints are public (R1) — Resolved (Ready for review)
 	2	No audit trail (R2) — admins can delete groups/events with zero accountability
 	3	Private group leak (R3) — Resolved (Ready for review)
-	4	Push content leak (R5) — private messages visible on lock screens
+	4	Push content leak (R5) — Resolved (Ready for review)
 	5	Hard event deletion (R6) — Resolved (Ready for review)
 	6	Missing permission on task rollover (R7) — any member can manipulate the serve board
 	7	Group chat channel not atomically created (R4) — groups can exist without chat
@@ -247,7 +247,7 @@ HIGH
 Done (Ready for review)
 Push notifications expose message content
 HIGH
-Open
+Done (Ready for review)
 Hard event deletion (no recovery)
 HIGH
 Done (Ready for review)
@@ -277,7 +277,7 @@ Acceptable for MVP
 2. R7  — Rollover perms        (15 min)
 3. R3  — listGroups fix        (Completed, ready for review)
 4. R6  — Soft-delete events    (Completed, ready for review)
-5. R5  — Push content sanitize (2 hr)
+5. R5  — Push content sanitize (Completed, ready for review)
 6. R2  — AuditLog model        (4 hr)
 7. R4  — Atomic chat channel   (1 hr)
 8. Y3  — 404 for hidden groups (30 min)
