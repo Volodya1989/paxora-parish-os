@@ -20,9 +20,9 @@ Chat: Channel-based (PARISH, GROUP, ANNOUNCEMENT). Supports message edit/delete 
 R1. Cron endpoints lack authentication app/api/cron/event-reminders/route.ts (and all cron routes) have no auth check — anyone can trigger them by hitting the URL.
 	•	Risk: Spam notifications, resource exhaustion
 	•	Fix: Add CRON_SECRET header check (standard Vercel cron pattern)
-R2. No audit trail for admin actions Group archival, deletion, member removal, role changes, task approval/rejection, event deletion — none are logged. There is no AuditLog model in the schema.
-	•	Risk: Zero accountability. If an admin removes a member or deletes a group, there's no record.
-	•	Fix: Add a lightweight AuditLog model (actor, action, targetType, targetId, metadata, createdAt) and log critical mutations.
+R2. No audit trail for admin actions — Resolved (Ready for review). A parish-scoped `AuditLog` model is implemented and critical admin/coordinator mutations now write structured entries (group delete, event delete, member removal, role change, task approve/reject).
+	•	Risk addressed: Accountability now exists for high-impact moderation actions.
+	•	Implementation: Added a lightweight AuditLog model (actor, action, targetType, targetId, metadata, createdAt) and wired critical mutations.
 R3. listGroups server action returns ALL groups without visibility filtering server/actions/groups.ts:71-86(listGroups) returns all groups in the parish with no visibility check. The query-layer lib/queries/groups.ts does filter properly, but this separate action is exposed.
 	•	Risk: PRIVATE groups leaked through this action (used by the AppHeader "Add" dropdown)
 	•	Fix: Add visibility filtering or consolidate into the query layer's filtered listGroups.
@@ -103,7 +103,7 @@ Mostly yes, with gaps. The emerald gradient headers, card-based layouts, and con
 
 ### Admin Action Logging
 
-	•	Not implemented. No AuditLog model. No logging of: group creation/deletion, member removal, role changes, event deletion, task approval/rejection. This is the R2 finding.
+	•	Implemented (R2 complete): AuditLog model is in Prisma with parish/actor/action/target/metadata, and critical logging is wired for group deletion, event deletion, member removal, role changes, and task approval/rejection.
 
 ### Push Notification Content
 
@@ -127,7 +127,7 @@ Auth-protect cron endpoints — DONE (Ready for review)
 BLOCKER
 1h
 R2
-Add AuditLog model + log critical mutations
+Add AuditLog model + log critical mutations — DONE (Ready for review)
 BLOCKER
 4h
 R3
@@ -187,7 +187,7 @@ IMPORTANT
 
 2. Launch Blockers (must fix before any real parish deployment)
 	1	Cron endpoints are public (R1) — Resolved (Ready for review)
-	2	No audit trail (R2) — admins can delete groups/events with zero accountability
+	2	No audit trail (R2) — Resolved (Ready for review)
 	3	Private group leak (R3) — Resolved (Ready for review)
 	4	Push content leak (R5) — Resolved (Ready for review)
 	5	Hard event deletion (R6) — Resolved (Ready for review)
