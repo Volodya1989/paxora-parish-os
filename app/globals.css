@@ -4,6 +4,31 @@
 
 :root {
   color-scheme: light;
+  --chat-name-color-0: #0f766e;
+  --chat-name-color-1: #1d4ed8;
+  --chat-name-color-2: #7c3aed;
+  --chat-name-color-3: #be185d;
+  --chat-name-color-4: #b45309;
+  --chat-name-color-5: #0369a1;
+  --chat-name-color-6: #15803d;
+  --chat-name-color-7: #9f1239;
+  --chat-name-color-8: #374151;
+  --chat-name-color-9: #4f46e5;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --chat-name-color-0: #5eead4;
+    --chat-name-color-1: #93c5fd;
+    --chat-name-color-2: #c4b5fd;
+    --chat-name-color-3: #f9a8d4;
+    --chat-name-color-4: #fcd34d;
+    --chat-name-color-5: #7dd3fc;
+    --chat-name-color-6: #86efac;
+    --chat-name-color-7: #fda4af;
+    --chat-name-color-8: #e5e7eb;
+    --chat-name-color-9: #a5b4fc;
+  }
 }
 
 body {
@@ -47,5 +72,35 @@ body {
 
   .focus-ring {
     @apply focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2;
+  }
+}
+
+
+@layer utilities {
+  .chat-emoji-bounce-once {
+    animation: chat-emoji-bounce 650ms cubic-bezier(0.22, 1, 0.36, 1) 1;
+  }
+
+  @keyframes chat-emoji-bounce {
+    0% {
+      transform: translateY(0) scale(1);
+      box-shadow: 0 0 0 0 rgb(16 185 129 / 0);
+    }
+
+    35% {
+      transform: translateY(-2px) scale(1.01);
+      box-shadow: 0 0 0 5px rgb(16 185 129 / 0.18);
+    }
+
+    100% {
+      transform: translateY(0) scale(1);
+      box-shadow: 0 0 0 0 rgb(16 185 129 / 0);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-emoji-bounce-once {
+    animation: none;
   }
 }
