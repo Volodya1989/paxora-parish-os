@@ -95,6 +95,7 @@ export default function GroupsView({
     () => groups.filter((group) => group.viewerMembershipStatus === "INVITED" && group.status === "ACTIVE"),
     [groups]
   );
+  const hasSearchQuery = query.trim().length > 0;
 
   useEffect(() => {
     if (searchParams?.get("create") !== "group") {
@@ -449,14 +450,27 @@ export default function GroupsView({
 
               {joinedGroups.length === 0 ? (
                 <ListEmptyState
-                  title={t("empty.noGroups")}
-                  description={canManageGroups ? t("groups.empty.startMessage") : t("empty.noGroupsDesc")}
+                  title={hasSearchQuery ? t("emptyStates.noMatches") : t("empty.noGroups")}
+                  description={
+                    hasSearchQuery
+                      ? t("emptyStates.noMatchesDesc")
+                      : canManageGroups
+                        ? t("groups.empty.startMessage")
+                        : t("empty.noGroupsDesc")
+                  }
                   action={
-                    canManageGroups || canRequestContentCreate ? (
-                      <Button type="button" onClick={openCreateDialog}>
-                        {t("groups.startGroup")}
-                      </Button>
-                    ) : null
+                    <div className="flex flex-wrap justify-center gap-2">
+                      {hasSearchQuery ? (
+                        <Button type="button" variant="secondary" onClick={() => setQuery("")}>
+                          {t("emptyStates.clearFilters")}
+                        </Button>
+                      ) : null}
+                      {canManageGroups || canRequestContentCreate ? (
+                        <Button type="button" onClick={openCreateDialog}>
+                          {t("groups.startGroup")}
+                        </Button>
+                      ) : null}
+                    </div>
                   }
                   variant="friendly"
                 />

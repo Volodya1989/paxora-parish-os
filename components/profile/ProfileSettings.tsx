@@ -17,6 +17,11 @@ type ProfileSettingsProps = {
     notifyAnnouncementInApp: boolean;
     notifyEventInApp: boolean;
     notifyRequestInApp: boolean;
+    notifyMessagePush: boolean;
+    notifyTaskPush: boolean;
+    notifyAnnouncementPush: boolean;
+    notifyEventPush: boolean;
+    notifyRequestPush: boolean;
   };
 };
 
@@ -75,6 +80,11 @@ export function ProfileSettings({ initialSettings }: ProfileSettingsProps) {
       | "notifyAnnouncementInApp"
       | "notifyEventInApp"
       | "notifyRequestInApp"
+      | "notifyMessagePush"
+      | "notifyTaskPush"
+      | "notifyAnnouncementPush"
+      | "notifyEventPush"
+      | "notifyRequestPush"
   ) => {
     const nextSettings = {
       ...settings,
@@ -169,6 +179,44 @@ export function ProfileSettings({ initialSettings }: ProfileSettingsProps) {
             enabled={settings.notifyRequestInApp}
             disabled={isPending}
             onToggle={() => handleToggle("notifyRequestInApp")}
+          />
+          <p className="px-1 pt-2 text-xs font-semibold uppercase tracking-wide text-ink-500">
+            Push notification categories
+          </p>
+          <ToggleRow
+            label="Messages"
+            description="Send push notifications for new chat messages."
+            enabled={settings.notifyMessagePush}
+            disabled={isPending}
+            onToggle={() => handleToggle("notifyMessagePush")}
+          />
+          <ToggleRow
+            label="Tasks"
+            description="Send push notifications for task assignments and updates."
+            enabled={settings.notifyTaskPush}
+            disabled={isPending}
+            onToggle={() => handleToggle("notifyTaskPush")}
+          />
+          <ToggleRow
+            label="Announcements"
+            description="Send push notifications when new announcements are posted."
+            enabled={settings.notifyAnnouncementPush}
+            disabled={isPending}
+            onToggle={() => handleToggle("notifyAnnouncementPush")}
+          />
+          <ToggleRow
+            label="Events"
+            description="Send push notifications for upcoming events and reminders."
+            enabled={settings.notifyEventPush}
+            disabled={isPending}
+            onToggle={() => handleToggle("notifyEventPush")}
+          />
+          <ToggleRow
+            label="Requests"
+            description="Send push notifications for request changes and assignments."
+            enabled={settings.notifyRequestPush}
+            disabled={isPending}
+            onToggle={() => handleToggle("notifyRequestPush")}
           />
         </div>
       </div>
