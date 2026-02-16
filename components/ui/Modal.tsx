@@ -11,12 +11,13 @@ export type ModalProps = {
   title: string;
   children: ReactNode;
   footer?: ReactNode;
+  headerActions?: ReactNode;
 };
 
 /**
  * Modal dialog for desktop-sized viewports.
  */
-export function Modal({ open, onClose, title, children, footer }: ModalProps) {
+export function Modal({ open, onClose, title, children, footer, headerActions }: ModalProps) {
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
@@ -93,14 +94,17 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
           <h2 id={titleId} className="text-h3">
             {title}
           </h2>
-          <button
-            type="button"
-            aria-label="Close dialog"
-            onClick={onClose}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-mist-200 text-lg text-ink-500 transition hover:bg-mist-50 focus-ring"
-          >
-            ×
-          </button>
+          <div className="flex items-center gap-2">
+            {headerActions}
+            <button
+              type="button"
+              aria-label="Close dialog"
+              onClick={onClose}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-mist-200 text-lg text-ink-500 transition hover:bg-mist-50 focus-ring"
+            >
+              ×
+            </button>
+          </div>
         </header>
         <div className="flex-1 overflow-y-auto pr-1 text-sm text-ink-700">{children}</div>
         {footer ? (

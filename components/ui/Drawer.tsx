@@ -11,13 +11,14 @@ export type DrawerProps = {
   title: string;
   children: ReactNode;
   footer?: ReactNode;
+  headerActions?: ReactNode;
 };
 
 /**
  * Drawer component for mobile bottom sheets.
  * Features smooth slide-up animation, iOS safe area, and sticky footer.
  */
-export function Drawer({ open, onClose, title, children, footer }: DrawerProps) {
+export function Drawer({ open, onClose, title, children, footer, headerActions }: DrawerProps) {
   const titleId = useId();
   const drawerRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
@@ -125,14 +126,17 @@ export function Drawer({ open, onClose, title, children, footer }: DrawerProps) 
           <h2 id={titleId} className="text-h3">
             {title}
           </h2>
-          <button
-            type="button"
-            aria-label="Close drawer"
-            onClick={onClose}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-mist-200 text-lg text-ink-500 transition hover:bg-mist-50 focus-ring"
-          >
-            ×
-          </button>
+          <div className="flex items-center gap-2">
+            {headerActions}
+            <button
+              type="button"
+              aria-label="Close drawer"
+              onClick={onClose}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-mist-200 text-lg text-ink-500 transition hover:bg-mist-50 focus-ring"
+            >
+              ×
+            </button>
+          </div>
         </header>
 
         {/* Scrollable content */}

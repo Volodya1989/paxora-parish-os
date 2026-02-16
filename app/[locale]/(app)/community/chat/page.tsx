@@ -92,6 +92,7 @@ export default async function CommunityChatPage({ searchParams, params }: Commun
         canPost={canPost}
         canModerate={canModerate}
         currentUserId={userId}
+        parishId={parishId}
         channelMembers={channelMembers}
         mentionableUsers={channelMembers?.map((member) => ({ id: member.userId, name: member.name, email: member.email }))}
         lastReadAt={lastReadAt}
