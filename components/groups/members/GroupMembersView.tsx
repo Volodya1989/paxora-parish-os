@@ -10,6 +10,9 @@ import Input from "@/components/ui/Input";
 import Badge from "@/components/ui/Badge";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/Tabs";
 import { useToast } from "@/components/ui/Toast";
+import { Modal } from "@/components/ui/Modal";
+import { Drawer } from "@/components/ui/Drawer";
+import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 import MemberRow from "@/components/groups/members/MemberRow";
 import InviteDrawer from "@/components/groups/members/InviteDrawer";
 import PendingInvites from "@/components/groups/members/PendingInvites";
@@ -80,9 +83,11 @@ export default function GroupMembersView({
   const router = useRouter();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [pendingMemberId, setPendingMemberId] = useState<string | null>(null);
+  const [removingMember, setRemovingMember] = useState<{ userId: string; name: string } | null>(null);
   const [activeTab, setActiveTab] = useState<"members" | "pending">("members");
   const [query, setQuery] = useState("");
   const [isPending, startTransition] = useTransition();
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const refresh = () => {
     startTransition(() => {
@@ -128,7 +133,15 @@ export default function GroupMembersView({
     );
   };
 
-  const handleRemove = (userId: string) => {
+  const handleRemoveRequest = (userId: string) => {
+    const member = members.find((m) => m.userId === userId);
+    setRemovingMember({ userId, name: member?.name ?? member?.email ?? "this member" });
+  };
+
+  const handleRemoveConfirm = () => {
+    if (!removingMember) return;
+    const { userId } = removingMember;
+    setRemovingMember(null);
     setPendingMemberId(userId);
     void runAction(
       async () => {
@@ -361,7 +374,7 @@ export default function GroupMembersView({
                     canManage={canManage}
                     isSelf={member.userId === viewer.id}
                     onChangeRole={(role) => handleRoleChange(member.userId, role)}
-                    onRemove={() => handleRemove(member.userId)}
+                    onRemove={() => handleRemoveRequest(member.userId)}
                     isBusy={pendingMemberId === member.userId}
                   />
                 ))
@@ -389,6 +402,50 @@ export default function GroupMembersView({
           candidates={availableInviteCandidates}
         />
       ) : null}
+
+      {/* Remove member confirmation dialog */}
+      {(() => {
+        const dialogOpen = Boolean(removingMember);
+        const dialogTitle = t("buttons.delete");
+        const dialogBody = (
+          <div className="space-y-3">
+            <p className="text-sm text-ink-700">
+              {t("confirm.removeMember").replace("{name}", removingMember?.name ?? "")}
+            </p>
+            <p className="text-sm font-medium text-rose-600">{t("confirm.cannotUndo")}</p>
+          </div>
+        );
+        const dialogFooter = (
+          <>
+            <Button variant="secondary" onClick={() => setRemovingMember(null)}>
+              {t("buttons.cancel")}
+            </Button>
+            <Button variant="danger" onClick={handleRemoveConfirm}>
+              {t("confirm.removeButton")}
+            </Button>
+          </>
+        );
+
+        return isDesktop ? (
+          <Modal
+            open={dialogOpen}
+            onClose={() => setRemovingMember(null)}
+            title={dialogTitle}
+            footer={dialogFooter}
+          >
+            {dialogBody}
+          </Modal>
+        ) : (
+          <Drawer
+            open={dialogOpen}
+            onClose={() => setRemovingMember(null)}
+            title={dialogTitle}
+            footer={dialogFooter}
+          >
+            {dialogBody}
+          </Drawer>
+        );
+      })()}
     </div>
   );
 }

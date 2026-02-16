@@ -581,6 +581,14 @@
       "addAria": "Add creation request"
     }
   },
+  "confirm": {
+    "removeMember": "Are you sure you want to remove {name} from this group?",
+    "removeButton": "Remove",
+    "cannotUndo": "This action cannot be undone.",
+    "deleteGroup": "Are you sure you want to permanently delete this group?",
+    "deleteEvent": "Are you sure you want to delete this event?",
+    "deleteTask": "Are you sure you want to delete this task?"
+  },
   "pwa": {
     "addToHomeScreen": {
       "title": "Add Paxora to your Home Screen",
