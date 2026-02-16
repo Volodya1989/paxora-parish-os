@@ -474,13 +474,40 @@ function MessageRow({
   const hasActions = canReply || canModify || canModerate || canReact;
   const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   const [hasPlayedEmojiEffect, setHasPlayedEmojiEffect] = useState(false);
+  const [isEmojiVisible, setIsEmojiVisible] = useState(isMine);
   const shouldTriggerEmojiEffect =
     !isDeleted &&
     containsEmoji(message.body) &&
     (isMine || isUnreadMessage);
 
   useEffect(() => {
-    if (prefersReducedMotion || !shouldTriggerEmojiEffect) {
+    if (isMine || !shouldTriggerEmojiEffect || prefersReducedMotion) {
+      setIsEmojiVisible(isMine);
+      return;
+    }
+
+    const target = bubbleRef.current;
+    if (!target || typeof IntersectionObserver === "undefined") {
+      setIsEmojiVisible(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.55)) {
+          setIsEmojiVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: [0.55] }
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [isMine, prefersReducedMotion, shouldTriggerEmojiEffect]);
+
+  useEffect(() => {
+    if (prefersReducedMotion || !shouldTriggerEmojiEffect || !isEmojiVisible) {
       return;
     }
 
@@ -494,7 +521,7 @@ function MessageRow({
     }, EMOJI_EFFECT_DURATION_MS);
 
     return () => window.clearTimeout(timer);
-  }, [isMine, message.id, prefersReducedMotion, shouldTriggerEmojiEffect]);
+  }, [isEmojiVisible, message.id, prefersReducedMotion, shouldTriggerEmojiEffect]);
 
   const isGrouped = isSameGroup(previousMessage, message);
   const showAuthorBlock = !isGrouped;
