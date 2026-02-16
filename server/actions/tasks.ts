@@ -45,7 +45,12 @@ import { prisma } from "@/server/db/prisma";
 import { getTaskDetail as getTaskDetailQuery } from "@/lib/queries/tasks";
 import { extractMentionedUserIds, mentionSnippet, normalizeMentionEntities } from "@/lib/mentions";
 import { listMentionableUsersForTask } from "@/lib/mentions/permissions";
-import { notifyMentionInApp, notifyContentRequestDecisionInApp, notifyContentRequestSubmittedInApp } from "@/lib/notifications/notify";
+import {
+  notifyMentionInApp,
+  notifyContentRequestDecisionInApp,
+  notifyContentRequestSubmittedInApp,
+  notifyTaskCommentInApp
+} from "@/lib/notifications/notify";
 import { notifyMention } from "@/lib/push/notify";
 
 function assertSession(session: Session | null) {
@@ -368,6 +373,18 @@ export async function addTaskComment({
     mentionEntities: normalizedMentions
   });
 
+  const actor = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true } });
+  const actorName = actor?.name ?? actor?.email ?? "Parish member";
+
+  await notifyTaskCommentInApp({
+    taskId: parsed.data.taskId,
+    parishId,
+    actorId: userId,
+    actorName,
+    body: body.trim(),
+    href: `/tasks?taskId=${parsed.data.taskId}&comment=${comment.id}`
+  });
+
   const mentionUserIds = extractMentionedUserIds(body.trim(), normalizedMentions);
   if (mentionUserIds.length > 0) {
     const mentionable = await listMentionableUsersForTask({ parishId, actorUserId: userId, taskId: parsed.data.taskId, query: "" });
@@ -387,9 +404,6 @@ export async function addTaskComment({
           href
         }))
       });
-
-      const actor = await prisma.user.findUnique({ where: { id: userId }, select: { name: true, email: true } });
-      const actorName = actor?.name ?? actor?.email ?? "Parish member";
 
       await notifyMentionInApp({
         parishId,
