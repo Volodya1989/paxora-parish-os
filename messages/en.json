@@ -141,7 +141,10 @@
     "emptyMonth": "Nothing on the calendar this month",
     "emptyMonthDesc": "Events and services will appear here once they're scheduled.",
     "emptySchedule": "Nothing scheduled yet",
-    "emptyScheduleDesc": "New services and events will show up here as they're added."
+    "emptyScheduleDesc": "New services and events will show up here as they're added.",
+    "calendarView": "Calendar",
+    "scheduleView": "Schedule",
+    "viewToggleLabel": "Switch between calendar and schedule views"
   },
   "parish": {
     "title": "Parish Hub",
