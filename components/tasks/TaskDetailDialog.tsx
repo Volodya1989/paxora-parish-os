@@ -259,7 +259,7 @@ export default function TaskDetailDialog({
                   .catch(() => addToast({ title: "Unable to copy Task ID", status: "error" }))
               }
             >
-              Copy ID
+              {t("taskDetail.copyId")}
             </button>
           </div>
         ) : null}
@@ -310,7 +310,7 @@ export default function TaskDetailDialog({
                 handleAction(() => markTaskInProgress({ taskId }), "Moved to in progress")
               }
             >
-              Start serving
+              {t("taskDetail.startServing")}
             </Button>
           ) : null}
           {taskSummary.status === "IN_PROGRESS" ? (
@@ -322,7 +322,7 @@ export default function TaskDetailDialog({
                   : handleAction(() => markTaskDone({ taskId }), "Marked complete")
               }
             >
-              Complete task
+              {t("taskDetail.completeTask")}
             </Button>
           ) : null}
           {taskSummary.status === "DONE" ? (
@@ -331,7 +331,7 @@ export default function TaskDetailDialog({
               variant="secondary"
               onClick={() => handleAction(() => markTaskOpen({ taskId }), "Reopened task")}
             >
-              Reopen task
+              {t("taskDetail.reopenTask")}
             </Button>
           ) : null}
         </div>
@@ -343,7 +343,7 @@ export default function TaskDetailDialog({
             type="button"
             onClick={() => handleAction(() => assignTaskToSelf({ taskId }), "Assigned to you")}
           >
-            Assign to me
+            {t("taskDetail.assignToMe")}
           </Button>
         </div>
       ) : null}
@@ -352,10 +352,9 @@ export default function TaskDetailDialog({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-semibold text-ink-900">Volunteers</p>
+              <p className="text-sm font-semibold text-ink-900">{t("taskDetail.volunteers")}</p>
               <p className="text-xs text-ink-500">
-                Volunteers: {detail?.volunteers.length ?? 0} of{" "}
-                {taskSummary?.volunteersNeeded ?? 0}
+                {t("taskDetail.volunteersCount").replace("{current}", String(detail?.volunteers.length ?? 0)).replace("{needed}", String(taskSummary?.volunteersNeeded ?? 0))}
               </p>
             </div>
             {taskId && (canVolunteer || hasVolunteered) ? (
@@ -429,7 +428,7 @@ export default function TaskDetailDialog({
               ))
             ) : (
               <div className="rounded-card border border-mist-100 bg-mist-50 px-3 py-2 text-xs text-ink-500">
-                No volunteers yet.
+                {t("taskDetail.noVolunteers")}
               </div>
             )}
           </div>
@@ -438,8 +437,8 @@ export default function TaskDetailDialog({
 
       <div className="space-y-3">
         <div>
-          <p className="text-sm font-semibold text-ink-900">Comments</p>
-          <p className="text-xs text-ink-500">Share quick updates or notes.</p>
+          <p className="text-sm font-semibold text-ink-900">{t("taskDetail.comments")}</p>
+          <p className="text-xs text-ink-500">{t("taskDetail.commentsHint")}</p>
         </div>
         <div className="space-y-3">
           {detail?.comments.length ? (
@@ -458,7 +457,7 @@ export default function TaskDetailDialog({
             ))
           ) : (
             <div className="rounded-card border border-mist-100 bg-mist-50 px-3 py-2 text-xs text-ink-500">
-              No comments yet.
+              {t("taskDetail.noComments")}
             </div>
           )}
         </div>
@@ -482,11 +481,11 @@ export default function TaskDetailDialog({
             value={comment}
             onChange={(event) => setComment(event.target.value)}
             rows={3}
-            placeholder="Add a comment"
+            placeholder={t("taskDetail.addComment")}
           />
           <div className="flex justify-end">
             <Button type="button" onClick={handleSubmitComment} disabled={!comment.trim()}>
-              Post comment
+              {t("taskDetail.postComment")}
             </Button>
           </div>
         </div>
@@ -494,8 +493,8 @@ export default function TaskDetailDialog({
 
       <div className="space-y-3">
         <div>
-          <p className="text-sm font-semibold text-ink-900">Activity</p>
-          <p className="text-xs text-ink-500">Recent changes and updates.</p>
+          <p className="text-sm font-semibold text-ink-900">{t("taskDetail.activity")}</p>
+          <p className="text-xs text-ink-500">{t("taskDetail.activityHint")}</p>
         </div>
         <div className="space-y-2">
           {detail?.activities.length ? (
@@ -513,7 +512,7 @@ export default function TaskDetailDialog({
             ))
           ) : (
             <div className="rounded-card border border-mist-100 bg-mist-50 px-3 py-2 text-xs text-ink-500">
-              No activity yet.
+              {t("taskDetail.noActivity")}
             </div>
           )}
         </div>
@@ -527,10 +526,10 @@ export default function TaskDetailDialog({
 
   return (
     <>
-      <Modal open={open} onClose={handleClose} title="Task details">
+      <Modal open={open} onClose={handleClose} title={t("taskDetail.title")}>
         {content}
       </Modal>
-      <Drawer open={open} onClose={handleClose} title="Task details">
+      <Drawer open={open} onClose={handleClose} title={t("taskDetail.title")}>
         {content}
       </Drawer>
     </>

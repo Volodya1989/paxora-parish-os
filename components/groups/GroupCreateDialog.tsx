@@ -226,13 +226,13 @@ export default function GroupCreateDialog({
         {/* Section: Identity */}
         <fieldset className="space-y-3 rounded-xl border border-mist-100 bg-mist-50/40 p-3">
           <div className="space-y-1.5">
-            <Label htmlFor={nameId}>Group name</Label>
+            <Label htmlFor={nameId}>{t("groupCreate.groupName")}</Label>
             <Input
               id={nameId}
               name="name"
               value={name}
               onChange={(event) => setName(event.currentTarget.value)}
-              placeholder="e.g. Hospitality Team"
+              placeholder={t("groupCreate.groupNamePlaceholder")}
               maxLength={NAME_MAX_LENGTH}
               aria-invalid={Boolean(error) || undefined}
               required
@@ -240,22 +240,22 @@ export default function GroupCreateDialog({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor={descriptionId}>Description (optional)</Label>
+            <Label htmlFor={descriptionId}>{t("groupCreate.descriptionOptional")}</Label>
             <Textarea
               id={descriptionId}
               name="description"
               value={description}
               onChange={(event) => setDescription(event.currentTarget.value)}
-              placeholder="Share what this group is responsible for."
+              placeholder={t("groupCreate.descriptionPlaceholder")}
               maxLength={DESCRIPTION_MAX_LENGTH}
               rows={3}
             />
           </div>
           <div className="space-y-1.5">
-            <Label>Group photo (optional)</Label>
+            <Label>{t("groupCreate.photoOptional")}</Label>
             <div className="flex items-center gap-2">
               <Button type="button" size="sm" variant="secondary" onClick={() => avatarInputRef.current?.click()}>
-                {avatarFile ? "Change photo" : "Upload photo"}
+                {avatarFile ? t("groupCreate.changePhoto") : t("groupCreate.uploadPhoto")}
               </Button>
               {avatarFile ? <span className="text-xs text-ink-500">{avatarFile.name}</span> : null}
               <input
@@ -272,7 +272,7 @@ export default function GroupCreateDialog({
         {/* Section: Settings */}
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor={visibilityId}>Discoverability</Label>
+            <Label htmlFor={visibilityId}>{t("groupCreate.discoverability")}</Label>
             <SelectMenu
               id={visibilityId}
               name="visibility"
@@ -282,7 +282,7 @@ export default function GroupCreateDialog({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor={joinPolicyId}>Join settings</Label>
+            <Label htmlFor={joinPolicyId}>{t("groupCreate.joinSettings")}</Label>
             <SelectMenu
               id={joinPolicyId}
               name="joinPolicy"
@@ -298,7 +298,7 @@ export default function GroupCreateDialog({
         {/* Section: Invitations */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label>Invite members</Label>
+            <Label>{t("groupCreate.inviteMembers")}</Label>
             <Button
               type="button"
               size="sm"
@@ -306,10 +306,10 @@ export default function GroupCreateDialog({
               onClick={() => setShowInvitePicker((current) => !current)}
             >
               {showInvitePicker
-                ? "Done"
+                ? t("groupCreate.done")
                 : selectedInvitees.length > 0
-                  ? `Add members (${selectedInvitees.length})`
-                  : "Add members"}
+                  ? t("groupCreate.addMembersCount").replace("{count}", String(selectedInvitees.length))
+                  : t("groupCreate.addMembers")}
             </Button>
           </div>
 
@@ -337,7 +337,7 @@ export default function GroupCreateDialog({
                 id={`${formId}-invite-search`}
                 value={inviteQuery}
                 onChange={(event) => setInviteQuery(event.currentTarget.value)}
-                placeholder="Search by name or email"
+                placeholder={t("groupCreate.searchMembers")}
               />
               <div className="max-h-40 overflow-y-auto rounded-xl border border-mist-200 bg-white">
                 {filteredCandidates.slice(0, 30).map((candidate) => (
@@ -351,11 +351,11 @@ export default function GroupCreateDialog({
                       <span className="block truncate font-medium text-ink-900">{candidate.name}</span>
                       <span className="block truncate text-xs text-ink-500">{candidate.email}</span>
                     </span>
-                    <span className="ml-3 text-xs text-primary-600">Add</span>
+                    <span className="ml-3 text-xs text-primary-600">{t("groupCreate.add")}</span>
                   </button>
                 ))}
                 {filteredCandidates.length === 0 ? (
-                  <p className="px-3 py-2 text-sm text-ink-500">No matching parish members.</p>
+                  <p className="px-3 py-2 text-sm text-ink-500">{t("groupCreate.noMatchingMembers")}</p>
                 ) : null}
               </div>
             </>
@@ -374,10 +374,10 @@ export default function GroupCreateDialog({
   const renderFooter = (formId: string) => (
     submitted ? null : <>
       <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-        Cancel
+        {t("buttons.cancel")}
       </Button>
       <Button type="submit" form={formId} isLoading={isPending}>
-        {isRequest ? "Send request" : "Create group"}
+        {isRequest ? t("groupCreate.sendRequest") : t("groupCreate.createGroup")}
       </Button>
     </>
   );
@@ -389,8 +389,8 @@ export default function GroupCreateDialog({
   const formDescription = (
     <p className="mb-4 text-sm text-ink-500">
       {isRequest
-        ? "Tell us about the group you want to start. A parish leader will review it."
-        : "Gather the right people around a mission, ministry, or project."}
+        ? t("groupCreate.requestDescription")
+        : t("groupCreate.createDescription")}
     </p>
   );
 
@@ -399,7 +399,7 @@ export default function GroupCreateDialog({
       <Modal
         open={open}
         onClose={handleClose}
-        title={isRequest ? "Request a new group" : "New group"}
+        title={isRequest ? t("groupCreate.requestNewGroup") : t("groupCreate.newGroup")}
         footer={renderFooter(modalFormId)}
       >
         {formDescription}

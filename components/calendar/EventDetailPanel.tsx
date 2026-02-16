@@ -51,34 +51,34 @@ function EventDetailContent({
         <p className="text-xs text-ink-400">{formatRecurrenceSummary(event)}</p>
         <div className="flex flex-wrap items-center gap-2 pt-2">
           <Badge tone={event.type === "SERVICE" ? "success" : "neutral"}>
-            {event.type === "SERVICE" ? "Service" : "Event"}
+            {event.type === "SERVICE" ? t("eventDetail.service") : t("eventDetail.event")}
           </Badge>
           <Badge tone={event.visibility === "PUBLIC" ? "neutral" : "warning"}>
             {event.visibility === "PUBLIC"
               ? t("common.public")
               : event.visibility === "GROUP"
-                ? "Group"
+                ? t("eventDetail.group")
                 : t("common.private")}
           </Badge>
         </div>
       </div>
       <div>
-        <p className="text-xs uppercase tracking-wide text-ink-400">Location</p>
-        <p className="text-sm text-ink-700">{event.location ?? "Location TBA"}</p>
+        <p className="text-xs uppercase tracking-wide text-ink-400">{t("eventDetail.location")}</p>
+        <p className="text-sm text-ink-700">{event.location ?? t("eventDetail.locationTBA")}</p>
       </div>
       {event.group?.name ? (
         <div>
-          <p className="text-xs uppercase tracking-wide text-ink-400">Group</p>
+          <p className="text-xs uppercase tracking-wide text-ink-400">{t("eventDetail.group")}</p>
           <p className="text-sm text-ink-700">{event.group.name}</p>
         </div>
       ) : null}
       <div>
-        <p className="text-xs uppercase tracking-wide text-ink-400">Notes</p>
+        <p className="text-xs uppercase tracking-wide text-ink-400">{t("eventDetail.notes")}</p>
         <p className="text-sm text-ink-700">{event.summary}</p>
       </div>
       <div className="space-y-3 border-t border-mist-100 pt-4">
-        <p className="text-xs uppercase tracking-wide text-ink-400">RSVP</p>
-        <p className="text-sm text-ink-600">Total RSVPs: {rsvpTotalCount}</p>
+        <p className="text-xs uppercase tracking-wide text-ink-400">{t("eventDetail.rsvp")}</p>
+        <p className="text-sm text-ink-600">{t("eventDetail.totalRsvps").replace("{count}", String(rsvpTotalCount))}</p>
         <RsvpButtons
           eventId={event.id}
           initialResponse={event.rsvpResponse}
@@ -88,19 +88,19 @@ function EventDetailContent({
       <div className="flex flex-wrap gap-2">
         <Link href={`/events/${event.id}`} className="flex-1">
           <Button type="button" variant="secondary" className="w-full">
-            View details
+            {t("eventDetail.viewDetails")}
           </Button>
         </Link>
         {event.canManage ? (
           <>
             <Link href={`/calendar/events/${event.id}/edit`} className="flex-1">
               <Button type="button" variant="ghost" className="w-full">
-                Edit
+                {t("buttons.edit")}
               </Button>
             </Link>
             <Link href={`/calendar/events/${event.id}/delete`} className="flex-1">
               <Button type="button" variant="danger" className="w-full">
-                Delete
+                {t("buttons.delete")}
               </Button>
             </Link>
           </>
@@ -120,7 +120,7 @@ export default function EventDetailPanel({ event, onClose }: EventDetailPanelPro
 
   return (
     <>
-      <Modal open={Boolean(event)} onClose={onClose} title="Event details">
+      <Modal open={Boolean(event)} onClose={onClose} title={t("eventDetail.title")}>
         {event ? (
           <EventDetailContent
             event={event}
@@ -130,7 +130,7 @@ export default function EventDetailPanel({ event, onClose }: EventDetailPanelPro
           />
         ) : null}
       </Modal>
-      <Drawer open={Boolean(event)} onClose={onClose} title="Event details">
+      <Drawer open={Boolean(event)} onClose={onClose} title={t("eventDetail.title")}>
         {event ? (
           <EventDetailContent
             event={event}
