@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireCronSecret } from "@/lib/cron/auth";
 import { prisma } from "@/server/db/prisma";
 import { getNow } from "@/lib/time/getNow";
 import { getWeekForSelection } from "@/domain/week";
@@ -6,7 +7,10 @@ import { getThisWeekDataForUser } from "@/lib/queries/this-week";
 import { sendWeeklyDigestEmail } from "@/lib/email/weeklyDigest";
 import { isWeeklyDigestAlreadySent } from "@/lib/email/logs";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const unauthorized = requireCronSecret(request);
+  if (unauthorized) return unauthorized;
+
   const now = getNow();
   const parishes = await prisma.parish.findMany({
     select: { id: true, name: true }
