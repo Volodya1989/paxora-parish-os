@@ -60,6 +60,7 @@ export default function TaskCreateDialog({
   requestMode = false,
   creationContext = "default"
 }: TaskCreateDialogProps) {
+  const t = useTranslations();
   const router = useRouter();
   const { addToast } = useToast();
   const [state, formAction] = useActionState<TaskActionState, FormData>(
@@ -133,8 +134,8 @@ export default function TaskCreateDialog({
     }
 
     addToast({
-      title: "Task saved",
-      description: state.message ?? "Your task is ready for the team.",
+      title: t("taskCreate.toastSavedTitle"),
+      description: state.message ?? t("taskCreate.toastSavedDescription"),
       status: "success"
     });
     onOpenChange(false);
@@ -142,7 +143,7 @@ export default function TaskCreateDialog({
       router.refresh();
     });
     prevStatus.current = state.status;
-  }, [addToast, onOpenChange, requestMode, router, startTransition, state]);
+  }, [addToast, onOpenChange, requestMode, router, startTransition, state, t]);
 
   const renderForm = (formId: string, ref: RefObject<HTMLFormElement>) => (
     submitted && requestMode ? (
@@ -169,23 +170,23 @@ export default function TaskCreateDialog({
       <div className="rounded-xl border-l-4 border-l-sky-400 bg-sky-50/60 px-3 py-2">
         <p className="text-xs text-sky-700">
           {requestMode
-            ? "Share details for the serve task you want to add. Parish leadership will review your request."
-            : "Capture what needs attention this week and assign it to the right owner."}
+            ? t("taskCreate.requestBanner")
+            : t("taskCreate.createBanner")}
         </p>
       </div>
 
       {/* Section: Basics */}
       <fieldset className="space-y-3 rounded-xl border border-mist-100 bg-mist-50/40 p-3">
         <div className="space-y-1.5">
-          <Label htmlFor={titleId}>Title</Label>
-          <Input id={titleId} name="title" placeholder="Add a clear task title" required autoFocus />
+          <Label htmlFor={titleId}>{t("taskCreate.title")}</Label>
+          <Input id={titleId} name="title" placeholder={t("taskCreate.titlePlaceholder")} required autoFocus />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor={notesId}>Notes (optional)</Label>
+          <Label htmlFor={notesId}>{t("taskCreate.notesOptional")}</Label>
           <Textarea
             id={notesId}
             name="notes"
-            placeholder="Include links, dependencies, or context for the team."
+            placeholder={t("taskCreate.notesPlaceholder")}
             rows={2}
           />
         </div>
@@ -195,19 +196,19 @@ export default function TaskCreateDialog({
       <div className="grid gap-3 sm:grid-cols-2">
         {!forcePrivate ? (
           <div className="space-y-1.5">
-            <Label htmlFor={estimatedHoursId}>Estimated hours</Label>
+            <Label htmlFor={estimatedHoursId}>{t("taskCreate.estimatedHours")}</Label>
             <Input
               id={estimatedHoursId}
               name="estimatedHours"
               type="number"
               min={0}
               step="0.25"
-              placeholder="e.g. 2"
+              placeholder={t("taskCreate.estimatedHoursPlaceholder")}
             />
           </div>
         ) : null}
         <div className="space-y-1.5">
-          <Label htmlFor={dueAtId}>Due date</Label>
+          <Label htmlFor={dueAtId}>{t("taskCreate.dueDate")}</Label>
           <Input
             id={dueAtId}
             name="dueAt"
@@ -222,19 +223,19 @@ export default function TaskCreateDialog({
         <>
           <input type="hidden" name="visibility" value="private" />
           <p className="rounded-xl border border-mist-200 bg-mist-50 px-3 py-2 text-xs text-ink-500">
-            Private commitment — stays in your personal view.
+            {t("taskCreate.privateHint")}
           </p>
         </>
       ) : forcePublic ? (
         <>
           <input type="hidden" name="visibility" value="public" />
           <p className="rounded-xl border border-primary-100 bg-primary-50 px-3 py-2 text-xs text-primary-800">
-            Public serve-task request. Leaders will approve before it appears to everyone.
+            {t("taskCreate.publicRequestHint")}
           </p>
         </>
       ) : (
         <div className="space-y-1.5">
-          <Label htmlFor={visibilityId}>Visibility</Label>
+          <Label htmlFor={visibilityId}>{t("taskCreate.visibility")}</Label>
           <SelectMenu
             id={visibilityId}
             name="visibility"
@@ -247,14 +248,14 @@ export default function TaskCreateDialog({
               }
             }}
             options={[
-              { value: "private", label: "Private (just you)" },
-              { value: "public", label: "Public (shared with the parish)" }
+              { value: "private", label: t("taskCreate.visibilityPrivate") },
+              { value: "public", label: t("taskCreate.visibilityPublic") }
             ]}
           />
           <p className="text-xs text-ink-400">
             {visibility === "public"
-              ? "Public tasks require approval before they appear for everyone."
-              : "Private tasks stay assigned to you by default."}
+              ? t("taskCreate.visibilityPublicHint")
+              : t("taskCreate.visibilityPrivateHint")}
           </p>
         </div>
       )}
@@ -266,7 +267,7 @@ export default function TaskCreateDialog({
       ) : (
         <>
           <div className="space-y-1.5">
-            <Label htmlFor={volunteersId}>Volunteers needed</Label>
+            <Label htmlFor={volunteersId}>{t("taskCreate.volunteersNeeded")}</Label>
             <Input
               id={volunteersId}
               name="volunteersNeeded"
@@ -279,21 +280,23 @@ export default function TaskCreateDialog({
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor={groupId}>Group</Label>
+              <Label htmlFor={groupId}>{t("taskCreate.group")}</Label>
               <SelectMenu
                 id={groupId}
                 name="groupId"
                 defaultValue=""
-                placeholder="No group"
+                placeholder={t("taskCreate.noGroup")}
                 options={[
-                  { value: "", label: "No group" },
+                  { value: "", label: t("taskCreate.noGroup") },
                   ...groupOptions.map((group) => ({ value: group.id, label: group.name }))
                 ]}
               />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor={ownerId}>
-                {Number(volunteersNeeded) > 1 ? "Lead (optional)" : "Assignee (optional)"}
+                {Number(volunteersNeeded) > 1
+                  ? t("taskCreate.leadOptional")
+                  : t("taskCreate.assigneeOptional")}
               </Label>
               <SelectMenu
                 id={ownerId}
@@ -301,7 +304,7 @@ export default function TaskCreateDialog({
                 defaultValue=""
                 options={memberOptions.map((member) => ({
                   value: member.id,
-                  label: `${member.name}${member.id === currentUserId ? " (You)" : ""}`
+                  label: `${member.name}${member.id === currentUserId ? ` ${t("taskCreate.youSuffix")}` : ""}`
                 }))}
               />
             </div>
@@ -316,7 +319,7 @@ export default function TaskCreateDialog({
       ) : null}
       <TaskCreateActions
         onCancel={() => onOpenChange(false)}
-        submitLabel={requestMode ? "Send request" : "Create task"}
+        submitLabel={requestMode ? t("taskCreate.sendRequest") : t("taskCreate.createTask")}
       />
     </form>
     )
@@ -327,14 +330,14 @@ export default function TaskCreateDialog({
       <Modal
         open={open}
         onClose={() => onOpenChange(false)}
-        title={requestMode ? "Request a serve task" : "New task"}
+        title={requestMode ? t("taskCreate.requestTask") : t("taskCreate.newTask")}
       >
         {renderForm(modalFormId, modalFormRef)}
       </Modal>
       <Drawer
         open={open}
         onClose={() => onOpenChange(false)}
-        title={requestMode ? "Request a serve task" : "New task"}
+        title={requestMode ? t("taskCreate.requestTask") : t("taskCreate.newTask")}
       >
         {renderForm(drawerFormId, drawerFormRef)}
       </Drawer>

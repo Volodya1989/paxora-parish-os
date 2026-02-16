@@ -32,7 +32,8 @@
     "weekSwitcherLabel": "Week switcher",
     "thisWeek": "This week",
     "nextWeek": "Next week",
-    "addButton": "+ Add"
+    "addButton": "+ Add",
+    "filters": "Filters"
   },
   "menu": {
     "addMenuLabel": "Add menu",
@@ -607,11 +608,13 @@
     "newGroup": "New group",
     "requestDescription": "Tell us about the group you want to start. A parish leader will review it.",
     "createDescription": "Gather the right people around a mission, ministry, or project.",
-    "publicDesc": "Visible to all \u00b7 Listed in parish groups",
-    "privateDesc": "Hidden \u00b7 Invite-only visibility",
+    "publicDesc": "Visible to all · Listed in parish groups",
+    "privateDesc": "Hidden · Invite-only visibility",
     "inviteOnly": "Invite only",
     "openJoin": "Anyone can join instantly",
-    "requestToJoin": "Request approval to join"
+    "requestToJoin": "Request approval to join",
+    "pendingApproval": "Your request is pending approval from parish leadership.",
+    "removeInviteeAria": "Remove {name}"
   },
   "eventDetail": {
     "title": "Event details",
@@ -658,7 +661,11 @@
     "cannotUndo": "This action cannot be undone.",
     "deleteGroup": "Are you sure you want to permanently delete this group?",
     "deleteEvent": "Are you sure you want to delete this event?",
-    "deleteTask": "Are you sure you want to delete this task?"
+    "deleteTask": "Are you sure you want to delete this task?",
+    "deleteButton": "Delete",
+    "deleteTaskTitle": "Delete task",
+    "deleteEventTitle": "Delete event",
+    "deleteEventBody": "This cannot be undone. Parishioners will no longer see this event on the schedule."
   },
   "pwa": {
     "addToHomeScreen": {
@@ -692,5 +699,67 @@
     "gotIt": "Got it",
     "howToAdd": "How to add",
     "notNow": "Not now"
+  },
+  "taskCreate": {
+    "toastSavedTitle": "Task saved",
+    "toastSavedDescription": "Your task is ready for the team.",
+    "requestBanner": "Share details for the serve task you want to add. Parish leadership will review your request.",
+    "createBanner": "Capture what needs attention this week and assign it to the right owner.",
+    "title": "Title",
+    "titlePlaceholder": "Add a clear task title",
+    "notesOptional": "Notes (optional)",
+    "notesPlaceholder": "Include links, dependencies, or context for the team.",
+    "estimatedHours": "Estimated hours",
+    "estimatedHoursPlaceholder": "e.g. 2",
+    "dueDate": "Due date",
+    "privateHint": "Private commitment — stays in your personal view.",
+    "publicRequestHint": "Public serve-task request. Leaders will approve before it appears to everyone.",
+    "visibility": "Visibility",
+    "visibilityPrivate": "Private (just you)",
+    "visibilityPublic": "Public (shared with the parish)",
+    "visibilityPublicHint": "Public tasks require approval before they appear for everyone.",
+    "visibilityPrivateHint": "Private tasks stay assigned to you by default.",
+    "volunteersNeeded": "Volunteers needed",
+    "group": "Group",
+    "noGroup": "No group",
+    "leadOptional": "Lead (optional)",
+    "assigneeOptional": "Assignee (optional)",
+    "youSuffix": "(You)",
+    "sendRequest": "Send request",
+    "createTask": "Create task",
+    "requestTask": "Request a serve task",
+    "newTask": "New task"
+  },
+  "eventForm": {
+    "title": "Title",
+    "titlePlaceholder": "e.g. Divine Liturgy",
+    "type": "Type",
+    "typeService": "Service / Liturgy",
+    "typeEvent": "Event / Gathering",
+    "date": "Date",
+    "start": "Start",
+    "end": "End",
+    "repeats": "Repeats",
+    "repeatOn": "Repeat on",
+    "repeatNone": "Does not repeat",
+    "repeatDaily": "Daily",
+    "repeatWeekly": "Weekly",
+    "repeatCustom": "Custom weekdays",
+    "ends": "Ends",
+    "endsNever": "Never",
+    "endsOnDate": "On date",
+    "endDate": "End date",
+    "location": "Location",
+    "locationPlaceholder": "Sanctuary, parish hall, livestream",
+    "summary": "Summary",
+    "summaryPlaceholder": "Add a short description for the schedule view.",
+    "visibility": "Visibility",
+    "visibilityPublic": "Public (visible to the whole parish)",
+    "visibilityGroup": "Group (visible only to a specific group)",
+    "visibilityPrivate": "Private (leaders only)",
+    "groupVisibilityHint": "Group-only events appear for members of the selected ministry.",
+    "group": "Group",
+    "selectGroup": "Select a group",
+    "noGroups": "No groups available"
   }
 }
