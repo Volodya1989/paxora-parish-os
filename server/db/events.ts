@@ -4,7 +4,8 @@ export async function listWeekEvents(parishId: string, weekId: string) {
   return prisma.event.findMany({
     where: {
       parishId,
-      weekId
+      weekId,
+      deletedAt: null
     },
     orderBy: { startsAt: "asc" },
     select: {

@@ -154,7 +154,7 @@ export async function getThisWeekDataForUser({
       }
     }),
     prisma.event.findMany({
-      where: { parishId, weekId: week.id },
+      where: { parishId, weekId: week.id, deletedAt: null },
       orderBy: { startsAt: "asc" },
       select: {
         id: true,

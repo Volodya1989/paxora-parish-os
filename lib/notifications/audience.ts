@@ -132,7 +132,7 @@ export async function filterEventAudienceForCandidates(opts: {
   if (opts.candidateUserIds.length === 0) return [];
 
   const event = await prisma.event.findFirst({
-    where: { id: opts.eventId, parishId: opts.parishId },
+    where: { id: opts.eventId, parishId: opts.parishId, deletedAt: null },
     select: { id: true, visibility: true, groupId: true }
   });
 

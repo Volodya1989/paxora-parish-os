@@ -326,7 +326,8 @@ export async function updateEvent(
   const existing = await prisma.event.findFirst({
     where: {
       id: parsed.data.eventId,
-      parishId
+      parishId,
+      deletedAt: null
     },
     select: {
       id: true,
@@ -460,7 +461,8 @@ export async function deleteEvent(
   const existing = await prisma.event.findFirst({
     where: {
       id: eventId,
-      parishId
+      parishId,
+      deletedAt: null
     },
     select: {
       id: true,
@@ -485,8 +487,9 @@ export async function deleteEvent(
     };
   }
 
-  await prisma.event.delete({
-    where: { id: existing.id }
+  await prisma.event.update({
+    where: { id: existing.id },
+    data: { deletedAt: new Date() }
   });
 
   revalidatePath("/calendar");

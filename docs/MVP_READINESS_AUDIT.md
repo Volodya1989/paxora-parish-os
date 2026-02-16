@@ -139,7 +139,7 @@ Sanitize push notification content for private channels — DONE (Ready for revi
 BLOCKER
 2h
 R6
-Soft-delete events instead of hard delete
+Soft-delete events instead of hard delete — DONE (Ready for review)
 BLOCKER
 1h
 R7
@@ -190,7 +190,7 @@ IMPORTANT
 	2	No audit trail (R2) — admins can delete groups/events with zero accountability
 	3	Private group leak (R3) — Resolved (Ready for review)
 	4	Push content leak (R5) — Resolved (Ready for review)
-	5	Hard event deletion (R6) — accidental deletion = permanent data loss
+	5	Hard event deletion (R6) — Resolved (Ready for review)
 	6	Missing permission on task rollover (R7) — any member can manipulate the serve board
 	7	Group chat channel not atomically created (R4) — groups can exist without chat
 
@@ -250,7 +250,7 @@ HIGH
 Done (Ready for review)
 Hard event deletion (no recovery)
 HIGH
-Open
+Done (Ready for review)
 No admin audit trail
 HIGH
 Open
@@ -276,7 +276,7 @@ Acceptable for MVP
 1. R1  — Cron auth             (Completed, ready for review)
 2. R7  — Rollover perms        (15 min)
 3. R3  — listGroups fix        (Completed, ready for review)
-4. R6  — Soft-delete events    (1 hr)
+4. R6  — Soft-delete events    (Completed, ready for review)
 5. R5  — Push content sanitize (Completed, ready for review)
 6. R2  — AuditLog model        (4 hr)
 7. R4  — Atomic chat channel   (1 hr)
