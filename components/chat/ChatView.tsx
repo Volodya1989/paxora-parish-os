@@ -113,6 +113,7 @@ export default function ChatView({
   const [isLoadingOlder, setIsLoadingOlder] = useState(false);
   const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
   const [threadRoot, setThreadRoot] = useState<ChatMessage | null>(null);
+  const [threadEditingMessage, setThreadEditingMessage] = useState<ChatMessage | null>(null);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -254,8 +255,15 @@ export default function ChatView({
   useEffect(() => {
     setEditingMessage(null);
     setThreadRoot(null);
+    setThreadEditingMessage(null);
     setHasOlderMessages(initialMessages.length >= 50);
   }, [channel.id, initialMessages.length]);
+
+  useEffect(() => {
+    if (!threadRoot) {
+      setThreadEditingMessage(null);
+    }
+  }, [threadRoot]);
 
   const loadOlderMessages = useCallback(async () => {
     const oldest = messagesRef.current[0];
@@ -357,6 +365,32 @@ export default function ChatView({
   const handleSendThread = async (body: string, files: File[], mentionEntities: Array<{ userId: string; displayName: string; email: string; start: number; end: number }>) => {
     if (!threadRoot) return;
     try {
+      if (threadEditingMessage) {
+        if (files.length > 0) {
+          addToast({
+            title: t("chat.editingAttachmentsUnsupportedTitle"),
+            description: t("chat.editingAttachmentsUnsupportedDescription"),
+            status: "neutral"
+          });
+          return;
+        }
+        const updated = await editMessage(threadEditingMessage.id, body);
+        setMessages((prev) =>
+          prev.map((message) =>
+            message.id === updated.id
+              ? {
+                  ...message,
+                  ...parseMessage(updated),
+                  reactions: message.reactions,
+                  replyCount: message.replyCount
+                }
+              : message
+          )
+        );
+        setThreadEditingMessage(null);
+        return;
+      }
+
       const attachments = await uploadAttachments(files);
       const created = await postMessage(channel.id, body, {
         parentMessageId: threadRoot.id,
@@ -391,6 +425,9 @@ export default function ChatView({
     );
     if (editingMessage?.id === messageId) {
       setEditingMessage(null);
+    }
+    if (threadEditingMessage?.id === messageId) {
+      setThreadEditingMessage(null);
     }
     if (threadRoot?.id === messageId) {
       setThreadRoot(null);
@@ -616,6 +653,7 @@ export default function ChatView({
             onReply={(message) => {
               if (message.deletedAt) return;
               setEditingMessage(null);
+              setThreadEditingMessage(null);
               setThreadRoot(message);
             }}
             onEdit={(message) => {
@@ -626,7 +664,10 @@ export default function ChatView({
             onUnpin={handleUnpin}
             onDelete={handleDelete}
             onToggleReaction={handleToggleReaction}
-            onViewThread={(message) => setThreadRoot(message)}
+            onViewThread={(message) => {
+              setThreadEditingMessage(null);
+              setThreadRoot(message);
+            }}
             onVotePoll={handleVotePoll}
             isLoading={!isPollingReady}
             firstUnreadMessageId={firstUnreadMessageId}
@@ -670,7 +711,8 @@ export default function ChatView({
                   onReply={() => undefined}
                   onEdit={(message) => {
                     if (message.deletedAt) return;
-                    setEditingMessage(message);
+                    setEditingMessage(null);
+                    setThreadEditingMessage(message);
                   }}
                   onPin={handlePin}
                   onUnpin={handleUnpin}
@@ -682,6 +724,15 @@ export default function ChatView({
                 <Composer
                   disabled={!canPost || Boolean(lockedAt)}
                   onSend={handleSendThread}
+                  editingMessage={
+                    threadEditingMessage
+                      ? {
+                          id: threadEditingMessage.id,
+                          body: threadEditingMessage.body
+                        }
+                      : null
+                  }
+                  onCancelEdit={() => setThreadEditingMessage(null)}
                   replyTo={
                     threadRoot
                       ? {
@@ -707,6 +758,15 @@ export default function ChatView({
                   <Composer
                     disabled={!canPost || Boolean(lockedAt)}
                     onSend={handleSendThread}
+                    editingMessage={
+                      threadEditingMessage
+                        ? {
+                            id: threadEditingMessage.id,
+                            body: threadEditingMessage.body
+                          }
+                        : null
+                    }
+                    onCancelEdit={() => setThreadEditingMessage(null)}
                     replyTo={
                       threadRoot
                         ? {
@@ -731,7 +791,8 @@ export default function ChatView({
                 onReply={() => undefined}
                 onEdit={(message) => {
                   if (message.deletedAt) return;
-                  setEditingMessage(message);
+                  setEditingMessage(null);
+                  setThreadEditingMessage(message);
                 }}
                 onPin={handlePin}
                 onUnpin={handleUnpin}
