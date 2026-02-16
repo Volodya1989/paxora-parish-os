@@ -71,6 +71,10 @@ function renderMentionedText(
   return nodes;
 }
 
+async function copyTaskDisplayId(displayId: string) {
+  await navigator.clipboard.writeText(displayId);
+}
+
 function formatCompactName(name: string) {
   const trimmed = name.trim();
   if (!trimmed) {
@@ -243,14 +247,32 @@ export default function TaskDetailDialog({
     <div className="space-y-6 text-sm text-ink-700">
       <div className="space-y-2">
         <h3 className="text-h3">{taskSummary?.title ?? "Task details"}</h3>
+        {taskSummary?.displayId ? (
+          <div className="flex items-center gap-2 text-xs text-ink-500">
+            <span className="rounded-full bg-mist-100 px-2 py-1 font-semibold text-ink-600">{taskSummary.displayId}</span>
+            <button
+              type="button"
+              className="underline underline-offset-2"
+              onClick={() =>
+                copyTaskDisplayId(taskSummary.displayId)
+                  .then(() => addToast({ title: "Task ID copied", status: "success" }))
+                  .catch(() => addToast({ title: "Unable to copy Task ID", status: "error" }))
+              }
+            >
+              Copy ID
+            </button>
+          </div>
+        ) : null}
         {taskSummary?.notes ? <p className="text-ink-500">{taskSummary.notes}</p> : null}
         <div className="flex flex-wrap items-center gap-2 text-xs text-ink-500">
           <span className="rounded-full bg-mist-100 px-2 py-1 font-semibold text-ink-600">
-            {taskSummary?.status === "DONE"
-              ? t("common.done")
-              : taskSummary?.status === "IN_PROGRESS"
-                ? t("common.inProgress")
-                : t("common.todo")}
+            {taskSummary?.status === "ARCHIVED"
+              ? t("groups.filters.archived")
+              : taskSummary?.status === "DONE"
+                ? t("common.done")
+                : taskSummary?.status === "IN_PROGRESS"
+                  ? t("common.inProgress")
+                  : t("common.todo")}
           </span>
           <span className="rounded-full bg-sky-50 px-2 py-1 font-semibold text-sky-700">
             {taskSummary?.visibility === "PUBLIC" ? t("common.public") : t("common.private")}

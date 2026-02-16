@@ -4,7 +4,7 @@ import { getNow } from "@/lib/time/getNow";
 import { getOrCreateCurrentWeek } from "@/domain/week";
 import { prisma } from "@/server/db/prisma";
 
-export type TaskStatusFilter = "all" | "open" | "in-progress" | "done";
+export type TaskStatusFilter = "all" | "open" | "in-progress" | "done" | "archived";
 export type TaskOwnershipFilter = "mine" | "all";
 
 export type TaskFilters = {
@@ -12,22 +12,26 @@ export type TaskFilters = {
   ownership: TaskOwnershipFilter;
   groupId?: string;
   query?: string;
+  dateFrom?: string;
+  dateTo?: string;
 };
 
 export type TaskListItem = {
   id: string;
+  displayId: string;
   title: string;
   notes: string | null;
   estimatedHours: number | null;
   volunteersNeeded: number;
   volunteerCount: number;
   hasVolunteered: boolean;
-  status: "OPEN" | "IN_PROGRESS" | "DONE";
+  status: "OPEN" | "IN_PROGRESS" | "DONE" | "ARCHIVED";
   visibility: "PRIVATE" | "PUBLIC";
   openToVolunteers: boolean;
   approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
   dueAt: string;
   completedAt: string | null;
+  archivedAt: string | null;
   inProgressAt: string | null;
   updatedAt: string;
   updatedBy: {
@@ -67,6 +71,7 @@ export type TaskListSummary = {
   open: number;
   inProgress: number;
   done: number;
+  archived: number;
 };
 
 export type ListTasksInput = {
@@ -79,6 +84,7 @@ export type ListTasksInput = {
 
 export type PendingTaskApproval = {
   id: string;
+  displayId: string;
   title: string;
   notes: string | null;
   createdAt: Date;
@@ -111,9 +117,10 @@ export type PendingTaskRequest = {
 
 export type TaskDetail = {
   id: string;
+  displayId: string;
   title: string;
   notes: string | null;
-  status: "OPEN" | "IN_PROGRESS" | "DONE";
+  status: "OPEN" | "IN_PROGRESS" | "DONE" | "ARCHIVED";
   visibility: "PRIVATE" | "PUBLIC";
   approvalStatus: "PENDING" | "APPROVED" | "REJECTED";
   volunteersNeeded: number;
@@ -147,7 +154,8 @@ const statusCountsDefaults: TaskListSummary = {
   total: 0,
   open: 0,
   inProgress: 0,
-  done: 0
+  done: 0,
+  archived: 0
 };
 
 function getInitials(name: string) {
@@ -162,6 +170,17 @@ function getInitials(name: string) {
 
 function getDisplayName(name: string | null, email: string | null) {
   return name ?? email?.split("@")[0] ?? "Unassigned";
+}
+
+function parseDateFilter(value?: string, endOfDay?: boolean) {
+  if (!value) {
+    return null;
+  }
+  const parsed = new Date(`${value}${endOfDay ? "T23:59:59.999Z" : "T00:00:00.000Z"}`);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+  return parsed;
 }
 
 function resolveDueAt(dueAt: Date | null, createdAt: Date) {
@@ -185,7 +204,9 @@ export async function listTasks({
     status: filters?.status ?? "all",
     ownership: filters?.ownership ?? "all",
     groupId: filters?.groupId,
-    query: filters?.query
+    query: filters?.query,
+    dateFrom: filters?.dateFrom,
+    dateTo: filters?.dateTo
   };
 
   const parishMembership = await prisma.membership.findUnique({
@@ -211,10 +232,9 @@ export async function listTasks({
   });
   const memberGroupIds = groupMemberships.map((membership) => membership.groupId);
 
-  const baseWhere = {
+  const baseWhere: Prisma.TaskWhereInput = {
     parishId,
-    weekId: effectiveWeekId,
-    archivedAt: null
+    ...(normalizedFilters.status === "archived" ? {} : { weekId: effectiveWeekId })
   };
 
   const publicVisibilityFilter: Prisma.TaskWhereInput = memberGroupIds.length
@@ -258,6 +278,10 @@ export async function listTasks({
     andFilters.push({ status: "IN_PROGRESS" });
   } else if (normalizedFilters.status === "done") {
     andFilters.push({ status: "DONE" });
+  } else if (normalizedFilters.status === "archived") {
+    andFilters.push({ status: "ARCHIVED" });
+  } else {
+    andFilters.push({ status: { in: ["OPEN", "IN_PROGRESS", "DONE"] } });
   }
 
   if (
@@ -278,8 +302,31 @@ export async function listTasks({
   if (normalizedFilters.query) {
     andFilters.push({
       OR: [
+        { displayId: { contains: normalizedFilters.query, mode: "insensitive" } },
         { title: { contains: normalizedFilters.query, mode: "insensitive" } },
         { notes: { contains: normalizedFilters.query, mode: "insensitive" } }
+      ]
+    });
+  }
+
+  const dateFrom = parseDateFilter(normalizedFilters.dateFrom, false);
+  const dateTo = parseDateFilter(normalizedFilters.dateTo, true);
+  if (dateFrom || dateTo) {
+    const createdAtRange: Prisma.DateTimeFilter = {};
+    const completedAtRange: Prisma.DateTimeNullableFilter = { not: null };
+    if (dateFrom) {
+      createdAtRange.gte = dateFrom;
+      completedAtRange.gte = dateFrom;
+    }
+    if (dateTo) {
+      createdAtRange.lte = dateTo;
+      completedAtRange.lte = dateTo;
+    }
+
+    andFilters.push({
+      OR: [
+        { status: { in: ["OPEN", "IN_PROGRESS"] }, createdAt: createdAtRange },
+        { status: { in: ["DONE", "ARCHIVED"] }, completedAt: completedAtRange }
       ]
     });
   }
@@ -290,6 +337,7 @@ export async function listTasks({
       orderBy: [{ status: "asc" }, { createdAt: "asc" }],
       select: {
         id: true,
+        displayId: true,
         title: true,
         notes: true,
         estimatedHours: true,
@@ -303,6 +351,7 @@ export async function listTasks({
         dueAt: true,
         inProgressAt: true,
         completedAt: true,
+        archivedAt: true,
         completedById: true,
         ownerId: true,
         createdById: true,
@@ -376,12 +425,16 @@ export async function listTasks({
     const count = item._count?._all ?? 0;
     if (item.status === "OPEN") {
       acc.open = count;
+      acc.total += count;
     } else if (item.status === "IN_PROGRESS") {
       acc.inProgress = count;
+      acc.total += count;
     } else if (item.status === "DONE") {
       acc.done = count;
+      acc.total += count;
+    } else if (item.status === "ARCHIVED") {
+      acc.archived = count;
     }
-    acc.total += count;
     return acc;
   }, { ...statusCountsDefaults });
 
@@ -403,6 +456,9 @@ export async function listTasks({
       canManageGroup;
     const hasVolunteered = task.volunteers.length > 0;
     const canManageStatus = (() => {
+      if (task.status === "ARCHIVED") {
+        return false;
+      }
       if (isLeader || isCoordinator) {
         return true;
       }
@@ -435,7 +491,7 @@ export async function listTasks({
       Boolean(parishMembership) &&
       task.visibility === "PUBLIC" &&
       task.approvalStatus === "APPROVED" &&
-      task.status !== "DONE" &&
+      !(["DONE", "ARCHIVED"].includes(task.status)) &&
       task.volunteersNeeded > 1 &&
       (!task.groupId || groupRoleMap.has(task.groupId)) &&
       (task.openToVolunteers || isLeader || isCoordinator);
@@ -452,6 +508,7 @@ export async function listTasks({
 
     return {
       id: task.id,
+      displayId: task.displayId,
       title: task.title,
       notes: task.notes ?? null,
       estimatedHours: task.estimatedHours ?? null,
@@ -464,6 +521,7 @@ export async function listTasks({
       approvalStatus: task.approvalStatus,
       inProgressAt: task.inProgressAt ? task.inProgressAt.toISOString() : null,
       completedAt: task.completedAt ? task.completedAt.toISOString() : null,
+      archivedAt: task.archivedAt ? task.archivedAt.toISOString() : null,
       dueAt: resolveDueAt(task.dueAt, task.createdAt).toISOString(),
       updatedAt: task.updatedAt.toISOString(),
       updatedBy: updatedByName && task.updatedBy
@@ -549,6 +607,7 @@ export async function listPendingTaskApprovals({
     orderBy: { createdAt: "asc" },
     select: {
       id: true,
+      displayId: true,
       title: true,
       notes: true,
       createdAt: true,
@@ -581,6 +640,7 @@ export async function listPendingTaskApprovals({
 
   return approvals.map((task) => ({
     id: task.id,
+    displayId: task.displayId,
     title: task.title,
     notes: task.notes ?? null,
     createdAt: task.createdAt,
@@ -650,6 +710,7 @@ export async function getTaskDetail({
     where: { id: taskId },
     select: {
       id: true,
+      displayId: true,
       parishId: true,
       ownerId: true,
       createdById: true,
@@ -753,6 +814,7 @@ export async function getTaskDetail({
 
   return {
     id: task.id,
+    displayId: task.displayId,
     title: task.title,
     notes: task.notes ?? null,
     status: task.status,

@@ -5,6 +5,20 @@ import { getGroupMembership, getParishMembership } from "@/server/db/groups";
 import { prisma } from "@/server/db/prisma";
 import { notifyTaskCreated, notifyTaskAssigned } from "@/lib/push/notify";
 import { notifyTaskAssignedInApp, notifyTaskCreatedInApp } from "@/lib/notifications/notify";
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
+
+const TASK_DISPLAY_PREFIX = "SERV";
+
+async function nextTaskDisplayId(tx: Pick<typeof prisma, "taskSequence">, parishId: string) {
+  const sequence = await tx.taskSequence.upsert({
+    where: { parishId },
+    create: { parishId, nextValue: 2 },
+    update: { nextValue: { increment: 1 } },
+    select: { nextValue: true }
+  });
+
+  return `${TASK_DISPLAY_PREFIX}-${sequence.nextValue - 1}`;
+}
 
 type CreateTaskInput = {
   parishId: string;
@@ -74,23 +88,27 @@ export async function createTask({
   approvalStatus
 }: CreateTaskInput) {
   const resolvedDueAt = dueAt ?? getDefaultDueAt();
-  const task = await prisma.task.create({
-    data: {
-      parishId,
-      weekId,
-      ownerId,
-      createdById,
-      updatedByUserId: createdById,
-      groupId,
-      title,
-      notes,
-      estimatedHours,
-      volunteersNeeded: volunteersNeeded ?? 1,
-      dueAt: resolvedDueAt,
-      visibility,
-      openToVolunteers: openToVolunteers ?? false,
-      approvalStatus
-    }
+  const task = await prisma.$transaction(async (tx) => {
+    const displayId = await nextTaskDisplayId(tx, parishId);
+    return tx.task.create({
+      data: {
+        displayId,
+        parishId,
+        weekId,
+        ownerId,
+        createdById,
+        updatedByUserId: createdById,
+        groupId,
+        title,
+        notes,
+        estimatedHours,
+        volunteersNeeded: volunteersNeeded ?? 1,
+        dueAt: resolvedDueAt,
+        visibility,
+        openToVolunteers: openToVolunteers ?? false,
+        approvalStatus
+      }
+    });
   });
 
   await createTaskActivity({
@@ -199,6 +217,7 @@ async function assertTaskAccess({ taskId, parishId, actorUserId }: TaskActionInp
     throw new Error("Task not found");
   }
 
+
   const parishMembership = await getParishMembership(parishId, actorUserId);
   if (!parishMembership) {
     throw new Error("Forbidden");
@@ -243,12 +262,17 @@ async function assertTaskCommentAccess({ taskId, parishId, actorUserId }: TaskAc
       createdById: true,
       parishId: true,
       visibility: true,
-      approvalStatus: true
+      approvalStatus: true,
+      status: true
     }
   });
 
   if (!task || task.parishId !== parishId) {
     throw new Error("Task not found");
+  }
+
+  if (task.status === "ARCHIVED") {
+    throw new Error("Archived tasks cannot be updated.");
   }
 
   const parishMembership = await getParishMembership(parishId, actorUserId);
@@ -640,6 +664,7 @@ export async function archiveTask({ taskId, parishId, actorUserId }: TaskActionI
   const updated = await prisma.task.update({
     where: { id: taskId },
     data: {
+      status: "ARCHIVED",
       archivedAt: new Date(),
       updatedByUserId: actorUserId
     }
@@ -657,9 +682,19 @@ export async function archiveTask({ taskId, parishId, actorUserId }: TaskActionI
 export async function unarchiveTask({ taskId, parishId, actorUserId }: TaskActionInput) {
   await assertTaskAccess({ taskId, parishId, actorUserId });
 
+  const existingTask = await prisma.task.findUnique({
+    where: { id: taskId },
+    select: { completedAt: true, parishId: true }
+  });
+
+  if (!existingTask || existingTask.parishId !== parishId) {
+    throw new Error("Task not found");
+  }
+
   const updated = await prisma.task.update({
     where: { id: taskId },
     data: {
+      status: existingTask.completedAt ? "DONE" : "OPEN",
       archivedAt: null,
       updatedByUserId: actorUserId
     }
@@ -1331,6 +1366,40 @@ export async function addTaskComment({
   return comment;
 }
 
+export async function autoArchiveCompletedTasksForParish({
+  parishId,
+  timezone,
+  now = new Date()
+}: {
+  parishId: string;
+  timezone: string;
+  now?: Date;
+}) {
+  const localNow = toZonedTime(now, timezone);
+  const localWeekStart = new Date(localNow);
+  localWeekStart.setHours(0, 0, 0, 0);
+  localWeekStart.setDate(localWeekStart.getDate() - localWeekStart.getDay());
+  const weekStartUtc = fromZonedTime(localWeekStart, timezone);
+
+  const result = await prisma.task.updateMany({
+    where: {
+      parishId,
+      status: "DONE",
+      archivedAt: null,
+      completedAt: { lt: weekStartUtc }
+    },
+    data: {
+      status: "ARCHIVED",
+      archivedAt: now
+    }
+  });
+
+  return {
+    archived: result.count,
+    weekStartUtc
+  };
+}
+
 export async function rolloverOpenTasks({ parishId, fromWeekId, toWeekId }: RolloverTaskInput) {
   const openTasks = await prisma.task.findMany({
     where: {
@@ -1391,6 +1460,18 @@ export async function rolloverOpenTasks({ parishId, fromWeekId, toWeekId }: Roll
     return 0;
   }
 
-  const result = await prisma.task.createMany({ data: newTasks });
-  return result.count;
+  await prisma.$transaction(async (tx) => {
+    for (const task of newTasks) {
+      const displayId = await nextTaskDisplayId(tx, parishId);
+      await tx.task.create({
+        data: {
+          ...task,
+          displayId,
+          updatedByUserId: task.createdById
+        }
+      });
+    }
+  });
+
+  return newTasks.length;
 }

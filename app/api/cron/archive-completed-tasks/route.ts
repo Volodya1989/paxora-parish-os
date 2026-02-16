@@ -1,29 +1,29 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/server/db/prisma";
 import { getNow } from "@/lib/time/getNow";
-import { getWeekForSelection } from "@/domain/week";
+import { autoArchiveCompletedTasksForParish } from "@/domain/tasks";
 
 export async function GET() {
   const now = getNow();
   const parishes = await prisma.parish.findMany({
-    select: { id: true }
+    select: { id: true, timezone: true }
   });
 
+  const results: Array<{ parishId: string; timezone: string; archived: number }> = [];
   let archived = 0;
 
   for (const parish of parishes) {
-    const currentWeek = await getWeekForSelection(parish.id, "current", now);
-    const result = await prisma.task.updateMany({
-      where: {
-        parishId: parish.id,
-        archivedAt: null,
-        status: "DONE",
-        weekId: { not: currentWeek.id }
-      },
-      data: { archivedAt: now }
+    const result = await autoArchiveCompletedTasksForParish({
+      parishId: parish.id,
+      timezone: parish.timezone || "UTC",
+      now
     });
-    archived += result.count;
+    archived += result.archived;
+    results.push({ parishId: parish.id, timezone: parish.timezone || "UTC", archived: result.archived });
   }
 
-  return NextResponse.json({ archived });
+  return NextResponse.json({
+    archived,
+    parishes: results
+  });
 }

@@ -12,7 +12,8 @@ import {
   markTaskOpen,
   unassignTask,
   deferTask,
-  rolloverOpenTasks
+  rolloverOpenTasks,
+  autoArchiveCompletedTasksForParish
 } from "@/domain/tasks";
 import { getOrCreateCurrentWeek } from "@/domain/week";
 import { listPendingTaskApprovals, listTasks } from "@/lib/queries/tasks";
@@ -341,7 +342,7 @@ dbTest("claim and unclaim respect open volunteer gating", async () => {
     parishId: parish.id,
     weekId: week.id,
     createdById: creator.id,
-    title: "Set up chairs",
+      title: "Set up chairs",
     visibility: "PUBLIC",
     approvalStatus: "APPROVED"
   });
@@ -551,6 +552,7 @@ dbTest("task visibility and approval are enforced in list queries", async () => 
         weekId: week.id,
         ownerId: creator.id,
         createdById: creator.id,
+        displayId: "SERV-1",
         title: "Pending public",
         visibility: "PUBLIC",
         approvalStatus: "PENDING"
@@ -560,6 +562,7 @@ dbTest("task visibility and approval are enforced in list queries", async () => 
         weekId: week.id,
         ownerId: creator.id,
         createdById: creator.id,
+        displayId: "SERV-2",
         title: "Approved public",
         visibility: "PUBLIC",
         approvalStatus: "APPROVED"
@@ -569,6 +572,7 @@ dbTest("task visibility and approval are enforced in list queries", async () => 
         weekId: week.id,
         ownerId: creator.id,
         createdById: creator.id,
+        displayId: "SERV-3",
         title: "Private task",
         visibility: "PRIVATE",
         approvalStatus: "APPROVED"
@@ -704,4 +708,134 @@ dbTest("tasks default due dates and allow assignment and status changes", async 
 
   const selfAssigned = await prisma.task.findUnique({ where: { id: openTask.id } });
   assert.equal(selfAssigned?.ownerId, admin.id);
+});
+
+
+dbTest("createTask assigns parish-scoped stable display IDs even during concurrent creates", async () => {
+  const parish = await prisma.parish.create({ data: { name: "St. Paul", slug: "st-paul" } });
+  const creator = await prisma.user.create({
+    data: {
+      email: "display@example.com",
+      name: "Display",
+      passwordHash: "hashed",
+      activeParishId: parish.id
+    }
+  });
+
+  await prisma.membership.create({ data: { parishId: parish.id, userId: creator.id, role: "ADMIN" } });
+  const week = await getOrCreateCurrentWeek(parish.id);
+
+  const created = await Promise.all(
+    Array.from({ length: 12 }).map((_, idx) =>
+      createTask({
+        parishId: parish.id,
+        weekId: week.id,
+        createdById: creator.id,
+        title: `Concurrent ${idx + 1}`,
+        visibility: "PUBLIC",
+        approvalStatus: "APPROVED"
+      })
+    )
+  );
+
+  const displayIds = created.map((task) => task.displayId);
+  assert.equal(new Set(displayIds).size, displayIds.length);
+  assert.ok(displayIds.every((value) => value.startsWith("SERV-")));
+});
+
+dbTest("weekly auto-archive is idempotent", async () => {
+  const parish = await prisma.parish.create({
+    data: { name: "St. Archive", slug: "st-archive", timezone: "America/New_York" }
+  });
+  const owner = await prisma.user.create({
+    data: {
+      email: "archive-owner@example.com",
+      name: "Archive Owner",
+      passwordHash: "hashed",
+      activeParishId: parish.id
+    }
+  });
+
+  await prisma.membership.create({ data: { parishId: parish.id, userId: owner.id, role: "ADMIN" } });
+  const week = await getOrCreateCurrentWeek(parish.id, new Date("2024-06-10T12:00:00.000Z"));
+
+  const doneTask = await createTask({
+    parishId: parish.id,
+    weekId: week.id,
+    createdById: owner.id,
+    ownerId: owner.id,
+    title: "Done task",
+    visibility: "PUBLIC",
+    approvalStatus: "APPROVED"
+  });
+
+  await prisma.task.update({
+    where: { id: doneTask.id },
+    data: { status: "DONE", completedAt: new Date("2024-06-01T15:00:00.000Z") }
+  });
+
+  const firstRun = await autoArchiveCompletedTasksForParish({
+    parishId: parish.id,
+    timezone: parish.timezone,
+    now: new Date("2024-06-16T05:00:00.000Z")
+  });
+  const secondRun = await autoArchiveCompletedTasksForParish({
+    parishId: parish.id,
+    timezone: parish.timezone,
+    now: new Date("2024-06-16T05:05:00.000Z")
+  });
+
+  assert.equal(firstRun.archived, 1);
+  assert.equal(secondRun.archived, 0);
+
+  const archivedTask = await prisma.task.findUnique({ where: { id: doneTask.id } });
+  assert.equal(archivedTask?.status, "ARCHIVED");
+  assert.ok(archivedTask?.archivedAt);
+});
+
+dbTest("search by display ID finds archived tasks", async () => {
+  const parish = await prisma.parish.create({ data: { name: "St. Find", slug: "st-find" } });
+  const user = await prisma.user.create({
+    data: {
+      email: "finder@example.com",
+      name: "Finder",
+      passwordHash: "hashed",
+      activeParishId: parish.id
+    }
+  });
+
+  await prisma.membership.create({ data: { parishId: parish.id, userId: user.id, role: "ADMIN" } });
+  const week = await getOrCreateCurrentWeek(parish.id);
+
+  const task = await createTask({
+    parishId: parish.id,
+    weekId: week.id,
+    createdById: user.id,
+    title: "Kitchen cleanup",
+    visibility: "PUBLIC",
+    approvalStatus: "APPROVED"
+  });
+
+  await prisma.task.update({
+    where: { id: task.id },
+    data: {
+      status: "ARCHIVED",
+      completedAt: new Date("2024-06-01T15:00:00.000Z"),
+      archivedAt: new Date("2024-06-16T05:00:00.000Z")
+    }
+  });
+
+  const listed = await listTasks({
+    parishId: parish.id,
+    actorUserId: user.id,
+    weekId: week.id,
+    filters: {
+      status: "archived",
+      ownership: "all",
+      query: task.displayId
+    }
+  });
+
+  assert.equal(listed.tasks.length, 1);
+  assert.equal(listed.tasks[0]?.id, task.id);
 });

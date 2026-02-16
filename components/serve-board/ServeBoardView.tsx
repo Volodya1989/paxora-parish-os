@@ -142,11 +142,12 @@ export default function ServeBoardView({
         return false;
       }
       if (query) {
+        const matchesId = task.displayId.toLowerCase().includes(query);
         const matchesTitle = task.title.toLowerCase().includes(query);
         const matchesNotes = task.notes?.toLowerCase().includes(query);
         const matchesOwner = task.owner?.name.toLowerCase().includes(query);
         const matchesGroup = task.group?.name.toLowerCase().includes(query);
-        if (!matchesTitle && !matchesNotes && !matchesOwner && !matchesGroup) {
+        if (!matchesId && !matchesTitle && !matchesNotes && !matchesOwner && !matchesGroup) {
           return false;
         }
       }
@@ -499,7 +500,10 @@ export default function ServeBoardView({
                             <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-mist-100">
                               <ListChecksIcon className="h-3.5 w-3.5 text-ink-400" />
                             </span>
-                            <div className="text-sm font-semibold text-ink-900 leading-snug">{task.title}</div>
+                            <div>
+                              <div className="text-sm font-semibold text-ink-900 leading-snug">{task.title}</div>
+                              <div className="text-[11px] uppercase tracking-wide text-ink-400">{task.displayId}</div>
+                            </div>
                           </div>
                           <div className="flex flex-wrap items-center gap-1.5 text-xs">
                             {task.visibility === "PUBLIC" && task.openToVolunteers ? (

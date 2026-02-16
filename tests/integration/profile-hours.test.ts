@@ -67,6 +67,7 @@ dbTest("profile shows YTD hours and milestone tier", async () => {
       weekId: week.id,
       createdById: user.id,
       ownerId: user.id,
+      displayId: "SERV-1",
       title: "Serve coffee"
     }
   });
@@ -76,6 +77,7 @@ dbTest("profile shows YTD hours and milestone tier", async () => {
       weekId: week.id,
       createdById: user.id,
       ownerId: user.id,
+      displayId: "SERV-2",
       title: "Restock supplies"
     }
   });
@@ -85,6 +87,7 @@ dbTest("profile shows YTD hours and milestone tier", async () => {
       weekId: week.id,
       createdById: user.id,
       ownerId: user.id,
+      displayId: "SERV-3",
       title: "Archive files"
     }
   });

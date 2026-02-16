@@ -8,6 +8,7 @@ import { withI18n } from "@/tests/utils/i18n";
 
 const baseTask: TaskListItem = {
   id: "task-1",
+  displayId: "SERV-1",
   title: "Prepare worship guide",
   notes: "Finalize readings and hymns.",
   estimatedHours: 3,
@@ -20,6 +21,7 @@ const baseTask: TaskListItem = {
   approvalStatus: "APPROVED",
   dueAt: "2026-01-21T00:00:00.000Z",
   completedAt: null,
+  archivedAt: null,
   inProgressAt: null,
   updatedAt: "2026-01-20T00:00:00.000Z",
   updatedBy: null,

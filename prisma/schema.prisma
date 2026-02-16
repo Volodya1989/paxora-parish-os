@@ -68,6 +68,7 @@ enum TaskStatus {
   OPEN
   IN_PROGRESS
   DONE
+  ARCHIVED
 }
 
 enum TaskVisibility {
@@ -251,25 +252,36 @@ model Parish {
   pushSubscriptions PushSubscription[]
   memberships       Membership[]
   accessRequests    AccessRequest[]
-  groups          Group[]
-  weeks           Week[]
-  tasks           Task[]
-  events          Event[]
-  eventRequests   EventRequest[]
-  requests        Request[]
-  digests         Digest[]
-  announcements   Announcement[]
-  chatChannels    ChatChannel[]
-  emailLogs       EmailLog[]
-  notifications   Notification[]
-  mentions        Mention[]
-  hoursEntries    HoursEntry[]
-  heroNominations HeroNomination[]
-  parishInvites   ParishInvite[]
-  hubItems        ParishHubItem[]
-  deliveryAttempts DeliveryAttempt[]
-  impersonatedUsers User[]                 @relation("ImpersonatedParish")
-  auditLogs       AuditLog[]              @relation("ParishAuditLogs")
+  groups            Group[]
+  weeks             Week[]
+  tasks             Task[]
+  events            Event[]
+  eventRequests     EventRequest[]
+  requests          Request[]
+  digests           Digest[]
+  announcements     Announcement[]
+  chatChannels      ChatChannel[]
+  emailLogs         EmailLog[]
+  notifications     Notification[]
+  mentions          Mention[]
+  hoursEntries      HoursEntry[]
+  heroNominations   HeroNomination[]
+  taskSequence      TaskSequence?
+  parishInvites     ParishInvite[]
+  hubItems          ParishHubItem[]
+  deliveryAttempts  DeliveryAttempt[]
+  impersonatedUsers User[]             @relation("ImpersonatedParish")
+  auditLogs         AuditLog[]         @relation("ParishAuditLogs")
+}
+
+model TaskSequence {
+  id        String   @id @default(cuid())
+  parishId  String   @unique
+  nextValue Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parish Parish @relation(fields: [parishId], references: [id], onDelete: Cascade)
 }
 
 model ParishHubItem {
@@ -294,38 +306,38 @@ model ParishHubItem {
 }
 
 model User {
-  id                   String    @id @default(cuid())
-  email                String    @unique
-  name                 String?
-  avatarKey            String?
-  passwordHash         String
-  activeParishId       String?
-  impersonatedParishId String?
-  platformRole         PlatformRole?
-  emailVerifiedAt      DateTime?
-  notificationsEnabled Boolean   @default(true)
-  weeklyDigestEnabled  Boolean   @default(true)
-  notifyMessageInApp   Boolean   @default(true)
-  notifyTaskInApp      Boolean   @default(true)
-  notifyAnnouncementInApp Boolean @default(true)
-  notifyEventInApp     Boolean   @default(true)
-  notifyRequestInApp   Boolean   @default(true)
-  volunteerHoursOptIn  Boolean   @default(false)
-  birthdayMonth        Int?
-  birthdayDay          Int?
-  anniversaryMonth     Int?
-  anniversaryDay       Int?
-  greetingsOptIn           Boolean   @default(false)
-  lastLoginAt              DateTime?
-  lastSeenAnnouncementsAt  DateTime?
-  lastSeenEventsAt         DateTime?
-  lastSeenTasksAt          DateTime?
-  lastSeenRequestsAt       DateTime?
-  createdAt                DateTime  @default(now())
+  id                      String        @id @default(cuid())
+  email                   String        @unique
+  name                    String?
+  avatarKey               String?
+  passwordHash            String
+  activeParishId          String?
+  impersonatedParishId    String?
+  platformRole            PlatformRole?
+  emailVerifiedAt         DateTime?
+  notificationsEnabled    Boolean       @default(true)
+  weeklyDigestEnabled     Boolean       @default(true)
+  notifyMessageInApp      Boolean       @default(true)
+  notifyTaskInApp         Boolean       @default(true)
+  notifyAnnouncementInApp Boolean       @default(true)
+  notifyEventInApp        Boolean       @default(true)
+  notifyRequestInApp      Boolean       @default(true)
+  volunteerHoursOptIn     Boolean       @default(false)
+  birthdayMonth           Int?
+  birthdayDay             Int?
+  anniversaryMonth        Int?
+  anniversaryDay          Int?
+  greetingsOptIn          Boolean       @default(false)
+  lastLoginAt             DateTime?
+  lastSeenAnnouncementsAt DateTime?
+  lastSeenEventsAt        DateTime?
+  lastSeenTasksAt         DateTime?
+  lastSeenRequestsAt      DateTime?
+  createdAt               DateTime      @default(now())
 
   notifications            Notification[]
-  mentionsReceived         Mention[]               @relation("MentionRecipient")
-  mentionsSent             Mention[]               @relation("MentionActor")
+  mentionsReceived         Mention[]                @relation("MentionRecipient")
+  mentionsSent             Mention[]                @relation("MentionActor")
   pushSubscriptions        PushSubscription[]
   memberships              Membership[]
   accessRequests           AccessRequest[]
@@ -388,7 +400,6 @@ model Notification {
   @@index([userId, type, createdAt])
 }
 
-
 model Mention {
   id              String             @id @default(cuid())
   parishId        String
@@ -415,8 +426,8 @@ model AuditLog {
   action         AuditAction
   createdAt      DateTime    @default(now())
 
-  actorUser      User        @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: Cascade)
-  targetParish   Parish      @relation("ParishAuditLogs", fields: [targetParishId], references: [id], onDelete: Cascade)
+  actorUser    User   @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: Cascade)
+  targetParish Parish @relation("ParishAuditLogs", fields: [targetParishId], references: [id], onDelete: Cascade)
 
   @@index([actorUserId, createdAt])
   @@index([targetParishId, createdAt])
@@ -453,7 +464,7 @@ model AccessRequest {
 }
 
 model EventRequest {
-  id              String              @id @default(cuid())
+  id              String               @id @default(cuid())
   parishId        String
   requesterId     String
   contactName     String
@@ -464,12 +475,12 @@ model EventRequest {
   location        String?
   description     String?
   participants    Int?
-  status          EventRequestStatus  @default(PENDING)
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  status          EventRequestStatus   @default(PENDING)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
   decidedAt       DateTime?
   decidedByUserId String?
-  eventId         String?             @unique
+  eventId         String?              @unique
 
   parish    Parish @relation(fields: [parishId], references: [id], onDelete: Cascade)
   requester User   @relation(fields: [requesterId], references: [id], onDelete: Cascade)
@@ -536,18 +547,18 @@ model EmailLog {
 }
 
 model DeliveryAttempt {
-  id                 String          @id @default(cuid())
-  channel            DeliveryChannel
-  status             DeliveryStatus
-  parishId           String?
-  userId             String?
-  target             String?
-  template           String?
-  context            Json?
-  providerMessageId  String?
-  errorCode          String?
-  errorMessage       String?
-  createdAt          DateTime        @default(now())
+  id                String          @id @default(cuid())
+  channel           DeliveryChannel
+  status            DeliveryStatus
+  parishId          String?
+  userId            String?
+  target            String?
+  template          String?
+  context           Json?
+  providerMessageId String?
+  errorCode         String?
+  errorMessage      String?
+  createdAt         DateTime        @default(now())
 
   parish Parish? @relation(fields: [parishId], references: [id], onDelete: SetNull)
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -584,17 +595,17 @@ model EmailVerificationToken {
 }
 
 model ParishInvite {
-  id               String     @id @default(cuid())
-  parishId         String
-  email            String
-  role             ParishRole @default(MEMBER)
-  tokenHash        String     @unique
-  expiresAt        DateTime
-  acceptedAt       DateTime?
-  revokedAt        DateTime?
-  invitedByUserId  String?
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
+  id              String     @id @default(cuid())
+  parishId        String
+  email           String
+  role            ParishRole @default(MEMBER)
+  tokenHash       String     @unique
+  expiresAt       DateTime
+  acceptedAt      DateTime?
+  revokedAt       DateTime?
+  invitedByUserId String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
 
   parish    Parish @relation(fields: [parishId], references: [id], onDelete: Cascade)
   invitedBy User?  @relation("ParishInviteActor", fields: [invitedByUserId], references: [id], onDelete: SetNull)
@@ -698,10 +709,10 @@ model ChatMessage {
   editedAt        DateTime?
   deletedAt       DateTime?
 
-  channel       ChatChannel        @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  author        User               @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  parentMessage ChatMessage?       @relation("ChatMessageReplies", fields: [parentMessageId], references: [id], onDelete: SetNull)
-  replies       ChatMessage[]      @relation("ChatMessageReplies")
+  channel       ChatChannel             @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  author        User                    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parentMessage ChatMessage?            @relation("ChatMessageReplies", fields: [parentMessageId], references: [id], onDelete: SetNull)
+  replies       ChatMessage[]           @relation("ChatMessageReplies")
   attachments   ChatMessageAttachment[]
   pinned        ChatPinnedMessage?
   reactions     ChatReaction[]
@@ -788,7 +799,7 @@ model ChatPoll {
   expiresAt DateTime?
   createdAt DateTime  @default(now())
 
-  message ChatMessage    @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  message ChatMessage      @relation(fields: [messageId], references: [id], onDelete: Cascade)
   options ChatPollOption[]
 }
 
@@ -820,6 +831,7 @@ model ChatPollVote {
 
 model Task {
   id               String             @id @default(cuid())
+  displayId        String
   parishId         String
   weekId           String
   groupId          String?
@@ -857,11 +869,14 @@ model Task {
   activities   TaskActivity[]
   hoursEntries HoursEntry[]
 
+  @@unique([parishId, displayId])
   @@index([weekId])
   @@index([ownerId])
   @@index([createdById])
   @@index([groupId])
   @@index([parishId, weekId])
+  @@index([parishId, status])
+  @@index([parishId, completedAt])
 }
 
 model HoursEntry {
@@ -925,12 +940,12 @@ model TaskVolunteer {
 }
 
 model TaskComment {
-  id        String   @id @default(cuid())
-  taskId    String
-  authorId  String
-  body      String
+  id              String   @id @default(cuid())
+  taskId          String
+  authorId        String
+  body            String
   mentionEntities Json?
-  createdAt DateTime @default(now())
+  createdAt       DateTime @default(now())
 
   task   Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
@@ -972,11 +987,11 @@ model Event {
   createdAt           DateTime                 @default(now())
   updatedAt           DateTime                 @updatedAt
 
-  parish Parish      @relation(fields: [parishId], references: [id])
-  week   Week        @relation(fields: [weekId], references: [id], onDelete: Cascade)
-  group  Group?      @relation(fields: [groupId], references: [id])
-  rsvps  EventRsvp[]
-  reminders EventReminder[]
+  parish       Parish          @relation(fields: [parishId], references: [id])
+  week         Week            @relation(fields: [weekId], references: [id], onDelete: Cascade)
+  group        Group?          @relation(fields: [groupId], references: [id])
+  rsvps        EventRsvp[]
+  reminders    EventReminder[]
   eventRequest EventRequest?
 
   @@index([weekId])

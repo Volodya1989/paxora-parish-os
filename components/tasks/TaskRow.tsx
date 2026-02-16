@@ -87,6 +87,7 @@ export default function TaskRow({
   const t = useTranslations();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const isDone = task.status === "DONE";
+  const isArchived = task.status === "ARCHIVED";
   const isInProgress = task.status === "IN_PROGRESS";
   const isVolunteerTask = task.volunteersNeeded > 1;
   const canManage = task.canManage && !isBusy;
@@ -139,11 +140,13 @@ export default function TaskRow({
     <div
       className={cn(
         "flex flex-col gap-3 rounded-card border border-mist-100 bg-white px-3 py-3 shadow-card sm:flex-row sm:items-start sm:justify-between",
-        isDone
-          ? "border-l-4 border-l-emerald-400"
-          : isInProgress
-            ? "border-l-4 border-l-amber-400"
-            : "border-l-4 border-l-sky-400"
+        isArchived
+          ? "border-l-4 border-l-slate-400"
+          : isDone
+            ? "border-l-4 border-l-emerald-400"
+            : isInProgress
+              ? "border-l-4 border-l-amber-400"
+              : "border-l-4 border-l-sky-400"
       )}
       role="button"
       tabIndex={0}
@@ -157,7 +160,10 @@ export default function TaskRow({
               <span className="flex h-6 w-6 items-center justify-center rounded-full bg-mist-100">
                 <ListChecksIcon className="h-3.5 w-3.5 text-ink-400" />
               </span>
-              <p className="text-sm font-semibold text-ink-900 break-words">{task.title}</p>
+              <div>
+                <p className="text-sm font-semibold text-ink-900 break-words">{task.title}</p>
+                <p className="text-[11px] uppercase tracking-wide text-ink-400">{task.displayId}</p>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -263,8 +269,8 @@ export default function TaskRow({
             <p className="text-xs text-ink-500 break-words">{task.notes}</p>
           ) : null}
           <div className="flex flex-wrap items-center gap-2 text-xs text-ink-500">
-            <Badge tone={isDone ? "success" : isInProgress ? "warning" : "neutral"}>
-              {isDone ? t("common.done") : isInProgress ? t("common.inProgress") : t("common.todo")}
+            <Badge tone={isArchived ? "neutral" : isDone ? "success" : isInProgress ? "warning" : "neutral"}>
+              {isArchived ? t("groups.filters.archived") : isDone ? t("common.done") : isInProgress ? t("common.inProgress") : t("common.todo")}
             </Badge>
             <span className="rounded-full bg-mist-50 px-2 py-1 text-[11px] font-medium text-ink-600">
               Due {dueDateLabel}
@@ -359,7 +365,7 @@ export default function TaskRow({
             </Button>
           ) : null}
 
-          {canManageStatus ? (
+          {canManageStatus && !isArchived ? (
             <Button
               type="button"
               variant={isDone ? "secondary" : "primary"}

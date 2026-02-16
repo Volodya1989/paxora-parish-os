@@ -206,6 +206,7 @@ async function main() {
         weekId: week.id,
         ownerId: user.id,
         createdById: user.id,
+        displayId: "SERV-1",
         title: "Prepare Sunday liturgy sheet",
         visibility: "PUBLIC",
         approvalStatus: "APPROVED"
@@ -215,6 +216,7 @@ async function main() {
         weekId: week.id,
         ownerId: user.id,
         createdById: user.id,
+        displayId: "SERV-2",
         title: "Confirm volunteer schedule",
         visibility: "PUBLIC",
         approvalStatus: "APPROVED"

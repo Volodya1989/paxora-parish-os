@@ -287,7 +287,7 @@ export default function TasksView({
 
         <HeaderActionBar
           onFilterClick={() => setFiltersOpen(true)}
-          filterActive={filters.status !== "all" || filters.ownership !== "all" || Boolean(filters.groupId) || Boolean(filters.query)}
+          filterActive={filters.status !== "all" || filters.ownership !== "all" || Boolean(filters.groupId) || Boolean(filters.query) || Boolean(filters.dateFrom) || Boolean(filters.dateTo)}
           onAddClick={
             canManageTasks || canRequestContentCreate
               ? () => (canManageTasks ? setIsCreateOpen(true) : setIsRequestOpen(true))
