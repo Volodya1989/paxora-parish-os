@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
+import { requireCronSecret } from "@/lib/cron/auth";
 import { prisma } from "@/server/db/prisma";
 import { getNow } from "@/lib/time/getNow";
 import { autoArchiveCompletedTasksForParish } from "@/domain/tasks";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const unauthorized = requireCronSecret(request);
+  if (unauthorized) return unauthorized;
+
   const now = getNow();
   const parishes = await prisma.parish.findMany({
     select: { id: true, timezone: true }
