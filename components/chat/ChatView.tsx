@@ -575,7 +575,7 @@ export default function ChatView({
       <aside className="hidden space-y-4 lg:block">
         <ChannelList channels={channels} activeChannelId={channel.id} />
       </aside>
-      <section className="flex flex-col fixed inset-0 z-40 bg-mist-50 touch-manipulation md:static md:z-auto md:h-[calc(100dvh-6rem)] md:max-h-[calc(100dvh-6rem)] md:rounded-card">
+      <section className="flex flex-col fixed inset-0 z-40 bg-mist-50 touch-manipulation animate-chat-fade-in md:static md:z-auto md:h-[calc(100dvh-6rem)] md:max-h-[calc(100dvh-6rem)] md:rounded-card">
         <div className="shrink-0">
           <ChatHeader
             channel={{ ...channel, lockedAt }}
@@ -593,7 +593,7 @@ export default function ChatView({
             }}
           />
         </div>
-        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overscroll-contain py-2">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overscroll-contain py-2 scroll-smooth">
           {hasOlderMessages ? (
             <div className="mb-2 flex justify-center px-3">
               <Button
