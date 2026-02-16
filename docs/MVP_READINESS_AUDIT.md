@@ -253,7 +253,7 @@ HIGH
 Done (Ready for review)
 No admin audit trail
 HIGH
-Open
+Done (Ready for review)
 Task rollover missing permission check
 MEDIUM
 Open
@@ -278,7 +278,7 @@ Acceptable for MVP
 3. R3  — listGroups fix        (Completed, ready for review)
 4. R6  — Soft-delete events    (Completed, ready for review)
 5. R5  — Push content sanitize (Completed, ready for review)
-6. R2  — AuditLog model        (4 hr)
+6. R2  — AuditLog model        (4 hr)  [Completed, ready for review]
 7. R4  — Atomic chat channel   (1 hr)
 8. Y3  — 404 for hidden groups (30 min)
 9. Y4  — Consolidate members   (1 hr)
