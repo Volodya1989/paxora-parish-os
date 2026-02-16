@@ -13,6 +13,24 @@ type AuditLogInput = {
   metadata?: Prisma.InputJsonValue | null;
 };
 
+/**
+ * Strip values that are not JSON-serializable (undefined, functions, symbols)
+ * and truncate the result to avoid oversized payloads.
+ * Returns a plain JSON-safe object or null.
+ */
+export function sanitizeMetadata(
+  raw: unknown
+): Prisma.InputJsonValue | null {
+  if (raw === null || raw === undefined) return null;
+  try {
+    // JSON.parse(JSON.stringify(x)) drops undefined, functions, symbols,
+    // and converts Date instances to ISO strings — exactly what we need.
+    return JSON.parse(JSON.stringify(raw)) as Prisma.InputJsonValue;
+  } catch {
+    return null;
+  }
+}
+
 export async function auditLog(db: AuditDbClient, input: AuditLogInput) {
   return db.auditLog.create({
     data: {
@@ -21,7 +39,7 @@ export async function auditLog(db: AuditDbClient, input: AuditLogInput) {
       action: input.action,
       targetType: input.targetType,
       targetId: input.targetId,
-      metadata: input.metadata ?? Prisma.JsonNull
+      metadata: sanitizeMetadata(input.metadata) ?? Prisma.JsonNull
     }
   });
 }
