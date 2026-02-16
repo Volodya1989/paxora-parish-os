@@ -822,7 +822,7 @@ function MessageRow({
                   key={`${message.id}-${reaction.emoji}`}
                   type="button"
                   className={cn(
-                    "inline-flex items-center gap-0.5 rounded-full border px-1.5 py-0.5 text-xs shadow-sm",
+                    "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-sm shadow-sm",
                     reaction.reactedByMe
                       ? "border-emerald-200 bg-emerald-50 font-semibold text-emerald-800"
                       : "border-mist-200 bg-white font-medium text-ink-600"
@@ -832,8 +832,8 @@ function MessageRow({
                     onToggleReaction?.(message.id, reaction.emoji);
                   }}
                 >
-                  <span aria-hidden="true">{reaction.emoji}</span>
-                  <span>{reaction.count}</span>
+                  <span aria-hidden="true" className="text-[1.2rem] leading-none">{reaction.emoji}</span>
+                  <span className="text-[13px] leading-none">{reaction.count}</span>
                 </button>
               ))}
             </div>
