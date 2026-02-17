@@ -742,10 +742,14 @@ export default function GroupsView({
               {contactParishHref ? (
                 <Button
                   type="button"
-                  asChild
                   aria-label={t("groups.contactParish")}
+                  onClick={() => {
+                    if (typeof window !== "undefined") {
+                      window.location.href = contactParishHref;
+                    }
+                  }}
                 >
-                  <Link href={contactParishHref}>{t("groups.contactParish")}</Link>
+                  {t("groups.contactParish")}
                 </Button>
               ) : null}
               <Button
@@ -771,10 +775,14 @@ export default function GroupsView({
               {contactParishHref ? (
                 <Button
                   type="button"
-                  asChild
                   aria-label={t("groups.contactParish")}
+                  onClick={() => {
+                    if (typeof window !== "undefined") {
+                      window.location.href = contactParishHref;
+                    }
+                  }}
                 >
-                  <Link href={contactParishHref}>{t("groups.contactParish")}</Link>
+                  {t("groups.contactParish")}
                 </Button>
               ) : null}
               <Button
