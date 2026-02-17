@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { getMoreNavItems, type NavRole, type PlatformNavRole } from "@/components/navigation/navItems";
+import NavIcon from "@/components/navigation/NavIcon";
 import { SignOutButton } from "@/components/navigation/SignOutButton";
 import { useLocale, useTranslations } from "@/lib/i18n/provider";
 import { buildLocalePathname } from "@/lib/i18n/routing";
@@ -74,7 +75,7 @@ export function MoreDrawer({ open, onClose, onSignOut, parishRole, platformRole 
             >
               <span>{t(item.labelKey)}</span>
               <span className="text-xs text-ink-400" aria-hidden="true">
-                {item.icon}
+                <NavIcon icon={item.icon} className="h-4 w-4" fallbackClassName="text-[10px] font-semibold" />
               </span>
             </Link>
           ))}
