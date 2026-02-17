@@ -139,7 +139,12 @@ export default async function ProfilePage({
               notifyTaskInApp: profile.notifyTaskInApp,
               notifyAnnouncementInApp: profile.notifyAnnouncementInApp,
               notifyEventInApp: profile.notifyEventInApp,
-              notifyRequestInApp: profile.notifyRequestInApp
+              notifyRequestInApp: profile.notifyRequestInApp,
+              notifyMessagePush: profile.notifyMessagePush,
+              notifyTaskPush: profile.notifyTaskPush,
+              notifyAnnouncementPush: profile.notifyAnnouncementPush,
+              notifyEventPush: profile.notifyEventPush,
+              notifyRequestPush: profile.notifyRequestPush
             }}
           />
         </div>

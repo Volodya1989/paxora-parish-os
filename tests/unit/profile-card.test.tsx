@@ -40,7 +40,12 @@ test("ProfileSettings renders toggles with aria-checked state", () => {
           notifyTaskInApp: true,
           notifyAnnouncementInApp: true,
           notifyEventInApp: true,
-          notifyRequestInApp: true
+          notifyRequestInApp: true,
+          notifyMessagePush: true,
+          notifyTaskPush: true,
+          notifyAnnouncementPush: true,
+          notifyEventPush: false,
+          notifyRequestPush: true
         }
       })
     )

@@ -30,6 +30,11 @@ export type ProfileSettings = {
   notifyAnnouncementInApp: boolean;
   notifyEventInApp: boolean;
   notifyRequestInApp: boolean;
+  notifyMessagePush: boolean;
+  notifyTaskPush: boolean;
+  notifyAnnouncementPush: boolean;
+  notifyEventPush: boolean;
+  notifyRequestPush: boolean;
   ytdHours: number;
   milestoneTier: MilestoneTier;
   bronzeHours: number;
@@ -57,7 +62,12 @@ export async function getProfileSettings({ userId, parishId, getNow }: GetProfil
         notifyTaskInApp: true,
         notifyAnnouncementInApp: true,
         notifyEventInApp: true,
-        notifyRequestInApp: true
+        notifyRequestInApp: true,
+        notifyMessagePush: true,
+        notifyTaskPush: true,
+        notifyAnnouncementPush: true,
+        notifyEventPush: true,
+        notifyRequestPush: true
       }
     }),
     parishId
@@ -118,6 +128,11 @@ export async function getProfileSettings({ userId, parishId, getNow }: GetProfil
     notifyAnnouncementInApp: user.notifyAnnouncementInApp,
     notifyEventInApp: user.notifyEventInApp,
     notifyRequestInApp: user.notifyRequestInApp,
+    notifyMessagePush: user.notifyMessagePush,
+    notifyTaskPush: user.notifyTaskPush,
+    notifyAnnouncementPush: user.notifyAnnouncementPush,
+    notifyEventPush: user.notifyEventPush,
+    notifyRequestPush: user.notifyRequestPush,
     ytdHours,
     milestoneTier,
     ...thresholds

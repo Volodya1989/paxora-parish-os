@@ -362,6 +362,8 @@ export default function ServeBoardView({
   );
 
   const totalOpportunities = filteredTasks.length;
+  const hasActiveFilters =
+    ownershipFilter !== "all" || visibilityFilter !== "all" || searchQuery.trim().length > 0;
 
   return (
     <div className="section-gap">
@@ -395,19 +397,34 @@ export default function ServeBoardView({
 
       {totalOpportunities === 0 ? (
         <ListEmptyState
-          title={t("serve.empty.title")}
-          description={t("serve.empty.description")}
+          title={hasActiveFilters ? t("emptyStates.noMatches") : t("serve.empty.title")}
+          description={hasActiveFilters ? t("emptyStates.noMatchesDesc") : t("serve.empty.description")}
           icon={<HeartIcon className="h-6 w-6" />}
           variant="friendly"
           action={
-            canRequestOpportunity ? (
-              <ParishionerRequestButton
-                canRequest={canRequestOpportunity}
-                requesterEmail={requesterEmail}
-                contextType="SERVE_PUBLIC_TASK"
-                className="h-9 px-3 text-sm"
-              />
-            ) : undefined
+            <div className="flex flex-wrap justify-center gap-2">
+              {hasActiveFilters ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    setOwnershipFilter("all");
+                    setVisibilityFilter("all");
+                    setSearchQuery("");
+                  }}
+                >
+                  {t("emptyStates.clearFilters")}
+                </Button>
+              ) : null}
+              {canRequestOpportunity ? (
+                <ParishionerRequestButton
+                  canRequest={canRequestOpportunity}
+                  requesterEmail={requesterEmail}
+                  contextType="SERVE_PUBLIC_TASK"
+                  className="h-9 px-3 text-sm"
+                />
+              ) : null}
+            </div>
           }
         />
       ) : null}
