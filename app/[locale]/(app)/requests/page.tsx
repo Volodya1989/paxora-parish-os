@@ -5,7 +5,7 @@ import { listMyRequests } from "@/lib/queries/requests";
 import { prisma } from "@/server/db/prisma";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
 import MyRequestsList from "@/components/requests/MyRequestsList";
-import { cn } from "@/lib/ui/cn";
+import { PlusIcon } from "@/components/icons/ParishIcons";
 import { getTranslations } from "@/lib/i18n/server";
 import { getLocaleFromParam } from "@/lib/i18n/routing";
 
@@ -29,7 +29,7 @@ export default async function MyRequestsPage({ params }: { params: Promise<{ loc
 
   return (
     <ParishionerPageLayout
-      pageTitle="My Requests"
+      pageTitle={t("requests.page.title")}
       parishName={parish?.name ?? t("common.myParish")}
       parishLogoUrl={parish?.logoUrl ?? null}
       subtitle={t("requests.page.subtitle")}
@@ -37,11 +37,11 @@ export default async function MyRequestsPage({ params }: { params: Promise<{ loc
       actions={
         <Link
           href="/requests/new"
-          className={cn(
-            "inline-flex min-h-[2.25rem] items-center justify-center gap-1.5 whitespace-nowrap rounded-button border border-white/40 bg-white/10 px-2.5 py-1.5 text-[11px] font-semibold text-white shadow-sm transition hover:bg-white/20 focus-ring sm:gap-2 sm:px-3 sm:text-xs"
-          )}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full border-0 bg-white/20 text-white backdrop-blur-sm transition hover:bg-white/30 focus-ring"
+          aria-label={t("requests.page.makeRequest")}
+          title={t("requests.page.makeRequest")}
         >
-          {t("requests.page.makeRequest")}
+          <PlusIcon className="h-4 w-4" aria-hidden="true" />
         </Link>
       }
     >

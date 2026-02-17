@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useTranslations } from "@/lib/i18n/provider";
 import { useLocale } from "@/lib/i18n/provider";
 import LanguageIconToggle from "@/components/navigation/LanguageIconToggle";
+import GivingShortcutButton from "@/components/navigation/GivingShortcutButton";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import { useNotificationContext } from "@/components/notifications/NotificationProvider";
 import QuickActions from "@/components/this-week/QuickActions";
@@ -122,11 +123,6 @@ export default function ParishionerHeader({
             <p className="line-clamp-1 text-sm font-semibold text-white/95 sm:text-base">{parishName}</p>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
-            {count > 0 && (
-              <span className="rounded-full bg-white/85 px-2 py-0.5 text-[11px] font-semibold text-primary-700 shadow-sm" aria-label="Notifications">
-                {count}
-              </span>
-            )}
             {showQuickAdd && (
               <button
                 type="button"
@@ -140,6 +136,7 @@ export default function ParishionerHeader({
                 </svg>
               </button>
             )}
+            <GivingShortcutButton className="h-8 w-8 border-0 bg-white/20 text-white backdrop-blur-sm hover:bg-white/30" />
             {count > 0 && (
               <NotificationCenter bellClassName="h-8 w-8 border-0 bg-white/20 text-white backdrop-blur-sm hover:bg-white/30 md:hidden" />
             )}
