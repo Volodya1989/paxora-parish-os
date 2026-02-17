@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getPrimaryNavItems, type NavRole } from "@/components/navigation/navItems";
+import NavIcon from "@/components/navigation/NavIcon";
 import { SignOutButton } from "@/components/navigation/SignOutButton";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import { stripLocale, buildLocalePathname } from "@/lib/i18n/routing";
@@ -137,7 +138,7 @@ export function Sidebar({
                 }`}
                 aria-hidden="true"
               >
-                {item.icon}
+                <NavIcon icon={item.icon} className="h-4 w-4" fallbackClassName="text-[10px] font-semibold" />
               </span>
               <span className={isCollapsed ? "sr-only" : ""}>{t(item.labelKey)}</span>
             </Link>
@@ -157,7 +158,7 @@ export function Sidebar({
             className="flex h-8 w-8 items-center justify-center rounded-full border border-mist-200 bg-mist-100 text-xs font-semibold text-ink-700"
             aria-hidden="true"
           >
-            PR
+            <NavIcon icon="PR" className="h-4 w-4" fallbackClassName="text-[10px] font-semibold" />
           </span>
           <span className={isCollapsed ? "sr-only" : ""}>{t("nav.profile")}</span>
         </Link>

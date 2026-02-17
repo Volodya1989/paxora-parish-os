@@ -12,7 +12,9 @@
     "profile": "Profile",
     "signIn": "Sign in",
     "signOut": "Sign out",
-    "reliability": "Reliability"
+    "reliability": "Reliability",
+    "community": "Community",
+    "events": "Events"
   },
   "landing": {
     "welcome": "Welcome",

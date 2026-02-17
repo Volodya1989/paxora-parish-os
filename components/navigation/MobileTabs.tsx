@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { useState } from "react";
 import MoreDrawer from "@/components/navigation/MoreDrawer";
+import NavIcon from "@/components/navigation/NavIcon";
 import { getPrimaryNavItems, type NavRole, type PlatformNavRole } from "@/components/navigation/navItems";
 import { buildLocalePathname, stripLocale } from "@/lib/i18n/routing";
 import { useLocale, useTranslations } from "@/lib/i18n/provider";
@@ -17,6 +18,21 @@ type MobileTabsProps = {
   onSignOut?: () => Promise<void> | void;
   parishRole?: NavRole;
   platformRole?: PlatformNavRole;
+};
+
+const primaryToneByRoute: Record<string, { inactive: string; active: string }> = {
+  "/tasks": {
+    inactive: "border-rose-200 bg-rose-50/70 text-rose-700",
+    active: "border-rose-300 bg-rose-100 text-rose-800"
+  },
+  "/groups": {
+    inactive: "border-sky-200 bg-sky-50/70 text-sky-700",
+    active: "border-sky-300 bg-sky-100 text-sky-800"
+  },
+  "/calendar": {
+    inactive: "border-emerald-200 bg-emerald-50/70 text-emerald-700",
+    active: "border-emerald-300 bg-emerald-100 text-emerald-800"
+  }
 };
 
 export function MobileTabs({
@@ -50,6 +66,8 @@ export function MobileTabs({
 
   const items = getPrimaryNavItems(parishRole);
 
+  const isPathActive = (href: string) => normalizedPath === href || normalizedPath.startsWith(`${href}/`);
+
   return (
     <>
       <nav
@@ -63,7 +81,9 @@ export function MobileTabs({
         <div className="flex items-center justify-around px-2 py-2">
           {items.map((item) => {
             const localizedHref = buildLocalePathname(locale, item.href);
-            const isActive = normalizedPath === item.href;
+            const isActive = isPathActive(item.href);
+            const isPrimaryAction = item.href === "/tasks" || item.href === "/groups" || item.href === "/calendar";
+            const tone = primaryToneByRoute[item.href];
             return (
               <Link
                 key={item.href}
@@ -74,21 +94,39 @@ export function MobileTabs({
                   onNavigate?.(localizedHref);
                   setOpen(false);
                 }}
-                className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-button px-1 py-1 text-[11px] font-medium leading-tight transition focus-ring ${
+                className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-button px-1 py-1 text-[11px] leading-tight transition focus-ring ${
                   isActive ? "text-primary-700" : "text-ink-500"
                 }`}
               >
                 <span
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-[10px] font-semibold ${
-                    isActive
-                      ? "border-primary-200 bg-primary-50 text-primary-700"
-                      : "border-mist-200 bg-mist-100 text-ink-500"
-                  }`}
+                  className={`flex shrink-0 items-center justify-center rounded-full border transition-transform duration-150 ${
+                    isPrimaryAction ? "h-9 w-9" : "h-8 w-8"
+                  } ${
+                    tone
+                      ? isActive
+                        ? tone.active
+                        : tone.inactive
+                      : isActive
+                        ? "border-primary-200 bg-primary-50 text-primary-700"
+                        : "border-mist-200 bg-mist-100 text-ink-500"
+                  } ${isActive ? "scale-105" : "scale-100"}`
+                  }
+                  style={{ willChange: "transform" }}
                   aria-hidden="true"
                 >
-                  {item.icon}
+                  <NavIcon
+                    icon={item.icon}
+                    className={isPrimaryAction ? "h-[18px] w-[18px]" : "h-4 w-4"}
+                    fallbackClassName="text-[10px] font-semibold"
+                  />
                 </span>
-                <span className="max-w-full truncate text-center">{t(item.labelKey)}</span>
+                <span
+                  className={`max-w-full text-center ${
+                    isPrimaryAction ? "whitespace-nowrap font-semibold" : "truncate font-medium"
+                  }`}
+                >
+                  {t(item.labelKey)}
+                </span>
               </Link>
             );
           })}
@@ -110,7 +148,7 @@ export function MobileTabs({
               }`}
               aria-hidden="true"
             >
-              {t("menu.moreAbbrev")}
+              •••
             </span>
             <span className="truncate text-center">{t("menu.more")}</span>
           </button>
