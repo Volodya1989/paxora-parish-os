@@ -122,8 +122,8 @@ export default function ThisWeekParishionerView({
             href: routes.announcements,
             summary: announcementsSummary,
             count: publishedAnnouncements.length,
-            icon: <MegaphoneIcon className="h-5 w-5" />,
-            accentClass: "border-amber-200 bg-amber-50/60 text-amber-700"
+            icon: <MegaphoneIcon className="h-4 w-4" />,
+            accentClass: "border-amber-200 bg-amber-50/70 text-amber-700"
           },
           {
             id: "services",
@@ -131,8 +131,8 @@ export default function ThisWeekParishionerView({
             href: routes.calendar,
             summary: servicesSummary,
             count: upcomingCount,
-            icon: <CalendarIcon className="h-5 w-5" />,
-            accentClass: "border-teal-200 bg-teal-50/60 text-teal-700"
+            icon: <CalendarIcon className="h-4 w-4" />,
+            accentClass: "border-emerald-200 bg-emerald-50/70 text-emerald-700"
           },
           {
             id: "community",
@@ -140,8 +140,8 @@ export default function ThisWeekParishionerView({
             href: routes.groups,
             summary: communitySummary,
             count: data.memberGroups.length,
-            icon: <UsersIcon className="h-5 w-5" />,
-            accentClass: "border-sky-200 bg-sky-50/60 text-sky-700"
+            icon: <UsersIcon className="h-4 w-4" />,
+            accentClass: "border-sky-200 bg-sky-50/70 text-sky-700"
           },
           {
             id: "opportunities",
@@ -149,8 +149,8 @@ export default function ThisWeekParishionerView({
             href: `${routes.serve}?view=opportunities`,
             summary: opportunitiesSummary,
             count: sortedTasks.length,
-            icon: <HandHeartIcon className="h-5 w-5" />,
-            accentClass: "border-rose-200 bg-rose-50/60 text-rose-700",
+            icon: <HandHeartIcon className="h-4 w-4" />,
+            accentClass: "border-rose-200 bg-rose-50/70 text-rose-700",
             statusDots: {
               done: tasksDone,
               inProgress: tasksInProgress,

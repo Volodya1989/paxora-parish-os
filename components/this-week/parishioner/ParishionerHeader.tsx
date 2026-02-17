@@ -103,7 +103,7 @@ export default function ParishionerHeader({
 
   return (
     <>
-      <header className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-600 via-primary-500 to-emerald-500 px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] text-white shadow-lg sm:px-5 sm:pb-4 sm:pt-[calc(0.9rem+env(safe-area-inset-top))]">
+      <header className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-600 via-primary-500 to-emerald-500 px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] text-white shadow-lg sm:px-5 sm:pb-5 sm:pt-[calc(1.25rem+env(safe-area-inset-top))]">
         {/* Decorative background elements */}
         <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-white/10" />
         <div className="absolute -bottom-2 left-1/4 h-12 w-12 rounded-full bg-white/5" />
@@ -116,11 +116,10 @@ export default function ParishionerHeader({
               <img
                 src={logoSrc}
                 alt={`${parishName} logo`}
-                className="h-9 w-9 shrink-0 rounded-md object-contain md:h-10 md:w-10"
+                className="h-10 w-10 shrink-0 rounded-md object-contain md:h-12 md:w-12"
                 onError={(e) => { e.currentTarget.src = "/icon.png"; }}
               />
             </Link>
-            <p className="line-clamp-1 text-sm font-semibold text-white/95 sm:text-base">{parishName}</p>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
             {showQuickAdd && (
@@ -145,10 +144,13 @@ export default function ParishionerHeader({
         </div>
 
         {/* Main greeting */}
-        <div className="relative space-y-0.5">
-          <h1 className="text-base font-bold tracking-tight sm:text-lg">
+        <div className="relative space-y-1">
+          <h1 className="text-lg font-bold tracking-tight sm:text-xl">
             {greeting}{userName ? `, ${userName}` : ""}!
           </h1>
+          <p className="text-sm font-semibold text-white sm:text-base">
+            <span className="break-words">{parishName}</span>
+          </p>
           {quote && (
             quoteExpanded ? (
               <blockquote className="mt-1.5 border-l-4 border-white/40 pl-3 text-xs italic text-white/90">
@@ -178,7 +180,7 @@ export default function ParishionerHeader({
           )}
           {/* Subtle view switch link at bottom of hero */}
           {actions && (
-            <div className="mt-2 flex justify-end">
+            <div className="mt-3 flex justify-end">
               {actions}
             </div>
           )}
