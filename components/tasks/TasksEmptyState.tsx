@@ -6,7 +6,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import { useTranslations } from "@/lib/i18n/provider";
 
 type TasksEmptyStateProps = {
-  variant: "no-tasks" | "no-matches";
+  variant: "no-tasks" | "no-matches" | "no-opportunities";
   onCreate?: () => void;
   onClearFilters?: () => void;
 };
@@ -32,6 +32,17 @@ export default function TasksEmptyState({
   onClearFilters
 }: TasksEmptyStateProps) {
   const t = useTranslations();
+  if (variant === "no-opportunities") {
+    return (
+      <EmptyState
+        icon={<TaskIcon />}
+        title={t("thisWeek.noOpportunities")}
+        description={t("thisWeek.noOpportunitiesHint")}
+        variant="calm"
+      />
+    );
+  }
+
   if (variant === "no-matches") {
     return (
       <EmptyState

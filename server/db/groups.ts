@@ -148,31 +148,33 @@ export async function ensureGroupMembership(input: {
   role?: "COORDINATOR" | "PARISHIONER";
   addedByUserId: string;
 }) {
-  return prisma.groupMembership.upsert({
-    where: {
-      groupId_userId: {
+  return prisma.$transaction(async (tx) => {
+    return tx.groupMembership.upsert({
+      where: {
+        groupId_userId: {
+          groupId: input.groupId,
+          userId: input.userId
+        }
+      },
+      update: {
+        role: input.role ?? "PARISHIONER",
+        status: "ACTIVE",
+        invitedByUserId: null,
+        invitedEmail: null,
+        approvedByUserId: input.addedByUserId
+      },
+      create: {
         groupId: input.groupId,
-        userId: input.userId
+        userId: input.userId,
+        role: input.role ?? "PARISHIONER",
+        status: "ACTIVE",
+        approvedByUserId: input.addedByUserId
+      },
+      select: {
+        id: true,
+        role: true,
+        status: true
       }
-    },
-    update: {
-      role: input.role ?? "PARISHIONER",
-      status: "ACTIVE",
-      invitedByUserId: null,
-      invitedEmail: null,
-      approvedByUserId: input.addedByUserId
-    },
-    create: {
-      groupId: input.groupId,
-      userId: input.userId,
-      role: input.role ?? "PARISHIONER",
-      status: "ACTIVE",
-      approvedByUserId: input.addedByUserId
-    },
-    select: {
-      id: true,
-      role: true,
-      status: true
-    }
+    });
   });
 }

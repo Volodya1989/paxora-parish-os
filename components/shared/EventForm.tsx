@@ -1,4 +1,5 @@
 import Button from "@/components/ui/Button";
+import { useTranslations } from "@/lib/i18n/provider";
 
 type EventFormProps = {
   action: (formData: FormData) => Promise<void>;
@@ -17,11 +18,12 @@ export default function EventForm({
   defaultStartsAt,
   defaultEndsAt
 }: EventFormProps) {
+  const t = useTranslations();
   return (
     <form className="mt-4 space-y-4" action={action}>
       <input type="hidden" name="weekId" value={weekId} />
       <label className="block text-sm text-ink-700">
-        Title
+        {t("serveEventForm.title")}
         <input
           className="mt-1 w-full rounded-md border border-mist-200 bg-white px-3 py-2 text-sm"
           type="text"
@@ -31,7 +33,7 @@ export default function EventForm({
       </label>
       <div className="grid gap-3 md:grid-cols-2">
         <label className="block text-sm text-ink-700">
-          Starts at
+          {t("serveEventForm.startsAt")}
           <input
             className="mt-1 w-full rounded-md border border-mist-200 bg-white px-3 py-2 text-sm"
             type="datetime-local"
@@ -43,7 +45,7 @@ export default function EventForm({
           />
         </label>
         <label className="block text-sm text-ink-700">
-          Ends at
+          {t("serveEventForm.endsAt")}
           <input
             className="mt-1 w-full rounded-md border border-mist-200 bg-white px-3 py-2 text-sm"
             type="datetime-local"
@@ -56,7 +58,7 @@ export default function EventForm({
         </label>
       </div>
       <label className="block text-sm text-ink-700">
-        Location (optional)
+        {t("serveEventForm.location")}
         <input
           className="mt-1 w-full rounded-md border border-mist-200 bg-white px-3 py-2 text-sm"
           type="text"
@@ -64,9 +66,9 @@ export default function EventForm({
         />
       </label>
       <p className="text-xs text-ink-500">
-        Events are context-only and stay within this week’s schedule.
+        {t("serveEventForm.contextNote")}
       </p>
-      <Button type="submit">Create event</Button>
+      <Button type="submit">{t("serveEventForm.createEvent")}</Button>
     </form>
   );
 }

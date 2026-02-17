@@ -132,17 +132,17 @@ export default function GroupCreateDialog({
     const trimmedDescription = description.trim();
 
     if (!trimmedName) {
-      setError("Group name is required.");
+      setError(t("groupCreate.errors.nameRequired"));
       return;
     }
 
     if (trimmedName.length > NAME_MAX_LENGTH) {
-      setError(`Group name must be ${NAME_MAX_LENGTH} characters or fewer.`);
+      setError(t("groupCreate.errors.nameTooLong").replace("{max}", String(NAME_MAX_LENGTH)));
       return;
     }
 
     if (trimmedDescription && trimmedDescription.length > DESCRIPTION_MAX_LENGTH) {
-      setError(`Description must be ${DESCRIPTION_MAX_LENGTH} characters or fewer.`);
+      setError(t("groupCreate.errors.descriptionTooLong").replace("{max}", String(DESCRIPTION_MAX_LENGTH)));
       return;
     }
 
@@ -160,10 +160,10 @@ export default function GroupCreateDialog({
           inviteeUserIds: selectedInviteeIds
         });
         if (result.status === "error") {
-          setError(result.message ?? "Unable to submit group request.");
+          setError(result.message ?? (isRequest ? t("groupCreate.errors.unableToSubmitRequest") : t("groupCreate.errors.unableToCreateGroup")));
           addToast({
-            title: isRequest ? "Unable to submit request" : "Unable to create group",
-            description: result.message ?? "Please try again.",
+            title: isRequest ? t("groupCreate.toasts.unableToSubmitRequest") : t("groupCreate.toasts.unableToCreateGroup"),
+            description: result.message ?? t("common.tryAgain"),
             status: "error"
           });
           return;
@@ -183,15 +183,15 @@ export default function GroupCreateDialog({
             body: formData
           });
           if (!avatarResponse.ok) {
-            throw new Error("Group created, but photo upload failed.");
+            throw new Error(t("groupCreate.errors.photoUploadFailed"));
           }
         }
 
         addToast({
-          title: isRequest ? "Request submitted" : "Group created",
+          title: isRequest ? t("groupCreate.toasts.requestSubmitted") : t("groupCreate.toasts.groupCreated"),
           description: isRequest
-            ? "Your request is pending approval from parish leadership."
-            : "Your new group is ready for members and opportunities to help.",
+            ? t("groupCreate.toasts.requestSubmittedDesc")
+            : t("groupCreate.toasts.groupCreatedDesc"),
           status: "success"
         });
         resetForm();
@@ -202,11 +202,11 @@ export default function GroupCreateDialog({
           submitError instanceof Error && submitError.message
             ? submitError.message
             : isRequest
-              ? "We couldn't submit that request. Please try again."
-              : "We couldn't create that group. Please try again.";
+              ? t("groupCreate.errors.submitRequestFailed")
+              : t("groupCreate.errors.createGroupFailed");
         setError(message);
         addToast({
-          title: isRequest ? "Unable to submit request" : "Unable to create group",
+          title: isRequest ? t("groupCreate.toasts.unableToSubmitRequest") : t("groupCreate.toasts.unableToCreateGroup"),
           description: message,
           status: "error"
         });
