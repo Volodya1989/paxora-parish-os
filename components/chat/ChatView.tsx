@@ -712,6 +712,7 @@ export default function ChatView({
             firstUnreadMessageId={firstUnreadMessageId}
             highlightedMessageId={highlightedMessageId}
             messageFontSize={fontSize}
+            surface="overlay"
           />
           <div ref={bottomRef} aria-hidden="true" />
         </div>

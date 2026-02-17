@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MdTextDecrease, MdTextIncrease } from "react-icons/md";
+import { MdTextDecrease, MdTextFields, MdTextIncrease } from "react-icons/md";
 import { cn } from "@/lib/ui/cn";
 import { useTranslations } from "@/lib/i18n/provider";
 
@@ -31,10 +31,9 @@ export default function ChatFontSizeControl({
   const isLight = tone === "light";
 
   const clearCollapseTimer = useCallback(() => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
+    if (!timerRef.current) return;
+    clearTimeout(timerRef.current);
+    timerRef.current = null;
   }, []);
 
   const scheduleCollapse = useCallback(() => {
@@ -85,18 +84,14 @@ export default function ChatFontSizeControl({
         title={t("chat.fontSize.open")}
         aria-expanded={expanded}
       >
-        <span className="relative inline-flex items-center justify-center">
-          <span className="text-base font-semibold leading-none">A</span>
-          <span className="absolute -right-2 -top-1 text-[10px] font-semibold leading-none">+</span>
-          <span className="absolute -bottom-1 -right-2 text-[10px] font-semibold leading-none">−</span>
-        </span>
+        <MdTextFields className="h-5 w-5" />
       </button>
 
       {expanded ? (
         <div
           className={cn(
-            "absolute right-0 top-[calc(100%+0.4rem)] z-20 inline-flex h-10 items-center rounded-full border px-1 shadow-lg backdrop-blur-sm",
-            isLight ? "border-white/25 bg-emerald-700/90" : "border-mist-200 bg-white"
+            "absolute right-0 top-[calc(100%+0.45rem)] z-30 flex min-w-[8.5rem] items-center justify-between gap-1 rounded-xl border px-2 py-1.5 shadow-lg",
+            isLight ? "border-mist-200 bg-white text-ink-700" : "border-mist-200 bg-white text-ink-700"
           )}
           role="group"
           aria-label={t("chat.fontSize.groupLabel")}
@@ -104,10 +99,7 @@ export default function ChatFontSizeControl({
           <button
             type="button"
             className={cn(
-              "flex h-8 w-8 items-center justify-center rounded-full transition",
-              isLight
-                ? "text-white/90 hover:bg-white/15 active:bg-white/25"
-                : "text-ink-600 hover:bg-mist-50 active:bg-mist-100",
+              "flex h-8 w-8 items-center justify-center rounded-full transition hover:bg-mist-50 active:bg-mist-100",
               isMin && "pointer-events-none opacity-45"
             )}
             onClick={() => {
@@ -119,22 +111,13 @@ export default function ChatFontSizeControl({
           >
             <MdTextDecrease className="h-4 w-4" />
           </button>
-          <span
-            className={cn(
-              "min-w-7 text-center text-xs font-semibold tabular-nums",
-              isLight ? "text-white/80" : "text-ink-500"
-            )}
-            aria-live="polite"
-          >
+          <span className="min-w-7 text-center text-xs font-semibold tabular-nums text-ink-600" aria-live="polite">
             {fontSize}
           </span>
           <button
             type="button"
             className={cn(
-              "flex h-8 w-8 items-center justify-center rounded-full transition",
-              isLight
-                ? "text-white/90 hover:bg-white/15 active:bg-white/25"
-                : "text-ink-600 hover:bg-mist-50 active:bg-mist-100",
+              "flex h-8 w-8 items-center justify-center rounded-full transition hover:bg-mist-50 active:bg-mist-100",
               isMax && "pointer-events-none opacity-45"
             )}
             onClick={() => {

@@ -241,7 +241,8 @@ export default function ChatThread({
   isLoading,
   firstUnreadMessageId,
   highlightedMessageId,
-  messageFontSize
+  messageFontSize,
+  surface = "card"
 }: {
   messages: ChatMessage[];
   pinnedMessage: ChatPinnedMessage | null;
@@ -260,6 +261,7 @@ export default function ChatThread({
   firstUnreadMessageId?: string | null;
   highlightedMessageId?: string | null;
   messageFontSize?: number;
+  surface?: "card" | "overlay";
 }) {
   const [contextMenuMessageId, setContextMenuMessageId] = useState<string | null>(
     initialReactionMenuMessageId ?? null
@@ -299,7 +301,12 @@ export default function ChatThread({
 
   return (
     <div
-      className="relative min-h-full rounded-card border border-mist-100 bg-emerald-50/30 px-3 py-4 shadow-sm backdrop-blur-[0.5px] touch-manipulation"
+      className={cn(
+        "relative min-h-full px-3 py-4 touch-manipulation",
+        surface === "card"
+          ? "rounded-card border border-mist-100 bg-emerald-50/30 shadow-sm backdrop-blur-[0.5px]"
+          : ""
+      )}
       style={{
         ["--chat-font-size" as string]: `${messageFontSize ?? 16}px`
       }}
