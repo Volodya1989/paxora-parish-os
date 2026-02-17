@@ -41,7 +41,35 @@ type GroupsViewProps = {
   inviteCandidates: GroupInviteCandidate[];
   canManageGroups: boolean;
   canRequestContentCreate: boolean;
+  contactParishHref?: string | null;
 };
+
+export function getDiscoverGroupCardAction(input: {
+  joinPolicy: GroupListItem["joinPolicy"];
+  membershipStatus: GroupListItem["viewerMembershipStatus"] | "REQUESTED";
+}) {
+  if (input.membershipStatus === "ACTIVE") {
+    return "navigate" as const;
+  }
+
+  if (input.joinPolicy === "INVITE_ONLY") {
+    return "show_limited_membership" as const;
+  }
+
+  if (input.joinPolicy === "REQUEST_TO_JOIN") {
+    return input.membershipStatus === "REQUESTED"
+      ? ("none" as const)
+      : ("request_to_join" as const);
+  }
+
+  return "join" as const;
+}
+
+export function getJoinedGroupMenuActions(canManageGroups: boolean) {
+  return canManageGroups
+    ? (["view_members", "view_details", "edit", "archive", "leave"] as const)
+    : (["view_members", "leave"] as const);
+}
 
 export default function GroupsView({
   groups,
@@ -49,7 +77,8 @@ export default function GroupsView({
   actorUserId,
   inviteCandidates,
   canManageGroups,
-  canRequestContentCreate
+  canRequestContentCreate,
+  contactParishHref
 }: GroupsViewProps) {
   const t = useTranslations();
   const locale = useLocale();
@@ -63,6 +92,7 @@ export default function GroupsView({
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
   const [pendingGroupId, setPendingGroupId] = useState<string | null>(null);
+  const [restrictedGroupName, setRestrictedGroupName] = useState<string | null>(null);
   const [optimisticMembershipStatus, setOptimisticMembershipStatus] = useState<Record<string, "ACTIVE" | "REQUESTED">>({});
   const [, startTransition] = useTransition();
   const isDesktop = useMediaQuery("(min-width: 768px)");
@@ -222,6 +252,26 @@ export default function GroupsView({
     }
     setEditingGroupId(groupId);
   };
+
+  const closeRestrictedMembershipDialog = () => setRestrictedGroupName(null);
+
+  const openRestrictedMembershipDialog = (groupName: string) => {
+    setRestrictedGroupName(groupName);
+  };
+
+  const handleContactParish = () => {
+    if (!contactParishHref) {
+      return;
+    }
+
+    if (contactParishHref.startsWith("http://") || contactParishHref.startsWith("https://")) {
+      window.location.href = contactParishHref;
+      return;
+    }
+
+    router.push(contactParishHref);
+  };
+
 
   const handleMemberResult = async (
     groupId: string,
@@ -488,7 +538,7 @@ export default function GroupsView({
                       unreadCount={group.unreadCount}
                       href={buildLocalePathname(locale, `/groups/${group.id}/chat`)}
                       meta={group.visibility === "PRIVATE" ? <HiddenGroupIcon /> : null}
-                      menu={canManageGroups ? (
+                      menu={(
                         <Dropdown>
                           <DropdownTrigger asChild iconOnly aria-label={t("groups.optionsFor").replace("{name}", group.name)}>
                             <Button
@@ -502,17 +552,49 @@ export default function GroupsView({
                             </Button>
                           </DropdownTrigger>
                           <DropdownMenu ariaLabel={t("groups.menuFor").replace("{name}", group.name)}>
-                            <DropdownItem asChild>
-                              <Link href={buildLocalePathname(locale, `/groups/${group.id}`)}>{t("groups.viewDetails")}</Link>
-                            </DropdownItem>
-                            <DropdownItem onClick={() => router.push(buildLocalePathname(locale, `/groups/${group.id}/members`))}>
-                              {t("groups.viewMembers")}
-                            </DropdownItem>
-                            <DropdownItem onClick={() => handleEdit(group.id)}>Edit</DropdownItem>
-                            <DropdownItem onClick={() => handleArchive(group.id)}>Archive</DropdownItem>
+                            {getJoinedGroupMenuActions(canManageGroups).map((action) => {
+                              if (action === "view_members") {
+                                return (
+                                  <DropdownItem key={action} onClick={() => router.push(buildLocalePathname(locale, `/groups/${group.id}/members`))}>
+                                    {t("groups.viewMembers")}
+                                  </DropdownItem>
+                                );
+                              }
+
+                              if (action === "view_details") {
+                                return (
+                                  <DropdownItem key={action} asChild>
+                                    <Link href={buildLocalePathname(locale, `/groups/${group.id}`)}>{t("groups.viewDetails")}</Link>
+                                  </DropdownItem>
+                                );
+                              }
+
+                              if (action === "edit") {
+                                return <DropdownItem key={action} onClick={() => handleEdit(group.id)}>{t("groups.edit")}</DropdownItem>;
+                              }
+
+                              if (action === "archive") {
+                                return <DropdownItem key={action} onClick={() => handleArchive(group.id)}>{t("groups.archive")}</DropdownItem>;
+                              }
+
+                              return (
+                                <DropdownItem
+                                  key={action}
+                                  onClick={() =>
+                                    void handleMemberResult(
+                                      group.id,
+                                      () => leaveGroup({ groupId: group.id }),
+                                      t("groups.leftGroup")
+                                    )
+                                  }
+                                >
+                                  {t("groups.leave")}
+                                </DropdownItem>
+                              );
+                            })}
                           </DropdownMenu>
                         </Dropdown>
-                      ) : null}
+                      )}
                     />
                   ))}
                 </div>
@@ -529,10 +611,45 @@ export default function GroupsView({
                     const canJoin = group.joinPolicy === "OPEN";
                     const canRequest = group.joinPolicy === "REQUEST_TO_JOIN";
 
+                    const handleDiscoverGroupPress = () => {
+                      const action = getDiscoverGroupCardAction({
+                        joinPolicy: group.joinPolicy,
+                        membershipStatus: status
+                      });
+
+                      if (action === "show_limited_membership") {
+                        openRestrictedMembershipDialog(group.name);
+                        return;
+                      }
+
+                      if (action === "request_to_join") {
+                        void handleMemberResult(
+                          group.id,
+                          () => requestToJoin({ groupId: group.id }),
+                          "Request sent",
+                          "REQUESTED"
+                        );
+                        return;
+                      }
+
+                      if (action === "join") {
+                        void handleMemberResult(
+                          group.id,
+                          () => joinGroup({ groupId: group.id }),
+                          "Joined",
+                          "ACTIVE"
+                        );
+                      }
+                    };
+
                     return (
-                      <div
+                      <button
                         key={group.id}
-                        className="flex items-center gap-3 rounded-xl border border-mist-100 bg-white px-4 py-3 shadow-sm"
+                        type="button"
+                        className="flex w-full items-center gap-3 rounded-xl border border-mist-100 bg-white px-4 py-3 text-left shadow-sm transition-all hover:border-mist-200"
+                        onClick={handleDiscoverGroupPress}
+                        disabled={pendingGroupId === group.id}
+                        aria-label={t("groups.openGroupCard").replace("{name}", group.name)}
                       >
                         <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-sky-100 text-xs font-semibold text-sky-700">
                           {group.avatarUrl ? (
@@ -546,18 +663,22 @@ export default function GroupsView({
                           <div className="flex items-center gap-2">
                             <p className="truncate font-medium text-ink-900">{group.name}</p>
                             {group.visibility === "PRIVATE" ? <HiddenGroupIcon /> : null}
-                            <Badge tone={group.visibility === "PUBLIC" ? "success" : "neutral"}>
-                              {group.visibility === "PUBLIC" ? "Public" : "Invite only"}
-                            </Badge>
+                            {group.joinPolicy === "INVITE_ONLY" ? (
+                              <Badge tone="neutral"><span aria-hidden="true" className="mr-1">🔒</span>{t("groups.inviteOnly")}</Badge>
+                            ) : group.joinPolicy === "REQUEST_TO_JOIN" ? (
+                              <Badge tone="warning">{t("groups.requestAccess")}</Badge>
+                            ) : (
+                              <Badge tone="success">{t("groups.public")}</Badge>
+                            )}
                           </div>
-                          <p className="truncate text-sm text-ink-500">{group.description ?? "Connect with this community."}</p>
+                          <p className="truncate text-sm text-ink-500">{group.description ?? t("groups.defaultDescription")}</p>
                           {typeof group.memberCount === "number" ? (
-                            <p className="text-xs text-ink-400">{group.memberCount} members</p>
+                            <p className="text-xs text-ink-400">{group.memberCount} {group.memberCount === 1 ? t("groups.memberSingular") : t("groups.memberPlural")}</p>
                           ) : null}
                         </div>
-                        <div className="shrink-0">
+                        <div className="shrink-0" onClick={(event) => event.stopPropagation()}>
                           {isRequested ? (
-                            <Badge tone="warning">Requested</Badge>
+                            <Badge tone="warning">{t("groups.requestPending")}</Badge>
                           ) : canJoin ? (
                             <Button
                               type="button"
@@ -571,6 +692,7 @@ export default function GroupsView({
                                 )
                               }
                               disabled={pendingGroupId === group.id}
+                              aria-label={t("groups.joinGroupAria").replace("{name}", group.name)}
                             >
                               {t("groups.join")}
                             </Button>
@@ -588,6 +710,7 @@ export default function GroupsView({
                                 )
                               }
                               disabled={pendingGroupId === group.id}
+                              aria-label={t("groups.requestJoinAria").replace("{name}", group.name)}
                             >
                               {t("groups.requestToJoin")}
                             </Button>
@@ -595,7 +718,7 @@ export default function GroupsView({
                             <span className="text-xs font-medium text-ink-400">{t("groups.inviteOnly")}</span>
                           )}
                         </div>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>
@@ -660,6 +783,66 @@ export default function GroupsView({
           </div>
         )}
       </div>
+
+      {isDesktop ? (
+        <Modal
+          open={Boolean(restrictedGroupName)}
+          onClose={closeRestrictedMembershipDialog}
+          title={t("groups.limitedMembershipTitle")}
+          footer={(
+            <>
+              {contactParishHref ? (
+                <Button
+                  type="button"
+                  onClick={handleContactParish}
+                  aria-label={t("groups.contactParish")}
+                >
+                  {t("groups.contactParish")}
+                </Button>
+              ) : null}
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={closeRestrictedMembershipDialog}
+                aria-label={t("groups.close")}
+              >
+                {t("groups.close")}
+              </Button>
+            </>
+          )}
+        >
+          <p>{t("groups.limitedMembershipBody")}</p>
+        </Modal>
+      ) : (
+        <Drawer
+          open={Boolean(restrictedGroupName)}
+          onClose={closeRestrictedMembershipDialog}
+          title={t("groups.limitedMembershipTitle")}
+          footer={(
+            <>
+              {contactParishHref ? (
+                <Button
+                  type="button"
+                  onClick={handleContactParish}
+                  aria-label={t("groups.contactParish")}
+                >
+                  {t("groups.contactParish")}
+                </Button>
+              ) : null}
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={closeRestrictedMembershipDialog}
+                aria-label={t("groups.close")}
+              >
+                {t("groups.close")}
+              </Button>
+            </>
+          )}
+        >
+          <p>{t("groups.limitedMembershipBody")}</p>
+        </Drawer>
+      )}
 
       <GroupCreateDialog
         open={isCreateOpen}

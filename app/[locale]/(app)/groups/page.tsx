@@ -7,7 +7,7 @@ import { isParishLeader } from "@/lib/permissions";
 import { prisma } from "@/server/db/prisma";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
 import { UsersIcon } from "@/components/icons/ParishIcons";
-import { getLocaleFromParam } from "@/lib/i18n/routing";
+import { buildLocalePathname, getLocaleFromParam } from "@/lib/i18n/routing";
 import { getTranslator } from "@/lib/i18n/translator";
 
 export default async function GroupsPage({
@@ -40,11 +40,30 @@ export default async function GroupsPage({
     throw new Error("Unauthorized");
   }
 
-  const [groups, inviteCandidates] = await Promise.all([
+  const [groups, inviteCandidates, contactHubItem] = await Promise.all([
     listGroups(parishId, actorUserId, membership.role, true),
-    listGroupInviteCandidates(parishId, actorUserId)
+    listGroupInviteCandidates(parishId, actorUserId),
+    prisma.parishHubItem.findFirst({
+      where: {
+        parishId,
+        icon: "CONTACT",
+        enabled: true,
+        OR: [
+          { targetUrl: { not: null } },
+          { internalRoute: { not: null } }
+        ]
+      },
+      orderBy: { order: "asc" },
+      select: {
+        targetUrl: true,
+        internalRoute: true
+      }
+    })
   ]);
   const isLeader = isParishLeader(membership.role);
+  const contactParishHref = contactHubItem?.targetUrl ?? (contactHubItem?.internalRoute
+    ? buildLocalePathname(locale, contactHubItem.internalRoute)
+    : null);
 
   return (
     <ParishionerPageLayout
@@ -63,6 +82,7 @@ export default async function GroupsPage({
         inviteCandidates={inviteCandidates}
         canManageGroups={isLeader}
         canRequestContentCreate={membership.role === "MEMBER"}
+        contactParishHref={contactParishHref}
       />
     </ParishionerPageLayout>
   );
