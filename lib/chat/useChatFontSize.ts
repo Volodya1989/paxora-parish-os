@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 export const CHAT_FONT_SIZE_MIN = 9;
-export const CHAT_FONT_SIZE_MAX = 18;
+export const CHAT_FONT_SIZE_MAX = 22;
 export const CHAT_FONT_SIZE_DEFAULT = 16;
 
 export function clampChatFontSize(value: number): number {
