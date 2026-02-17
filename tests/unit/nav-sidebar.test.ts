@@ -12,8 +12,8 @@ test("Sidebar renders primary nav with This Week first and active state", () => 
   );
 
   assert.ok(markup.indexOf("This Week") < markup.indexOf("Serve"));
-  assert.ok(markup.indexOf("Serve") < markup.indexOf("Groups"));
-  assert.ok(markup.indexOf("Groups") < markup.indexOf("Calendar"));
+  assert.ok(markup.indexOf("Serve") < markup.indexOf("Community"));
+  assert.ok(markup.indexOf("Community") < markup.indexOf("Events"));
   assert.match(markup, /<nav[^>]*aria-label="Primary"/);
   assert.match(
     markup,
