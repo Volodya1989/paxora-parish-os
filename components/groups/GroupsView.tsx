@@ -259,6 +259,20 @@ export default function GroupsView({
     setRestrictedGroupName(groupName);
   };
 
+  const handleContactParish = () => {
+    if (!contactParishHref) {
+      return;
+    }
+
+    if (contactParishHref.startsWith("http://") || contactParishHref.startsWith("https://")) {
+      window.location.href = contactParishHref;
+      return;
+    }
+
+    router.push(contactParishHref);
+  };
+
+
   const handleMemberResult = async (
     groupId: string,
     action: () => Promise<MemberActionState>,
@@ -780,10 +794,10 @@ export default function GroupsView({
               {contactParishHref ? (
                 <Button
                   type="button"
-                  asChild
+                  onClick={handleContactParish}
                   aria-label={t("groups.contactParish")}
                 >
-                  <Link href={contactParishHref}>{t("groups.contactParish")}</Link>
+                  {t("groups.contactParish")}
                 </Button>
               ) : null}
               <Button
@@ -809,10 +823,10 @@ export default function GroupsView({
               {contactParishHref ? (
                 <Button
                   type="button"
-                  asChild
+                  onClick={handleContactParish}
                   aria-label={t("groups.contactParish")}
                 >
-                  <Link href={contactParishHref}>{t("groups.contactParish")}</Link>
+                  {t("groups.contactParish")}
                 </Button>
               ) : null}
               <Button
