@@ -6,7 +6,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import { useTranslations } from "@/lib/i18n/provider";
 
 type TasksEmptyStateProps = {
-  variant: "no-tasks" | "no-matches";
+  variant: "no-tasks" | "no-matches" | "no-opportunities";
   onCreate?: () => void;
   onClearFilters?: () => void;
 };
@@ -32,16 +32,29 @@ export default function TasksEmptyState({
   onClearFilters
 }: TasksEmptyStateProps) {
   const t = useTranslations();
+  if (variant === "no-opportunities") {
+    return (
+      <EmptyState
+        icon={<TaskIcon />}
+        title={t("thisWeek.noOpportunities")}
+        description={t("thisWeek.noOpportunitiesHint")}
+        variant="calm"
+      />
+    );
+  }
+
   if (variant === "no-matches") {
     return (
       <EmptyState
         icon={<TaskIcon />}
-        title="No matches"
-        description="Try adjusting your filters or search to find the serve item you’re looking for."
+        title={t("emptyStates.noMatches")}
+        description={t("emptyStates.noMatchesDesc")}
         action={
-          <Button variant="secondary" onClick={onClearFilters}>
-            Clear filters
-          </Button>
+          onClearFilters ? (
+            <Button variant="secondary" onClick={onClearFilters}>
+              {t("emptyStates.clearFilters")}
+            </Button>
+          ) : null
         }
       />
     );
@@ -51,11 +64,11 @@ export default function TasksEmptyState({
     <EmptyState
       icon={<TaskIcon />}
       title={t("empty.noTasks")}
-      description="Capture what matters this week and keep your teams aligned."
+      description={t("empty.noTasksDesc")}
       action={
         onCreate ? (
           <Button onClick={onCreate}>
-            Create your first serve item
+            {t("emptyStates.createFirstServe")}
           </Button>
         ) : null
       }

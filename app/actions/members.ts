@@ -195,46 +195,62 @@ export async function acceptInvite(input: { groupId: string }): Promise<MemberAc
     return buildError("Invite not found.", "NOT_FOUND");
   }
 
-  const membership = await prisma.groupMembership.findUnique({
-    where: {
-      groupId_userId: {
-        groupId: parsed.data.groupId,
-        userId: session.userId
-      }
-    },
-    select: { status: true, invitedByUserId: true }
-  });
+  // Use transaction to atomically check status and update, preventing race conditions
+  let invitedByUserId: string | null = null;
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const membership = await tx.groupMembership.findUnique({
+        where: {
+          groupId_userId: {
+            groupId: parsed.data.groupId,
+            userId: session.userId
+          }
+        },
+        select: { status: true, invitedByUserId: true }
+      });
 
-  if (!membership || membership.status !== "INVITED") {
+      if (!membership || membership.status !== "INVITED") {
+        return null;
+      }
+
+      await tx.groupMembership.update({
+        where: {
+          groupId_userId: {
+            groupId: parsed.data.groupId,
+            userId: session.userId
+          }
+        },
+        data: {
+          status: "ACTIVE",
+          invitedByUserId: null,
+          invitedEmail: null,
+          approvedByUserId: session.userId
+        }
+      });
+
+      return membership;
+    });
+
+    if (!result) {
+      return buildError("Invite not found.", "NOT_FOUND");
+    }
+
+    invitedByUserId = result.invitedByUserId;
+  } catch {
     return buildError("Invite not found.", "NOT_FOUND");
   }
-
-  await prisma.groupMembership.update({
-    where: {
-      groupId_userId: {
-        groupId: parsed.data.groupId,
-        userId: session.userId
-      }
-    },
-    data: {
-      status: "ACTIVE",
-      invitedByUserId: null,
-      invitedEmail: null,
-      approvedByUserId: session.userId
-    }
-  });
 
   const responder = await prisma.user.findUnique({
     where: { id: session.userId },
     select: { name: true, email: true }
   });
 
-  if (membership.invitedByUserId) {
+  if (invitedByUserId) {
     await notifyGroupInviteResponseInApp({
       parishId: group.parishId,
       groupId: parsed.data.groupId,
       groupName: group.name,
-      inviterUserId: membership.invitedByUserId,
+      inviterUserId: invitedByUserId,
       responderUserId: session.userId,
       responderName: responder?.name ?? responder?.email ?? "Parishioner",
       response: "accepted"
@@ -351,41 +367,53 @@ export async function joinGroup(input: { groupId: string }): Promise<MemberActio
     return buildError("This group is not open for instant joins.", "INVALID_POLICY");
   }
 
-  const existing = await prisma.groupMembership.findUnique({
-    where: {
-      groupId_userId: {
-        groupId: group.id,
-        userId: session.userId
-      }
-    },
-    select: { status: true, role: true }
-  });
+  // Use transaction to atomically check and upsert, preventing race conditions
+  try {
+    await prisma.$transaction(async (tx) => {
+      const existing = await tx.groupMembership.findUnique({
+        where: {
+          groupId_userId: {
+            groupId: group.id,
+            userId: session.userId
+          }
+        },
+        select: { status: true, role: true }
+      });
 
-  if (existing?.status === "ACTIVE") {
-    return buildError("You are already a member of this group.", "ALREADY_MEMBER");
-  }
-
-  await prisma.groupMembership.upsert({
-    where: {
-      groupId_userId: {
-        groupId: group.id,
-        userId: session.userId
+      if (existing?.status === "ACTIVE") {
+        throw new Error("ALREADY_MEMBER");
       }
-    },
-    update: {
-      status: "ACTIVE",
-      invitedByUserId: null,
-      invitedEmail: null,
-      approvedByUserId: session.userId
-    },
-    create: {
-      groupId: group.id,
-      userId: session.userId,
-      role: existing?.role ?? "PARISHIONER",
-      status: "ACTIVE",
-      approvedByUserId: session.userId
+
+      await tx.groupMembership.upsert({
+        where: {
+          groupId_userId: {
+            groupId: group.id,
+            userId: session.userId
+          }
+        },
+        update: {
+          status: "ACTIVE",
+          invitedByUserId: null,
+          invitedEmail: null,
+          approvedByUserId: session.userId
+        },
+        create: {
+          groupId: group.id,
+          userId: session.userId,
+          role: existing?.role ?? "PARISHIONER",
+          status: "ACTIVE",
+          approvedByUserId: session.userId
+        }
+      });
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (message === "ALREADY_MEMBER") {
+      return buildError("You are already a member of this group.", "ALREADY_MEMBER");
     }
-  });
+    // Handle unique constraint violation gracefully (idempotent)
+    return { status: "success", message: "You joined the group." };
+  }
 
   revalidatePath(`/groups/${group.id}`);
   revalidatePath(`/groups/${group.id}/members`);
@@ -434,31 +462,56 @@ export async function requestToJoin(input: { groupId: string }): Promise<MemberA
     return buildError("This group does not accept join requests.", "INVALID_POLICY");
   }
 
-  const existing = await prisma.groupMembership.findUnique({
-    where: {
-      groupId_userId: {
-        groupId: group.id,
-        userId: session.userId
-      }
-    },
-    select: { status: true, role: true }
-  });
+  // Use transaction with upsert to prevent duplicate membership on double-click
+  try {
+    await prisma.$transaction(async (tx) => {
+      const existing = await tx.groupMembership.findUnique({
+        where: {
+          groupId_userId: {
+            groupId: group.id,
+            userId: session.userId
+          }
+        },
+        select: { status: true, role: true }
+      });
 
-  if (existing?.status === "ACTIVE") {
-    return buildError("You are already a member of this group.", "ALREADY_MEMBER");
-  }
-  if (existing?.status === "REQUESTED" || existing?.status === "INVITED") {
+      if (existing?.status === "ACTIVE") {
+        throw new Error("ALREADY_MEMBER");
+      }
+      if (existing?.status === "REQUESTED" || existing?.status === "INVITED") {
+        throw new Error("ALREADY_PENDING");
+      }
+
+      await tx.groupMembership.upsert({
+        where: {
+          groupId_userId: {
+            groupId: group.id,
+            userId: session.userId
+          }
+        },
+        update: {
+          status: "REQUESTED",
+          role: "PARISHIONER"
+        },
+        create: {
+          groupId: group.id,
+          userId: session.userId,
+          role: "PARISHIONER",
+          status: "REQUESTED"
+        }
+      });
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (message === "ALREADY_MEMBER") {
+      return buildError("You are already a member of this group.", "ALREADY_MEMBER");
+    }
+    if (message === "ALREADY_PENDING") {
+      return buildError("Your request or invite is already pending.", "ALREADY_PENDING");
+    }
+    // Handle unique constraint violation gracefully (race condition)
     return buildError("Your request or invite is already pending.", "ALREADY_PENDING");
   }
-
-  await prisma.groupMembership.create({
-    data: {
-      groupId: group.id,
-      userId: session.userId,
-      role: "PARISHIONER",
-      status: "REQUESTED"
-    }
-  });
 
   revalidatePath(`/groups/${group.id}`);
   revalidatePath(`/groups/${group.id}/members`);

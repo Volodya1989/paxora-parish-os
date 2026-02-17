@@ -50,11 +50,11 @@ Y4. updateGroupMembership uses the old pattern server/actions/groups.ts:632-723 
 	•	Fix: Deprecate or redirect to the canonical members.ts actions.
 Y5. Missing confirmation patterns for destructive actions Group deletion, task deletion, event deletion, member removal — all execute immediately without client-side confirmation beyond a single button click.
 	•	Fix: Add confirmation modals for irreversible actions (delete group, delete event, remove member).
-Y6. Calendar surface state variable exists but the UI toggle for "schedule" view is not rendered CalendarView.tsxhas surface state (calendar | schedule) but the toggle is missing from the UI — the schedule view is unreachable without direct state manipulation.
+Y6. Calendar surface state variable exists but the UI toggle for "schedule" view is not rendered CalendarView.tsxhas surface state (calendar | schedule) but the toggle is missing from the UI — the schedule view is unreachable without direct state manipulation. — Resolved (Ready for review).
 	•	Fix: Add a surface toggle or remove dead code.
-Y7. Notification preferences only control in-app notifications User model has notifyMessageInApp, notifyTaskInApp, etc. but no corresponding push notification preferences. Users can't opt out of push notifications per category.
+Y7. Notification preferences only control in-app notifications User model has notifyMessageInApp, notifyTaskInApp, etc. but no corresponding push notification preferences. Users can't opt out of push notifications per category. — Resolved (Ready for review).
 	•	Fix: Add notifyMessagePush, notifyTaskPush, etc. fields and check them in lib/push/notify.ts.
-Y8. Empty state handling inconsistencies
+Y8. Empty state handling inconsistencies — Resolved (Ready for review).
 	•	Calendar shows empty state for filtered results but doesn't suggest clearing filters
 	•	Tasks page empty state varies between view modes
 	•	Groups page has no "create your first group" empty state for leaders
@@ -284,10 +284,10 @@ Acceptable for MVP
 9. Y4  — Consolidate members   (1 hr)
 10. Y1 — Transaction safety     (2 hr)
 11. Y5 — Confirmation modals    (3 hr)
-12. Y6 — Schedule toggle fix    (30 min)
-13. Y8 — Empty states audit     (2 hr)
+12. Y6 — Schedule toggle fix    (Completed, ready for review)
+13. Y8 — Empty states audit     (Completed, ready for review)
 14. Y2 — i18n hardcoded strings (4 hr)
-15. Y7 — Push preferences       (3 hr)
+15. Y7 — Push preferences       (Completed, ready for review)
 Total estimated effort: ~25 hours of focused development for all blockers + important items.
 
 This analysis is based on direct reading of every critical file in the codebase. The findings are concrete and actionable. Shall I begin implementing the fixes, starting with the launch blockers?

@@ -95,6 +95,7 @@ export default function GroupsView({
     () => groups.filter((group) => group.viewerMembershipStatus === "INVITED" && group.status === "ACTIVE"),
     [groups]
   );
+  const hasSearchQuery = query.trim().length > 0;
 
   useEffect(() => {
     if (searchParams?.get("create") !== "group") {
@@ -320,8 +321,8 @@ export default function GroupsView({
 
     return (
       <ListEmptyState
-        title="No groups found"
-        description="Try a different search or browse all groups."
+        title={t("emptyStates.noMatches")}
+        description={t("emptyStates.noMatchesDesc")}
       />
     );
   };
@@ -448,7 +449,31 @@ export default function GroupsView({
               </div>
 
               {joinedGroups.length === 0 ? (
-                <ListEmptyState title="No chats yet" description="Join a group to start." variant="friendly" />
+                <ListEmptyState
+                  title={hasSearchQuery ? t("emptyStates.noMatches") : t("empty.noGroups")}
+                  description={
+                    hasSearchQuery
+                      ? t("emptyStates.noMatchesDesc")
+                      : canManageGroups
+                        ? t("groups.empty.startMessage")
+                        : t("empty.noGroupsDesc")
+                  }
+                  action={
+                    <div className="flex flex-wrap justify-center gap-2">
+                      {hasSearchQuery ? (
+                        <Button type="button" variant="secondary" onClick={() => setQuery("")}>
+                          {t("emptyStates.clearFilters")}
+                        </Button>
+                      ) : null}
+                      {canManageGroups || canRequestContentCreate ? (
+                        <Button type="button" onClick={openCreateDialog}>
+                          {t("groups.startGroup")}
+                        </Button>
+                      ) : null}
+                    </div>
+                  }
+                  variant="friendly"
+                />
               ) : (
                 <div className="space-y-2">
                   {joinedGroups.map((group) => (

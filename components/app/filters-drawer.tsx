@@ -5,6 +5,7 @@ import Button from "@/components/ui/Button";
 import { Drawer } from "@/components/ui/Drawer";
 import { ListChecksIcon } from "@/components/icons/ParishIcons";
 import { cn } from "@/lib/ui/cn";
+import { useTranslations } from "@/lib/i18n/provider";
 
 type FiltersDrawerProps = {
   title?: string;
@@ -14,11 +15,14 @@ type FiltersDrawerProps = {
 };
 
 export default function FiltersDrawer({
-  title = "Filters",
-  triggerLabel = "Filters",
+  title,
+  triggerLabel,
   children,
   className
 }: FiltersDrawerProps) {
+  const t = useTranslations();
+  const resolvedTitle = title ?? t("header.filters");
+  const resolvedTriggerLabel = triggerLabel ?? t("header.filters");
   const [open, setOpen] = useState(false);
 
   return (
@@ -30,9 +34,9 @@ export default function FiltersDrawer({
         className={cn("h-9 gap-2 px-3 text-xs font-semibold sm:text-sm", className)}
       >
         <ListChecksIcon className="h-4 w-4" />
-        {triggerLabel}
+        {resolvedTriggerLabel}
       </Button>
-      <Drawer open={open} onClose={() => setOpen(false)} title={title}>
+      <Drawer open={open} onClose={() => setOpen(false)} title={resolvedTitle}>
         {children}
       </Drawer>
     </>

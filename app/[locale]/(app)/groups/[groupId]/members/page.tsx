@@ -1,4 +1,5 @@
 import { getServerSession } from "next-auth";
+import { notFound } from "next/navigation";
 import GroupMembersView from "@/components/groups/members/GroupMembersView";
 import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
@@ -38,7 +39,7 @@ export default async function GroupMembersPage({ params }: GroupMembersPageProps
   });
 
   if (!group) {
-    throw new Error("Group not found");
+    notFound();
   }
 
   const [parishMembership, groupMembership] = await Promise.all([
@@ -74,7 +75,7 @@ export default async function GroupMembersPage({ params }: GroupMembersPageProps
     groupMembership?.status === "REQUESTED";
 
   if (!canView || (group.status !== "ACTIVE" && !isLeader && group.createdById !== session.user.id)) {
-    throw new Error("Unauthorized");
+    notFound();
   }
 
   const [members, pendingInvites, inviteCandidates] = await Promise.all([

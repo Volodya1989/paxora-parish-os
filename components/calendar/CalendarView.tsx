@@ -19,7 +19,7 @@ import { Drawer } from "@/components/ui/Drawer";
 import Card from "@/components/ui/Card";
 import ListEmptyState from "@/components/app/list-empty-state";
 import QuoteCard from "@/components/app/QuoteCard";
-import { CalendarIcon } from "@/components/icons/ParishIcons";
+import { CalendarIcon, ListChecksIcon } from "@/components/icons/ParishIcons";
 import {
   getDateKey,
   getMonthGridDays,
@@ -105,7 +105,7 @@ export default function CalendarView({
   const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
-  const hasActiveFilters = visibilityFilter !== "all" || groupFilter !== "mine";
+  const hasActiveFilters = visibilityFilter !== "all" || groupFilter !== "all";
 
   const weekDays = useMemo(() => getWeekDays(weekRange.start), [weekRange.start]);
   const monthDays = useMemo(
@@ -209,6 +209,18 @@ export default function CalendarView({
 
   const renderEmptyActions = () => (
     <div className="flex flex-wrap justify-center gap-3">
+      {hasActiveFilters ? (
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => {
+            setVisibilityFilter("all");
+            setGroupFilter("all");
+          }}
+        >
+          {t("emptyStates.clearFilters")}
+        </Button>
+      ) : null}
       {canCreateEvents ? (
         <Button
           onClick={() => {
@@ -297,10 +309,36 @@ export default function CalendarView({
           source={t("calendar.quoteSource")}
           tone="primary"
         />
-        <TabsList aria-label="Time range" className="flex-wrap">
-          <TabsTrigger value="week">{t("calendar.week")}</TabsTrigger>
-          <TabsTrigger value="month">{t("calendar.month")}</TabsTrigger>
-        </TabsList>
+        <div className="flex flex-wrap items-center gap-3">
+          {surface === "calendar" ? (
+            <TabsList aria-label="Time range" className="flex-wrap">
+              <TabsTrigger value="week">{t("calendar.week")}</TabsTrigger>
+              <TabsTrigger value="month">{t("calendar.month")}</TabsTrigger>
+            </TabsList>
+          ) : null}
+          <div className="flex items-center rounded-full border border-mist-200 bg-white p-0.5 shadow-sm" role="radiogroup" aria-label={t("calendar.viewToggleLabel")}>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={surface === "calendar"}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${surface === "calendar" ? "bg-primary-600 text-white shadow-sm" : "text-ink-600 hover:text-ink-900"}`}
+              onClick={() => setSurface("calendar")}
+            >
+              <CalendarIcon className="h-3.5 w-3.5" />
+              {t("calendar.calendarView")}
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={surface === "schedule"}
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition ${surface === "schedule" ? "bg-primary-600 text-white shadow-sm" : "text-ink-600 hover:text-ink-900"}`}
+              onClick={() => setSurface("schedule")}
+            >
+              <ListChecksIcon className="h-3.5 w-3.5" />
+              {t("calendar.scheduleView")}
+            </button>
+          </div>
+        </div>
 
         {/* Unified header action bar */}
         <HeaderActionBar

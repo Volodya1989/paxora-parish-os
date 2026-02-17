@@ -15,6 +15,11 @@ type UpdateProfileSettingsInput = {
   notifyAnnouncementInApp: boolean;
   notifyEventInApp: boolean;
   notifyRequestInApp: boolean;
+  notifyMessagePush: boolean;
+  notifyTaskPush: boolean;
+  notifyAnnouncementPush: boolean;
+  notifyEventPush: boolean;
+  notifyRequestPush: boolean;
 };
 
 export async function updateProfileSettings({
@@ -25,7 +30,12 @@ export async function updateProfileSettings({
   notifyTaskInApp,
   notifyAnnouncementInApp,
   notifyEventInApp,
-  notifyRequestInApp
+  notifyRequestInApp,
+  notifyMessagePush,
+  notifyTaskPush,
+  notifyAnnouncementPush,
+  notifyEventPush,
+  notifyRequestPush
 }: UpdateProfileSettingsInput) {
   const session = await getServerSession(authOptions);
 
@@ -46,7 +56,12 @@ export async function updateProfileSettings({
     typeof notifyTaskInApp !== "boolean" ||
     typeof notifyAnnouncementInApp !== "boolean" ||
     typeof notifyEventInApp !== "boolean" ||
-    typeof notifyRequestInApp !== "boolean"
+    typeof notifyRequestInApp !== "boolean" ||
+    typeof notifyMessagePush !== "boolean" ||
+    typeof notifyTaskPush !== "boolean" ||
+    typeof notifyAnnouncementPush !== "boolean" ||
+    typeof notifyEventPush !== "boolean" ||
+    typeof notifyRequestPush !== "boolean"
   ) {
     throw new Error("Invalid settings");
   }
@@ -60,7 +75,12 @@ export async function updateProfileSettings({
         notifyTaskInApp,
         notifyAnnouncementInApp,
         notifyEventInApp,
-        notifyRequestInApp
+        notifyRequestInApp,
+        notifyMessagePush,
+        notifyTaskPush,
+        notifyAnnouncementPush,
+        notifyEventPush,
+        notifyRequestPush
       },
       select: {
         volunteerHoursOptIn: true,
@@ -68,7 +88,12 @@ export async function updateProfileSettings({
         notifyTaskInApp: true,
         notifyAnnouncementInApp: true,
         notifyEventInApp: true,
-        notifyRequestInApp: true
+        notifyRequestInApp: true,
+        notifyMessagePush: true,
+        notifyTaskPush: true,
+        notifyAnnouncementPush: true,
+        notifyEventPush: true,
+        notifyRequestPush: true
       }
     }),
     prisma.membership.upsert({
@@ -105,7 +130,12 @@ export async function updateProfileSettings({
     notifyTaskInApp: updatedUser.notifyTaskInApp,
     notifyAnnouncementInApp: updatedUser.notifyAnnouncementInApp,
     notifyEventInApp: updatedUser.notifyEventInApp,
-    notifyRequestInApp: updatedUser.notifyRequestInApp
+    notifyRequestInApp: updatedUser.notifyRequestInApp,
+    notifyMessagePush: updatedUser.notifyMessagePush,
+    notifyTaskPush: updatedUser.notifyTaskPush,
+    notifyAnnouncementPush: updatedUser.notifyAnnouncementPush,
+    notifyEventPush: updatedUser.notifyEventPush,
+    notifyRequestPush: updatedUser.notifyRequestPush
   };
 }
 

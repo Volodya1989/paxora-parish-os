@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/ui/cn";
 import { ListChecksIcon } from "@/components/icons/ParishIcons";
+import { useTranslations } from "@/lib/i18n/provider";
 
 type HeaderActionBarProps = {
   /** Content rendered on the left side (filter controls, tabs, etc.) */
@@ -30,9 +31,11 @@ export default function HeaderActionBar({
   onFilterClick,
   filterActive = false,
   onAddClick,
-  addLabel = "Add",
+  addLabel,
   className
 }: HeaderActionBarProps) {
+  const t = useTranslations();
+  const resolvedAddLabel = addLabel ?? t("header.addButton");
   const showFilterButton = Boolean(onFilterClick);
   const showAddButton = Boolean(onAddClick);
 
@@ -54,7 +57,7 @@ export default function HeaderActionBar({
           <button
             type="button"
             onClick={onFilterClick}
-            aria-label="Filters"
+            aria-label={t("header.filters")}
             className={cn(
               "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition",
               filterActive
@@ -63,7 +66,7 @@ export default function HeaderActionBar({
             )}
           >
             <ListChecksIcon className="h-4 w-4" />
-            <span className="hidden xs:inline">Filters</span>
+            <span className="hidden xs:inline">{t("calendar.filters")}</span>
             {filterActive ? (
               <span className="ml-0.5 h-1.5 w-1.5 rounded-full bg-primary-500" aria-hidden="true" />
             ) : null}
@@ -77,7 +80,7 @@ export default function HeaderActionBar({
         <button
           type="button"
           onClick={onAddClick}
-          aria-label={addLabel}
+          aria-label={resolvedAddLabel}
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-600 text-white shadow-sm transition hover:bg-primary-700 active:scale-95"
         >
           <svg

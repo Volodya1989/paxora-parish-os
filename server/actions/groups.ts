@@ -11,17 +11,13 @@ import {
   getGroupDetailSchema,
   groupArchiveSchema,
   groupDeleteSchema,
-  updateGroupSchema,
-  updateGroupMembershipSchema
+  updateGroupSchema
 } from "@/lib/validation/groups";
 import { getParishMembership } from "@/server/db/groups";
 import { isParishLeader } from "@/lib/permissions";
 import { notifyContentRequestDecisionInApp, notifyContentRequestSubmittedInApp } from "@/lib/notifications/notify";
 import { AUDIT_ACTIONS, AUDIT_TARGET_TYPES } from "@/lib/audit/actions";
 import { auditLog } from "@/lib/audit/log";
-
-// TODO: Wire to parish policy once stored in the database.
-const ALLOW_GROUP_LEADS_TO_MANAGE_MEMBERSHIP = true;
 
 type GroupCreateResult = {
   status: "success" | "error";
@@ -605,7 +601,8 @@ export async function getGroupDetail(groupId: string) {
     const canView =
       group.visibility === "PUBLIC" || groupMembership?.status === "ACTIVE";
     if (!canView) {
-      throw new Error("Unauthorized");
+      // Return "Not found" instead of "Unauthorized" to avoid leaking private group existence
+      throw new Error("Not found");
     }
   }
   const visibilityWhere: Prisma.TaskWhereInput = {
@@ -664,149 +661,8 @@ export async function getGroupDetail(groupId: string) {
   };
 }
 
-export async function updateGroupMembership(formData: FormData) {
-  const session = await getServerSession(authOptions);
-  const { userId, parishId } = assertSession(session);
-
-  const parsed = updateGroupMembershipSchema.safeParse({
-    groupId: formData.get("groupId"),
-    userId: formData.get("userId"),
-    role: formData.get("role")
-  });
-
-  if (!parsed.success) {
-    throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
-  }
-
-  const group = await prisma.group.findFirst({
-    where: { id: parsed.data.groupId, parishId },
-    select: { id: true }
-  });
-
-  if (!group) {
-    throw new Error("Not found");
-  }
-
-  const actorMembership = await requireParishMembership(userId, parishId);
-  const isLeader = isParishLeader(actorMembership.role);
-
-  if (!isLeader) {
-    if (!ALLOW_GROUP_LEADS_TO_MANAGE_MEMBERSHIP) {
-      throw new Error("Forbidden");
-    }
-
-    const groupMembership = await prisma.groupMembership.findUnique({
-      where: {
-        groupId_userId: {
-          groupId: group.id,
-          userId
-        }
-      }
-    });
-
-    if (groupMembership?.status !== "ACTIVE" || groupMembership.role !== "COORDINATOR") {
-      throw new Error("Forbidden");
-    }
-  }
-
-  const targetParishMember = await prisma.membership.findUnique({
-    where: {
-      parishId_userId: {
-        parishId,
-        userId: parsed.data.userId
-      }
-    },
-    select: { id: true }
-  });
-
-  if (!targetParishMember) {
-    throw new Error("Not found");
-  }
-
-  if (parsed.data.role === "REMOVE") {
-    const existingMembership = await prisma.groupMembership.findUnique({
-      where: {
-        groupId_userId: {
-          groupId: group.id,
-          userId: parsed.data.userId
-        }
-      },
-      select: { role: true, status: true }
-    });
-
-    await prisma.$transaction(async (tx) => {
-      await tx.groupMembership.deleteMany({
-        where: {
-          groupId: group.id,
-          userId: parsed.data.userId
-        }
-      });
-
-      await auditLog(tx, {
-        parishId,
-        actorUserId: userId,
-        action: AUDIT_ACTIONS.GROUP_MEMBER_REMOVED,
-        targetType: AUDIT_TARGET_TYPES.GROUP_MEMBERSHIP,
-        targetId: `${group.id}:${parsed.data.userId}`,
-        metadata: {
-          groupId: group.id,
-          removedUserId: parsed.data.userId,
-          priorRole: existingMembership?.role ?? null,
-          priorStatus: existingMembership?.status ?? null
-        }
-      });
-    });
-
-    return { success: true };
-  }
-
-  const nextRole = parsed.data.role === "COORDINATOR" ? "COORDINATOR" : "PARISHIONER";
-
-  const existingMembership = await prisma.groupMembership.findUnique({
-    where: {
-      groupId_userId: {
-        groupId: group.id,
-        userId: parsed.data.userId
-      }
-    },
-    select: { role: true }
-  });
-
-  await prisma.$transaction(async (tx) => {
-    await tx.groupMembership.upsert({
-      where: {
-        groupId_userId: {
-          groupId: group.id,
-          userId: parsed.data.userId
-        }
-      },
-      update: {
-        role: nextRole,
-        status: "ACTIVE"
-      },
-      create: {
-        groupId: group.id,
-        userId: parsed.data.userId,
-        role: nextRole,
-        status: "ACTIVE"
-      }
-    });
-
-    await auditLog(tx, {
-      parishId,
-      actorUserId: userId,
-      action: AUDIT_ACTIONS.GROUP_MEMBER_ROLE_CHANGED,
-      targetType: AUDIT_TARGET_TYPES.GROUP_MEMBERSHIP,
-      targetId: `${group.id}:${parsed.data.userId}`,
-      metadata: {
-        groupId: group.id,
-        memberUserId: parsed.data.userId,
-        fromRole: existingMembership?.role ?? null,
-        toRole: nextRole
-      }
-    });
-  });
-
-  return { success: true };
-  
-}
+// updateGroupMembership has been removed (Y4).
+// The canonical membership operations now live in app/actions/members.ts:
+//   - changeMemberRole() for role changes
+//   - removeMember() for member removal
+//   - inviteMember() for adding members
