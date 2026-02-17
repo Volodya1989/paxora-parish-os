@@ -1,14 +1,16 @@
 "use client";
 
 import { type ReactNode, useState, useEffect } from "react";
+import Link from "next/link";
 import { useTranslations } from "@/lib/i18n/provider";
+import { useLocale } from "@/lib/i18n/provider";
 import LanguageIconToggle from "@/components/navigation/LanguageIconToggle";
-import { SparklesIcon } from "@/components/icons/ParishIcons";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import { useNotificationContext } from "@/components/notifications/NotificationProvider";
 import QuickActions from "@/components/this-week/QuickActions";
 import { Modal } from "@/components/ui/Modal";
 import { Drawer } from "@/components/ui/Drawer";
+import { buildLocalePathname } from "@/lib/i18n/routing";
 
 type ParishionerHeaderProps = {
   /** Parish name to display */
@@ -44,9 +46,13 @@ export default function ParishionerHeader({
   quoteSource
 }: ParishionerHeaderProps) {
   const t = useTranslations();
+  const locale = useLocale();
   const { count } = useNotificationContext();
   const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [quoteExpanded, setQuoteExpanded] = useState(true);
+  const [quotePinnedOpen, setQuotePinnedOpen] = useState(false);
   const logoSrc = parishLogoUrl?.trim() ? parishLogoUrl : "/icon.png";
+  const quoteStorageKey = "this-week:quote-expanded";
 
   // Use state to prevent hydration mismatch - start with generic greeting
   // then update to time-based greeting on client
@@ -63,9 +69,40 @@ export default function ParishionerHeader({
     setGreeting(timeGreeting);
   }, [t]);
 
+  useEffect(() => {
+    if (!quote) return;
+    const stored = sessionStorage.getItem(quoteStorageKey);
+    if (stored === "collapsed") {
+      setQuoteExpanded(false);
+      setQuotePinnedOpen(false);
+      return;
+    }
+    if (stored === "open") {
+      setQuoteExpanded(true);
+      setQuotePinnedOpen(true);
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setQuoteExpanded(false);
+      sessionStorage.setItem(quoteStorageKey, "collapsed");
+    }, 20_000);
+
+    return () => window.clearTimeout(timer);
+  }, [quote]);
+
+  const handleToggleQuote = () => {
+    setQuoteExpanded((prev) => {
+      const next = !prev;
+      sessionStorage.setItem(quoteStorageKey, next ? "open" : "collapsed");
+      setQuotePinnedOpen(next);
+      return next;
+    });
+  };
+
   return (
     <>
-      <header className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-600 via-primary-500 to-emerald-500 px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] text-white shadow-lg sm:px-5 sm:pb-5 sm:pt-[calc(1.25rem+env(safe-area-inset-top))]">
+      <header className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-600 via-primary-500 to-emerald-500 px-4 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] text-white shadow-lg sm:px-5 sm:pb-4 sm:pt-[calc(0.9rem+env(safe-area-inset-top))]">
         {/* Decorative background elements */}
         <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-white/10" />
         <div className="absolute -bottom-2 left-1/4 h-12 w-12 rounded-full bg-white/5" />
@@ -74,18 +111,22 @@ export default function ParishionerHeader({
         {/* Top bar with controls */}
         <div className="relative mb-2 flex items-start justify-between gap-2 sm:gap-3">
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-            <img
-              src={logoSrc}
-              alt={`${parishName} logo`}
-              className="h-10 w-10 shrink-0 rounded-md object-contain md:h-12 md:w-12"
-              onError={(e) => { e.currentTarget.src = "/icon.png"; }}
-            />
-            <div className="hidden min-w-0 items-center gap-2 rounded-full bg-white/20 px-2.5 py-1 backdrop-blur-sm sm:flex">
-              <SparklesIcon className="h-3 w-3" />
-              <span className="text-xs font-medium">{t("landing.welcome")}</span>
-            </div>
+            <Link href={buildLocalePathname(locale, "/this-week")} aria-label={t("header.thisWeek")}>
+              <img
+                src={logoSrc}
+                alt={`${parishName} logo`}
+                className="h-9 w-9 shrink-0 rounded-md object-contain md:h-10 md:w-10"
+                onError={(e) => { e.currentTarget.src = "/icon.png"; }}
+              />
+            </Link>
+            <p className="line-clamp-1 text-sm font-semibold text-white/95 sm:text-base">{parishName}</p>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
+            {count > 0 && (
+              <span className="rounded-full bg-white/85 px-2 py-0.5 text-[11px] font-semibold text-primary-700 shadow-sm" aria-label="Notifications">
+                {count}
+              </span>
+            )}
             {showQuickAdd && (
               <button
                 type="button"
@@ -107,24 +148,40 @@ export default function ParishionerHeader({
         </div>
 
         {/* Main greeting */}
-        <div className="relative space-y-1">
-          <h1 className="text-lg font-bold tracking-tight sm:text-xl">
+        <div className="relative space-y-0.5">
+          <h1 className="text-base font-bold tracking-tight sm:text-lg">
             {greeting}{userName ? `, ${userName}` : ""}!
           </h1>
-          <p className="text-sm font-semibold text-white sm:text-base">
-            <span className="break-words">{parishName}</span>
-          </p>
           {quote && (
-            <blockquote className="mt-2 border-l-4 border-white/40 pl-3 text-xs italic text-white/90">
-              <p>{quote}</p>
-              {quoteSource && (
-                <footer className="mt-1 text-xs text-white/70">— {quoteSource}</footer>
-              )}
-            </blockquote>
+            quoteExpanded ? (
+              <blockquote className="mt-1.5 border-l-4 border-white/40 pl-3 text-xs italic text-white/90">
+                <p>{quote}</p>
+                {quoteSource && (
+                  <footer className="mt-1 text-xs text-white/70">— {quoteSource}</footer>
+                )}
+              </blockquote>
+            ) : (
+              <button
+                type="button"
+                onClick={handleToggleQuote}
+                className="mt-1.5 text-xs font-medium text-white/90 underline underline-offset-2 transition hover:text-white"
+              >
+                {t("thisWeek.showQuote")}
+              </button>
+            )
+          )}
+          {quote && quoteExpanded && quotePinnedOpen && (
+            <button
+              type="button"
+              onClick={handleToggleQuote}
+              className="mt-1 text-xs font-medium text-white/90 underline underline-offset-2 transition hover:text-white"
+            >
+              {t("thisWeek.hideQuote")}
+            </button>
           )}
           {/* Subtle view switch link at bottom of hero */}
           {actions && (
-            <div className="mt-3 flex justify-end">
+            <div className="mt-2 flex justify-end">
               {actions}
             </div>
           )}
