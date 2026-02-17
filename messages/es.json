@@ -401,6 +401,11 @@
       "defaultTitleServe": "Solicitud para crear tarea pública de servicio",
       "defaultTitleGroup": "Solicitud para crear nuevo grupo",
       "addAria": "Agregar solicitud de creación"
+    },
+    "page": {
+      "title": "My Requests",
+      "subtitle": "Track updates and follow-ups",
+      "makeRequest": "Make a Request"
     }
   },
   "emptyStates": {

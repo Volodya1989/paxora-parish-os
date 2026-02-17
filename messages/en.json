@@ -463,7 +463,8 @@
   "requests": {
     "page": {
       "subtitle": "Track updates and follow-ups",
-      "makeRequest": "Make a Request"
+      "makeRequest": "Make a Request",
+      "title": "My Requests"
     },
     "new": {
       "subtitle": "Share a need or ask for support"
