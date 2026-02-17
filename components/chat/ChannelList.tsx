@@ -66,7 +66,7 @@ export default function ChannelList({
                     <p className="text-xs text-ink-400">{channel.description}</p>
                   ) : null}
                 </div>
-                {channel.unreadCount ? <Badge tone="warning">{channel.unreadCount}</Badge> : null}
+                {channel.unreadCount ? <Badge tone="attention">{channel.unreadCount}</Badge> : null}
               </Link>
             );
           })}
@@ -105,7 +105,7 @@ export default function ChannelList({
                       <p className="text-xs text-ink-400">{channel.description}</p>
                     ) : null}
                   </div>
-                  {channel.unreadCount ? <Badge tone="warning">{channel.unreadCount}</Badge> : null}
+                  {channel.unreadCount ? <Badge tone="attention">{channel.unreadCount}</Badge> : null}
                 </Link>
               );
             })
