@@ -299,12 +299,8 @@ export default function ChatThread({
 
   return (
     <div
-      className="relative min-h-full rounded-card border border-mist-100 bg-emerald-50/30 px-3 py-4 shadow-sm touch-manipulation"
+      className="relative min-h-full px-3 py-4 touch-manipulation"
       style={{
-        backgroundImage: "url('/chat-background.png')",
-        backgroundRepeat: "no-repeat",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
         ["--chat-font-size" as string]: `${messageFontSize ?? 16}px`
       }}
       onClick={() => {
@@ -825,7 +821,7 @@ function MessageRow({
                   key={`${message.id}-${reaction.emoji}`}
                   type="button"
                   className={cn(
-                    "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-sm shadow-sm",
+                    "inline-flex items-center gap-0.5 rounded-full border px-1.5 py-px text-xs shadow-sm",
                     reaction.reactedByMe
                       ? "border-emerald-200 bg-emerald-50 font-semibold text-emerald-800"
                       : "border-mist-200 bg-white font-medium text-ink-600"
@@ -835,8 +831,8 @@ function MessageRow({
                     onToggleReaction?.(message.id, reaction.emoji);
                   }}
                 >
-                  <span aria-hidden="true" className="text-[1.2rem] leading-none">{reaction.emoji}</span>
-                  <span className="text-[13px] leading-none">{reaction.count}</span>
+                  <span aria-hidden="true" className="text-[0.95rem] leading-none">{reaction.emoji}</span>
+                  <span className="text-[11px] leading-none">{reaction.count}</span>
                 </button>
               ))}
             </div>

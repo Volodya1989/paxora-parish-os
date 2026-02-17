@@ -643,8 +643,20 @@ export default function ChatView({
       <aside className="hidden space-y-4 lg:block">
         <ChannelList channels={channels} activeChannelId={channel.id} />
       </aside>
-      <section className="flex flex-col fixed inset-0 z-40 bg-mist-50 touch-manipulation animate-chat-fade-in md:static md:z-auto md:h-[calc(100dvh-6rem)] md:max-h-[calc(100dvh-6rem)] md:rounded-card">
-        <div className="shrink-0">
+      <section className="flex flex-col fixed inset-0 z-40 bg-mist-50 touch-manipulation animate-chat-fade-in md:relative md:z-auto md:h-[calc(100dvh-6rem)] md:max-h-[calc(100dvh-6rem)] md:rounded-card overflow-hidden">
+        {/* Stationary background layer — does not scroll with messages */}
+        <div
+          className="absolute inset-0 z-0 pointer-events-none"
+          style={{
+            backgroundImage: "url('/chat-background.png')",
+            backgroundRepeat: "no-repeat",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+          aria-hidden="true"
+        />
+        <div className="absolute inset-0 z-0 bg-emerald-50/30 pointer-events-none" aria-hidden="true" />
+        <div className="shrink-0 relative z-10">
           <ChatHeader
             channel={{ ...channel, lockedAt }}
             channels={channels}
@@ -662,7 +674,7 @@ export default function ChatView({
             }}
           />
         </div>
-        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overscroll-contain py-2 scroll-smooth">
+        <div ref={scrollContainerRef} className="relative z-10 flex-1 overflow-y-auto overscroll-contain py-2 scroll-smooth">
           {hasOlderMessages ? (
             <div className="mb-2 flex justify-center px-3">
               <Button
@@ -708,7 +720,7 @@ export default function ChatView({
           />
           <div ref={bottomRef} aria-hidden="true" />
         </div>
-        <div className="shrink-0">
+        <div className="shrink-0 relative z-10">
           <Composer
             disabled={!canPost || Boolean(lockedAt)}
             onSend={handleSend}
