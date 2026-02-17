@@ -123,11 +123,6 @@ export default function ParishionerHeader({
             <p className="line-clamp-1 text-sm font-semibold text-white/95 sm:text-base">{parishName}</p>
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
-            {count > 0 && (
-              <span className="rounded-full bg-white/85 px-2 py-0.5 text-[11px] font-semibold text-primary-700 shadow-sm" aria-label="Notifications">
-                {count}
-              </span>
-            )}
             {showQuickAdd && (
               <button
                 type="button"
