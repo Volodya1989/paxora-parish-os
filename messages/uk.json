@@ -614,7 +614,45 @@
     "openJoin": "Будь-хто може приєднатися одразу",
     "requestToJoin": "Запит на схвалення для вступу",
     "pendingApproval": "Ваш запит очікує схвалення керівництва парафії.",
-    "removeInviteeAria": "Видалити {name}"
+    "removeInviteeAria": "Видалити {name}",
+    "errors": {
+      "nameRequired": "Назва групи є обов'язковою.",
+      "nameTooLong": "Назва групи повинна бути не більше {max} символів.",
+      "descriptionTooLong": "Опис повинен бути не більше {max} символів.",
+      "unableToSubmitRequest": "Не вдалося подати запит на групу.",
+      "unableToCreateGroup": "Не вдалося створити групу.",
+      "photoUploadFailed": "Групу створено, але завантаження фото не вдалося.",
+      "submitRequestFailed": "Не вдалося подати цей запит. Спробуйте ще раз.",
+      "createGroupFailed": "Не вдалося створити цю групу. Спробуйте ще раз."
+    },
+    "toasts": {
+      "unableToSubmitRequest": "Не вдалося подати запит",
+      "unableToCreateGroup": "Не вдалося створити групу",
+      "requestSubmitted": "Запит надіслано",
+      "groupCreated": "Групу створено",
+      "requestSubmittedDesc": "Ваш запит очікує схвалення керівництва парафії.",
+      "groupCreatedDesc": "Ваша нова група готова для учасників та можливостей допомагати."
+    }
+  },
+  "inviteDrawer": {
+    "title": "Додати парафіянина",
+    "description": "Додайте парафіянина безпосередньо до цієї групи служіння.",
+    "selectParishioner": "Обрати парафіянина",
+    "searchPlaceholder": "Пошук за ім'ям або email",
+    "noMatching": "Парафіян не знайдено.",
+    "selected": "Обрано",
+    "select": "Обрати",
+    "role": "Роль",
+    "roleParishioner": "Парафіянин",
+    "roleCoordinator": "Координатор",
+    "addMember": "Додати учасника",
+    "toasts": {
+      "memberRequired": "Учасник обов'язковий",
+      "memberRequiredDesc": "Оберіть парафіянина зі списку.",
+      "couldNotAdd": "Не вдалося додати учасника",
+      "memberAdded": "Учасника додано",
+      "memberAddedDesc": "Тепер він належить до цієї групи."
+    }
   },
   "eventDetail": {
     "title": "Деталі події",
@@ -728,7 +766,16 @@
     "sendRequest": "Надіслати запит",
     "createTask": "Створити завдання",
     "requestTask": "Запит на завдання служіння",
-    "newTask": "Нове завдання"
+    "newTask": "Нове завдання",
+    "pendingApproval": "Ваш запит очікує схвалення керівництва парафії."
+  },
+  "serveEventForm": {
+    "title": "Назва",
+    "startsAt": "Початок",
+    "endsAt": "Кінець",
+    "location": "Місце (необов'язково)",
+    "contextNote": "Подія прив'язана до поточного тижня.",
+    "createEvent": "Створити подію"
   },
   "eventForm": {
     "title": "Назва",

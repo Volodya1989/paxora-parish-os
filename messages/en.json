@@ -614,7 +614,45 @@
     "openJoin": "Anyone can join instantly",
     "requestToJoin": "Request approval to join",
     "pendingApproval": "Your request is pending approval from parish leadership.",
-    "removeInviteeAria": "Remove {name}"
+    "removeInviteeAria": "Remove {name}",
+    "errors": {
+      "nameRequired": "Group name is required.",
+      "nameTooLong": "Group name must be {max} characters or fewer.",
+      "descriptionTooLong": "Description must be {max} characters or fewer.",
+      "unableToSubmitRequest": "Unable to submit group request.",
+      "unableToCreateGroup": "Unable to create group.",
+      "photoUploadFailed": "Group created, but photo upload failed.",
+      "submitRequestFailed": "We couldn't submit that request. Please try again.",
+      "createGroupFailed": "We couldn't create that group. Please try again."
+    },
+    "toasts": {
+      "unableToSubmitRequest": "Unable to submit request",
+      "unableToCreateGroup": "Unable to create group",
+      "requestSubmitted": "Request submitted",
+      "groupCreated": "Group created",
+      "requestSubmittedDesc": "Your request is pending approval from parish leadership.",
+      "groupCreatedDesc": "Your new group is ready for members and opportunities to help."
+    }
+  },
+  "inviteDrawer": {
+    "title": "Add a parishioner",
+    "description": "Add a parishioner directly to this ministry group.",
+    "selectParishioner": "Select parishioner",
+    "searchPlaceholder": "Search by name or email",
+    "noMatching": "No matching parish members.",
+    "selected": "Selected",
+    "select": "Select",
+    "role": "Role",
+    "roleParishioner": "Parishioner",
+    "roleCoordinator": "Coordinator",
+    "addMember": "Add member",
+    "toasts": {
+      "memberRequired": "Member required",
+      "memberRequiredDesc": "Select a parishioner from the list.",
+      "couldNotAdd": "Could not add member",
+      "memberAdded": "Member added",
+      "memberAddedDesc": "They now belong to this group."
+    }
   },
   "eventDetail": {
     "title": "Event details",
@@ -728,7 +766,16 @@
     "sendRequest": "Send request",
     "createTask": "Create task",
     "requestTask": "Request a serve task",
-    "newTask": "New task"
+    "newTask": "New task",
+    "pendingApproval": "Your request is pending approval from parish leadership."
+  },
+  "serveEventForm": {
+    "title": "Title",
+    "startsAt": "Starts at",
+    "endsAt": "Ends at",
+    "location": "Location (optional)",
+    "contextNote": "Events are context-only and stay within this week's schedule.",
+    "createEvent": "Create event"
   },
   "eventForm": {
     "title": "Title",

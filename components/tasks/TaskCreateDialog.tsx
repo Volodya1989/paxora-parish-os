@@ -148,7 +148,7 @@ export default function TaskCreateDialog({
   const renderForm = (formId: string, ref: RefObject<HTMLFormElement>) => (
     submitted && requestMode ? (
       <RequestSuccessState
-        message="Your request is pending approval from parish leadership."
+        message={t("taskCreate.pendingApproval")}
         onDone={() => onOpenChange(false)}
       />
     ) : (

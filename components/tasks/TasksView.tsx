@@ -8,7 +8,6 @@ import TaskCreateDialog from "@/components/tasks/TaskCreateDialog";
 import TaskFilters from "@/components/tasks/TaskFilters";
 import TasksEmptyState from "@/components/tasks/TasksEmptyState";
 import TasksList from "@/components/tasks/TasksList";
-import ListEmptyState from "@/components/app/list-empty-state";
 import QuoteCard from "@/components/app/QuoteCard";
 import type { TaskFilters as TaskFiltersState, TaskListItem, TaskListSummary } from "@/lib/queries/tasks";
 import type { PendingAccessRequest } from "@/lib/queries/access";
@@ -228,12 +227,7 @@ export default function TasksView({
   const renderTasksContent = () => {
     if (!hasTasks) {
       if (viewMode === "opportunities") {
-        return (
-          <ListEmptyState
-            title={t("thisWeek.noOpportunities")}
-            description={t("thisWeek.noOpportunitiesHint")}
-          />
-        );
+        return <TasksEmptyState variant="no-opportunities" />;
       }
       return (
         <TasksEmptyState
