@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MdTextDecrease, MdTextFields, MdTextIncrease } from "react-icons/md";
+import { MdTextDecrease, MdTextIncrease } from "react-icons/md";
 import { cn } from "@/lib/ui/cn";
 import { useTranslations } from "@/lib/i18n/provider";
 
@@ -25,6 +25,7 @@ export default function ChatFontSizeControl({
   const t = useTranslations();
   const [expanded, setExpanded] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const isMin = fontSize <= min;
   const isMax = fontSize >= max;
   const isLight = tone === "light";
@@ -53,13 +54,21 @@ export default function ChatFontSizeControl({
     return clearCollapseTimer;
   }, [expanded, clearCollapseTimer, scheduleCollapse]);
 
-  const openControls = () => {
-    setExpanded(true);
-    scheduleCollapse();
-  };
+  useEffect(() => {
+    if (!expanded) return;
+    const handleOutside = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (containerRef.current?.contains(target)) return;
+      setExpanded(false);
+    };
 
-  if (!expanded) {
-    return (
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [expanded]);
+
+  return (
+    <div ref={containerRef} className="relative">
       <button
         type="button"
         className={cn(
@@ -68,69 +77,77 @@ export default function ChatFontSizeControl({
             ? "border-white/20 bg-white/10 text-white/90 hover:bg-white/15 active:bg-white/25"
             : "border-mist-200 bg-mist-50 text-ink-600 hover:bg-white active:bg-mist-100"
         )}
-        onClick={openControls}
+        onClick={() => {
+          setExpanded((prev) => !prev);
+          scheduleCollapse();
+        }}
         aria-label={t("chat.fontSize.open")}
         title={t("chat.fontSize.open")}
+        aria-expanded={expanded}
       >
-        <MdTextFields className="h-5 w-5" />
+        <span className="relative inline-flex items-center justify-center">
+          <span className="text-base font-semibold leading-none">A</span>
+          <span className="absolute -right-2 -top-1 text-[10px] font-semibold leading-none">+</span>
+          <span className="absolute -bottom-1 -right-2 text-[10px] font-semibold leading-none">−</span>
+        </span>
       </button>
-    );
-  }
 
-  return (
-    <div
-      className={cn(
-        "inline-flex h-11 items-center rounded-full border px-1 transition-all duration-150",
-        isLight ? "border-white/20 bg-white/10" : "border-mist-200 bg-mist-50"
-      )}
-      role="group"
-      aria-label={t("chat.fontSize.groupLabel")}
-    >
-      <button
-        type="button"
-        className={cn(
-          "flex h-11 w-11 items-center justify-center rounded-full transition",
-          isLight
-            ? "text-white/90 hover:bg-white/15 active:bg-white/25"
-            : "text-ink-600 hover:bg-white active:bg-mist-100",
-          isMin && "pointer-events-none opacity-45"
-        )}
-        onClick={() => {
-          onDecrease();
-          scheduleCollapse();
-        }}
-        aria-label={t("chat.fontSize.decrease")}
-        disabled={isMin}
-      >
-        <MdTextDecrease className="h-5 w-5" />
-      </button>
-      <span
-        className={cn(
-          "min-w-7 text-center text-xs font-semibold tabular-nums",
-          isLight ? "text-white/80" : "text-ink-500"
-        )}
-        aria-live="polite"
-      >
-        {fontSize}
-      </span>
-      <button
-        type="button"
-        className={cn(
-          "flex h-11 w-11 items-center justify-center rounded-full transition",
-          isLight
-            ? "text-white/90 hover:bg-white/15 active:bg-white/25"
-            : "text-ink-600 hover:bg-white active:bg-mist-100",
-          isMax && "pointer-events-none opacity-45"
-        )}
-        onClick={() => {
-          onIncrease();
-          scheduleCollapse();
-        }}
-        aria-label={t("chat.fontSize.increase")}
-        disabled={isMax}
-      >
-        <MdTextIncrease className="h-5 w-5" />
-      </button>
+      {expanded ? (
+        <div
+          className={cn(
+            "absolute right-0 top-[calc(100%+0.4rem)] z-20 inline-flex h-10 items-center rounded-full border px-1 shadow-lg backdrop-blur-sm",
+            isLight ? "border-white/25 bg-emerald-700/90" : "border-mist-200 bg-white"
+          )}
+          role="group"
+          aria-label={t("chat.fontSize.groupLabel")}
+        >
+          <button
+            type="button"
+            className={cn(
+              "flex h-8 w-8 items-center justify-center rounded-full transition",
+              isLight
+                ? "text-white/90 hover:bg-white/15 active:bg-white/25"
+                : "text-ink-600 hover:bg-mist-50 active:bg-mist-100",
+              isMin && "pointer-events-none opacity-45"
+            )}
+            onClick={() => {
+              onDecrease();
+              scheduleCollapse();
+            }}
+            aria-label={t("chat.fontSize.decrease")}
+            disabled={isMin}
+          >
+            <MdTextDecrease className="h-4 w-4" />
+          </button>
+          <span
+            className={cn(
+              "min-w-7 text-center text-xs font-semibold tabular-nums",
+              isLight ? "text-white/80" : "text-ink-500"
+            )}
+            aria-live="polite"
+          >
+            {fontSize}
+          </span>
+          <button
+            type="button"
+            className={cn(
+              "flex h-8 w-8 items-center justify-center rounded-full transition",
+              isLight
+                ? "text-white/90 hover:bg-white/15 active:bg-white/25"
+                : "text-ink-600 hover:bg-mist-50 active:bg-mist-100",
+              isMax && "pointer-events-none opacity-45"
+            )}
+            onClick={() => {
+              onIncrease();
+              scheduleCollapse();
+            }}
+            aria-label={t("chat.fontSize.increase")}
+            disabled={isMax}
+          >
+            <MdTextIncrease className="h-4 w-4" />
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

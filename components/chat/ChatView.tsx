@@ -643,8 +643,15 @@ export default function ChatView({
       <aside className="hidden space-y-4 lg:block">
         <ChannelList channels={channels} activeChannelId={channel.id} />
       </aside>
-      <section className="flex flex-col fixed inset-0 z-40 bg-mist-50 touch-manipulation animate-chat-fade-in md:static md:z-auto md:h-[calc(100dvh-6rem)] md:max-h-[calc(100dvh-6rem)] md:rounded-card">
-        <div className="shrink-0">
+      <section className="fixed inset-0 z-40 flex flex-col overflow-hidden bg-mist-50 touch-manipulation animate-chat-fade-in md:static md:z-auto md:h-[calc(100dvh-6rem)] md:max-h-[calc(100dvh-6rem)] md:rounded-card relative">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-0"
+        >
+          <div className="absolute inset-0 bg-[url('/chat-background.png')] bg-no-repeat bg-center bg-[length:115%] opacity-32" />
+          <div className="absolute inset-0 bg-mist-50/48" />
+        </div>
+        <div className="relative z-10 shrink-0">
           <ChatHeader
             channel={{ ...channel, lockedAt }}
             channels={channels}
@@ -662,7 +669,7 @@ export default function ChatView({
             }}
           />
         </div>
-        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overscroll-contain py-2 scroll-smooth">
+        <div ref={scrollContainerRef} className="relative z-10 flex-1 overflow-y-auto overscroll-contain py-2 scroll-smooth">
           {hasOlderMessages ? (
             <div className="mb-2 flex justify-center px-3">
               <Button
@@ -708,7 +715,7 @@ export default function ChatView({
           />
           <div ref={bottomRef} aria-hidden="true" />
         </div>
-        <div className="shrink-0">
+        <div className="relative z-10 shrink-0">
           <Composer
             disabled={!canPost || Boolean(lockedAt)}
             onSend={handleSend}
