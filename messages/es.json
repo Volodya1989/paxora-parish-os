@@ -32,7 +32,8 @@
     "weekSwitcherLabel": "Week switcher",
     "thisWeek": "This week",
     "nextWeek": "Next week",
-    "addButton": "+ Add"
+    "addButton": "+ Add",
+    "give": "Dar"
   },
   "menu": {
     "addMenuLabel": "Add menu",

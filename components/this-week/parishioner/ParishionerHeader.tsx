@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useTranslations } from "@/lib/i18n/provider";
 import { useLocale } from "@/lib/i18n/provider";
 import LanguageIconToggle from "@/components/navigation/LanguageIconToggle";
+import GivingShortcutButton from "@/components/navigation/GivingShortcutButton";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import { useNotificationContext } from "@/components/notifications/NotificationProvider";
 import QuickActions from "@/components/this-week/QuickActions";
@@ -140,6 +141,7 @@ export default function ParishionerHeader({
                 </svg>
               </button>
             )}
+            <GivingShortcutButton className="h-8 w-8 border-0 bg-white/20 text-white backdrop-blur-sm hover:bg-white/30" />
             {count > 0 && (
               <NotificationCenter bellClassName="h-8 w-8 border-0 bg-white/20 text-white backdrop-blur-sm hover:bg-white/30 md:hidden" />
             )}

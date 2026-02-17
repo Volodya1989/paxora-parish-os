@@ -15,6 +15,7 @@ import { routes } from "@/lib/navigation/routes";
 import { useTranslations } from "@/lib/i18n/provider";
 import { useLocale } from "@/lib/i18n/provider";
 import LanguageSwitcher from "@/components/navigation/LanguageSwitcher";
+import GivingShortcutButton from "@/components/navigation/GivingShortcutButton";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import { useNotificationContext } from "@/components/notifications/NotificationProvider";
 import { buildLocalePathname } from "@/lib/i18n/routing";
@@ -84,6 +85,7 @@ export function AppHeader({ parishRole, parishLogoUrl }: AppHeaderProps) {
         {count > 0 && (
           <NotificationCenter bellClassName="h-11 w-11 md:hidden" />
         )}
+        <GivingShortcutButton className="h-11 w-11" />
         <label className="text-sm font-medium text-ink-700">
           <span className="sr-only">{t("header.weekSwitcherLabel")}</span>
           <Select value={weekSelection} onChange={(event) => handleWeekChange(event.target.value)}>

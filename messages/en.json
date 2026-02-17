@@ -33,7 +33,8 @@
     "thisWeek": "This week",
     "nextWeek": "Next week",
     "addButton": "+ Add",
-    "filters": "Filters"
+    "filters": "Filters",
+    "give": "Give"
   },
   "menu": {
     "addMenuLabel": "Add menu",
