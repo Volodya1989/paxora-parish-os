@@ -1,11 +1,14 @@
 "use client";
 
 import { type ReactNode, useCallback } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import LanguageIconToggle from "@/components/navigation/LanguageIconToggle";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import { useNotificationContext } from "@/components/notifications/NotificationProvider";
 import { cn } from "@/lib/ui/cn";
+import { useLocale } from "@/lib/i18n/provider";
+import { buildLocalePathname } from "@/lib/i18n/routing";
 
 type PageHeaderProps = {
   /** Current page title */
@@ -54,6 +57,7 @@ export default function PageHeader({
   backHref
 }: PageHeaderProps) {
   const { count } = useNotificationContext();
+  const locale = useLocale();
   const router = useRouter();
   const logoSrc = parishLogoUrl?.trim() ? parishLogoUrl : "/icon.png";
 
@@ -101,12 +105,14 @@ export default function PageHeader({
               </svg>
             </button>
           ) : null}
-          <img
-            src={logoSrc}
-            alt={`${parishName} logo`}
-            className="h-10 w-10 shrink-0 rounded-md object-contain md:h-12 md:w-12"
-            onError={(e) => { e.currentTarget.src = "/icon.png"; }}
-          />
+          <Link href={buildLocalePathname(locale, "/this-week")} aria-label="Go to This Week">
+            <img
+              src={logoSrc}
+              alt={`${parishName} logo`}
+              className="h-10 w-10 shrink-0 rounded-md object-contain md:h-12 md:w-12"
+              onError={(e) => { e.currentTarget.src = "/icon.png"; }}
+            />
+          </Link>
           <span className="min-w-0 break-words text-xs leading-tight sm:text-sm">{parishName}</span>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">

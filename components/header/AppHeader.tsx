@@ -13,9 +13,11 @@ import {
 } from "@/components/header/headerUtils";
 import { routes } from "@/lib/navigation/routes";
 import { useTranslations } from "@/lib/i18n/provider";
+import { useLocale } from "@/lib/i18n/provider";
 import LanguageSwitcher from "@/components/navigation/LanguageSwitcher";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import { useNotificationContext } from "@/components/notifications/NotificationProvider";
+import { buildLocalePathname } from "@/lib/i18n/routing";
 
 type AddTarget = "task" | "event" | "group";
 
@@ -47,6 +49,7 @@ type AppHeaderProps = {
  */
 export function AppHeader({ parishRole, parishLogoUrl }: AppHeaderProps) {
   const t = useTranslations();
+  const locale = useLocale();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -63,12 +66,14 @@ export function AppHeader({ parishRole, parishLogoUrl }: AppHeaderProps) {
   return (
     <header className="flex flex-wrap items-center justify-between gap-4 border-b border-mist-200 bg-white/70 px-4 py-4 shadow-card md:px-8">
       <div className="flex items-center gap-3">
-        <img
-          src={logoSrc}
-          alt="Parish logo"
-          className="h-6 w-6 object-contain md:h-8 md:w-8"
-          onError={(e) => { e.currentTarget.src = "/icon.png"; }}
-        />
+        <Link href={buildLocalePathname(locale, routes.thisWeek)} aria-label={t("header.thisWeek")}>
+          <img
+            src={logoSrc}
+            alt="Parish logo"
+            className="h-6 w-6 object-contain md:h-8 md:w-8"
+            onError={(e) => { e.currentTarget.src = "/icon.png"; }}
+          />
+        </Link>
         <div className="space-y-1">
           <p className="text-caption uppercase tracking-wide text-ink-400">{t("header.appTitle")}</p>
           <h1 className="text-h2">{t(getPageTitleKey(pathname))}</h1>
