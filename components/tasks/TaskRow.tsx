@@ -9,6 +9,7 @@ import { ListChecksIcon } from "@/components/icons/ParishIcons";
 import type { TaskListItem } from "@/lib/queries/tasks";
 import { useTranslations } from "@/lib/i18n/provider";
 import { getTaskGroupBadgeClass, truncateGroupBadgeLabel } from "@/lib/tasks/groupBadge";
+import { getServeCardAnchorId } from "@/lib/tasks/serveCardMove";
 
 type TaskRowProps = {
   task: TaskListItem;
@@ -25,6 +26,9 @@ type TaskRowProps = {
   onDelete: (taskId: string) => void;
   currentUserId: string;
   isBusy?: boolean;
+  isStatusUpdating?: boolean;
+  isHighlighted?: boolean;
+  isEntering?: boolean;
 };
 
 function formatCompletedLabel(task: TaskListItem) {
@@ -83,7 +87,10 @@ export default function TaskRow({
   onEdit,
   onDelete,
   currentUserId,
-  isBusy = false
+  isBusy = false,
+  isStatusUpdating = false,
+  isHighlighted = false,
+  isEntering = false
 }: TaskRowProps) {
   const t = useTranslations();
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -147,8 +154,12 @@ export default function TaskRow({
 
   return (
     <div
+      id={getServeCardAnchorId(task.id)}
       className={cn(
-        "flex flex-col gap-3 rounded-card border border-mist-100 bg-white px-3 py-3 shadow-card sm:flex-row sm:items-start sm:justify-between",
+        "flex flex-col gap-3 rounded-card border border-mist-100 bg-white px-3 py-3 shadow-card motion-safe:translate-y-0 motion-safe:opacity-100 transition-all duration-300 sm:flex-row sm:items-start sm:justify-between",
+        isBusy && "opacity-60",
+        isEntering && "motion-safe:translate-y-2 motion-safe:opacity-0",
+        isHighlighted && "ring-2 ring-emerald-300 ring-offset-1",
         isArchived
           ? "border-l-4 border-l-slate-400"
           : isDone
@@ -352,7 +363,7 @@ export default function TaskRow({
                         : undefined
                     )}
                   >
-                    {statusActionLabel}
+                    {isStatusUpdating ? "Updating…" : statusActionLabel}
                   </Button>
                 ) : null}
               </div>
