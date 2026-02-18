@@ -47,11 +47,11 @@ const baseTask: TaskListItem = {
   createdByRole: "MEMBER"
 };
 
-test("TaskRow renders key elements", () => {
-  const markup = renderToStaticMarkup(
+function renderTask(task: TaskListItem) {
+  return renderToStaticMarkup(
     withI18n(
       createElement(TaskRow, {
-        task: baseTask,
+        task,
         onStartWork: () => undefined,
         onMarkDone: () => undefined,
         onMarkOpen: () => undefined,
@@ -67,6 +67,10 @@ test("TaskRow renders key elements", () => {
       })
     )
   );
+}
+
+test("TaskRow renders key elements", () => {
+  const markup = renderTask(baseTask);
 
   assert.match(markup, /Prepare worship guide/);
   assert.match(markup, />To Do</);
@@ -74,25 +78,21 @@ test("TaskRow renders key elements", () => {
 });
 
 test("TaskRow includes start serving action", () => {
-  const markup = renderToStaticMarkup(
-    withI18n(
-      createElement(TaskRow, {
-        task: baseTask,
-        onStartWork: () => undefined,
-        onMarkDone: () => undefined,
-        onMarkOpen: () => undefined,
-        onAssignToMe: () => undefined,
-        onUnassign: () => undefined,
-        onVolunteer: () => undefined,
-        onLeaveVolunteer: () => undefined,
-        onViewDetails: () => undefined,
-        onArchive: () => undefined,
-        onEdit: () => undefined,
-        onDelete: () => undefined,
-        currentUserId: "user-1"
-      })
-    )
-  );
-
+  const markup = renderTask(baseTask);
   assert.match(markup, /Start serving/);
+});
+
+test("TaskRow shows private and group badges without expanding", () => {
+  const markup = renderTask({
+    ...baseTask,
+    visibility: "PRIVATE",
+    group: {
+      id: "group-88",
+      name: "LongGroupNameExample"
+    }
+  });
+
+  assert.match(markup, />Private</);
+  assert.match(markup, /LongGroupN…/);
+  assert.match(markup, /title="LongGroupNameExample"/);
 });

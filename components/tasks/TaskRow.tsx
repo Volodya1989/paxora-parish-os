@@ -8,6 +8,7 @@ import { cn } from "@/lib/ui/cn";
 import { ListChecksIcon } from "@/components/icons/ParishIcons";
 import type { TaskListItem } from "@/lib/queries/tasks";
 import { useTranslations } from "@/lib/i18n/provider";
+import { getTaskGroupBadgeClass, truncateGroupBadgeLabel } from "@/lib/tasks/groupBadge";
 
 type TaskRowProps = {
   task: TaskListItem;
@@ -110,6 +111,10 @@ export default function TaskRow({
   const approvalTone = task.approvalStatus === "APPROVED" ? "success" : "warning";
   const visibilityLabel = task.visibility === "PUBLIC" ? t("common.public") : t("common.private");
   const isPrivate = task.visibility === "PRIVATE";
+  const groupBadgeClass = task.group
+    ? getTaskGroupBadgeClass(task.group.id || task.group.name)
+    : null;
+  const compactGroupLabel = task.group ? truncateGroupBadgeLabel(task.group.name) : null;
   const estimatedHoursLabel = formatEstimatedHours(task);
   const volunteerCountLabel = `${task.volunteerCount}/${task.volunteersNeeded}`;
   const isVolunteerFull = task.volunteerCount >= task.volunteersNeeded;
@@ -163,6 +168,24 @@ export default function TaskRow({
               <div>
                 <p className="text-sm font-semibold text-ink-900 break-words">{task.title}</p>
                 <p className="text-[11px] uppercase tracking-wide text-ink-400">{task.displayId}</p>
+                {isPrivate || task.group ? (
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    {isPrivate ? (
+                      <Badge tone="neutral" className="bg-slate-100 text-slate-700">
+                        {t("common.private")}
+                      </Badge>
+                    ) : null}
+                    {task.group && compactGroupLabel && groupBadgeClass ? (
+                      <Badge
+                        tone="neutral"
+                        title={task.group.name}
+                        className={cn("max-w-[9rem] truncate", groupBadgeClass)}
+                      >
+                        {compactGroupLabel}
+                      </Badge>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -312,7 +335,7 @@ export default function TaskRow({
                   </Badge>
                 ) : null}
                 {task.group ? (
-                  <Badge tone="warning" className="bg-indigo-50 text-indigo-700">
+                  <Badge tone="neutral" className={groupBadgeClass ?? "bg-indigo-50 text-indigo-700"}>
                     {task.group.name}
                   </Badge>
                 ) : null}
