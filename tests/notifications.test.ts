@@ -227,7 +227,7 @@ dbTest("mark chat room read clears room unread state and chat notification badge
   await prisma.groupMembership.createMany({
     data: [
       { groupId: group.id, userId: actor.id, status: "ACTIVE", role: "COORDINATOR" },
-      { groupId: group.id, userId: reader.id, status: "ACTIVE", role: "MEMBER" }
+      { groupId: group.id, userId: reader.id, status: "ACTIVE" }
     ]
   });
 
