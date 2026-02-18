@@ -314,16 +314,11 @@ export default function TaskRow({
                     {approvalLabel}
                   </Badge>
                 ) : null}
-                <Badge
-                  tone="neutral"
-                  className={
-                    task.visibility === "PUBLIC"
-                      ? "bg-sky-50 text-sky-700"
-                      : "bg-slate-100 text-slate-700"
-                  }
-                >
-                  {visibilityLabel}
-                </Badge>
+                {task.visibility === "PUBLIC" ? (
+                  <Badge tone="neutral" className="bg-sky-50 text-sky-700">
+                    {visibilityLabel}
+                  </Badge>
+                ) : null}
                 {isVolunteerTask ? (
                   <Badge tone="success" className="bg-emerald-50 text-emerald-700">
                     {volunteerCountLabel} volunteers
@@ -332,11 +327,6 @@ export default function TaskRow({
                 {estimatedHoursLabel ? (
                   <Badge tone="neutral" className="bg-amber-50 text-amber-700">
                     {estimatedHoursLabel}
-                  </Badge>
-                ) : null}
-                {task.group ? (
-                  <Badge tone="neutral" className={groupBadgeClass ?? "bg-indigo-50 text-indigo-700"}>
-                    {task.group.name}
                   </Badge>
                 ) : null}
               </div>

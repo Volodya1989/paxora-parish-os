@@ -5,11 +5,17 @@ import { getTaskGroupBadgeClass, truncateGroupBadgeLabel } from "@/lib/tasks/gro
 test("getTaskGroupBadgeClass is deterministic", () => {
   const first = getTaskGroupBadgeClass("group-123");
   const second = getTaskGroupBadgeClass("group-123");
-  const other = getTaskGroupBadgeClass("group-456");
 
   assert.equal(first, second);
   assert.notEqual(first.length, 0);
-  assert.notEqual(other.length, 0);
+});
+
+test("getTaskGroupBadgeClass distributes colors across groups", () => {
+  const classes = new Set(
+    Array.from({ length: 12 }, (_, index) => getTaskGroupBadgeClass(`group-${index + 1}`))
+  );
+
+  assert.ok(classes.size > 1);
 });
 
 test("truncateGroupBadgeLabel keeps short labels", () => {
