@@ -1,15 +1,17 @@
-import { getNow } from "@/lib/time/getNow";
-import { getHomeSummary, listCommunityRoomsPreview } from "@/lib/queries/home";
-import QuickActions from "@/components/home/quick-actions";
-import RecentUpdates from "@/components/home/recent-updates";
-import CommunityPreview from "@/components/home/community-preview";
-import HomeQuickNav from "@/components/home/home-quick-nav";
+import { redirect } from "next/navigation";
 import { getLocaleFromParam } from "@/lib/i18n/routing";
-import { getTranslator } from "@/lib/i18n/translator";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+/**
+ * Home route (`/[locale]`).
+ *
+ * The canonical landing page is `/[locale]/this-week`. Users reaching Home
+ * via bookmark, tab restore, or direct navigation are redirected there to
+ * prevent confusion with the old legacy This Week hero card that used to
+ * live here.
+ */
 export default async function HomePage({
   params
 }: {
@@ -17,51 +19,5 @@ export default async function HomePage({
 }) {
   const { locale: localeParam } = await params;
   const locale = getLocaleFromParam(localeParam);
-  const t = getTranslator(locale);
-  const now = getNow();
-  const [summary, rooms] = await Promise.all([
-    getHomeSummary({ now }),
-    listCommunityRoomsPreview()
-  ]);
-
-  const highlightCount = summary.nextEvents.length + summary.announcements.length;
-
-  return (
-    <div className="section-gap overflow-x-hidden">
-      <div className="mx-auto max-w-6xl space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">
-          {t("landing.home")}
-        </p>
-        <h1 className="text-h1">{t("landing.home")}</h1>
-        <p className="text-sm text-ink-500">
-          {t("thisWeek.quote")}
-        </p>
-      </div>
-
-      <div className="mx-auto max-w-6xl space-y-6">
-        <HomeQuickNav
-          counts={{
-            highlights: highlightCount,
-            updates: summary.recentUpdates.length,
-            actions: 2,
-            community: rooms.length
-          }}
-        />
-
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-          <section id="updates" className="scroll-mt-24 space-y-6">
-            <RecentUpdates updates={summary.recentUpdates} />
-          </section>
-          <div className="space-y-6">
-            <section id="actions" className="scroll-mt-24">
-              <QuickActions />
-            </section>
-            <section id="community" className="scroll-mt-24">
-              <CommunityPreview rooms={rooms} />
-            </section>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  redirect(`/${locale}/this-week`);
 }
