@@ -75,6 +75,7 @@ dbTest("group read indicator transitions from yellow to green as recipients read
   const group = await prisma.group.create({
     data: {
       parishId: parish.id,
+      createdById: sender.id,
       name: "Choir"
     }
   });
