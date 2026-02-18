@@ -25,6 +25,7 @@ import {
 } from "@/lib/chat/attachments";
 import { notifyChatMessage } from "@/lib/push/notify";
 import { notifyChatMessageInApp, notifyMentionInApp } from "@/lib/notifications/notify";
+import { markChatRoomReadAndNotifications } from "@/lib/notifications/chat-read";
 import { notifyMention } from "@/lib/push/notify";
 import { extractMentionedUserIds, mentionSnippet, normalizeMentionEntities } from "@/lib/mentions";
 import { listMentionableUsersForChannel } from "@/lib/mentions/permissions";
@@ -1147,22 +1148,11 @@ export async function markRoomRead(channelId: string, getNow?: () => Date) {
   await requireChannelAccess(userId, parishId, channelId);
 
   const now = (getNow ?? defaultGetNow)();
-
-  const state = await prisma.chatRoomReadState.upsert({
-    where: {
-      roomId_userId: {
-        roomId: channelId,
-        userId
-      }
-    },
-    update: {
-      lastReadAt: now
-    },
-    create: {
-      roomId: channelId,
-      userId,
-      lastReadAt: now
-    }
+  const state = await markChatRoomReadAndNotifications({
+    userId,
+    parishId,
+    channelId,
+    now
   });
 
   // Revalidate pages that display unread badge counts so they reflect

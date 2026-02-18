@@ -207,6 +207,11 @@ export default function ChatView({
     prevMessageCountRef.current = messages.length;
   }, [messages.length, scrollToBottom]);
 
+  const markRoomReadAndRefresh = useCallback(async () => {
+    await markRoomRead(channel.id);
+    window.dispatchEvent(new Event("notifications:refresh"));
+  }, [channel.id]);
+
   const poll = useCallback(async () => {
     const lastMessage = messagesRef.current[messagesRef.current.length - 1];
     const cursorQuery = lastMessage ? `?cursor=${lastMessage.id}` : "";
@@ -252,7 +257,7 @@ export default function ChatView({
 
           return sortMessages(next);
         });
-        void markRoomRead(channel.id);
+        void markRoomReadAndRefresh();
       }
 
       setPinnedMessageState(data.pinnedMessage ? parsePinned(data.pinnedMessage) : null);
@@ -260,7 +265,7 @@ export default function ChatView({
     } finally {
       setIsPollingReady(true);
     }
-  }, [channel.id]);
+  }, [channel.id, markRoomReadAndRefresh]);
 
   useEffect(() => {
     let mounted = true;
@@ -280,8 +285,8 @@ export default function ChatView({
   }, [poll]);
 
   useEffect(() => {
-    void markRoomRead(channel.id);
-  }, [channel.id]);
+    void markRoomReadAndRefresh();
+  }, [markRoomReadAndRefresh]);
 
   useEffect(() => {
     setEditingMessage(null);

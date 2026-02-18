@@ -145,6 +145,15 @@ export function useNotifications() {
     return () => window.removeEventListener("focus", handleFocus);
   }, [fetchNotifications]);
 
+  // Refresh immediately when other app surfaces (e.g. chat view) clear unread state.
+  useEffect(() => {
+    const handleRefresh = () => {
+      void fetchNotifications();
+    };
+    window.addEventListener("notifications:refresh", handleRefresh);
+    return () => window.removeEventListener("notifications:refresh", handleRefresh);
+  }, [fetchNotifications]);
+
   return {
     items: state.items,
     count: state.count,
