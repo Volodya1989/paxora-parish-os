@@ -68,6 +68,25 @@ function parseMessage(message: any): ChatMessage {
   } as ChatMessage;
 }
 
+type ReadIndicatorSnapshot = {
+  recipientCount: number;
+  sortedRecipientReadAtMs: number[];
+};
+
+function parseReadIndicatorSnapshot(snapshot: any): ReadIndicatorSnapshot | null {
+  if (!snapshot || !Array.isArray(snapshot.sortedRecipientReadAtMs)) {
+    return null;
+  }
+
+  return {
+    recipientCount:
+      typeof snapshot.recipientCount === "number" ? snapshot.recipientCount : 0,
+    sortedRecipientReadAtMs: snapshot.sortedRecipientReadAtMs
+      .filter((value: unknown) => typeof value === "number")
+      .sort((a: number, b: number) => a - b)
+  };
+}
+
 function parsePinned(pinned: any): ChatPinnedMessage {
   return {
     ...pinned,
@@ -87,7 +106,8 @@ export default function ChatView({
   parishId,
   mentionableUsers,
   channelMembers,
-  lastReadAt
+  lastReadAt,
+  initialReadIndicatorSnapshot
 }: {
   channels: ChatChannelSummary[];
   channel: ChatChannelSummary;
@@ -100,6 +120,7 @@ export default function ChatView({
   mentionableUsers?: { id: string; name: string; email: string; avatarUrl?: string | null }[];
   channelMembers?: ChatChannelMember[];
   lastReadAt?: Date | null;
+  initialReadIndicatorSnapshot?: ReadIndicatorSnapshot | null;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>(() =>
     sortMessages(initialMessages.map(parseMessage))
@@ -111,6 +132,9 @@ export default function ChatView({
     channel.lockedAt ? new Date(channel.lockedAt) : null
   );
   const [members, setMembers] = useState<ChatChannelMember[]>(channelMembers ?? []);
+  const [readIndicatorSnapshot, setReadIndicatorSnapshot] = useState<ReadIndicatorSnapshot | null>(
+    initialReadIndicatorSnapshot ? parseReadIndicatorSnapshot(initialReadIndicatorSnapshot) : null
+  );
   const [membersOpen, setMembersOpen] = useState(false);
   const [isPollingReady, setIsPollingReady] = useState(false);
   const [hasOlderMessages, setHasOlderMessages] = useState(initialMessages.length >= 50);
@@ -262,6 +286,7 @@ export default function ChatView({
 
       setPinnedMessageState(data.pinnedMessage ? parsePinned(data.pinnedMessage) : null);
       setLockedAt(data.lockedAt ? new Date(data.lockedAt) : null);
+      setReadIndicatorSnapshot(parseReadIndicatorSnapshot(data.readIndicatorSnapshot));
     } finally {
       setIsPollingReady(true);
     }
@@ -293,7 +318,10 @@ export default function ChatView({
     setThreadRoot(null);
     setThreadEditingMessage(null);
     setHasOlderMessages(initialMessages.length >= 50);
-  }, [channel.id, initialMessages.length]);
+    setReadIndicatorSnapshot(
+      initialReadIndicatorSnapshot ? parseReadIndicatorSnapshot(initialReadIndicatorSnapshot) : null
+    );
+  }, [channel.id, initialMessages.length, initialReadIndicatorSnapshot]);
 
   useEffect(() => {
     if (!threadRoot) {
@@ -722,6 +750,7 @@ export default function ChatView({
             firstUnreadMessageId={firstUnreadMessageId}
             highlightedMessageId={highlightedMessageId}
             messageFontSize={fontSize}
+            readIndicatorSnapshot={readIndicatorSnapshot}
           />
           <div ref={bottomRef} aria-hidden="true" />
         </div>
@@ -772,6 +801,7 @@ export default function ChatView({
                   isLoading={false}
                   highlightedMessageId={highlightedMessageId}
                   messageFontSize={fontSize}
+                  readIndicatorSnapshot={null}
                 />
                 <Composer
                   disabled={!canPost || Boolean(lockedAt)}
@@ -854,6 +884,7 @@ export default function ChatView({
                 isLoading={false}
                 highlightedMessageId={highlightedMessageId}
                 messageFontSize={fontSize}
+                readIndicatorSnapshot={null}
               />
             </Drawer>
           )}
