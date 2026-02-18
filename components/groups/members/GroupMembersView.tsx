@@ -254,19 +254,30 @@ export default function GroupMembersView({
   return (
     <div className="space-y-6">
       <div className="space-y-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge tone={group.visibility === "PUBLIC" ? "success" : "neutral"}>
-            {group.visibility === "PUBLIC"
-              ? t("common.public")
-              : t("common.private")}
-          </Badge>
-          <Badge tone="neutral">
-            {group.joinPolicy === "OPEN"
-              ? t("groups.membersPage.joinInstantly")
-              : group.joinPolicy === "REQUEST_TO_JOIN"
-                ? t("groups.membersPage.requestApproval")
-                : t("groups.inviteOnly")}
-          </Badge>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge tone={group.visibility === "PUBLIC" ? "success" : "neutral"}>
+              {group.visibility === "PUBLIC"
+                ? t("common.public")
+                : t("common.private")}
+            </Badge>
+            <Badge tone="neutral">
+              {group.joinPolicy === "OPEN"
+                ? t("groups.membersPage.joinInstantly")
+                : group.joinPolicy === "REQUEST_TO_JOIN"
+                  ? t("groups.membersPage.requestApproval")
+                  : t("groups.inviteOnly")}
+            </Badge>
+          </div>
+          <Link
+            className="inline-flex items-center rounded-full border border-mist-200 bg-white px-3 py-2 text-sm font-medium text-ink-700 shadow-card transition hover:bg-mist-50"
+            href={buildLocalePathname(
+              locale,
+              `/tasks?view=opportunities&group=${group.id}`,
+            )}
+          >
+            {t("groups.membersPage.opportunitiesToHelp")}
+          </Link>
         </div>
         <p className="text-sm text-ink-600">
           {canManage
@@ -275,7 +286,7 @@ export default function GroupMembersView({
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <div className="flex flex-wrap items-center gap-2">
           {canManage ? (
             <Button type="button" onClick={() => setInviteOpen(true)}>
@@ -296,15 +307,6 @@ export default function GroupMembersView({
             <Badge tone="warning">{t("groups.membersPage.requestSent")}</Badge>
           ) : null}
         </div>
-        <Link
-          className="inline-flex items-center rounded-full border border-mist-200 bg-white px-3 py-2 text-sm font-medium text-ink-700 shadow-card transition hover:bg-mist-50"
-          href={buildLocalePathname(
-            locale,
-            `/tasks?view=opportunities&group=${group.id}`,
-          )}
-        >
-          {t("groups.membersPage.opportunitiesToHelp")}
-        </Link>
       </div>
 
       {viewer.status === "INVITED" ? (
