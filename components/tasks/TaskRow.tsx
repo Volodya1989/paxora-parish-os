@@ -8,6 +8,7 @@ import { cn } from "@/lib/ui/cn";
 import { ListChecksIcon } from "@/components/icons/ParishIcons";
 import type { TaskListItem } from "@/lib/queries/tasks";
 import { useTranslations } from "@/lib/i18n/provider";
+import { getTaskGroupBadgeClass, truncateGroupBadgeLabel } from "@/lib/tasks/groupBadge";
 
 type TaskRowProps = {
   task: TaskListItem;
@@ -110,6 +111,10 @@ export default function TaskRow({
   const approvalTone = task.approvalStatus === "APPROVED" ? "success" : "warning";
   const visibilityLabel = task.visibility === "PUBLIC" ? t("common.public") : t("common.private");
   const isPrivate = task.visibility === "PRIVATE";
+  const groupBadgeClass = task.group
+    ? getTaskGroupBadgeClass(task.group.id || task.group.name)
+    : null;
+  const compactGroupLabel = task.group ? truncateGroupBadgeLabel(task.group.name) : null;
   const estimatedHoursLabel = formatEstimatedHours(task);
   const volunteerCountLabel = `${task.volunteerCount}/${task.volunteersNeeded}`;
   const isVolunteerFull = task.volunteerCount >= task.volunteersNeeded;
@@ -121,6 +126,9 @@ export default function TaskRow({
     (task.approvalStatus !== "APPROVED" ||
       task.createdByRole === "MEMBER" ||
       task.createdByRole === null);
+  const showVolunteerAction = isVolunteerTask && (task.canVolunteer || task.hasVolunteered);
+  const showStatusAction = canManageStatus && !isArchived;
+  const hasTopRowActions = showVolunteerAction || showStatusAction;
   const statusActionLabel = isDone ? "Reopen" : isInProgress ? "Complete task" : "Start serving";
   const statusActionHandler = isDone
     ? () => onMarkOpen(task.id)
@@ -163,6 +171,24 @@ export default function TaskRow({
               <div>
                 <p className="text-sm font-semibold text-ink-900 break-words">{task.title}</p>
                 <p className="text-[11px] uppercase tracking-wide text-ink-400">{task.displayId}</p>
+                {isPrivate || task.group ? (
+                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                    {isPrivate ? (
+                      <Badge tone="neutral" className="bg-slate-100 text-slate-700">
+                        {t("common.private")}
+                      </Badge>
+                    ) : null}
+                    {task.group && compactGroupLabel && groupBadgeClass ? (
+                      <Badge
+                        tone="neutral"
+                        title={task.group.name}
+                        className={cn("max-w-[9rem] truncate", groupBadgeClass)}
+                      >
+                        {compactGroupLabel}
+                      </Badge>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -268,13 +294,66 @@ export default function TaskRow({
           {detailsOpen && task.notes ? (
             <p className="text-xs text-ink-500 break-words">{task.notes}</p>
           ) : null}
-          <div className="flex flex-wrap items-center gap-2 text-xs text-ink-500">
-            <Badge tone={isArchived ? "neutral" : isDone ? "success" : isInProgress ? "warning" : "neutral"}>
-              {isArchived ? t("groups.filters.archived") : isDone ? t("common.done") : isInProgress ? t("common.inProgress") : t("common.todo")}
-            </Badge>
-            <span className="rounded-full bg-mist-50 px-2 py-1 text-[11px] font-medium text-ink-600">
-              Due {dueDateLabel}
-            </span>
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-ink-500">
+              <Badge tone={isArchived ? "neutral" : isDone ? "success" : isInProgress ? "warning" : "neutral"}>
+                {isArchived ? t("groups.filters.archived") : isDone ? t("common.done") : isInProgress ? t("common.inProgress") : t("common.todo")}
+              </Badge>
+              <span className="rounded-full bg-mist-50 px-2 py-1 text-[11px] font-medium text-ink-600">
+                Due {dueDateLabel}
+              </span>
+            </div>
+            {hasTopRowActions ? (
+              <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                {showVolunteerAction ? (
+                  <Button
+                    type="button"
+                    variant={task.hasVolunteered ? "secondary" : "primary"}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      if (task.hasVolunteered) {
+                        onLeaveVolunteer(task.id);
+                        return;
+                      }
+                      onVolunteer(task.id);
+                    }}
+                    disabled={
+                      isBusy ||
+                      (!task.hasVolunteered && (isVolunteerFull || !task.canVolunteer))
+                    }
+                    className="min-h-[34px] px-3 py-1"
+                  >
+                    {task.hasVolunteered
+                      ? "Leave"
+                      : isVolunteerFull
+                        ? "Full"
+                        : task.canVolunteer
+                          ? "Volunteer"
+                          : "Closed"}
+                  </Button>
+                ) : null}
+
+                {showStatusAction ? (
+                  <Button
+                    type="button"
+                    variant={isDone ? "secondary" : "primary"}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      statusActionHandler();
+                    }}
+                    disabled={isBusy}
+                    className={cn(
+                      "min-h-[34px] px-3 py-1",
+                      isInProgress
+                        ? "bg-sky-600 hover:bg-sky-500 active:bg-sky-700 disabled:bg-sky-300"
+                        : undefined
+                    )}
+                  >
+                    {statusActionLabel}
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
           </div>
           {detailsOpen ? (
             <div className="space-y-2 rounded-card border border-mist-100 bg-mist-50/70 px-3 py-2 text-xs text-ink-600">
@@ -312,7 +391,7 @@ export default function TaskRow({
                   </Badge>
                 ) : null}
                 {task.group ? (
-                  <Badge tone="warning" className="bg-indigo-50 text-indigo-700">
+                  <Badge tone="neutral" className={groupBadgeClass ?? "bg-indigo-50 text-indigo-700"}>
                     {task.group.name}
                   </Badge>
                 ) : null}
@@ -337,53 +416,6 @@ export default function TaskRow({
           ) : null}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {isVolunteerTask && (task.canVolunteer || task.hasVolunteered) ? (
-            <Button
-              type="button"
-              variant={task.hasVolunteered ? "secondary" : "primary"}
-              onClick={(event) => {
-                event.stopPropagation();
-                if (task.hasVolunteered) {
-                  onLeaveVolunteer(task.id);
-                  return;
-                }
-                onVolunteer(task.id);
-              }}
-              disabled={
-                isBusy ||
-                (!task.hasVolunteered && (isVolunteerFull || !task.canVolunteer))
-              }
-            >
-              {task.hasVolunteered
-                ? "Leave"
-                : isVolunteerFull
-                  ? "Full"
-                  : task.canVolunteer
-                    ? "Volunteer"
-                    : "Closed"}
-            </Button>
-          ) : null}
-
-          {canManageStatus && !isArchived ? (
-            <Button
-              type="button"
-              variant={isDone ? "secondary" : "primary"}
-              onClick={(event) => {
-                event.stopPropagation();
-                statusActionHandler();
-              }}
-              disabled={isBusy}
-              className={
-                isInProgress
-                  ? "bg-sky-600 hover:bg-sky-500 active:bg-sky-700 disabled:bg-sky-300"
-                  : undefined
-              }
-            >
-              {statusActionLabel}
-            </Button>
-          ) : null}
-        </div>
       </div>
     </div>
   );

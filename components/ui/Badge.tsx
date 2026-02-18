@@ -1,11 +1,10 @@
-import React, { type ReactNode } from "react";
+import React, { type HTMLAttributes, type ReactNode } from "react";
 import { cn } from "@/lib/ui/cn";
 
-type BadgeProps = {
+type BadgeProps = HTMLAttributes<HTMLSpanElement> & {
   children: ReactNode;
   /** Visual tone for the badge. */
   tone?: "neutral" | "success" | "warning" | "attention";
-  className?: string;
 };
 
 const toneClasses: Record<NonNullable<BadgeProps["tone"]>, string> = {
@@ -18,9 +17,10 @@ const toneClasses: Record<NonNullable<BadgeProps["tone"]>, string> = {
 /**
  * Badge component for small status labels.
  */
-export default function Badge({ children, tone = "neutral", className }: BadgeProps) {
+export default function Badge({ children, tone = "neutral", className, ...props }: BadgeProps) {
   return (
     <span
+      {...props}
       className={cn(
         "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium",
         toneClasses[tone],
