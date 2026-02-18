@@ -52,7 +52,10 @@ export default function MessageReadIndicator({
 
   return (
     <span
-      className={cn("inline-flex items-center drop-shadow-[0_0.2px_0.2px_rgba(0,0,0,0.15)]", colorClass)}
+      className={cn(
+        "inline-flex items-center drop-shadow-[0_0.2px_0.2px_rgba(0,0,0,0.15)] transition-colors duration-300 ease-out motion-reduce:transition-none",
+        colorClass
+      )}
       aria-label={ariaLabel}
       title={ariaLabel}
       role="img"
