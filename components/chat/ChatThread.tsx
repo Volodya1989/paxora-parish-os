@@ -264,8 +264,8 @@ export default function ChatThread({
   highlightedMessageId?: string | null;
   messageFontSize?: number;
   readIndicatorSnapshot?: {
-    recipientCount: number;
-    sortedRecipientReadAtMs: number[];
+    participantIds: string[];
+    readAtByUserId: Record<string, number>;
   } | null;
 }) {
   const [contextMenuMessageId, setContextMenuMessageId] = useState<string | null>(
@@ -457,10 +457,35 @@ function MessageRow({
   isUnreadMessage: boolean;
   highlightedMessageId?: string | null;
   readIndicatorSnapshot?: {
-    recipientCount: number;
-    sortedRecipientReadAtMs: number[];
+    participantIds: string[];
+    readAtByUserId: Record<string, number>;
   } | null;
 }) {
+  const recipientReadSnapshotByAuthorId = useMemo(() => {
+    if (!readIndicatorSnapshot) {
+      return new Map<string, { recipientCount: number; sortedRecipientReadAtMs: number[] }>();
+    }
+
+    const participants = readIndicatorSnapshot.participantIds;
+    const readAtByUserId = readIndicatorSnapshot.readAtByUserId;
+    const map = new Map<string, { recipientCount: number; sortedRecipientReadAtMs: number[] }>();
+
+    for (const authorId of participants) {
+      const recipientIds = participants.filter((participantId) => participantId !== authorId);
+      const sortedRecipientReadAtMs = recipientIds
+        .map((recipientId) => readAtByUserId[recipientId])
+        .filter((value): value is number => typeof value === "number")
+        .sort((a, b) => a - b);
+
+      map.set(authorId, {
+        recipientCount: recipientIds.length,
+        sortedRecipientReadAtMs
+      });
+    }
+
+    return map;
+  }, [readIndicatorSnapshot]);
+
   const t = useTranslations();
   const bubbleRef = useRef<HTMLDivElement>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
@@ -490,23 +515,24 @@ function MessageRow({
     !isDeleted &&
     containsEmoji(message.body) &&
     (isMine || isUnreadMessage);
-  const readProgress = isMine
-    ? getMessageReadProgress(
-        message.createdAt,
-        readIndicatorSnapshot?.sortedRecipientReadAtMs ?? [],
-        readIndicatorSnapshot?.recipientCount ?? 0
-      )
-    : null;
+  const readSnapshot = recipientReadSnapshotByAuthorId.get(message.author.id);
 
-  const readIndicatorAriaLabel = readProgress
-    ? readProgress.recipientCount === 0
-      ? "Message sent"
+  const readProgress = getMessageReadProgress(
+    message.createdAt,
+    readSnapshot?.sortedRecipientReadAtMs ?? [],
+    readSnapshot?.recipientCount ?? 0
+  );
+
+  const readIndicatorAriaLabel =
+    readProgress.recipientCount === 0
+      ? isMine
+        ? "Message sent"
+        : "Message delivered"
       : readProgress.state === "all_read"
         ? "Read by everyone"
         : readProgress.state === "some_read"
           ? `Read by ${readProgress.readersCount} of ${readProgress.recipientCount}`
-          : "Not read yet"
-    : null;
+          : "Not read yet";
 
 
   useEffect(() => {
@@ -706,7 +732,7 @@ function MessageRow({
           ref={bubbleRef}
           className={cn(
             "relative w-fit min-w-[60px] max-w-[85%] px-4 py-2.5 select-none",
-            isMine && readProgress ? "pb-5 pr-9" : null,
+            readProgress ? "pb-5 pr-9" : null,
             hasPlayedEmojiEffect && "chat-emoji-bounce-once",
             isMine
               ? "rounded-2xl rounded-br-sm bg-emerald-100 shadow-sm"
@@ -870,7 +896,7 @@ function MessageRow({
           ) : null}
 
 
-          {isMine && readProgress && readIndicatorAriaLabel ? (
+          {readProgress && readIndicatorAriaLabel ? (
             <span className="pointer-events-none absolute bottom-1.5 right-2 inline-flex items-center">
               <MessageReadIndicator
                 state={readProgress.state}

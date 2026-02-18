@@ -102,8 +102,8 @@ export type ChatChannelMember = {
 };
 
 export type ChannelReadIndicatorSnapshot = {
-  recipientCount: number;
-  sortedRecipientReadAtMs: number[];
+  participantIds: string[];
+  readAtByUserId: Record<string, number>;
 };
 
 type ListMessagesInput = {
@@ -278,34 +278,28 @@ export async function getChannelReadIndicatorSnapshot(
     participantIds = channelMembers.map((member) => member.userId);
   }
 
-  const recipientIds = participantIds.filter((userId) => userId !== viewerUserId);
-
-  if (recipientIds.length === 0) {
-    return {
-      recipientCount: 0,
-      sortedRecipientReadAtMs: []
-    };
-  }
+  const visibleParticipantIds = participantIds.filter((userId) => userId !== viewerUserId);
 
   const readStates = await prisma.chatRoomReadState.findMany({
     where: {
       roomId: channelId,
       userId: {
-        in: recipientIds
+        in: visibleParticipantIds
       }
     },
     select: {
+      userId: true,
       lastReadAt: true
     }
   });
 
-  const sortedRecipientReadAtMs = readStates
-    .map((state) => state.lastReadAt.getTime())
-    .sort((a, b) => a - b);
+  const readAtByUserId = Object.fromEntries(
+    readStates.map((state) => [state.userId, state.lastReadAt.getTime()])
+  );
 
   return {
-    recipientCount: recipientIds.length,
-    sortedRecipientReadAtMs
+    participantIds: visibleParticipantIds,
+    readAtByUserId
   };
 }
 

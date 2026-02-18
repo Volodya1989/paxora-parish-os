@@ -193,3 +193,24 @@ test("ChatThread shows outgoing read indicator even when snapshot is unavailable
 
   assert.ok(markup.includes("Message sent"));
 });
+
+
+test("ChatThread shows read indicator on incoming message too", () => {
+  const markup = renderToStaticMarkup(
+    createElement(ChatThread, {
+      messages: [messages[1]],
+      pinnedMessage: null,
+      canModerate: false,
+      currentUserId: "author-1",
+      onReply: () => undefined,
+      onEdit: () => undefined,
+      onPin: () => undefined,
+      onUnpin: () => undefined,
+      onDelete: () => undefined,
+      isLoading: false,
+      readIndicatorSnapshot: null
+    })
+  );
+
+  assert.ok(markup.includes("Message delivered"));
+});

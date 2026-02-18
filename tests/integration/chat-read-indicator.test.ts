@@ -75,7 +75,8 @@ dbTest("group read indicator transitions from yellow to green as recipients read
   const group = await prisma.group.create({
     data: {
       parishId: parish.id,
-      name: "Choir"
+      name: "Choir",
+      createdById: sender.id
     }
   });
 
@@ -123,8 +124,8 @@ dbTest("group read indicator transitions from yellow to green as recipients read
 
   const someRead = getMessageReadProgress(
     message.createdAt,
-    snapshotSomeRead.sortedRecipientReadAtMs,
-    snapshotSomeRead.recipientCount
+    Object.values(snapshotSomeRead.readAtByUserId).sort((a, b) => a - b),
+    snapshotSomeRead.participantIds.filter((id) => id !== sender.id).length
   );
   assert.equal(someRead.state, "some_read");
 
@@ -149,8 +150,8 @@ dbTest("group read indicator transitions from yellow to green as recipients read
 
   const allRead = getMessageReadProgress(
     message.createdAt,
-    snapshotAllRead.sortedRecipientReadAtMs,
-    snapshotAllRead.recipientCount
+    Object.values(snapshotAllRead.readAtByUserId).sort((a, b) => a - b),
+    snapshotAllRead.participantIds.filter((id) => id !== sender.id).length
   );
   assert.equal(allRead.state, "all_read");
 

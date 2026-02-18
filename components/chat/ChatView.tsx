@@ -69,21 +69,28 @@ function parseMessage(message: any): ChatMessage {
 }
 
 type ReadIndicatorSnapshot = {
-  recipientCount: number;
-  sortedRecipientReadAtMs: number[];
+  participantIds: string[];
+  readAtByUserId: Record<string, number>;
 };
 
 function parseReadIndicatorSnapshot(snapshot: any): ReadIndicatorSnapshot | null {
-  if (!snapshot || !Array.isArray(snapshot.sortedRecipientReadAtMs)) {
+  if (!snapshot || !Array.isArray(snapshot.participantIds)) {
     return null;
   }
 
+  const readAtByUserId: Record<string, number> =
+    snapshot.readAtByUserId && typeof snapshot.readAtByUserId === "object"
+      ? Object.entries(snapshot.readAtByUserId).reduce<Record<string, number>>((acc, [key, value]) => {
+          if (typeof key === "string" && typeof value === "number") {
+            acc[key] = value;
+          }
+          return acc;
+        }, {})
+      : {};
+
   return {
-    recipientCount:
-      typeof snapshot.recipientCount === "number" ? snapshot.recipientCount : 0,
-    sortedRecipientReadAtMs: snapshot.sortedRecipientReadAtMs
-      .filter((value: unknown) => typeof value === "number")
-      .sort((a: number, b: number) => a - b)
+    participantIds: snapshot.participantIds.filter((value: unknown) => typeof value === "string"),
+    readAtByUserId
   };
 }
 
