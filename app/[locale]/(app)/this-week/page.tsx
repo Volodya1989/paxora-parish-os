@@ -17,12 +17,6 @@ import StartThisWeekCard from "@/components/this-week/StartThisWeekCard";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-// INVESTIGATION: This Week legacy rendering
-// Date: 2026-02-18
-// Observed issue: /this-week intermittently appears to show an older layout after reopen/refresh.
-// Hypothesis: Reports may be caused by accidental navigation to Home (/), where a legacy This Week card also exists.
-// Next steps: Keep route-level render markers for server/client and compare logs with reported sessions.
-
 export default async function ThisWeekPage({
   params,
   searchParams
@@ -81,15 +75,6 @@ export default async function ThisWeekPage({
           />
         )
       : null;
-
-  console.info("[investigation][this-week][server] route-render", {
-    route: `/${locale}/this-week`,
-    env: process.env.NODE_ENV,
-    buildId: process.env.NEXT_BUILD_ID ?? "unknown",
-    viewMode,
-    weekSelection,
-    query: resolvedSearchParams ?? null
-  });
 
   return viewMode === "admin" ? (
     <ThisWeekAdminView
