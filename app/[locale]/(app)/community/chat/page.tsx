@@ -6,7 +6,7 @@ import Card, { CardDescription, CardHeader, CardTitle } from "@/components/ui/Ca
 import { authOptions } from "@/server/auth/options";
 import { getParishMembership, isCoordinatorInParish } from "@/server/db/groups";
 import { canModerateChatChannel, canPostAnnouncementChannel, isParishLeader } from "@/lib/permissions";
-import { listChannelsForUser, listMessages, getPinnedMessage, listChannelMembers, getLastReadAt } from "@/lib/queries/chat";
+import { listChannelsForUser, listMessages, getPinnedMessage, listChannelMembers, getLastReadAt, getChannelReadIndicatorSnapshot } from "@/lib/queries/chat";
 import { buildLocalePathname, getLocaleFromParam } from "@/lib/i18n/routing";
 import { getTranslations } from "@/lib/i18n/server";
 
@@ -73,13 +73,14 @@ export default async function CommunityChatPage({ searchParams, params }: Commun
     canPost = isLeader || selectedChannel.isMember;
   }
 
-  const [messages, pinnedMessage, channelMembers, lastReadAt] = await Promise.all([
+  const [messages, pinnedMessage, channelMembers, lastReadAt, readIndicatorSnapshot] = await Promise.all([
     listMessages({ channelId: selectedChannel.id, userId }),
     getPinnedMessage(selectedChannel.id, userId),
     selectedChannel.type !== "GROUP"
       ? listChannelMembers(parishId, selectedChannel.id)
       : Promise.resolve(undefined),
-    getLastReadAt(selectedChannel.id, userId)
+    getLastReadAt(selectedChannel.id, userId),
+    getChannelReadIndicatorSnapshot(parishId, selectedChannel.id, userId)
   ]);
 
   return (
@@ -96,6 +97,7 @@ export default async function CommunityChatPage({ searchParams, params }: Commun
         channelMembers={channelMembers}
         mentionableUsers={channelMembers?.map((member) => ({ id: member.userId, name: member.name, email: member.email }))}
         lastReadAt={lastReadAt}
+        initialReadIndicatorSnapshot={readIndicatorSnapshot}
       />
     </PageShell>
   );

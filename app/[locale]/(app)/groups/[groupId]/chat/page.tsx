@@ -6,7 +6,7 @@ import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
 import { getGroupMembership, getParishMembership, isCoordinatorForGroup } from "@/server/db/groups";
 import { canModerateChatChannel, canPostGroupChannel, isParishLeader } from "@/lib/permissions";
-import { listChannelsForUser, listMessages, getPinnedMessage, getLastReadAt } from "@/lib/queries/chat";
+import { listChannelsForUser, listMessages, getPinnedMessage, getLastReadAt, getChannelReadIndicatorSnapshot } from "@/lib/queries/chat";
 import { buildLocalePathname, getLocaleFromParam } from "@/lib/i18n/routing";
 import { buildAvatarImagePath } from "@/lib/storage/avatar";
 
@@ -100,7 +100,7 @@ export default async function GroupChatPage({ params }: GroupChatPageProps) {
   const canModerate = canModerateChatChannel(parishMembership.role, isCoordinator);
   const canPost = canPostGroupChannel(parishMembership.role, isMember);
 
-  const [messages, pinnedMessage, groupMembers, lastReadAt] = await Promise.all([
+  const [messages, pinnedMessage, groupMembers, lastReadAt, readIndicatorSnapshot] = await Promise.all([
     listMessages({ channelId: selectedChannel.id, userId }),
     getPinnedMessage(selectedChannel.id, userId),
     prisma.groupMembership.findMany({
@@ -118,7 +118,8 @@ export default async function GroupChatPage({ params }: GroupChatPageProps) {
         }
       }
     }),
-    getLastReadAt(selectedChannel.id, userId)
+    getLastReadAt(selectedChannel.id, userId),
+    getChannelReadIndicatorSnapshot(parishId, selectedChannel.id, userId)
   ]);
 
   return (
@@ -138,6 +139,7 @@ export default async function GroupChatPage({ params }: GroupChatPageProps) {
           email: member.user.email ?? ""
         }))}
         lastReadAt={lastReadAt}
+        initialReadIndicatorSnapshot={readIndicatorSnapshot}
       />
     </PageShell>
   );

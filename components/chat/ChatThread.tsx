@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import ListSkeleton from "@/components/app/list-skeleton";
+import MessageReadIndicator from "@/components/chat/MessageReadIndicator";
 import ChatPollCard from "@/components/chat/ChatPollCard";
 import PinnedBanner from "@/components/chat/PinnedBanner";
 import type { ChatMessage, ChatPinnedMessage } from "@/components/chat/types";
 import { containsEmoji } from "@/lib/chat/emoji";
 import { REACTION_EMOJIS } from "@/lib/chat/reactions";
 import { getUserColor } from "@/lib/chat/userColor";
+import { getMessageReadProgress } from "@/lib/chat/read-indicator";
 import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 import { cn } from "@/lib/ui/cn";
 import { useTranslations } from "@/lib/i18n/provider";
@@ -241,7 +243,8 @@ export default function ChatThread({
   isLoading,
   firstUnreadMessageId,
   highlightedMessageId,
-  messageFontSize
+  messageFontSize,
+  readIndicatorSnapshot
 }: {
   messages: ChatMessage[];
   pinnedMessage: ChatPinnedMessage | null;
@@ -260,6 +263,10 @@ export default function ChatThread({
   firstUnreadMessageId?: string | null;
   highlightedMessageId?: string | null;
   messageFontSize?: number;
+  readIndicatorSnapshot?: {
+    recipientCount: number;
+    sortedRecipientReadAtMs: number[];
+  } | null;
 }) {
   const [contextMenuMessageId, setContextMenuMessageId] = useState<string | null>(
     initialReactionMenuMessageId ?? null
@@ -427,7 +434,8 @@ function MessageRow({
   onVotePoll,
   showUnreadSeparator,
   isUnreadMessage,
-  highlightedMessageId
+  highlightedMessageId,
+  readIndicatorSnapshot
 }: {
   message: ChatMessage;
   previousMessage: ChatMessage | null;
@@ -448,6 +456,10 @@ function MessageRow({
   showUnreadSeparator: boolean;
   isUnreadMessage: boolean;
   highlightedMessageId?: string | null;
+  readIndicatorSnapshot?: {
+    recipientCount: number;
+    sortedRecipientReadAtMs: number[];
+  } | null;
 }) {
   const t = useTranslations();
   const bubbleRef = useRef<HTMLDivElement>(null);
@@ -478,6 +490,24 @@ function MessageRow({
     !isDeleted &&
     containsEmoji(message.body) &&
     (isMine || isUnreadMessage);
+  const readProgress = isMine
+    ? getMessageReadProgress(
+        message.createdAt,
+        readIndicatorSnapshot?.sortedRecipientReadAtMs ?? [],
+        readIndicatorSnapshot?.recipientCount ?? 0
+      )
+    : null;
+
+  const readIndicatorAriaLabel = readProgress
+    ? readProgress.recipientCount === 0
+      ? "Message sent"
+      : readProgress.state === "all_read"
+        ? "Read by everyone"
+        : readProgress.state === "some_read"
+          ? `Read by ${readProgress.readersCount} of ${readProgress.recipientCount}`
+          : "Not read yet"
+    : null;
+
 
   useEffect(() => {
     if (isMine || !shouldTriggerEmojiEffect || prefersReducedMotion) {
@@ -676,6 +706,7 @@ function MessageRow({
           ref={bubbleRef}
           className={cn(
             "relative w-fit min-w-[60px] max-w-[85%] px-4 py-2.5 select-none",
+            isMine && readProgress ? "pb-5 pr-9" : null,
             hasPlayedEmojiEffect && "chat-emoji-bounce-once",
             isMine
               ? "rounded-2xl rounded-br-sm bg-emerald-100 shadow-sm"
@@ -836,6 +867,16 @@ function MessageRow({
                 </button>
               ))}
             </div>
+          ) : null}
+
+
+          {isMine && readProgress && readIndicatorAriaLabel ? (
+            <span className="pointer-events-none absolute bottom-1.5 right-2 inline-flex items-center">
+              <MessageReadIndicator
+                state={readProgress.state}
+                ariaLabel={readIndicatorAriaLabel}
+              />
+            </span>
           ) : null}
         </div>
 

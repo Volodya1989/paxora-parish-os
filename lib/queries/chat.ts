@@ -101,6 +101,11 @@ export type ChatChannelMember = {
   isMember: boolean;
 };
 
+export type ChannelReadIndicatorSnapshot = {
+  recipientCount: number;
+  sortedRecipientReadAtMs: number[];
+};
+
 type ListMessagesInput = {
   channelId: string;
   cursor?: {
@@ -224,6 +229,84 @@ export async function getLastReadAt(channelId: string, userId: string): Promise<
     select: { lastReadAt: true }
   });
   return state?.lastReadAt ?? null;
+}
+
+export async function getChannelReadIndicatorSnapshot(
+  parishId: string,
+  channelId: string,
+  viewerUserId: string
+): Promise<ChannelReadIndicatorSnapshot | null> {
+  const channel = await prisma.chatChannel.findFirst({
+    where: {
+      id: channelId,
+      parishId
+    },
+    select: {
+      id: true,
+      type: true,
+      groupId: true
+    }
+  });
+
+  if (!channel) {
+    return null;
+  }
+
+  let participantIds: string[] = [];
+
+  if (channel.type === "GROUP" && channel.groupId) {
+    const groupMembers = await prisma.groupMembership.findMany({
+      where: {
+        groupId: channel.groupId,
+        status: "ACTIVE"
+      },
+      select: {
+        userId: true
+      }
+    });
+    participantIds = groupMembers.map((member) => member.userId);
+  } else {
+    const channelMembers = await prisma.chatChannelMembership.findMany({
+      where: { channelId },
+      select: { userId: true }
+    });
+
+    if (channelMembers.length === 0) {
+      return null;
+    }
+
+    participantIds = channelMembers.map((member) => member.userId);
+  }
+
+  const recipientIds = participantIds.filter((userId) => userId !== viewerUserId);
+
+  if (recipientIds.length === 0) {
+    return {
+      recipientCount: 0,
+      sortedRecipientReadAtMs: []
+    };
+  }
+
+  const readStates = await prisma.chatRoomReadState.findMany({
+    where: {
+      roomId: channelId,
+      userId: {
+        in: recipientIds
+      }
+    },
+    select: {
+      lastReadAt: true
+    }
+  });
+
+  const sortedRecipientReadAtMs = readStates
+    .map((state) => state.lastReadAt.getTime())
+    .sort((a, b) => a - b);
+
+  return {
+    recipientCount: recipientIds.length,
+    sortedRecipientReadAtMs
+  };
 }
 
 export async function listUnreadCountsForRooms(roomIds: string[], userId: string) {

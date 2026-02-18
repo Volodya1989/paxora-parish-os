@@ -172,3 +172,24 @@ test("ChatThread renders fixed emoji menu when opened", () => {
   assert.ok(markup.includes("👍"));
   assert.ok(markup.includes("❤️"));
 });
+
+
+test("ChatThread shows outgoing read indicator even when snapshot is unavailable", () => {
+  const markup = renderToStaticMarkup(
+    createElement(ChatThread, {
+      messages: [messages[0]],
+      pinnedMessage: null,
+      canModerate: false,
+      currentUserId: "author-1",
+      onReply: () => undefined,
+      onEdit: () => undefined,
+      onPin: () => undefined,
+      onUnpin: () => undefined,
+      onDelete: () => undefined,
+      isLoading: false,
+      readIndicatorSnapshot: null
+    })
+  );
+
+  assert.ok(markup.includes("Message sent"));
+});
