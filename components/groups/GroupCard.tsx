@@ -127,15 +127,15 @@ export default function GroupCard({
         meta={(
           <>
             {group.visibility === "PRIVATE" ? <HiddenGroupIcon /> : null}
-            {isArchived ? <Badge tone="warning">Archived</Badge> : null}
-            {isPending ? <Badge tone="warning">Pending</Badge> : null}
+            {isArchived ? <Badge tone="attention">Archived</Badge> : null}
+            {isPending ? <Badge tone="attention">Pending</Badge> : null}
             {isRejected ? <Badge tone="neutral">Not approved</Badge> : null}
             {isMember ? <span className="text-xs font-medium text-primary-600">{t("groups.joined")}</span> : null}
           </>
         )}
       />
       <div className="flex shrink-0 items-center gap-2">
-        {group.unreadCount && group.unreadCount > 0 ? <Badge tone="warning">{group.unreadCount}</Badge> : null}
+        {group.unreadCount && group.unreadCount > 0 ? <Badge tone="attention">{group.unreadCount}</Badge> : null}
         {isInvited ? (
           <>
             <Button type="button" size="sm" onClick={(e) => { e.stopPropagation(); onAcceptInvite(); }} disabled={isBusy}>{t("groups.accept")}</Button>

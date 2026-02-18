@@ -82,7 +82,7 @@ export default function GroupChatListCard({
         )}
         right={(
           <>
-            {unreadCount && unreadCount > 0 ? <Badge tone="warning">{unreadCount}</Badge> : null}
+            {unreadCount && unreadCount > 0 ? <Badge tone="attention">{unreadCount}</Badge> : null}
             {menu}
             {showChevron ? <span className="text-ink-400 transition-transform group-hover:translate-x-0.5">›</span> : null}
           </>

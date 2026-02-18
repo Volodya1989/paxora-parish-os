@@ -84,6 +84,28 @@ export type ThisWeekData = {
   };
 };
 
+export type ThisWeekMemberGroupPreview = ThisWeekData["memberGroups"][number];
+
+export function sortThisWeekMemberGroups(groups: ThisWeekMemberGroupPreview[]) {
+  return [...groups].sort((a, b) => {
+    const aHasUnread = (a.unreadCount ?? 0) > 0;
+    const bHasUnread = (b.unreadCount ?? 0) > 0;
+
+    if (aHasUnread !== bHasUnread) {
+      return aHasUnread ? -1 : 1;
+    }
+
+    const aLastMessageTime = a.lastMessageTime?.getTime() ?? 0;
+    const bLastMessageTime = b.lastMessageTime?.getTime() ?? 0;
+
+    if (aLastMessageTime !== bLastMessageTime) {
+      return bLastMessageTime - aLastMessageTime;
+    }
+
+    return a.name.localeCompare(b.name);
+  });
+}
+
 function getInitials(name: string) {
   const parts = name.split(" ").filter(Boolean);
   if (parts.length === 0) {
@@ -329,6 +351,23 @@ export async function getThisWeekDataForUser({
     }
   });
 
+  const memberGroupPreviews = sortThisWeekMemberGroups(
+    memberGroups.map((m) => {
+      const lastMsg = m.group.chatChannels?.[0]?.messages?.[0];
+      return {
+        id: m.group.id,
+        name: m.group.name,
+        visibility: m.group.visibility,
+        description: m.group.description,
+        avatarUrl: m.group.avatarKey ? buildAvatarImagePath(m.group.avatarKey) : null,
+        unreadCount: unreadCountByGroupId.get(m.group.id) ?? 0,
+        lastMessage: lastMsg?.body ?? null,
+        lastMessageTime: lastMsg?.createdAt ?? null,
+        lastMessageAuthor: lastMsg?.author?.name ?? lastMsg?.author?.email ?? null
+      };
+    })
+  );
+
   return {
     parishId,
     week: {
@@ -348,21 +387,7 @@ export async function getThisWeekDataForUser({
       publishedAt: announcement.publishedAt
     })),
     parishRole: membership?.role ?? null,
-    memberGroups: memberGroups.map((m) => {
-      const channel = groupChannels.find((ch) => ch.groupId === m.group.id);
-      const lastMsg = m.group.chatChannels?.[0]?.messages?.[0];
-      return {
-        id: m.group.id,
-        name: m.group.name,
-        visibility: m.group.visibility,
-        description: m.group.description,
-        avatarUrl: m.group.avatarKey ? buildAvatarImagePath(m.group.avatarKey) : null,
-        unreadCount: unreadCountByGroupId.get(m.group.id) ?? 0,
-        lastMessage: lastMsg?.body ?? null,
-        lastMessageTime: lastMsg?.createdAt ?? null,
-        lastMessageAuthor: lastMsg?.author?.name ?? lastMsg?.author?.email ?? null
-      };
-    }),
+    memberGroups: memberGroupPreviews,
     hasPublicGroups: publicGroupCount > 0,
     stats: {
       tasksDone,

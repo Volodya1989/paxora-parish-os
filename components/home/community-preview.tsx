@@ -50,7 +50,7 @@ export default function CommunityPreview({ rooms }: { rooms: CommunityRoomPrevie
                   </p>
                 </div>
                 {room.unreadCount ? (
-                  <Badge tone="warning">{room.unreadCount} new</Badge>
+                  <Badge tone="attention">{room.unreadCount} new</Badge>
                 ) : null}
               </div>
             ))}
