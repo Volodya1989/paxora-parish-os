@@ -413,6 +413,25 @@
       "requestMessage": "Have an idea for a group? Request one and start connecting with fellow parishioners.",
       "noArchived": "No archived groups",
       "noArchivedDesc": "No archived groups — all groups are active and welcoming."
+    },
+    "membersPage": {
+      "headerTitle": "Group Members",
+      "adminDescription": "Coordinate ministries with clarity and care.",
+      "parishionerDescription": "See who’s in this group.",
+      "addMember": "Add member",
+      "joinInstantly": "Join instantly",
+      "requestApproval": "Request approval",
+      "requestSent": "Request sent",
+      "opportunitiesToHelp": "Opportunities to help",
+      "invitedTitle": "You’re invited",
+      "invitedDescription": "Accept to join this ministry group, or decline if it’s not the right fit.",
+      "acceptInvite": "Accept invite",
+      "teamDirectory": "Team directory",
+      "directoryDescription": "Search members and review pending requests in one place.",
+      "searchMembers": "Search members",
+      "membersTab": "Members ({count})",
+      "pendingTab": "Pending ({count})",
+      "emptyMembers": "Add parishioners to build a calm, coordinated team."
     }
   },
   "chat": {

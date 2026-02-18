@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-import SectionTitle from "@/components/ui/SectionTitle";
 import Input from "@/components/ui/Input";
 import Badge from "@/components/ui/Badge";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/Tabs";
@@ -16,7 +15,7 @@ import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 import MemberRow from "@/components/groups/members/MemberRow";
 import InviteDrawer from "@/components/groups/members/InviteDrawer";
 import PendingInvites from "@/components/groups/members/PendingInvites";
-import { useTranslations } from "@/lib/i18n/provider";
+import { useLocale, useTranslations } from "@/lib/i18n/provider";
 import {
   acceptInvite,
   approveJoinRequest,
@@ -26,26 +25,27 @@ import {
   denyJoinRequest,
   inviteMember,
   joinGroup,
-  leaveGroup,
   removeMember,
-  requestToJoin
+  requestToJoin,
 } from "@/app/actions/members";
-import type { GroupMemberRecord, PendingInviteRecord } from "@/lib/queries/members";
+import type {
+  GroupMemberRecord,
+  PendingInviteRecord,
+} from "@/lib/queries/members";
 import type { GroupInviteCandidate } from "@/lib/queries/groups";
 import type { MemberActionState } from "@/lib/types/members";
-
-const EMPTY_MEMBERS_MESSAGE = "Add parishioners to build a calm, coordinated team.";
+import { buildLocalePathname } from "@/lib/i18n/routing";
 
 const handleResult = (
   result: MemberActionState,
   addToast: ReturnType<typeof useToast>["addToast"],
-  fallback: string
+  fallback: string,
 ) => {
   if (result.status === "error") {
     addToast({
       title: "Update failed",
       description: result.message || fallback,
-      status: "error"
+      status: "error",
     });
     return false;
   }
@@ -76,14 +76,18 @@ export default function GroupMembersView({
   pendingInvites,
   canManage,
   inviteCandidates,
-  viewer
+  viewer,
 }: GroupMembersViewProps) {
   const t = useTranslations();
+  const locale = useLocale();
   const { addToast } = useToast();
   const router = useRouter();
   const [inviteOpen, setInviteOpen] = useState(false);
   const [pendingMemberId, setPendingMemberId] = useState<string | null>(null);
-  const [removingMember, setRemovingMember] = useState<{ userId: string; name: string } | null>(null);
+  const [removingMember, setRemovingMember] = useState<{
+    userId: string;
+    name: string;
+  } | null>(null);
   const [activeTab, setActiveTab] = useState<"members" | "pending">("members");
   const [query, setQuery] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -97,14 +101,14 @@ export default function GroupMembersView({
 
   const runAction = async (
     action: () => Promise<MemberActionState>,
-    successTitle: string
+    successTitle: string,
   ) => {
     const result = await action();
     if (handleResult(result, addToast, "Please try again.")) {
       addToast({
         title: successTitle,
         description: result.message,
-        status: "success"
+        status: "success",
       });
       refresh();
     }
@@ -112,7 +116,7 @@ export default function GroupMembersView({
 
   const handleInvite = async ({
     email,
-    role
+    role,
   }: {
     email: string;
     role: "COORDINATOR" | "PARISHIONER";
@@ -121,21 +125,28 @@ export default function GroupMembersView({
     return result;
   };
 
-  const handleRoleChange = (userId: string, role: "COORDINATOR" | "PARISHIONER") => {
+  const handleRoleChange = (
+    userId: string,
+    role: "COORDINATOR" | "PARISHIONER",
+  ) => {
     setPendingMemberId(userId);
-    void runAction(
-      async () => {
-        const result = await changeMemberRole({ groupId: group.id, userId, role });
-        setPendingMemberId(null);
-        return result;
-      },
-      "Role updated"
-    );
+    void runAction(async () => {
+      const result = await changeMemberRole({
+        groupId: group.id,
+        userId,
+        role,
+      });
+      setPendingMemberId(null);
+      return result;
+    }, "Role updated");
   };
 
   const handleRemoveRequest = (userId: string) => {
     const member = members.find((m) => m.userId === userId);
-    setRemovingMember({ userId, name: member?.name ?? member?.email ?? "this member" });
+    setRemovingMember({
+      userId,
+      name: member?.name ?? member?.email ?? "this member",
+    });
   };
 
   const handleRemoveConfirm = () => {
@@ -143,34 +154,34 @@ export default function GroupMembersView({
     const { userId } = removingMember;
     setRemovingMember(null);
     setPendingMemberId(userId);
-    void runAction(
-      async () => {
-        const result = await removeMember({ groupId: group.id, userId });
-        setPendingMemberId(null);
-        return result;
-      },
-      "Member removed"
-    );
+    void runAction(async () => {
+      const result = await removeMember({ groupId: group.id, userId });
+      setPendingMemberId(null);
+      return result;
+    }, "Member removed");
   };
 
   const handleCancelInvite = (userId: string) => {
     setPendingMemberId(userId);
-    void runAction(
-      async () => {
-        const result = await cancelInvite({ groupId: group.id, userId });
-        setPendingMemberId(null);
-        return result;
-      },
-      "Invite cancelled"
-    );
+    void runAction(async () => {
+      const result = await cancelInvite({ groupId: group.id, userId });
+      setPendingMemberId(null);
+      return result;
+    }, "Invite cancelled");
   };
 
   const handleAccept = () => {
-    void runAction(() => acceptInvite({ groupId: group.id }), "Invite accepted");
+    void runAction(
+      () => acceptInvite({ groupId: group.id }),
+      "Invite accepted",
+    );
   };
 
   const handleDecline = () => {
-    void runAction(() => declineInvite({ groupId: group.id }), "Invite declined");
+    void runAction(
+      () => declineInvite({ groupId: group.id }),
+      "Invite declined",
+    );
   };
 
   const handleJoin = () => {
@@ -181,38 +192,31 @@ export default function GroupMembersView({
     void runAction(() => requestToJoin({ groupId: group.id }), "Request sent");
   };
 
-  const handleLeave = () => {
-    void runAction(() => leaveGroup({ groupId: group.id }), "Left group");
-  };
-
   const handleApprove = (userId: string) => {
     setPendingMemberId(userId);
-    void runAction(
-      async () => {
-        const result = await approveJoinRequest({ groupId: group.id, userId });
-        setPendingMemberId(null);
-        return result;
-      },
-      "Request approved"
-    );
+    void runAction(async () => {
+      const result = await approveJoinRequest({ groupId: group.id, userId });
+      setPendingMemberId(null);
+      return result;
+    }, "Request approved");
   };
 
   const handleDeny = (userId: string) => {
     setPendingMemberId(userId);
-    void runAction(
-      async () => {
-        const result = await denyJoinRequest({ groupId: group.id, userId });
-        setPendingMemberId(null);
-        return result;
-      },
-      "Request denied"
-    );
+    void runAction(async () => {
+      const result = await denyJoinRequest({ groupId: group.id, userId });
+      setPendingMemberId(null);
+      return result;
+    }, "Request denied");
   };
 
   const joinLabel =
-    group.joinPolicy === "OPEN" ? "Join instantly" : "Request approval";
+    group.joinPolicy === "OPEN"
+      ? t("groups.membersPage.joinInstantly")
+      : t("groups.membersPage.requestApproval");
   const canJoin =
-    viewer.status === null && (group.joinPolicy === "OPEN" || group.joinPolicy === "REQUEST_TO_JOIN");
+    viewer.status === null &&
+    (group.joinPolicy === "OPEN" || group.joinPolicy === "REQUEST_TO_JOIN");
 
   const filteredMembers = useMemo(() => {
     if (!query.trim()) {
@@ -239,103 +243,91 @@ export default function GroupMembersView({
   const availableInviteCandidates = useMemo(() => {
     const existingUserIds = new Set([
       ...members.map((member) => member.userId),
-      ...pendingInvites.map((invite) => invite.userId)
+      ...pendingInvites.map((invite) => invite.userId),
     ]);
 
-    return inviteCandidates.filter((candidate) => !existingUserIds.has(candidate.id));
+    return inviteCandidates.filter(
+      (candidate) => !existingUserIds.has(candidate.id),
+    );
   }, [inviteCandidates, members, pendingInvites]);
-
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <SectionTitle
-          title={`${group.name} members`}
-          subtitle={group.description ?? "Coordinate ministries with clarity and care."}
-        />
+      <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
           <Badge tone={group.visibility === "PUBLIC" ? "success" : "neutral"}>
-            {group.visibility === "PUBLIC" ? t("common.public") : t("common.private")}
+            {group.visibility === "PUBLIC"
+              ? t("common.public")
+              : t("common.private")}
           </Badge>
           <Badge tone="neutral">
             {group.joinPolicy === "OPEN"
-              ? "Join instantly"
+              ? t("groups.membersPage.joinInstantly")
               : group.joinPolicy === "REQUEST_TO_JOIN"
-              ? "Request approval"
-              : "Invite only"}
+                ? t("groups.membersPage.requestApproval")
+                : t("groups.inviteOnly")}
           </Badge>
         </div>
+        <p className="text-sm text-ink-600">
+          {canManage
+            ? t("groups.membersPage.adminDescription")
+            : t("groups.membersPage.parishionerDescription")}
+        </p>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           {canManage ? (
             <Button type="button" onClick={() => setInviteOpen(true)}>
-              Add member
-            </Button>
-          ) : null}
-          {viewer.status === "ACTIVE" ? (
-            <Button type="button" variant="ghost" onClick={handleLeave}>
-              Leave group
+              {t("groups.membersPage.addMember")}
             </Button>
           ) : null}
           {viewer.status === null && canJoin ? (
-            <Button type="button" onClick={group.joinPolicy === "OPEN" ? handleJoin : handleRequestJoin}>
+            <Button
+              type="button"
+              onClick={
+                group.joinPolicy === "OPEN" ? handleJoin : handleRequestJoin
+              }
+            >
               {joinLabel}
             </Button>
           ) : null}
           {viewer.status === "REQUESTED" ? (
-            <Badge tone="warning">Request sent</Badge>
+            <Badge tone="warning">{t("groups.membersPage.requestSent")}</Badge>
           ) : null}
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <Link
-            className="text-sm font-medium text-ink-700 underline"
-            href={`/groups/${group.id}/tasks`}
-          >
-            Opportunities to Help
-          </Link>
-          <Link className="text-sm font-medium text-ink-700 underline" href={`/groups/${group.id}`}>
-            Back to group
-          </Link>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
         <Link
-          className="rounded-full border border-mist-200 bg-white px-3 py-1 text-xs font-medium text-ink-600 shadow-card"
-          href="/announcements"
+          className="inline-flex items-center rounded-full border border-mist-200 bg-white px-3 py-2 text-sm font-medium text-ink-700 shadow-card transition hover:bg-mist-50"
+          href={buildLocalePathname(
+            locale,
+            `/tasks?view=opportunities&group=${group.id}`,
+          )}
         >
-          Announcements
-        </Link>
-        <Link
-          className="rounded-full border border-mist-200 bg-white px-3 py-1 text-xs font-medium text-ink-600 shadow-card"
-          href="/calendar"
-        >
-          Schedule
-        </Link>
-        <Link
-          className="rounded-full border border-mist-200 bg-white px-3 py-1 text-xs font-medium text-ink-600 shadow-card"
-          href={`/groups/${group.id}/tasks`}
-        >
-          Opportunities to Help
+          {t("groups.membersPage.opportunitiesToHelp")}
         </Link>
       </div>
 
       {viewer.status === "INVITED" ? (
         <Card className="space-y-3">
           <div>
-            <h2 className="text-lg font-semibold text-ink-900">You&apos;re invited</h2>
+            <h2 className="text-lg font-semibold text-ink-900">
+              {t("groups.membersPage.invitedTitle")}
+            </h2>
             <p className="text-sm text-ink-500">
-              Accept to join this ministry group, or decline if it&apos;s not the right fit.
+              {t("groups.membersPage.invitedDescription")}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button type="button" onClick={handleAccept} isLoading={isPending}>
-              Accept invite
+              {t("groups.membersPage.acceptInvite")}
             </Button>
-            <Button type="button" variant="secondary" onClick={handleDecline} disabled={isPending}>
-              Decline
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleDecline}
+              disabled={isPending}
+            >
+              {t("groups.decline")}
             </Button>
           </div>
         </Card>
@@ -344,28 +336,47 @@ export default function GroupMembersView({
       <Card className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-ink-900">Team directory</h2>
+            <h2 className="text-lg font-semibold text-ink-900">
+              {t("groups.membersPage.teamDirectory")}
+            </h2>
             <p className="text-sm text-ink-500">
-              Search members and review pending requests in one place.
+              {t("groups.membersPage.directoryDescription")}
             </p>
           </div>
           <Input
             value={query}
             onChange={(event) => setQuery(event.currentTarget.value)}
-            placeholder="Search members"
-            aria-label="Search members"
+            placeholder={t("groups.membersPage.searchMembers")}
+            aria-label={t("groups.membersPage.searchMembers")}
             className="w-full md:w-64"
           />
         </div>
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "members" | "pending")}>
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) =>
+            setActiveTab(value as "members" | "pending")
+          }
+        >
           <TabsList>
-            <TabsTrigger value="members">Members ({members.length})</TabsTrigger>
-            <TabsTrigger value="pending">Pending ({pendingInvites.length})</TabsTrigger>
+            <TabsTrigger value="members">
+              {t("groups.membersPage.membersTab").replace(
+                "{count}",
+                String(members.length),
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="pending">
+              {t("groups.membersPage.pendingTab").replace(
+                "{count}",
+                String(pendingInvites.length),
+              )}
+            </TabsTrigger>
           </TabsList>
           <TabsPanel value="members">
             <div className="space-y-3">
               {filteredMembers.length === 0 ? (
-                <p className="text-sm text-ink-500">{EMPTY_MEMBERS_MESSAGE}</p>
+                <p className="text-sm text-ink-500">
+                  {t("groups.membersPage.emptyMembers")}
+                </p>
               ) : (
                 filteredMembers.map((member) => (
                   <MemberRow
@@ -373,7 +384,9 @@ export default function GroupMembersView({
                     member={member}
                     canManage={canManage}
                     isSelf={member.userId === viewer.id}
-                    onChangeRole={(role) => handleRoleChange(member.userId, role)}
+                    onChangeRole={(role) =>
+                      handleRoleChange(member.userId, role)
+                    }
                     onRemove={() => handleRemoveRequest(member.userId)}
                     isBusy={pendingMemberId === member.userId}
                   />
@@ -403,16 +416,20 @@ export default function GroupMembersView({
         />
       ) : null}
 
-      {/* Remove member confirmation dialog */}
       {(() => {
         const dialogOpen = Boolean(removingMember);
         const dialogTitle = t("buttons.delete");
         const dialogBody = (
           <div className="space-y-3">
             <p className="text-sm text-ink-700">
-              {t("confirm.removeMember").replace("{name}", removingMember?.name ?? "")}
+              {t("confirm.removeMember").replace(
+                "{name}",
+                removingMember?.name ?? "",
+              )}
             </p>
-            <p className="text-sm font-medium text-rose-600">{t("confirm.cannotUndo")}</p>
+            <p className="text-sm font-medium text-rose-600">
+              {t("confirm.cannotUndo")}
+            </p>
           </div>
         );
         const dialogFooter = (
