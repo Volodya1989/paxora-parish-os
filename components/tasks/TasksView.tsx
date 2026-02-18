@@ -9,6 +9,7 @@ import TaskFilters from "@/components/tasks/TaskFilters";
 import TasksEmptyState from "@/components/tasks/TasksEmptyState";
 import TasksList from "@/components/tasks/TasksList";
 import QuoteCard from "@/components/app/QuoteCard";
+import DailyQuoteGate from "@/components/app/DailyQuoteGate";
 import type { TaskFilters as TaskFiltersState, TaskListItem, TaskListSummary } from "@/lib/queries/tasks";
 import type { PendingAccessRequest } from "@/lib/queries/access";
 import type { PendingTaskApproval, PendingTaskRequest } from "@/lib/queries/tasks";
@@ -21,6 +22,7 @@ import { cn } from "@/lib/ui/cn";
 import Link from "next/link";
 import { routes } from "@/lib/navigation/routes";
 import { useTranslations } from "@/lib/i18n/provider";
+import { getOwnerParamForViewChange, shouldShowOwnershipFilter, shouldShowParishionerAddButton } from "@/lib/tasks/serveView";
 
 type TasksViewProps = {
   title?: string;
@@ -50,8 +52,6 @@ type TasksViewProps = {
 
 export default function TasksView({
   ctaLabel = "New serve item",
-  weekLabel,
-  weekRange,
   weekId,
   tasks,
   summary,
@@ -85,6 +85,15 @@ export default function TasksView({
   const hasTasks = summary.total > 0;
   const hasMatches = filteredCount > 0;
   const showCreateButton = canManageTasks || viewMode === "mine";
+  const isMyCommitmentsView = viewMode === "mine";
+  const isParishionerMyCommitments = !canManageTasks && isMyCommitmentsView;
+  const showOwnershipFilter = shouldShowOwnershipFilter(viewMode);
+  const showParishionerAddButton = shouldShowParishionerAddButton({
+    canManageTasks,
+    canRequestContentCreate,
+    viewMode
+  });
+  const [showCommitmentsInfo, setShowCommitmentsInfo] = useState(false);
 
   const clearFilters = () => {
     const params = new URLSearchParams(searchParams?.toString() ?? "");
@@ -103,11 +112,6 @@ export default function TasksView({
     }
     setIsCreateOpen(false);
   };
-
-  const statsLabel = useMemo(() => {
-    const inProgressLabel = summary.inProgress ? ` · ${summary.inProgress} in progress` : "";
-    return `${summary.open} open${inProgressLabel} · ${summary.done} done`;
-  }, [summary.done, summary.inProgress, summary.open]);
 
   const handleApproveTask = (taskId: string) => {
     startApprovalTransition(async () => {
@@ -178,6 +182,16 @@ export default function TasksView({
       if (params.get("status") === "done") {
         params.delete("status");
       }
+    }
+    const nextOwner = getOwnerParamForViewChange({
+      currentOwner: params.get("owner"),
+      nextView
+    });
+
+    if (nextOwner) {
+      params.set("owner", nextOwner);
+    } else {
+      params.delete("owner");
     }
     router.replace(`?${params.toString()}`, { scroll: false });
   };
@@ -255,19 +269,21 @@ export default function TasksView({
   /* ─── Unified layout — same flow for leaders and parishioners ─── */
   return (
     <div className="section-gap">
-      <QuoteCard
-        quote={t("serve.quote")}
-        source={t("serve.quoteSource")}
-        tone="sky"
-      />
+      <DailyQuoteGate storageKey="serve.quote.daily">
+        <QuoteCard
+          quote={t("serve.quote")}
+          source={t("serve.quoteSource")}
+          tone="sky"
+        />
+      </DailyQuoteGate>
 
       {canAccessLeaderBoard ? (
-        <div className="rounded-xl border border-sky-100 bg-sky-50/60 px-4 py-3">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-sky-800">{t("tasks.leaderBoard.helper")}</p>
+        <div className="rounded-xl border border-sky-100 bg-sky-50/60 px-3 py-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs font-medium text-sky-800">{t("tasks.leaderBoard.helper")}</p>
             <Link
               href={routes.serveBoard}
-              className="inline-flex min-h-[36px] items-center rounded-full border border-sky-200 bg-white px-3 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
+              className="inline-flex min-h-[32px] items-center rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
             >
               {t("tasks.leaderBoard.cta")}
             </Link>
@@ -281,14 +297,35 @@ export default function TasksView({
 
         <HeaderActionBar
           onFilterClick={() => setFiltersOpen(true)}
-          filterActive={filters.status !== "all" || filters.ownership !== "all" || Boolean(filters.groupId) || Boolean(filters.query) || Boolean(filters.dateFrom) || Boolean(filters.dateTo)}
+          filterActive={filters.status !== "all" || (!isMyCommitmentsView && filters.ownership !== "all") || Boolean(filters.groupId) || Boolean(filters.query) || Boolean(filters.dateFrom) || Boolean(filters.dateTo)}
           onAddClick={
-            canManageTasks || canRequestContentCreate
+            showParishionerAddButton
               ? () => (canManageTasks ? setIsCreateOpen(true) : setIsRequestOpen(true))
               : undefined
           }
           addLabel={canManageTasks ? ctaLabel : t("serve.requestOpportunity")}
         />
+
+        {isParishionerMyCommitments ? (
+          <div className="flex items-start gap-2 rounded-lg border border-mist-200 bg-white/80 px-3 py-2 text-xs text-ink-600">
+            <p>{t("tasks.myCommitmentsHint.short")}</p>
+            <button
+              type="button"
+              onClick={() => setShowCommitmentsInfo((prev) => !prev)}
+              className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-mist-300 text-[11px] font-semibold text-ink-500 transition hover:border-mist-400 hover:text-ink-700"
+              aria-label={t("tasks.myCommitmentsHint.infoLabel")}
+              aria-expanded={showCommitmentsInfo}
+            >
+              ?
+            </button>
+          </div>
+        ) : null}
+
+        {isParishionerMyCommitments && showCommitmentsInfo ? (
+          <div className="rounded-lg border border-primary-100 bg-primary-50/70 px-3 py-2 text-xs text-primary-800">
+            {t("tasks.myCommitmentsHint.detail")}
+          </div>
+        ) : null}
 
         {/* Hours & Gratitude Board — desktop only */}
         {canManageTasks && (
@@ -315,7 +352,7 @@ export default function TasksView({
           <TaskFilters
             filters={filters}
             groupOptions={groupOptions}
-            showOwnership={viewMode !== "opportunities" && (canManageTasks || viewMode !== "mine")}
+            showOwnership={showOwnershipFilter}
             showGroup={canManageTasks || viewMode !== "mine"}
             layout="stacked"
             searchPlaceholder={
@@ -331,7 +368,7 @@ export default function TasksView({
         <TaskFilters
           filters={filters}
           groupOptions={groupOptions}
-          showOwnership={viewMode !== "opportunities" && (canManageTasks || viewMode !== "mine")}
+          showOwnership={showOwnershipFilter}
           showGroup={canManageTasks || viewMode !== "mine"}
           layout="inline"
           searchPlaceholder={
