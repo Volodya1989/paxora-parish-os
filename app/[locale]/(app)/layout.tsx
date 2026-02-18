@@ -29,6 +29,18 @@ export default async function AppLayout({
   const headerList = await headers();
   const rawPathname = headerList.get("x-pathname") ?? "";
   const pathname = stripLocale(rawPathname);
+
+  // INVESTIGATION: This Week legacy rendering
+  // Date: 2026-02-18
+  // Observed issue: Older This Week UI reportedly appears intermittently on reopen/refresh.
+  // Hypothesis: Route entry and pathname handling help confirm whether users are on /this-week or / (home).
+  // Next steps: Correlate this layout marker with page-level render markers.
+  console.info("[investigation][this-week][server] app-layout-render", {
+    rawPathname,
+    pathname,
+    env: process.env.NODE_ENV,
+    buildId: process.env.NEXT_BUILD_ID ?? "unknown"
+  });
   const isPlatformAdmin = session.user.platformRole === "SUPERADMIN";
   const access = isPlatformAdmin ? null : await getAccessGateState();
 

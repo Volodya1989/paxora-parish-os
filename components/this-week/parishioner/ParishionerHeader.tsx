@@ -2,6 +2,7 @@
 
 import { type ReactNode, useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "@/lib/i18n/provider";
 import { useLocale } from "@/lib/i18n/provider";
 import LanguageIconToggle from "@/components/navigation/LanguageIconToggle";
@@ -53,7 +54,22 @@ export default function ParishionerHeader({
   const [quoteExpanded, setQuoteExpanded] = useState(true);
   const [quotePinnedOpen, setQuotePinnedOpen] = useState(false);
   const logoSrc = parishLogoUrl?.trim() ? parishLogoUrl : "/icon.png";
+  // INVESTIGATION: This Week legacy rendering
+  // Date: 2026-02-18
+  // Observed issue: Users occasionally report old This Week UI on reopen/refresh.
+  // Hypothesis: Client-side route state can clarify whether canonical /this-week or Home legacy UI mounted.
+  // Next steps: Compare this client marker with server route markers and user reports.
   const quoteStorageKey = "this-week:quote-expanded";
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    console.info("[investigation][this-week][client] parishioner-header-mount", {
+      pathname,
+      query: searchParams.toString(),
+      env: process.env.NODE_ENV
+    });
+  }, [pathname, searchParams]);
 
   // Use state to prevent hydration mismatch - start with generic greeting
   // then update to time-based greeting on client
