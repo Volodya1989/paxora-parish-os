@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { prisma } from "@/server/db/prisma";
 import { createTask } from "@/domain/tasks";
 import { getNotificationItems, getNotificationUnreadCount } from "@/lib/queries/notifications";
+import { listUnreadCountsForRooms } from "@/lib/queries/chat";
+import { markChatRoomReadAndNotifications } from "@/lib/notifications/chat-read";
 import {
   notifyAnnouncementPublishedInApp,
   notifyChatMessageInApp,
@@ -195,6 +197,159 @@ dbTest("chat notifications only go to channel/group members and never actor", as
   assert.equal(memberNotifications.length, 1);
   assert.equal(actorNotifications.length, 0);
   assert.equal(outsiderNotifications.length, 0);
+});
+
+dbTest("mark chat room read clears room unread state and chat notification badge counts", async () => {
+  const parish = await prisma.parish.create({ data: { name: "St. Rita", slug: "st-rita" } });
+  const actor = await prisma.user.create({
+    data: { email: "actor-read@example.com", passwordHash: "hashed", activeParishId: parish.id }
+  });
+  const reader = await prisma.user.create({
+    data: { email: "reader-read@example.com", passwordHash: "hashed", activeParishId: parish.id }
+  });
+
+  await prisma.membership.createMany({
+    data: [
+      { parishId: parish.id, userId: actor.id, role: "MEMBER" },
+      { parishId: parish.id, userId: reader.id, role: "MEMBER" }
+    ]
+  });
+
+  const group = await prisma.group.create({
+    data: {
+      parishId: parish.id,
+      createdById: actor.id,
+      name: "Readers",
+      status: "ACTIVE"
+    }
+  });
+
+  await prisma.groupMembership.createMany({
+    data: [
+      { groupId: group.id, userId: actor.id, status: "ACTIVE", role: "COORDINATOR" },
+      { groupId: group.id, userId: reader.id, status: "ACTIVE", role: "MEMBER" }
+    ]
+  });
+
+  const channel = await prisma.chatChannel.create({
+    data: {
+      parishId: parish.id,
+      groupId: group.id,
+      type: "GROUP",
+      name: "Readers Chat"
+    }
+  });
+
+  const otherChannel = await prisma.chatChannel.create({
+    data: {
+      parishId: parish.id,
+      type: "PARISH",
+      name: "General"
+    }
+  });
+
+  const oldReadAt = new Date("2024-01-01T00:00:00.000Z");
+  await prisma.chatRoomReadState.create({
+    data: {
+      roomId: channel.id,
+      userId: reader.id,
+      lastReadAt: oldReadAt
+    }
+  });
+
+  await prisma.chatMessage.create({
+    data: {
+      channelId: channel.id,
+      authorId: actor.id,
+      body: "Unread in readers chat",
+      createdAt: new Date("2024-01-02T00:00:00.000Z")
+    }
+  });
+
+  await prisma.notification.createMany({
+    data: [
+      {
+        userId: reader.id,
+        parishId: parish.id,
+        type: "MESSAGE",
+        title: "Chat message",
+        description: "Readers update",
+        href: `/community/chat?channel=${channel.id}`,
+        createdAt: new Date("2024-01-02T00:01:00.000Z")
+      },
+      {
+        userId: reader.id,
+        parishId: parish.id,
+        type: "MENTION",
+        title: "Mention",
+        description: "You were mentioned",
+        href: `/community/chat?channel=${channel.id}&msg=abc`,
+        createdAt: new Date("2024-01-02T00:02:00.000Z")
+      },
+      {
+        userId: reader.id,
+        parishId: parish.id,
+        type: "MESSAGE",
+        title: "Other channel",
+        description: "Should remain unread",
+        href: `/community/chat?channel=${otherChannel.id}`,
+        createdAt: new Date("2024-01-02T00:03:00.000Z")
+      }
+    ]
+  });
+
+  const unreadBefore = await listUnreadCountsForRooms([channel.id], reader.id);
+  assert.equal(unreadBefore.get(channel.id), 1);
+
+  const bellBefore = await getNotificationUnreadCount(reader.id, parish.id);
+  assert.equal(bellBefore, 3);
+
+  const now = new Date("2024-01-03T00:00:00.000Z");
+  const result = await markChatRoomReadAndNotifications({
+    userId: reader.id,
+    parishId: parish.id,
+    channelId: channel.id,
+    now
+  });
+
+  assert.equal(result.roomId, channel.id);
+  assert.equal(result.lastReadAt.toISOString(), now.toISOString());
+  assert.equal(result.clearedNotifications, 2);
+
+  const unreadAfter = await listUnreadCountsForRooms([channel.id], reader.id);
+  assert.equal(unreadAfter.get(channel.id) ?? 0, 0);
+
+  const bellAfter = await getNotificationUnreadCount(reader.id, parish.id);
+  assert.equal(bellAfter, 1);
+
+  const roomMessageNotification = await prisma.notification.findFirst({
+    where: {
+      userId: reader.id,
+      parishId: parish.id,
+      href: { contains: `channel=${channel.id}` },
+      type: "MESSAGE"
+    }
+  });
+  const roomMentionNotification = await prisma.notification.findFirst({
+    where: {
+      userId: reader.id,
+      parishId: parish.id,
+      href: { contains: `channel=${channel.id}` },
+      type: "MENTION"
+    }
+  });
+  const otherChannelNotification = await prisma.notification.findFirst({
+    where: {
+      userId: reader.id,
+      parishId: parish.id,
+      href: { contains: `channel=${otherChannel.id}` },
+      type: "MESSAGE"
+    }
+  });
+
+  assert.ok(roomMessageNotification?.readAt);
+  assert.ok(roomMentionNotification?.readAt);
+  assert.equal(otherChannelNotification?.readAt, null);
 });
 
 dbTest("announcement notifications honor explicit audience, otherwise broadcast parish-wide", async () => {
