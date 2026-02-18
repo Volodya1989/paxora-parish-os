@@ -24,6 +24,7 @@ import {
 } from "@/server/actions/tasks";
 import type { TaskListItem } from "@/lib/queries/tasks";
 import { useTranslations } from "@/lib/i18n/provider";
+import { getScrollBehavior, getServeCardAnchorId, isTaskCardFullyVisible } from "@/lib/tasks/serveCardMove";
 
 type TasksListProps = {
   tasks: TaskListItem[];
@@ -44,13 +45,17 @@ export default function TasksList({
   const { addToast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [pendingTaskId, setPendingTaskId] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ taskId: string; type: "status" | "other" } | null>(null);
   const [editingTask, setEditingTask] = useState<TaskListItem | null>(null);
   const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
   const [deleteTaskTarget, setDeleteTaskTarget] = useState<TaskListItem | null>(null);
   const [completeTaskId, setCompleteTaskId] = useState<string | null>(null);
   const [showCompleted, setShowCompleted] = useState(false);
+  const [lastMovedTaskId, setLastMovedTaskId] = useState<string | null>(null);
+  const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(null);
+  const [enteringTaskId, setEnteringTaskId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+  const pendingTaskId = pendingAction?.taskId ?? null;
 
   const { openTasks, inProgressTasks, doneTasks } = useMemo(() => {
     return {
@@ -79,16 +84,87 @@ export default function TasksList({
     }
   }, [searchParams, tasks]);
 
+  useEffect(() => {
+    if (!lastMovedTaskId || typeof window === "undefined") {
+      return;
+    }
+
+    let frame = 0;
+    let animationFrameId = 0;
+    const maxFrames = 60;
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const anchorId = getServeCardAnchorId(lastMovedTaskId);
+
+    const applyFocusState = (element: HTMLElement) => {
+      const rect = element.getBoundingClientRect();
+      const isVisible = isTaskCardFullyVisible(rect, window.innerHeight);
+      if (!isVisible) {
+        element.scrollIntoView({
+          behavior: getScrollBehavior(prefersReducedMotion),
+          block: "center"
+        });
+      }
+
+      setEnteringTaskId(lastMovedTaskId);
+      requestAnimationFrame(() => setEnteringTaskId(null));
+      setHighlightedTaskId(lastMovedTaskId);
+      window.setTimeout(() => {
+        setHighlightedTaskId((current) => (current === lastMovedTaskId ? null : current));
+      }, 1800);
+      setLastMovedTaskId(null);
+    };
+
+    const waitForAnchor = () => {
+      const element = document.getElementById(anchorId);
+      if (element) {
+        applyFocusState(element);
+        return;
+      }
+
+      if (frame >= maxFrames) {
+        setLastMovedTaskId(null);
+        return;
+      }
+
+      frame += 1;
+      animationFrameId = window.requestAnimationFrame(waitForAnchor);
+    };
+
+    waitForAnchor();
+
+    return () => {
+      if (animationFrameId) {
+        window.cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [lastMovedTaskId, tasks]);
+
   const refreshList = () => {
     startTransition(() => {
       router.refresh();
     });
   };
 
-  const runTaskAction = async (taskId: string, action: () => Promise<void>) => {
-    setPendingTaskId(taskId);
+  const runTaskAction = async ({
+    taskId,
+    action,
+    type = "other",
+    movedToStatus
+  }: {
+    taskId: string;
+    action: () => Promise<void>;
+    type?: "status" | "other";
+    movedToStatus?: "OPEN" | "IN_PROGRESS" | "DONE";
+  }) => {
+    setPendingAction({ taskId, type });
     try {
       await action();
+      if (movedToStatus) {
+        if (movedToStatus === "DONE") {
+          setShowCompleted(true);
+        }
+        setLastMovedTaskId(taskId);
+      }
     } catch (error) {
       addToast({
         title: "Update failed",
@@ -96,35 +172,35 @@ export default function TasksList({
         status: "error"
       });
     } finally {
-      setPendingTaskId(null);
+      setPendingAction(null);
       refreshList();
     }
   };
 
   const handleAssignToMe = async (taskId: string) => {
-    await runTaskAction(taskId, async () => {
+    await runTaskAction({ taskId, action: async () => {
       await assignTaskToSelf({ taskId });
       addToast({
         title: "Assigned to you",
         description: "You are now the primary volunteer for this task.",
         status: "success"
       });
-    });
+    } });
   };
 
   const handleUnassign = async (taskId: string) => {
-    await runTaskAction(taskId, async () => {
+    await runTaskAction({ taskId, action: async () => {
       await unassignTask({ taskId });
       addToast({
         title: "Unassigned",
         description: "This task is now unassigned.",
         status: "success"
       });
-    });
+    } });
   };
 
   const handleArchive = async (taskId: string) => {
-    await runTaskAction(taskId, async () => {
+    await runTaskAction({ taskId, action: async () => {
       await archiveTask({ taskId });
       addToast({
         title: "Archived",
@@ -132,12 +208,12 @@ export default function TasksList({
         status: "success",
         actionLabel: "Undo",
         onAction: () => {
-          void runTaskAction(taskId, async () => {
+          void runTaskAction({ taskId, action: async () => {
             await unarchiveTask({ taskId });
-          });
+          } });
         }
       });
-    });
+    } });
   };
 
   const handleEdit = (task: TaskListItem) => {
@@ -155,24 +231,29 @@ export default function TasksList({
     }
     const taskId = deleteTaskTarget.id;
     setDeleteTaskTarget(null);
-    await runTaskAction(taskId, async () => {
+    await runTaskAction({ taskId, action: async () => {
       await deleteTask({ taskId });
       addToast({
         title: "Task deleted",
         description: "The task has been removed.",
         status: "success"
       });
-    });
+    } });
   };
 
   const handleStartWork = async (taskId: string) => {
-    await runTaskAction(taskId, async () => {
+    await runTaskAction({
+      taskId,
+      type: "status",
+      movedToStatus: "IN_PROGRESS",
+      action: async () => {
       await markTaskInProgress({ taskId });
       addToast({
         title: "Work started",
         description: "This opportunity is now marked as in progress.",
         status: "success"
       });
+      }
     });
   };
 
@@ -189,43 +270,53 @@ export default function TasksList({
     hoursMode: "estimated" | "manual" | "skip";
     manualHours?: number | null;
   }) => {
-    await runTaskAction(taskId, async () => {
+    await runTaskAction({
+      taskId,
+      type: "status",
+      movedToStatus: "DONE",
+      action: async () => {
       await markTaskDone({ taskId, hoursMode, manualHours });
       addToast({
         title: "Completed",
         description: "This task is now marked as complete.",
         status: "success"
       });
+      }
     });
     setCompleteTaskId(null);
   };
 
   const handleMarkOpen = async (taskId: string) => {
-    await runTaskAction(taskId, async () => {
+    await runTaskAction({
+      taskId,
+      type: "status",
+      movedToStatus: "OPEN",
+      action: async () => {
       await markTaskOpen({ taskId });
+      }
     });
   };
 
   const handleVolunteer = async (taskId: string) => {
-    await runTaskAction(taskId, async () => {
+    await runTaskAction({ taskId, action: async () => {
       await volunteerForTask({ taskId });
       addToast({
         title: "You're in",
         description: "Thanks for volunteering.",
         status: "success"
       });
-    });
+    } });
   };
 
   const handleLeaveVolunteer = async (taskId: string) => {
-    await runTaskAction(taskId, async () => {
+    await runTaskAction({ taskId, action: async () => {
       await leaveTaskVolunteer({ taskId });
       addToast({
         title: "Removed",
         description: "You have left this volunteer list.",
         status: "success"
       });
-    });
+    } });
   };
 
   return (
@@ -255,6 +346,9 @@ export default function TasksList({
                 onDelete={handleDeleteRequest}
                 currentUserId={currentUserId}
                 isBusy={pendingTaskId === task.id}
+                isStatusUpdating={pendingTaskId === task.id && pendingAction?.type === "status"}
+                isHighlighted={highlightedTaskId === task.id}
+                isEntering={enteringTaskId === task.id}
               />
             ))}
           </div>
@@ -287,6 +381,9 @@ export default function TasksList({
                 onDelete={handleDeleteRequest}
                 currentUserId={currentUserId}
                 isBusy={pendingTaskId === task.id}
+                isStatusUpdating={pendingTaskId === task.id && pendingAction?.type === "status"}
+                isHighlighted={highlightedTaskId === task.id}
+                isEntering={enteringTaskId === task.id}
               />
             ))}
           </div>
@@ -321,6 +418,9 @@ export default function TasksList({
                   onDelete={handleDeleteRequest}
                   currentUserId={currentUserId}
                   isBusy={pendingTaskId === task.id}
+                  isStatusUpdating={pendingTaskId === task.id && pendingAction?.type === "status"}
+                  isHighlighted={highlightedTaskId === task.id}
+                  isEntering={enteringTaskId === task.id}
                 />
               ))}
             </div>
