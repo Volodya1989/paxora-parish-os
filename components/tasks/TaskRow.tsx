@@ -111,6 +111,7 @@ export default function TaskRow({
   const approvalTone = task.approvalStatus === "APPROVED" ? "success" : "warning";
   const visibilityLabel = task.visibility === "PUBLIC" ? t("common.public") : t("common.private");
   const isPrivate = task.visibility === "PRIVATE";
+  const showExpandedVisibilityBadge = task.visibility === "PUBLIC";
   const groupBadgeClass = task.group
     ? getTaskGroupBadgeClass(task.group.id || task.group.name)
     : null;
@@ -170,9 +171,10 @@ export default function TaskRow({
               </span>
               <div>
                 <p className="text-sm font-semibold text-ink-900 break-words">{task.title}</p>
-                <p className="text-[11px] uppercase tracking-wide text-ink-400">{task.displayId}</p>
-                {isPrivate || task.group ? (
-                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                  <p className="text-[11px] uppercase tracking-wide text-ink-400">{task.displayId}</p>
+                  {isPrivate || task.group ? (
+                    <>
                     {isPrivate ? (
                       <Badge tone="neutral" className="bg-slate-100 text-slate-700">
                         {t("common.private")}
@@ -187,8 +189,9 @@ export default function TaskRow({
                         {compactGroupLabel}
                       </Badge>
                     ) : null}
-                  </div>
-                ) : null}
+                    </>
+                  ) : null}
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -370,16 +373,11 @@ export default function TaskRow({
                     {approvalLabel}
                   </Badge>
                 ) : null}
-                <Badge
-                  tone="neutral"
-                  className={
-                    task.visibility === "PUBLIC"
-                      ? "bg-sky-50 text-sky-700"
-                      : "bg-slate-100 text-slate-700"
-                  }
-                >
-                  {visibilityLabel}
-                </Badge>
+                {showExpandedVisibilityBadge ? (
+                  <Badge tone="neutral" className="bg-sky-50 text-sky-700">
+                    {visibilityLabel}
+                  </Badge>
+                ) : null}
                 {isVolunteerTask ? (
                   <Badge tone="success" className="bg-emerald-50 text-emerald-700">
                     {volunteerCountLabel} volunteers
@@ -388,11 +386,6 @@ export default function TaskRow({
                 {estimatedHoursLabel ? (
                   <Badge tone="neutral" className="bg-amber-50 text-amber-700">
                     {estimatedHoursLabel}
-                  </Badge>
-                ) : null}
-                {task.group ? (
-                  <Badge tone="neutral" className={groupBadgeClass ?? "bg-indigo-50 text-indigo-700"}>
-                    {task.group.name}
                   </Badge>
                 ) : null}
               </div>
