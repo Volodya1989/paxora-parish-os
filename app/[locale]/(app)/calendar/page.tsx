@@ -96,7 +96,7 @@ export default async function CalendarPage({
 
   return (
     <ParishionerPageLayout
-      pageTitle={t("calendar.title")}
+      pageTitle={t("nav.events")}
       parishName={parish?.name ?? t("serve.myParish")}
       parishLogoUrl={parish?.logoUrl ?? null}
       isLeader={isLeader}

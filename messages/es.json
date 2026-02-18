@@ -281,13 +281,13 @@
   "tasks": {
     "view": {
       "all": "All",
-      "opportunities": "Opportunities",
+      "opportunities": "Ayuda necesaria",
       "myCommitments": "My commitments"
     },
     "filters": {
       "title": "Filters",
       "tip": "Narrow down your serve list by status, group, or search.",
-      "searchOpportunities": "Search opportunities",
+      "searchOpportunities": "Buscar ayuda necesaria",
       "searchServeItems": "Buscar por ID o título",
       "status": "Status",
       "ownership": "Ownership",
@@ -308,8 +308,12 @@
       "aria": "Quick add a task"
     },
     "leaderBoard": {
-      "helper": "¿Necesitas coordinar el flujo del equipo? Abre el tablero del equipo.",
       "cta": "Abrir tablero de equipo"
+    },
+    "myCommitmentsHint": {
+      "short": "Compromisos personales: visibles solo para ti.",
+      "detail": "Usa Mis compromisos para tus tareas privadas de servicio. Para ofrecerte en necesidades parroquiales, cambia a Ayuda necesaria.",
+      "infoLabel": "¿Qué es Mis compromisos?"
     }
   },
   "groups": {

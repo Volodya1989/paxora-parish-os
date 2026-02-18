@@ -67,7 +67,7 @@ export default async function GroupsPage({
 
   return (
     <ParishionerPageLayout
-      pageTitle={t("nav.groups")}
+      pageTitle={t("nav.community")}
       parishName={parish?.name ?? t("groups.myParish")}
       parishLogoUrl={parish?.logoUrl ?? null}
       isLeader={isLeader}

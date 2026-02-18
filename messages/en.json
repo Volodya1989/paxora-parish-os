@@ -328,13 +328,13 @@
   "tasks": {
     "view": {
       "all": "All",
-      "opportunities": "Opportunities",
+      "opportunities": "Help needed",
       "myCommitments": "My commitments"
     },
     "filters": {
       "title": "Filters",
       "tip": "Narrow down your serve list by status, group, or search.",
-      "searchOpportunities": "Search opportunities",
+      "searchOpportunities": "Search help needed",
       "searchServeItems": "Search by ID or title",
       "status": "Status",
       "ownership": "Ownership",
@@ -355,8 +355,12 @@
       "aria": "Quick add a task"
     },
     "leaderBoard": {
-      "helper": "Need to coordinate team flow? Open the leader board.",
       "cta": "Open leader board"
+    },
+    "myCommitmentsHint": {
+      "short": "Personal commitments — visible only to you.",
+      "detail": "Use My commitments for your private service tasks. To volunteer for parish-wide needs, switch to Help needed.",
+      "infoLabel": "What is My commitments?"
     }
   },
   "groups": {

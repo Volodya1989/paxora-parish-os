@@ -19,6 +19,7 @@ import { Drawer } from "@/components/ui/Drawer";
 import Card from "@/components/ui/Card";
 import ListEmptyState from "@/components/app/list-empty-state";
 import QuoteCard from "@/components/app/QuoteCard";
+import DailyQuoteGate from "@/components/app/DailyQuoteGate";
 import { CalendarIcon, ListChecksIcon } from "@/components/icons/ParishIcons";
 import {
   getDateKey,
@@ -304,11 +305,13 @@ export default function CalendarView({
   return (
     <Tabs value={view} onValueChange={(value) => setView(value)}>
       <div className="section-gap">
-        <QuoteCard
-          quote={t("calendar.quote")}
-          source={t("calendar.quoteSource")}
-          tone="primary"
-        />
+        <DailyQuoteGate storageKey="events.quote.daily">
+          <QuoteCard
+            quote={t("calendar.quote")}
+            source={t("calendar.quoteSource")}
+            tone="primary"
+          />
+        </DailyQuoteGate>
         <div className="flex flex-wrap items-center gap-3">
           {surface === "calendar" ? (
             <TabsList aria-label="Time range" className="flex-wrap">

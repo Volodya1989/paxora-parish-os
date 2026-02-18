@@ -23,6 +23,7 @@ import ListEmptyState from "@/components/app/list-empty-state";
 import { useTranslations } from "@/lib/i18n/provider";
 import { useLocale } from "@/lib/i18n/provider";
 import QuoteCard from "@/components/app/QuoteCard";
+import DailyQuoteGate from "@/components/app/DailyQuoteGate";
 import { buildLocalePathname } from "@/lib/i18n/routing";
 import HeaderActionBar from "@/components/shared/HeaderActionBar";
 import PendingRequestsSection from "@/components/shared/PendingRequestsSection";
@@ -379,11 +380,13 @@ export default function GroupsView({
 
   return (
     <div className="section-gap">
-      <QuoteCard
-        quote={t("groups.quote")}
-        source={t("groups.quoteSource")}
-        tone="primary"
-      />
+      <DailyQuoteGate storageKey="groups.quote.daily">
+        <QuoteCard
+          quote={t("groups.quote")}
+          source={t("groups.quoteSource")}
+          tone="primary"
+        />
+      </DailyQuoteGate>
 
       {/* Unified header action bar */}
       <HeaderActionBar

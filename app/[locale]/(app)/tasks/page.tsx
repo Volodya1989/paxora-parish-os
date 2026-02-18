@@ -200,7 +200,7 @@ export default async function TasksPage({
 
   return (
     <ParishionerPageLayout
-      pageTitle={t("serve.myServeTitle")}
+      pageTitle={t("nav.serve")}
       parishName={parish?.name ?? t("serve.myParish")}
       parishLogoUrl={parish?.logoUrl ?? null}
       isLeader={isLeader}
