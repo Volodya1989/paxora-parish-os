@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import ListSkeleton from "@/components/app/list-skeleton";
 import MessageReadIndicator from "@/components/chat/MessageReadIndicator";
@@ -226,6 +226,33 @@ function useSwipeToReply(onReply: () => void, enabled: boolean) {
   };
 }
 
+/** "New messages" separator that fades out after appearing */
+function UnreadSeparator() {
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    // Start fading after 4.5s so the 500ms opacity transition completes at ~5s
+    const timer = window.setTimeout(() => setVisible(false), 4500);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-3 py-2 transition-opacity duration-500 ease-out motion-reduce:transition-none",
+        visible ? "opacity-100" : "opacity-0"
+      )}
+      aria-live="polite"
+    >
+      <div className="h-px flex-1 bg-rose-300" />
+      <span className="shrink-0 rounded-full bg-rose-50 px-3 py-0.5 text-[11px] font-semibold text-rose-500">
+        New messages
+      </span>
+      <div className="h-px flex-1 bg-rose-300" />
+    </div>
+  );
+}
+
 export default function ChatThread({
   messages,
   pinnedMessage,
@@ -365,6 +392,8 @@ export default function ChatThread({
                     onVotePoll={onVotePoll}
                     isUnreadMessage={Boolean(firstUnreadMessageId && unreadRendered)}
                     showUnreadSeparator={showUnreadSeparator}
+                    highlightedMessageId={highlightedMessageId}
+                    readIndicatorSnapshot={readIndicatorSnapshot}
                   />
                 );
               })}
@@ -666,22 +695,16 @@ function MessageRow({
 
   return (
     <div>
-      {/* Unread messages separator */}
-      {showUnreadSeparator ? (
-        <div className="flex items-center gap-3 py-2">
-          <div className="h-px flex-1 bg-rose-300" />
-          <span className="shrink-0 rounded-full bg-rose-50 px-3 py-0.5 text-[11px] font-semibold text-rose-500">
-            New messages
-          </span>
-          <div className="h-px flex-1 bg-rose-300" />
-        </div>
-      ) : null}
+      {/* Unread messages separator with fade-out */}
+      {showUnreadSeparator ? <UnreadSeparator /> : null}
 
       <div
+        data-chat-message-id={message.id}
         className={cn(
           "group relative flex animate-chat-message-in",
           isMine ? "justify-end" : "justify-start",
-          isGrouped ? "mt-1" : "mt-5 first:mt-0"
+          isGrouped ? "mt-1" : "mt-5 first:mt-0",
+          highlightedMessageId === message.id && "rounded-xl ring-2 ring-amber-300/60 ring-offset-2 transition-shadow duration-700"
         )}
       >
         {/* Swipe-to-reply indicator — appears behind the message as user swipes right */}
@@ -789,7 +812,7 @@ function MessageRow({
               <span className="text-xs text-ink-400">
                 {formatTime(new Date(message.createdAt))}
               </span>
-              {readIndicatorAriaLabel ? (
+              {isMine ? (
                 <MessageReadIndicator
                   state={readProgress.state}
                   ariaLabel={readIndicatorAriaLabel}

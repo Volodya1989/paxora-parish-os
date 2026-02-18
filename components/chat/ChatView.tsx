@@ -150,6 +150,7 @@ export default function ChatView({
   const [threadRoot, setThreadRoot] = useState<ChatMessage | null>(null);
   const [threadEditingMessage, setThreadEditingMessage] = useState<ChatMessage | null>(null);
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   const router = useRouter();
   const searchParams = useSearchParams();
   const { addToast } = useToast();
@@ -199,19 +200,30 @@ export default function ChatView({
       if (el) {
         el.scrollTo({
           top: el.scrollHeight,
-          behavior: instant ? "instant" : "smooth"
+          behavior: instant || prefersReducedMotion ? "instant" : "smooth"
         });
       }
     });
-  }, []);
+  }, [prefersReducedMotion]);
 
-  // Instant scroll to bottom on mount and channel change
+  // Scroll to bottom (or first unread) on mount and channel change.
+  // Uses instant scroll during initial paint, then smooth on subsequent navigations.
+  const hasScrolledRef = useRef(false);
   useLayoutEffect(() => {
     const el = scrollContainerRef.current;
-    if (el) {
+    if (!el) return;
+    // On very first mount, instant-scroll to avoid visible jump during hydration.
+    // On subsequent channel changes (e.g. from notification), smooth-scroll.
+    if (!hasScrolledRef.current) {
       el.scrollTop = el.scrollHeight;
+      hasScrolledRef.current = true;
+    } else {
+      el.scrollTo({
+        top: el.scrollHeight,
+        behavior: prefersReducedMotion ? "instant" : "smooth"
+      });
     }
-  }, [channel.id]);
+  }, [channel.id, prefersReducedMotion]);
 
   // Track whether user is near the bottom of the message list
   useEffect(() => {
@@ -629,7 +641,10 @@ export default function ChatView({
     [messages]
   );
 
-  const firstUnreadMessageId = useMemo(() => {
+  // Snapshot the first unread message ID once on mount per channel.
+  // This ensures the "New messages" marker doesn't disappear instantly
+  // when read state updates or polling refreshes occur.
+  const initialFirstUnreadId = useMemo(() => {
     if (!lastReadAt) return null;
     const threshold = new Date(lastReadAt).getTime();
     const unread = channelMessages.find(
@@ -638,7 +653,24 @@ export default function ChatView({
         new Date(message.createdAt).getTime() > threshold
     );
     return unread?.id ?? null;
-  }, [channelMessages, lastReadAt, currentUserId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally snapshot on mount
+  }, [channel.id]);
+
+  const [firstUnreadMessageId, setFirstUnreadMessageId] = useState(initialFirstUnreadId);
+
+  // Reset when channel changes
+  useEffect(() => {
+    setFirstUnreadMessageId(initialFirstUnreadId);
+  }, [initialFirstUnreadId]);
+
+  // After 5 seconds, fade out the marker by clearing the ID
+  useEffect(() => {
+    if (!firstUnreadMessageId) return;
+    const timer = window.setTimeout(() => {
+      setFirstUnreadMessageId(null);
+    }, 5000);
+    return () => window.clearTimeout(timer);
+  }, [firstUnreadMessageId]);
 
 
   const highlightedMessageId = searchParams.get("msg");
@@ -714,7 +746,7 @@ export default function ChatView({
             }}
           />
         </div>
-        <div ref={scrollContainerRef} className="relative z-10 flex-1 overflow-y-auto overscroll-contain py-2 scroll-smooth">
+        <div ref={scrollContainerRef} className="relative z-10 flex-1 overflow-y-auto overscroll-contain py-2 scroll-smooth motion-reduce:scroll-auto">
           {hasOlderMessages ? (
             <div className="mb-2 flex justify-center px-3">
               <Button
