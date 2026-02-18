@@ -236,6 +236,7 @@ export async function getChannelReadIndicatorSnapshot(
   channelId: string,
   viewerUserId: string
 ): Promise<ChannelReadIndicatorSnapshot | null> {
+  void viewerUserId;
   const channel = await prisma.chatChannel.findFirst({
     where: {
       id: channelId,
@@ -278,13 +279,11 @@ export async function getChannelReadIndicatorSnapshot(
     participantIds = channelMembers.map((member) => member.userId);
   }
 
-  const visibleParticipantIds = participantIds.filter((userId) => userId !== viewerUserId);
-
   const readStates = await prisma.chatRoomReadState.findMany({
     where: {
       roomId: channelId,
       userId: {
-        in: visibleParticipantIds
+        in: participantIds
       }
     },
     select: {
@@ -298,7 +297,7 @@ export async function getChannelReadIndicatorSnapshot(
   );
 
   return {
-    participantIds: visibleParticipantIds,
+    participantIds,
     readAtByUserId
   };
 }

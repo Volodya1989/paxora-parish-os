@@ -732,7 +732,6 @@ function MessageRow({
           ref={bubbleRef}
           className={cn(
             "relative w-fit min-w-[60px] max-w-[85%] px-4 py-2.5 select-none",
-            readProgress ? "pb-5 pr-9" : null,
             hasPlayedEmojiEffect && "chat-emoji-bounce-once",
             isMine
               ? "rounded-2xl rounded-br-sm bg-emerald-100 shadow-sm"
@@ -773,10 +772,10 @@ function MessageRow({
             }
           }}
         >
-          {/* Author + time header (first in group only) */}
-          {showAuthorBlock ? (
-            <div className="mb-1 flex items-center gap-2">
-              {!isMine ? (
+          {/* Header row: author on left (first in group), time + read indicator on right */}
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              {!isMine && showAuthorBlock ? (
                 <span
                   className="text-[14px] font-normal"
                   style={{ color: getUserColor(message.author.id) }}
@@ -785,11 +784,19 @@ function MessageRow({
                 </span>
               ) : null}
               <span className="sr-only">{message.author.name}</span>
+            </div>
+            <div className="inline-flex shrink-0 items-center gap-1">
               <span className="text-xs text-ink-400">
                 {formatTime(new Date(message.createdAt))}
               </span>
+              {readIndicatorAriaLabel ? (
+                <MessageReadIndicator
+                  state={readProgress.state}
+                  ariaLabel={readIndicatorAriaLabel}
+                />
+              ) : null}
             </div>
-          ) : null}
+          </div>
 
           {/* Reply preview */}
           {message.parentMessage ? (
@@ -895,15 +902,6 @@ function MessageRow({
             </div>
           ) : null}
 
-
-          {readProgress && readIndicatorAriaLabel ? (
-            <span className="pointer-events-none absolute bottom-1.5 right-2 inline-flex items-center">
-              <MessageReadIndicator
-                state={readProgress.state}
-                ariaLabel={readIndicatorAriaLabel}
-              />
-            </span>
-          ) : null}
         </div>
 
         {/* Context menu — portaled to document.body to escape scroll container stacking context */}
