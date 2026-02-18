@@ -29,6 +29,7 @@ export default async function AppLayout({
   const headerList = await headers();
   const rawPathname = headerList.get("x-pathname") ?? "";
   const pathname = stripLocale(rawPathname);
+
   const isPlatformAdmin = session.user.platformRole === "SUPERADMIN";
   const access = isPlatformAdmin ? null : await getAccessGateState();
 
