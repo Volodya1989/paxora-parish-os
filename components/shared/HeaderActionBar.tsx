@@ -59,7 +59,7 @@ export default function HeaderActionBar({
             onClick={onFilterClick}
             aria-label={t("header.filters")}
             className={cn(
-              "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition",
+              "inline-flex h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-full border px-2.5 text-xs font-semibold transition xs:justify-start xs:px-3",
               filterActive
                 ? "border-primary-200 bg-primary-50 text-primary-700"
                 : "border-mist-200 bg-white text-ink-600 hover:bg-mist-50 hover:border-mist-300"

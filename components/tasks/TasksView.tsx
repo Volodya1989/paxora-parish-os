@@ -277,20 +277,6 @@ export default function TasksView({
         />
       </DailyQuoteGate>
 
-      {canAccessLeaderBoard ? (
-        <div className="rounded-xl border border-sky-100 bg-sky-50/60 px-3 py-2.5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-xs font-medium text-sky-800">{t("tasks.leaderBoard.helper")}</p>
-            <Link
-              href={routes.serveBoard}
-              className="inline-flex min-h-[32px] items-center rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-semibold text-sky-700 transition hover:bg-sky-100"
-            >
-              {t("tasks.leaderBoard.cta")}
-            </Link>
-          </div>
-        </div>
-      ) : null}
-
       {/* Controls: toggle + actions — single compact row */}
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
         {renderViewToggle()}
@@ -298,6 +284,16 @@ export default function TasksView({
         <HeaderActionBar
           onFilterClick={() => setFiltersOpen(true)}
           filterActive={filters.status !== "all" || (!isMyCommitmentsView && filters.ownership !== "all") || Boolean(filters.groupId) || Boolean(filters.query) || Boolean(filters.dateFrom) || Boolean(filters.dateTo)}
+          left={
+            canAccessLeaderBoard ? (
+              <Link
+                href={routes.serveBoard}
+                className="inline-flex h-11 max-w-[170px] shrink-0 items-center rounded-full border border-mist-200 bg-white px-3 text-xs font-semibold text-ink-700 transition hover:bg-mist-50 sm:max-w-none"
+              >
+                <span className="truncate">{t("tasks.leaderBoard.cta")}</span>
+              </Link>
+            ) : null
+          }
           onAddClick={
             showParishionerAddButton
               ? () => (canManageTasks ? setIsCreateOpen(true) : setIsRequestOpen(true))
