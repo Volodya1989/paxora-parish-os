@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
-import { listChannelsForUser, listMessages, getPinnedMessage } from "@/lib/queries/chat";
+import { listChannelsForUser, listMessages, getPinnedMessage, getChannelReadIndicatorSnapshot } from "@/lib/queries/chat";
 
 function serializeMessage(message: Awaited<ReturnType<typeof listMessages>>[number]) {
   return {
@@ -110,10 +110,11 @@ export async function GET(
 
 
   if (targetMessageId) {
-    const [messages, pinned, target] = await Promise.all([
+    const [messages, pinned, target, readIndicatorSnapshot] = await Promise.all([
       listMessages({ channelId, cursor, limit: 50, userId }),
       getPinnedMessage(channelId, userId),
-      prisma.chatMessage.findFirst({ where: { id: targetMessageId, channelId }, select: { id: true } })
+      prisma.chatMessage.findFirst({ where: { id: targetMessageId, channelId }, select: { id: true } }),
+      getChannelReadIndicatorSnapshot(parishId, channelId, userId)
     ]);
 
     if (target && !messages.some((message) => message.id === targetMessageId)) {
@@ -121,25 +122,29 @@ export async function GET(
       return NextResponse.json({
         messages: around.map(serializeMessage),
         pinnedMessage: serializePinned(pinned),
-        lockedAt: channel.lockedAt ? channel.lockedAt.toISOString() : null
+        lockedAt: channel.lockedAt ? channel.lockedAt.toISOString() : null,
+        readIndicatorSnapshot
       });
     }
 
     return NextResponse.json({
       messages: messages.map(serializeMessage),
       pinnedMessage: serializePinned(pinned),
-      lockedAt: channel.lockedAt ? channel.lockedAt.toISOString() : null
+      lockedAt: channel.lockedAt ? channel.lockedAt.toISOString() : null,
+      readIndicatorSnapshot
     });
   }
 
-  const [messages, pinned] = await Promise.all([
+  const [messages, pinned, readIndicatorSnapshot] = await Promise.all([
     listMessages({ channelId, cursor, limit: 50, userId }),
-    getPinnedMessage(channelId, userId)
+    getPinnedMessage(channelId, userId),
+    getChannelReadIndicatorSnapshot(parishId, channelId, userId)
   ]);
 
   return NextResponse.json({
     messages: messages.map(serializeMessage),
     pinnedMessage: serializePinned(pinned),
-    lockedAt: channel.lockedAt ? channel.lockedAt.toISOString() : null
+    lockedAt: channel.lockedAt ? channel.lockedAt.toISOString() : null,
+    readIndicatorSnapshot
   });
 }

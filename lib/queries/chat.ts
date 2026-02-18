@@ -101,6 +101,11 @@ export type ChatChannelMember = {
   isMember: boolean;
 };
 
+export type ChannelReadIndicatorSnapshot = {
+  participantIds: string[];
+  readAtByUserId: Record<string, number>;
+};
+
 type ListMessagesInput = {
   channelId: string;
   cursor?: {
@@ -224,6 +229,77 @@ export async function getLastReadAt(channelId: string, userId: string): Promise<
     select: { lastReadAt: true }
   });
   return state?.lastReadAt ?? null;
+}
+
+export async function getChannelReadIndicatorSnapshot(
+  parishId: string,
+  channelId: string,
+  viewerUserId: string
+): Promise<ChannelReadIndicatorSnapshot | null> {
+  void viewerUserId;
+  const channel = await prisma.chatChannel.findFirst({
+    where: {
+      id: channelId,
+      parishId
+    },
+    select: {
+      id: true,
+      type: true,
+      groupId: true
+    }
+  });
+
+  if (!channel) {
+    return null;
+  }
+
+  let participantIds: string[] = [];
+
+  if (channel.type === "GROUP" && channel.groupId) {
+    const groupMembers = await prisma.groupMembership.findMany({
+      where: {
+        groupId: channel.groupId,
+        status: "ACTIVE"
+      },
+      select: {
+        userId: true
+      }
+    });
+    participantIds = groupMembers.map((member) => member.userId);
+  } else {
+    const channelMembers = await prisma.chatChannelMembership.findMany({
+      where: { channelId },
+      select: { userId: true }
+    });
+
+    if (channelMembers.length === 0) {
+      return null;
+    }
+
+    participantIds = channelMembers.map((member) => member.userId);
+  }
+
+  const readStates = await prisma.chatRoomReadState.findMany({
+    where: {
+      roomId: channelId,
+      userId: {
+        in: participantIds
+      }
+    },
+    select: {
+      userId: true,
+      lastReadAt: true
+    }
+  });
+
+  const readAtByUserId = Object.fromEntries(
+    readStates.map((state) => [state.userId, state.lastReadAt.getTime()])
+  );
+
+  return {
+    participantIds,
+    readAtByUserId
+  };
 }
 
 export async function listUnreadCountsForRooms(roomIds: string[], userId: string) {

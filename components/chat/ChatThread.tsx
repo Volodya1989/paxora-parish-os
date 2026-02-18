@@ -1,14 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import ListSkeleton from "@/components/app/list-skeleton";
+import MessageReadIndicator from "@/components/chat/MessageReadIndicator";
 import ChatPollCard from "@/components/chat/ChatPollCard";
 import PinnedBanner from "@/components/chat/PinnedBanner";
 import type { ChatMessage, ChatPinnedMessage } from "@/components/chat/types";
 import { containsEmoji } from "@/lib/chat/emoji";
 import { REACTION_EMOJIS } from "@/lib/chat/reactions";
 import { getUserColor } from "@/lib/chat/userColor";
+import { getMessageReadProgress } from "@/lib/chat/read-indicator";
 import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 import { cn } from "@/lib/ui/cn";
 import { useTranslations } from "@/lib/i18n/provider";
@@ -224,6 +226,33 @@ function useSwipeToReply(onReply: () => void, enabled: boolean) {
   };
 }
 
+/** "New messages" separator that fades out after appearing */
+function UnreadSeparator() {
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    // Start fading after 4.5s so the 500ms opacity transition completes at ~5s
+    const timer = window.setTimeout(() => setVisible(false), 4500);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-3 py-2 transition-opacity duration-500 ease-out motion-reduce:transition-none",
+        visible ? "opacity-100" : "opacity-0"
+      )}
+      aria-live="polite"
+    >
+      <div className="h-px flex-1 bg-rose-300" />
+      <span className="shrink-0 rounded-full bg-rose-50 px-3 py-0.5 text-[11px] font-semibold text-rose-500">
+        New messages
+      </span>
+      <div className="h-px flex-1 bg-rose-300" />
+    </div>
+  );
+}
+
 export default function ChatThread({
   messages,
   pinnedMessage,
@@ -241,7 +270,8 @@ export default function ChatThread({
   isLoading,
   firstUnreadMessageId,
   highlightedMessageId,
-  messageFontSize
+  messageFontSize,
+  readIndicatorSnapshot
 }: {
   messages: ChatMessage[];
   pinnedMessage: ChatPinnedMessage | null;
@@ -260,6 +290,10 @@ export default function ChatThread({
   firstUnreadMessageId?: string | null;
   highlightedMessageId?: string | null;
   messageFontSize?: number;
+  readIndicatorSnapshot?: {
+    participantIds: string[];
+    readAtByUserId: Record<string, number>;
+  } | null;
 }) {
   const [contextMenuMessageId, setContextMenuMessageId] = useState<string | null>(
     initialReactionMenuMessageId ?? null
@@ -358,6 +392,8 @@ export default function ChatThread({
                     onVotePoll={onVotePoll}
                     isUnreadMessage={Boolean(firstUnreadMessageId && unreadRendered)}
                     showUnreadSeparator={showUnreadSeparator}
+                    highlightedMessageId={highlightedMessageId}
+                    readIndicatorSnapshot={readIndicatorSnapshot}
                   />
                 );
               })}
@@ -427,7 +463,8 @@ function MessageRow({
   onVotePoll,
   showUnreadSeparator,
   isUnreadMessage,
-  highlightedMessageId
+  highlightedMessageId,
+  readIndicatorSnapshot
 }: {
   message: ChatMessage;
   previousMessage: ChatMessage | null;
@@ -448,7 +485,36 @@ function MessageRow({
   showUnreadSeparator: boolean;
   isUnreadMessage: boolean;
   highlightedMessageId?: string | null;
+  readIndicatorSnapshot?: {
+    participantIds: string[];
+    readAtByUserId: Record<string, number>;
+  } | null;
 }) {
+  const recipientReadSnapshotByAuthorId = useMemo(() => {
+    if (!readIndicatorSnapshot) {
+      return new Map<string, { recipientCount: number; sortedRecipientReadAtMs: number[] }>();
+    }
+
+    const participants = readIndicatorSnapshot.participantIds;
+    const readAtByUserId = readIndicatorSnapshot.readAtByUserId;
+    const map = new Map<string, { recipientCount: number; sortedRecipientReadAtMs: number[] }>();
+
+    for (const authorId of participants) {
+      const recipientIds = participants.filter((participantId) => participantId !== authorId);
+      const sortedRecipientReadAtMs = recipientIds
+        .map((recipientId) => readAtByUserId[recipientId])
+        .filter((value): value is number => typeof value === "number")
+        .sort((a, b) => a - b);
+
+      map.set(authorId, {
+        recipientCount: recipientIds.length,
+        sortedRecipientReadAtMs
+      });
+    }
+
+    return map;
+  }, [readIndicatorSnapshot]);
+
   const t = useTranslations();
   const bubbleRef = useRef<HTMLDivElement>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number } | null>(null);
@@ -478,6 +544,25 @@ function MessageRow({
     !isDeleted &&
     containsEmoji(message.body) &&
     (isMine || isUnreadMessage);
+  const readSnapshot = recipientReadSnapshotByAuthorId.get(message.author.id);
+
+  const readProgress = getMessageReadProgress(
+    message.createdAt,
+    readSnapshot?.sortedRecipientReadAtMs ?? [],
+    readSnapshot?.recipientCount ?? 0
+  );
+
+  const readIndicatorAriaLabel =
+    readProgress.recipientCount === 0
+      ? isMine
+        ? "Message sent"
+        : "Message delivered"
+      : readProgress.state === "all_read"
+        ? "Read by everyone"
+        : readProgress.state === "some_read"
+          ? `Read by ${readProgress.readersCount} of ${readProgress.recipientCount}`
+          : "Not read yet";
+
 
   useEffect(() => {
     if (isMine || !shouldTriggerEmojiEffect || prefersReducedMotion) {
@@ -610,22 +695,16 @@ function MessageRow({
 
   return (
     <div>
-      {/* Unread messages separator */}
-      {showUnreadSeparator ? (
-        <div className="flex items-center gap-3 py-2">
-          <div className="h-px flex-1 bg-rose-300" />
-          <span className="shrink-0 rounded-full bg-rose-50 px-3 py-0.5 text-[11px] font-semibold text-rose-500">
-            New messages
-          </span>
-          <div className="h-px flex-1 bg-rose-300" />
-        </div>
-      ) : null}
+      {/* Unread messages separator with fade-out */}
+      {showUnreadSeparator ? <UnreadSeparator /> : null}
 
       <div
+        data-chat-message-id={message.id}
         className={cn(
           "group relative flex animate-chat-message-in",
           isMine ? "justify-end" : "justify-start",
-          isGrouped ? "mt-1" : "mt-5 first:mt-0"
+          isGrouped ? "mt-1" : "mt-5 first:mt-0",
+          highlightedMessageId === message.id && "rounded-xl ring-2 ring-amber-300/60 ring-offset-2 transition-shadow duration-700"
         )}
       >
         {/* Swipe-to-reply indicator — appears behind the message as user swipes right */}
@@ -716,10 +795,10 @@ function MessageRow({
             }
           }}
         >
-          {/* Author + time header (first in group only) */}
-          {showAuthorBlock ? (
-            <div className="mb-1 flex items-center gap-2">
-              {!isMine ? (
+          {/* Header row: author on left (first in group), time + read indicator on right */}
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <div className="min-w-0">
+              {!isMine && showAuthorBlock ? (
                 <span
                   className="text-[14px] font-normal"
                   style={{ color: getUserColor(message.author.id) }}
@@ -728,11 +807,19 @@ function MessageRow({
                 </span>
               ) : null}
               <span className="sr-only">{message.author.name}</span>
+            </div>
+            <div className="inline-flex shrink-0 items-center gap-1">
               <span className="text-xs text-ink-400">
                 {formatTime(new Date(message.createdAt))}
               </span>
+              {isMine ? (
+                <MessageReadIndicator
+                  state={readProgress.state}
+                  ariaLabel={readIndicatorAriaLabel}
+                />
+              ) : null}
             </div>
-          ) : null}
+          </div>
 
           {/* Reply preview */}
           {message.parentMessage ? (
@@ -837,6 +924,7 @@ function MessageRow({
               ))}
             </div>
           ) : null}
+
         </div>
 
         {/* Context menu — portaled to document.body to escape scroll container stacking context */}

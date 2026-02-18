@@ -68,6 +68,32 @@ function parseMessage(message: any): ChatMessage {
   } as ChatMessage;
 }
 
+type ReadIndicatorSnapshot = {
+  participantIds: string[];
+  readAtByUserId: Record<string, number>;
+};
+
+function parseReadIndicatorSnapshot(snapshot: any): ReadIndicatorSnapshot | null {
+  if (!snapshot || !Array.isArray(snapshot.participantIds)) {
+    return null;
+  }
+
+  const readAtByUserId: Record<string, number> =
+    snapshot.readAtByUserId && typeof snapshot.readAtByUserId === "object"
+      ? Object.entries(snapshot.readAtByUserId).reduce<Record<string, number>>((acc, [key, value]) => {
+          if (typeof key === "string" && typeof value === "number") {
+            acc[key] = value;
+          }
+          return acc;
+        }, {})
+      : {};
+
+  return {
+    participantIds: snapshot.participantIds.filter((value: unknown) => typeof value === "string"),
+    readAtByUserId
+  };
+}
+
 function parsePinned(pinned: any): ChatPinnedMessage {
   return {
     ...pinned,
@@ -87,7 +113,8 @@ export default function ChatView({
   parishId,
   mentionableUsers,
   channelMembers,
-  lastReadAt
+  lastReadAt,
+  initialReadIndicatorSnapshot
 }: {
   channels: ChatChannelSummary[];
   channel: ChatChannelSummary;
@@ -100,6 +127,7 @@ export default function ChatView({
   mentionableUsers?: { id: string; name: string; email: string; avatarUrl?: string | null }[];
   channelMembers?: ChatChannelMember[];
   lastReadAt?: Date | null;
+  initialReadIndicatorSnapshot?: ReadIndicatorSnapshot | null;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>(() =>
     sortMessages(initialMessages.map(parseMessage))
@@ -111,6 +139,9 @@ export default function ChatView({
     channel.lockedAt ? new Date(channel.lockedAt) : null
   );
   const [members, setMembers] = useState<ChatChannelMember[]>(channelMembers ?? []);
+  const [readIndicatorSnapshot, setReadIndicatorSnapshot] = useState<ReadIndicatorSnapshot | null>(
+    initialReadIndicatorSnapshot ? parseReadIndicatorSnapshot(initialReadIndicatorSnapshot) : null
+  );
   const [membersOpen, setMembersOpen] = useState(false);
   const [isPollingReady, setIsPollingReady] = useState(false);
   const [hasOlderMessages, setHasOlderMessages] = useState(initialMessages.length >= 50);
@@ -119,6 +150,7 @@ export default function ChatView({
   const [threadRoot, setThreadRoot] = useState<ChatMessage | null>(null);
   const [threadEditingMessage, setThreadEditingMessage] = useState<ChatMessage | null>(null);
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   const router = useRouter();
   const searchParams = useSearchParams();
   const { addToast } = useToast();
@@ -168,19 +200,30 @@ export default function ChatView({
       if (el) {
         el.scrollTo({
           top: el.scrollHeight,
-          behavior: instant ? "instant" : "smooth"
+          behavior: instant || prefersReducedMotion ? "instant" : "smooth"
         });
       }
     });
-  }, []);
+  }, [prefersReducedMotion]);
 
-  // Instant scroll to bottom on mount and channel change
+  // Scroll to bottom (or first unread) on mount and channel change.
+  // Uses instant scroll during initial paint, then smooth on subsequent navigations.
+  const hasScrolledRef = useRef(false);
   useLayoutEffect(() => {
     const el = scrollContainerRef.current;
-    if (el) {
+    if (!el) return;
+    // On very first mount, instant-scroll to avoid visible jump during hydration.
+    // On subsequent channel changes (e.g. from notification), smooth-scroll.
+    if (!hasScrolledRef.current) {
       el.scrollTop = el.scrollHeight;
+      hasScrolledRef.current = true;
+    } else {
+      el.scrollTo({
+        top: el.scrollHeight,
+        behavior: prefersReducedMotion ? "instant" : "smooth"
+      });
     }
-  }, [channel.id]);
+  }, [channel.id, prefersReducedMotion]);
 
   // Track whether user is near the bottom of the message list
   useEffect(() => {
@@ -262,6 +305,7 @@ export default function ChatView({
 
       setPinnedMessageState(data.pinnedMessage ? parsePinned(data.pinnedMessage) : null);
       setLockedAt(data.lockedAt ? new Date(data.lockedAt) : null);
+      setReadIndicatorSnapshot(parseReadIndicatorSnapshot(data.readIndicatorSnapshot));
     } finally {
       setIsPollingReady(true);
     }
@@ -293,7 +337,10 @@ export default function ChatView({
     setThreadRoot(null);
     setThreadEditingMessage(null);
     setHasOlderMessages(initialMessages.length >= 50);
-  }, [channel.id, initialMessages.length]);
+    setReadIndicatorSnapshot(
+      initialReadIndicatorSnapshot ? parseReadIndicatorSnapshot(initialReadIndicatorSnapshot) : null
+    );
+  }, [channel.id, initialMessages.length, initialReadIndicatorSnapshot]);
 
   useEffect(() => {
     if (!threadRoot) {
@@ -594,7 +641,10 @@ export default function ChatView({
     [messages]
   );
 
-  const firstUnreadMessageId = useMemo(() => {
+  // Snapshot the first unread message ID once on mount per channel.
+  // This ensures the "New messages" marker doesn't disappear instantly
+  // when read state updates or polling refreshes occur.
+  const initialFirstUnreadId = useMemo(() => {
     if (!lastReadAt) return null;
     const threshold = new Date(lastReadAt).getTime();
     const unread = channelMessages.find(
@@ -603,7 +653,24 @@ export default function ChatView({
         new Date(message.createdAt).getTime() > threshold
     );
     return unread?.id ?? null;
-  }, [channelMessages, lastReadAt, currentUserId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally snapshot on mount
+  }, [channel.id]);
+
+  const [firstUnreadMessageId, setFirstUnreadMessageId] = useState(initialFirstUnreadId);
+
+  // Reset when channel changes
+  useEffect(() => {
+    setFirstUnreadMessageId(initialFirstUnreadId);
+  }, [initialFirstUnreadId]);
+
+  // After 5 seconds, fade out the marker by clearing the ID
+  useEffect(() => {
+    if (!firstUnreadMessageId) return;
+    const timer = window.setTimeout(() => {
+      setFirstUnreadMessageId(null);
+    }, 5000);
+    return () => window.clearTimeout(timer);
+  }, [firstUnreadMessageId]);
 
 
   const highlightedMessageId = searchParams.get("msg");
@@ -679,7 +746,7 @@ export default function ChatView({
             }}
           />
         </div>
-        <div ref={scrollContainerRef} className="relative z-10 flex-1 overflow-y-auto overscroll-contain py-2 scroll-smooth">
+        <div ref={scrollContainerRef} className="relative z-10 flex-1 overflow-y-auto overscroll-contain py-2 scroll-smooth motion-reduce:scroll-auto">
           {hasOlderMessages ? (
             <div className="mb-2 flex justify-center px-3">
               <Button
@@ -722,6 +789,7 @@ export default function ChatView({
             firstUnreadMessageId={firstUnreadMessageId}
             highlightedMessageId={highlightedMessageId}
             messageFontSize={fontSize}
+            readIndicatorSnapshot={readIndicatorSnapshot}
           />
           <div ref={bottomRef} aria-hidden="true" />
         </div>
@@ -772,6 +840,7 @@ export default function ChatView({
                   isLoading={false}
                   highlightedMessageId={highlightedMessageId}
                   messageFontSize={fontSize}
+                  readIndicatorSnapshot={null}
                 />
                 <Composer
                   disabled={!canPost || Boolean(lockedAt)}
@@ -854,6 +923,7 @@ export default function ChatView({
                 isLoading={false}
                 highlightedMessageId={highlightedMessageId}
                 messageFontSize={fontSize}
+                readIndicatorSnapshot={null}
               />
             </Drawer>
           )}
