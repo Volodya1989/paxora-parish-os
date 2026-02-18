@@ -3,16 +3,18 @@ import assert from "node:assert/strict";
 import { sortThisWeekMemberGroups, type ThisWeekMemberGroupPreview } from "@/lib/queries/this-week";
 
 function group(overrides: Partial<ThisWeekMemberGroupPreview> & { id: string; name: string }): ThisWeekMemberGroupPreview {
+  const { id, name, ...rest } = overrides;
+
   return {
-    id: overrides.id,
-    name: overrides.name,
+    id,
+    name,
     visibility: "PUBLIC",
     description: null,
     unreadCount: 0,
     lastMessage: null,
     lastMessageTime: null,
     lastMessageAuthor: null,
-    ...overrides
+    ...rest
   };
 }
 
