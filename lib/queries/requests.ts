@@ -27,7 +27,8 @@ export type RequestBoardFilters = {
   assigneeId?: string | null;
   visibilityScope?: VisibilityScope | null;
   overdue?: boolean;
-  archived?: boolean;
+  includeArchived?: boolean;
+  search?: string | null;
 };
 
 export async function listMyRequests(parishId: string, userId: string): Promise<RequestListItem[]> {
@@ -36,6 +37,7 @@ export async function listMyRequests(parishId: string, userId: string): Promise<
       where: {
         parishId,
         createdByUserId: userId,
+        deletedAt: null,
         archivedAt: null
       },
       orderBy: { updatedAt: "desc" },
@@ -99,6 +101,19 @@ export async function listRequestsForBoard(
     andFilters.push({ visibilityScope: filters.visibilityScope });
   }
 
+  if (filters.search?.trim()) {
+    const query = filters.search.trim();
+    andFilters.push({
+      OR: [
+        { title: { contains: query, mode: "insensitive" } },
+        { createdBy: { name: { contains: query, mode: "insensitive" } } },
+        { createdBy: { email: { contains: query, mode: "insensitive" } } },
+        { assignedTo: { name: { contains: query, mode: "insensitive" } } },
+        { assignedTo: { email: { contains: query, mode: "insensitive" } } }
+      ]
+    });
+  }
+
   if (filters.overdue) {
     const submittedCutoff = new Date(
       Date.now() - REQUEST_OVERDUE_SUBMITTED_HOURS * 60 * 60 * 1000
@@ -120,7 +135,13 @@ export async function listRequestsForBoard(
     requests = await prisma.request.findMany({
       where: {
         parishId,
-        archivedAt: filters.archived ? { not: null } : null,
+        deletedAt: null,
+        ...(filters.includeArchived
+          ? {}
+          : {
+              archivedAt: null,
+              status: { not: "COMPLETED" }
+            }),
         AND: andFilters.length ? andFilters : undefined
       },
       orderBy: { updatedAt: "desc" },
@@ -177,6 +198,7 @@ export async function getRequestDetail(
     updatedAt: Date;
     details: Prisma.JsonValue | null;
     archivedAt: Date | null;
+    deletedAt: Date | null;
     createdByUserId: string;
     assignedToUserId: string | null;
     createdBy: { id: string; name: string | null; email: string };
@@ -187,7 +209,8 @@ export async function getRequestDetail(
     request = await prisma.request.findFirst({
       where: {
         id: requestId,
-        parishId
+        parishId,
+        deletedAt: null
       },
       select: {
         id: true,
@@ -199,6 +222,7 @@ export async function getRequestDetail(
         updatedAt: true,
         details: true,
         archivedAt: true,
+        deletedAt: true,
         createdByUserId: true,
         assignedToUserId: true,
         createdBy: {

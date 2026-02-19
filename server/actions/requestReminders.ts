@@ -29,6 +29,8 @@ export async function sendRequestOverdueReminders() {
 
   const requests = await prisma.request.findMany({
     where: {
+      archivedAt: null,
+      deletedAt: null,
       AND: [
         {
           OR: [

@@ -16,6 +16,8 @@ import {
 import { z } from "zod";
 import {
   REQUEST_VISIBILITY_LABELS,
+  canAdminArchiveRequest,
+  canParishionerDeleteRequest,
   getDefaultVisibilityForType,
   getRequestStatusLabel,
   getRequestTypeLabel
@@ -563,8 +565,8 @@ export async function sendRequestInfoEmailAction(input: {
   const parishId = session.user.activeParishId;
   await requireAdminOrShepherd(session.user.id, parishId);
 
-  const request = await prisma.request.findUnique({
-    where: { id: parsed.data.requestId },
+  const request = await prisma.request.findFirst({
+    where: { id: parsed.data.requestId, deletedAt: null },
     select: {
       id: true,
       parishId: true,
@@ -672,8 +674,8 @@ export async function scheduleRequest(input: {
   const parishId = session.user.activeParishId;
   await requireAdminOrShepherd(session.user.id, parishId);
 
-  const request = await prisma.request.findUnique({
-    where: { id: parsed.data.requestId },
+  const request = await prisma.request.findFirst({
+    where: { id: parsed.data.requestId, deletedAt: null },
     select: {
       id: true,
       parishId: true,
@@ -903,8 +905,8 @@ export async function cancelRequest(input: {
   const parishId = session.user.activeParishId;
   await requireAdminOrShepherd(session.user.id, parishId);
 
-  const request = await prisma.request.findUnique({
-    where: { id: parsed.data.requestId },
+  const request = await prisma.request.findFirst({
+    where: { id: parsed.data.requestId, deletedAt: null },
     select: {
       id: true,
       parishId: true,
@@ -1055,8 +1057,8 @@ export async function respondToScheduledRequest(input: {
 
   const parishId = session.user.activeParishId;
 
-  const request = await prisma.request.findUnique({
-    where: { id: parsed.data.requestId },
+  const request = await prisma.request.findFirst({
+    where: { id: parsed.data.requestId, deletedAt: null },
     select: {
       id: true,
       parishId: true,
@@ -1219,8 +1221,8 @@ export async function cancelOwnRequest(input: {
 
   const parishId = session.user.activeParishId;
 
-  const request = await prisma.request.findUnique({
-    where: { id: parsed.data.requestId },
+  const request = await prisma.request.findFirst({
+    where: { id: parsed.data.requestId, deletedAt: null },
     select: {
       id: true,
       parishId: true,
@@ -1342,4 +1344,111 @@ export async function cancelOwnRequest(input: {
   }
 
   return { status: "success", message: "Request canceled." };
+}
+
+
+export async function archiveRequest(input: {
+  requestId: string;
+}): Promise<RequestActionResult> {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id || !session.user.activeParishId) {
+    return { status: "error", message: "Please sign in to perform this action." };
+  }
+
+  const parsed = requestEmailSchema.safeParse(input);
+  if (!parsed.success) {
+    return { status: "error", message: parsed.error.errors[0]?.message ?? "Invalid request." };
+  }
+
+  const parishId = session.user.activeParishId;
+  await requireAdminOrShepherd(session.user.id, parishId);
+
+  const request = await prisma.request.findFirst({
+    where: {
+      id: parsed.data.requestId,
+      parishId,
+      deletedAt: null
+    },
+    select: {
+      id: true,
+      status: true,
+      archivedAt: true
+    }
+  });
+
+  if (!request) {
+    return { status: "error", message: "Request not found." };
+  }
+
+  if (request.archivedAt) {
+    return { status: "success", message: "Request already archived." };
+  }
+
+  if (!canAdminArchiveRequest(request.status)) {
+    return {
+      status: "error",
+      message: "This request must be canceled or completed before it can be archived."
+    };
+  }
+
+  await prisma.request.update({
+    where: { id: request.id },
+    data: {
+      archivedAt: new Date(),
+      archivedReason: "MANUAL_ADMIN"
+    }
+  });
+
+  revalidatePath("/admin/requests");
+  revalidatePath("/requests");
+
+  return { status: "success", message: "Request archived." };
+}
+
+export async function deleteOwnRequest(input: {
+  requestId: string;
+}): Promise<RequestActionResult> {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id || !session.user.activeParishId) {
+    return { status: "error", message: "Please sign in to perform this action." };
+  }
+
+  const parsed = requestEmailSchema.safeParse(input);
+  if (!parsed.success) {
+    return { status: "error", message: parsed.error.errors[0]?.message ?? "Invalid request." };
+  }
+
+  const parishId = session.user.activeParishId;
+
+  const request = await prisma.request.findFirst({
+    where: {
+      id: parsed.data.requestId,
+      parishId,
+      createdByUserId: session.user.id,
+      deletedAt: null
+    },
+    select: { id: true, status: true }
+  });
+
+  if (!request) {
+    return { status: "error", message: "Request not found." };
+  }
+
+  if (!canParishionerDeleteRequest(request.status)) {
+    return { status: "error", message: "To delete this request, cancel it first." };
+  }
+
+  await prisma.request.update({
+    where: { id: request.id },
+    data: {
+      deletedAt: new Date()
+    }
+  });
+
+  revalidatePath("/requests");
+  revalidatePath("/admin/requests");
+
+  return { status: "success", message: "Request deleted." };
 }

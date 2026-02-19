@@ -22,9 +22,11 @@ import {
   REQUEST_VISIBILITY_HELP,
   getRequestStatusLabel,
   getRequestTypeLabel,
+  canAdminArchiveRequest,
   isRequestOverdue
 } from "@/lib/requests/utils";
 import {
+  archiveRequest,
   assignRequest,
   cancelRequest,
   scheduleRequest,
@@ -62,8 +64,8 @@ const filterVisibility = [
 ];
 
 const filterArchived = [
-  { value: "", label: "Active requests" },
-  { value: "true", label: "Archived requests" }
+  { value: "", label: "Hide archived" },
+  { value: "true", label: "Include archived" }
 ];
 
 export type RequestsBoardProps = {
@@ -110,7 +112,10 @@ export default function RequestsBoard({ requests, assignees }: RequestsBoardProp
   }, [requests]);
 
   const mobileLimit = 5;
-  const collapsedStatuses = new Set<RequestStatus>(["COMPLETED", "CANCELED"]);
+  const includeArchived = searchParams?.get("includeArchived") === "true";
+  const collapsedStatuses = includeArchived
+    ? new Set<RequestStatus>()
+    : new Set<RequestStatus>(["COMPLETED", "CANCELED"]);
 
   const toggleStatusExpansion = (status: RequestStatus) => {
     setExpandedStatuses((current) => ({
@@ -151,6 +156,24 @@ export default function RequestsBoard({ requests, assignees }: RequestsBoardProp
       params.set("overdue", "true");
     }
     router.replace(`?${params.toString()}`, { scroll: false });
+  };
+
+  const handleArchive = () => {
+    if (!selectedRequest || isUpdating) return;
+    setStatusMessage(null);
+    startTransition(async () => {
+      const result = await archiveRequest({ requestId: selectedRequest.id });
+      if (result.status === "error") {
+        const message = result.message ?? "Unable to archive request.";
+        setStatusMessage(message);
+        addToast({ title: message, status: "error" });
+        return;
+      }
+      const message = result.message ?? "Request archived.";
+      addToast({ title: message, status: "success" });
+      router.refresh();
+      closeRequest();
+    });
   };
 
   const handleStatusChange = (status: RequestStatus) => {
@@ -305,7 +328,12 @@ export default function RequestsBoard({ requests, assignees }: RequestsBoardProp
   const detailOpen = Boolean(selectedRequest) && !emailDialog;
 
   const filterControls = (
-    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+      <Input
+        value={searchParams?.get("search") ?? ""}
+        onChange={(event) => updateFilter("search", event.target.value)}
+        placeholder="Search requests"
+      />
       <SelectMenu
         value={searchParams?.get("type") ?? ""}
         onValueChange={(value) => updateFilter("type", value)}
@@ -335,8 +363,8 @@ export default function RequestsBoard({ requests, assignees }: RequestsBoardProp
         Overdue
       </Button>
       <SelectMenu
-        value={searchParams?.get("archived") ?? ""}
-        onValueChange={(value) => updateFilter("archived", value)}
+        value={searchParams?.get("includeArchived") ?? ""}
+        onValueChange={(value) => updateFilter("includeArchived", value)}
         options={filterArchived}
       />
     </div>
@@ -604,6 +632,21 @@ export default function RequestsBoard({ requests, assignees }: RequestsBoardProp
                   Cannot schedule
                 </Button>
               </div>
+            </div>
+
+            <div className="space-y-2 rounded-card border border-mist-200 bg-mist-50 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-ink-400">Archive</p>
+              {selectedRequest.archivedAt ? (
+                <p className="text-sm text-ink-600">This request is already archived.</p>
+              ) : canAdminArchiveRequest(selectedRequest.status) ? (
+                <Button type="button" size="sm" variant="secondary" onClick={handleArchive} isLoading={isUpdating}>
+                  Archive request
+                </Button>
+              ) : (
+                <p className="text-sm text-ink-600">
+                  This request must be canceled or completed before it can be archived.
+                </p>
+              )}
             </div>
 
             {historyItems.length ? (

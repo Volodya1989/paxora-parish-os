@@ -4,8 +4,8 @@ import { prisma } from "@/server/db/prisma";
 import { getNow } from "@/lib/time/getNow";
 
 /**
- * Schedule this route with a cron job to run Sundays at 00:00 (server time).
- * Archives completed/canceled requests so they no longer appear in default views.
+ * Vercel cron should hit this route every Monday at 01:00 UTC.
+ * (If local parish timezone scheduling is needed later, convert before calling.)
  */
 export async function GET(request: Request) {
   const unauthorized = requireCronSecret(request);
@@ -16,7 +16,8 @@ export async function GET(request: Request) {
   const result = await prisma.request.updateMany({
     where: {
       archivedAt: null,
-      status: { in: ["COMPLETED", "CANCELED"] }
+      deletedAt: null,
+      status: "COMPLETED"
     },
     data: {
       archivedAt: now,
@@ -24,5 +25,10 @@ export async function GET(request: Request) {
     }
   });
 
-  return NextResponse.json({ archived: result.count });
+  console.info("[cron][archive-completed-requests] archived", {
+    archived: result.count,
+    ranAt: now.toISOString()
+  });
+
+  return NextResponse.json({ archived: result.count, ranAt: now.toISOString() });
 }
