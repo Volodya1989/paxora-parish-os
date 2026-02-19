@@ -1,5 +1,4 @@
 import { getServerSession } from "next-auth";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { authOptions } from "@/server/auth/options";
 import { getRequestDetail } from "@/lib/queries/requests";
@@ -50,14 +49,6 @@ export default async function RequestDetailPage({
       parishLogoUrl={parish?.logoUrl ?? null}
       subtitle={t("requests.detail.subtitle")}
       backHref="/requests"
-      actions={
-        <Link
-          href="/requests"
-          className="inline-flex items-center justify-center gap-2 rounded-button border border-white/40 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-white/20 focus-ring"
-        >
-          {t("requests.detail.backToList")}
-        </Link>
-      }
     >
       <Card className="space-y-4">
         <div className="space-y-1">
@@ -80,6 +71,7 @@ export default async function RequestDetailPage({
           scheduledStart={details?.schedule?.startsAt ?? null}
           scheduledEnd={details?.schedule?.endsAt ?? null}
           scheduleResponseStatus={details?.scheduleResponse?.status ?? null}
+          canDeleteOwn={request.createdBy.id === session.user.id}
         />
 
         {details ? (

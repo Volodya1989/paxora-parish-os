@@ -4,7 +4,9 @@ import { canViewRequest } from "@/lib/requests/access";
 import {
   isRequestOverdue,
   REQUEST_OVERDUE_STALE_DAYS,
-  REQUEST_OVERDUE_SUBMITTED_HOURS
+  REQUEST_OVERDUE_SUBMITTED_HOURS,
+  canAdminArchiveRequest,
+  canParishionerDeleteRequest
 } from "@/lib/requests/utils";
 
 test("request visibility respects roles and scopes", () => {
@@ -72,4 +74,15 @@ test("overdue logic flags stale requests", () => {
   assert.equal(isRequestOverdue("ACKNOWLEDGED", submittedOld, staleUpdated, now), true);
   assert.equal(isRequestOverdue("SCHEDULED", submittedOld, freshUpdated, now), false);
   assert.equal(isRequestOverdue("COMPLETED", submittedOld, staleUpdated, now), false);
+});
+
+
+test("delete/archive status gating follows lifecycle rules", () => {
+  assert.equal(canParishionerDeleteRequest("COMPLETED"), true);
+  assert.equal(canParishionerDeleteRequest("CANCELED"), true);
+  assert.equal(canParishionerDeleteRequest("SUBMITTED"), false);
+
+  assert.equal(canAdminArchiveRequest("COMPLETED"), true);
+  assert.equal(canAdminArchiveRequest("CANCELED"), true);
+  assert.equal(canAdminArchiveRequest("ACKNOWLEDGED"), false);
 });

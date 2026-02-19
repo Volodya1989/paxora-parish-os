@@ -81,9 +81,9 @@ export default function PageHeader({
       <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-white/10" />
       <div className="absolute -bottom-2 left-1/4 h-12 w-12 rounded-full bg-white/5" />
 
-      {/* Top bar with breadcrumb and actions */}
+      {/* Top bar with parish identity + actions */}
       <div className="relative mb-2 flex items-start justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-3 text-sm font-semibold text-white">
+        <div className="flex min-w-0 flex-1 items-center gap-3 text-sm font-semibold text-white">
           {backHref ? (
             <button
               type="button"
@@ -111,10 +111,12 @@ export default function PageHeader({
               src={logoSrc}
               alt={`${parishName} logo`}
               className="h-10 w-10 shrink-0 rounded-md object-contain md:h-12 md:w-12"
-              onError={(e) => { e.currentTarget.src = "/icon.png"; }}
+              onError={(e) => {
+                e.currentTarget.src = "/icon.png";
+              }}
             />
           </Link>
-          <span className="min-w-0 break-words text-xs leading-tight sm:text-sm">{parishName}</span>
+          <span className="min-w-0 max-w-[52vw] text-xs leading-tight sm:max-w-[60vw] sm:text-sm">{parishName}</span>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           {actions}

@@ -38,7 +38,8 @@ export default async function AdminRequestsPage({
     ? (scopeParam as "CLERGY_ONLY" | "ADMIN_ALL" | "ADMIN_SPECIFIC")
     : null;
   const overdue = query.overdue === "true";
-  const archived = query.archived === "true";
+  const includeArchived = query.includeArchived === "true";
+  const search = typeof query.search === "string" ? query.search : null;
 
   const [requests, people, parish] = await Promise.all([
     listRequestsForBoard(session.user.activeParishId, session.user.id, {
@@ -46,7 +47,8 @@ export default async function AdminRequestsPage({
       assigneeId,
       visibilityScope,
       overdue,
-      archived
+      includeArchived,
+      search
     }),
     getPeopleList(session.user.activeParishId),
     prisma.parish.findUnique({
