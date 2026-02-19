@@ -6,6 +6,13 @@ import { stripLocale } from "@/lib/i18n/routing";
 
 const publicPaths = new Set([
   "/",
+  "/features",
+  "/pricing",
+  "/about",
+  "/demo",
+  "/contact",
+  "/privacy",
+  "/terms",
   "/sign-in",
   "/sign-up",
   "/post-login",
