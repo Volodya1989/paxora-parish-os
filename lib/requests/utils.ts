@@ -99,3 +99,11 @@ export function isRequestOverdue(
 
   return false;
 }
+
+export function canParishionerDeleteRequest(status: RequestStatus): boolean {
+  return status === "COMPLETED" || status === "CANCELED";
+}
+
+export function canAdminArchiveRequest(status: RequestStatus): boolean {
+  return status === "COMPLETED" || status === "CANCELED";
+}

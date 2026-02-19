@@ -506,6 +506,7 @@ model Request {
   title            String
   details          Json?
   lastReminderAt   DateTime?
+  deletedAt        DateTime?
   archivedAt       DateTime?
   archivedReason   String?
   createdAt        DateTime        @default(now())
@@ -516,6 +517,7 @@ model Request {
   assignedTo User?  @relation("RequestAssignedTo", fields: [assignedToUserId], references: [id])
 
   @@index([parishId, status])
+  @@index([parishId, deletedAt, archivedAt, status])
   @@index([parishId, createdByUserId])
   @@index([parishId, assignedToUserId])
 }

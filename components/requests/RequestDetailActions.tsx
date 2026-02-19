@@ -4,12 +4,15 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { RequestStatus } from "@prisma/client";
 import Button from "@/components/ui/Button";
+import Modal from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import {
   cancelOwnRequest,
+  deleteOwnRequest,
   respondToScheduledRequest
 } from "@/server/actions/requests";
 import { useTranslations } from "@/lib/i18n/provider";
+import { canParishionerDeleteRequest } from "@/lib/requests/utils";
 
 type RequestDetailActionsProps = {
   requestId: string;
@@ -17,6 +20,7 @@ type RequestDetailActionsProps = {
   scheduledStart?: string | null;
   scheduledEnd?: string | null;
   scheduleResponseStatus?: "ACCEPTED" | "REJECTED" | null;
+  canDeleteOwn?: boolean;
 };
 
 export default function RequestDetailActions({
@@ -24,7 +28,8 @@ export default function RequestDetailActions({
   status,
   scheduledStart,
   scheduledEnd,
-  scheduleResponseStatus
+  scheduleResponseStatus,
+  canDeleteOwn = false
 }: RequestDetailActionsProps) {
   const t = useTranslations();
   const router = useRouter();
@@ -33,6 +38,7 @@ export default function RequestDetailActions({
   const [responseState, setResponseState] = useState<"ACCEPTED" | "REJECTED" | null>(
     scheduleResponseStatus ?? null
   );
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   useEffect(() => {
     setResponseState(scheduleResponseStatus ?? null);
@@ -65,7 +71,23 @@ export default function RequestDetailActions({
     });
   };
 
+  const handleDelete = () => {
+    if (isPending) return;
+    startTransition(async () => {
+      const result = await deleteOwnRequest({ requestId });
+      if (result.status === "success") {
+        setConfirmDeleteOpen(false);
+        addToast({ title: result.message ?? "Request deleted.", status: "success" });
+        router.push("/requests");
+        router.refresh();
+        return;
+      }
+      addToast({ title: result.message ?? "Unable to delete request.", status: "error" });
+    });
+  };
+
   const canCancel = status !== "COMPLETED" && status !== "CANCELED";
+  const canDelete = canDeleteOwn && canParishionerDeleteRequest(status);
 
   const hasSchedule = status === "SCHEDULED" && Boolean(scheduledStart);
   const responseMessage =
@@ -133,6 +155,41 @@ export default function RequestDetailActions({
           {t("requests.detail.cancelRequest")}
         </Button>
       ) : null}
+
+      {canDeleteOwn ? canDelete ? (
+        <Button
+          type="button"
+          variant="ghost"
+          className="text-rose-700 hover:text-rose-800"
+          onClick={() => setConfirmDeleteOpen(true)}
+          isLoading={isPending}
+          disabled={isPending}
+        >
+          Delete request
+        </Button>
+      ) : (
+        <p className="text-sm text-ink-500">To delete this request, cancel it first.</p>
+      ) : null}
+
+      <Modal
+        open={confirmDeleteOpen}
+        onClose={() => setConfirmDeleteOpen(false)}
+        title="Delete request"
+        footer={
+          <div className="flex items-center justify-end gap-2">
+            <Button type="button" variant="secondary" onClick={() => setConfirmDeleteOpen(false)}>
+              Keep request
+            </Button>
+            <Button type="button" variant="danger" onClick={handleDelete} isLoading={isPending}>
+              Delete
+            </Button>
+          </div>
+        }
+      >
+        <p className="text-sm text-ink-600">
+          Are you sure you want to delete this request? This hides it from your request history.
+        </p>
+      </Modal>
     </div>
   );
 }

@@ -81,8 +81,18 @@ export default function PageHeader({
       <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-white/10" />
       <div className="absolute -bottom-2 left-1/4 h-12 w-12 rounded-full bg-white/5" />
 
-      {/* Top bar with breadcrumb and actions */}
-      <div className="relative mb-2 flex items-start justify-between gap-3">
+      {/* Top bar with actions and parish identity. Keep identity on its own row on mobile to avoid text compression. */}
+      <div className="relative mb-3 space-y-2">
+        <div className="flex justify-end">
+          <div className="flex shrink-0 items-center gap-1.5">
+            {actions}
+            <GivingShortcutButton className="h-8 w-8 border-0 bg-white/20 text-white backdrop-blur-sm hover:bg-white/30" />
+            {count > 0 && (
+              <NotificationCenter bellClassName="h-8 w-8 border-0 bg-white/20 text-white backdrop-blur-sm hover:bg-white/30 md:hidden" />
+            )}
+            <LanguageIconToggle />
+          </div>
+        </div>
         <div className="flex min-w-0 items-center gap-3 text-sm font-semibold text-white">
           {backHref ? (
             <button
@@ -111,18 +121,12 @@ export default function PageHeader({
               src={logoSrc}
               alt={`${parishName} logo`}
               className="h-10 w-10 shrink-0 rounded-md object-contain md:h-12 md:w-12"
-              onError={(e) => { e.currentTarget.src = "/icon.png"; }}
+              onError={(e) => {
+                e.currentTarget.src = "/icon.png";
+              }}
             />
           </Link>
-          <span className="min-w-0 break-words text-xs leading-tight sm:text-sm">{parishName}</span>
-        </div>
-        <div className="flex shrink-0 items-center gap-1.5">
-          {actions}
-          <GivingShortcutButton className="h-8 w-8 border-0 bg-white/20 text-white backdrop-blur-sm hover:bg-white/30" />
-          {count > 0 && (
-            <NotificationCenter bellClassName="h-8 w-8 border-0 bg-white/20 text-white backdrop-blur-sm hover:bg-white/30 md:hidden" />
-          )}
-          <LanguageIconToggle />
+          <span className="min-w-0 text-xs leading-tight sm:text-sm">{parishName}</span>
         </div>
       </div>
 
