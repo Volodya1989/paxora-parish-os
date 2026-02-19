@@ -415,14 +415,14 @@
       "noArchivedDesc": "Архівних груп немає — усі групи активні та відкриті."
     },
     "membersPage": {
-      "headerTitle": "Учасники групи",
+      "headerTitle": "Керування учасниками",
+      "adminHint": "Переглядайте учасників, керуйте ролями та схвалюйте запити.",
       "adminDescription": "Координуйте служіння з ясністю та турботою.",
       "parishionerDescription": "Подивіться, хто в цій групі.",
       "addMember": "Додати учасника",
       "joinInstantly": "Долучитися одразу",
       "requestApproval": "Запит на схвалення",
       "requestSent": "Запит надіслано",
-      "opportunitiesToHelp": "Можливості допомогти",
       "invitedTitle": "Вас запрошено",
       "invitedDescription": "Прийміть запрошення, щоб долучитися до цієї групи служіння, або відхиліть, якщо це не ваш формат.",
       "acceptInvite": "Прийняти запрошення",
@@ -431,7 +431,20 @@
       "searchMembers": "Пошук учасників",
       "membersTab": "Учасники ({count})",
       "pendingTab": "Очікують ({count})",
-      "emptyMembers": "Додайте парафіян, щоб сформувати спокійну та злагоджену команду."
+      "emptyMembers": "Додайте парафіян, щоб сформувати спокійну та злагоджену команду.",
+      "emptyPending": "Немає запрошень або запитів у черзі.",
+      "memberActionsAria": "Дії для {name}",
+      "makeParishioner": "Зробити парафіянином",
+      "makeCoordinator": "Зробити координатором",
+      "removeFromGroup": "Видалити з групи",
+      "requestedToJoin": "Подано запит на вступ",
+      "sentByCoordinator": "Надіслано координатором",
+      "sentBy": "Надіслано: {name}",
+      "requested": "Запит",
+      "invited": "Запрошено",
+      "approve": "Схвалити",
+      "deny": "Відхилити",
+      "cancelInvite": "Скасувати запрошення"
     }
   },
   "chat": {

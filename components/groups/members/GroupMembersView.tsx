@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
@@ -15,7 +14,7 @@ import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 import MemberRow from "@/components/groups/members/MemberRow";
 import InviteDrawer from "@/components/groups/members/InviteDrawer";
 import PendingInvites from "@/components/groups/members/PendingInvites";
-import { useLocale, useTranslations } from "@/lib/i18n/provider";
+import { useTranslations } from "@/lib/i18n/provider";
 import {
   acceptInvite,
   approveJoinRequest,
@@ -34,7 +33,6 @@ import type {
 } from "@/lib/queries/members";
 import type { GroupInviteCandidate } from "@/lib/queries/groups";
 import type { MemberActionState } from "@/lib/types/members";
-import { buildLocalePathname } from "@/lib/i18n/routing";
 
 const handleResult = (
   result: MemberActionState,
@@ -79,7 +77,6 @@ export default function GroupMembersView({
   viewer,
 }: GroupMembersViewProps) {
   const t = useTranslations();
-  const locale = useLocale();
   const { addToast } = useToast();
   const router = useRouter();
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -269,15 +266,6 @@ export default function GroupMembersView({
                   : t("groups.inviteOnly")}
             </Badge>
           </div>
-          <Link
-            className="inline-flex items-center rounded-full border border-mist-200 bg-white px-3 py-2 text-sm font-medium text-ink-700 shadow-card transition hover:bg-mist-50"
-            href={buildLocalePathname(
-              locale,
-              `/tasks?view=opportunities&group=${group.id}`,
-            )}
-          >
-            {t("groups.membersPage.opportunitiesToHelp")}
-          </Link>
         </div>
         <p className="text-sm text-ink-600">
           {canManage

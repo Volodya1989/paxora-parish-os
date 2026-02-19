@@ -84,7 +84,7 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
           userId: actorUserId
         }
       },
-      select: { status: true }
+      select: { status: true, role: true }
     })
   ]);
 
@@ -104,7 +104,9 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
   }
 
   const canAccessChat = viewerStatus === "ACTIVE";
-  const canViewMembers = viewerStatus === "ACTIVE" || viewerStatus === "INVITED" || viewerStatus === "REQUESTED" || isLeader;
+  const canManageMembers =
+    Boolean(isLeader) ||
+    (groupMembership?.status === "ACTIVE" && groupMembership.role === "COORDINATOR");
 
   const tasks = await prisma.task.findMany({
     where: {
@@ -151,7 +153,7 @@ export default async function GroupDetailPage({ params }: GroupDetailPageProps) 
               Group chat
             </Link>
           ) : null}
-          {canViewMembers ? (
+          {canManageMembers ? (
             <Link
               className="text-sm font-medium text-ink-900 underline"
               href={`/groups/${group.id}/members`}

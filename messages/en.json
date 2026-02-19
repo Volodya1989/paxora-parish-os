@@ -415,14 +415,14 @@
       "noArchivedDesc": "No archived groups — all groups are active and welcoming."
     },
     "membersPage": {
-      "headerTitle": "Group Members",
+      "headerTitle": "Manage Members",
+      "adminHint": "Review members, manage roles, and approve requests.",
       "adminDescription": "Coordinate ministries with clarity and care.",
       "parishionerDescription": "See who’s in this group.",
       "addMember": "Add member",
       "joinInstantly": "Join instantly",
       "requestApproval": "Request approval",
       "requestSent": "Request sent",
-      "opportunitiesToHelp": "Opportunities to help",
       "invitedTitle": "You’re invited",
       "invitedDescription": "Accept to join this ministry group, or decline if it’s not the right fit.",
       "acceptInvite": "Accept invite",
@@ -431,7 +431,20 @@
       "searchMembers": "Search members",
       "membersTab": "Members ({count})",
       "pendingTab": "Pending ({count})",
-      "emptyMembers": "Add parishioners to build a calm, coordinated team."
+      "emptyMembers": "Add parishioners to build a calm, coordinated team.",
+      "emptyPending": "No pending invitations or requests.",
+      "memberActionsAria": "Actions for {name}",
+      "makeParishioner": "Make parishioner",
+      "makeCoordinator": "Make coordinator",
+      "removeFromGroup": "Remove from group",
+      "requestedToJoin": "Requested to join",
+      "sentByCoordinator": "Sent by a coordinator",
+      "sentBy": "Sent by {name}",
+      "requested": "Requested",
+      "invited": "Invited",
+      "approve": "Approve",
+      "deny": "Deny",
+      "cancelInvite": "Cancel invite"
     }
   },
   "chat": {

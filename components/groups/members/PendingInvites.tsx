@@ -1,16 +1,25 @@
+"use client";
+
 import Button from "@/components/ui/Button";
 import RoleChip from "@/components/groups/members/RoleChip";
 import Badge from "@/components/ui/Badge";
+import { useLocale, useTranslations } from "@/lib/i18n/provider";
 import type { PendingInviteRecord } from "@/lib/queries/members";
 
-const formatInvitedBy = (invite: PendingInviteRecord) => {
+const formatInvitedBy = (
+  invite: PendingInviteRecord,
+  t: ReturnType<typeof useTranslations>,
+) => {
   if (invite.status === "REQUESTED") {
-    return "Requested to join";
+    return t("groups.membersPage.requestedToJoin");
   }
   if (!invite.invitedBy) {
-    return "Sent by a coordinator";
+    return t("groups.membersPage.sentByCoordinator");
   }
-  return `Sent by ${invite.invitedBy.name ?? invite.invitedBy.email}`;
+  return t("groups.membersPage.sentBy").replace(
+    "{name}",
+    invite.invitedBy.name ?? invite.invitedBy.email,
+  );
 };
 
 type PendingInvitesProps = {
@@ -28,44 +37,63 @@ export default function PendingInvites({
   onApprove,
   onDeny,
   onRemove,
-  isBusy
+  isBusy,
 }: PendingInvitesProps) {
+  const t = useTranslations();
+  const locale = useLocale();
+
   if (invites.length === 0) {
-    return <p className="text-sm text-ink-500">No pending invitations or requests.</p>;
+    return (
+      <p className="text-sm text-ink-500">{t("groups.membersPage.emptyPending")}</p>
+    );
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {invites.map((invite) => {
         const busy = isBusy ? isBusy(invite.userId) : false;
+        const statusLabel =
+          invite.status === "REQUESTED"
+            ? t("groups.membersPage.requested")
+            : t("groups.membersPage.invited");
         return (
           <div
             key={invite.id}
-            className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-mist-200 bg-white px-4 py-3"
+            className="rounded-card border border-mist-200 bg-white px-4 py-3"
           >
-            <div>
-              <p className="text-sm font-semibold text-ink-900">
-                {invite.name ?? invite.email}
-              </p>
-              <p className="text-xs text-ink-500">{invite.email}</p>
-              <p className="text-xs text-ink-500">{formatInvitedBy(invite)}</p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-ink-400">
-              <RoleChip role={invite.role} />
-              <Badge tone={invite.status === "REQUESTED" ? "warning" : "neutral"}>
-                {invite.status === "REQUESTED" ? "Requested" : "Invited"}
-              </Badge>
-              <span>
-                {invite.status === "REQUESTED" ? "Requested" : "Invited"}{" "}
-                {invite.createdAt.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-              </span>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-ink-900">
+                  {invite.name ?? invite.email}
+                </p>
+                <p className="break-all text-xs text-ink-500">{invite.email}</p>
+                <p className="text-xs text-ink-500">{formatInvitedBy(invite, t)}</p>
+              </div>
+              <div className="flex shrink-0 flex-col items-end gap-1 text-xs text-ink-400">
+                <RoleChip role={invite.role} />
+                <Badge tone={invite.status === "REQUESTED" ? "warning" : "neutral"}>
+                  {statusLabel}
+                </Badge>
+                <span>
+                  {statusLabel}{" "}
+                  {invite.createdAt.toLocaleDateString(locale, {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </span>
+              </div>
             </div>
             {canManage ? (
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="mt-3 flex flex-wrap items-center gap-2">
                 {invite.status === "REQUESTED" ? (
                   <>
-                    <Button type="button" size="sm" onClick={() => onApprove(invite.userId)} disabled={busy}>
-                      Approve
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => onApprove(invite.userId)}
+                      disabled={busy}
+                    >
+                      {t("groups.membersPage.approve")}
                     </Button>
                     <Button
                       type="button"
@@ -74,7 +102,7 @@ export default function PendingInvites({
                       onClick={() => onDeny(invite.userId)}
                       disabled={busy}
                     >
-                      Deny
+                      {t("groups.membersPage.deny")}
                     </Button>
                   </>
                 ) : (
@@ -85,7 +113,7 @@ export default function PendingInvites({
                     onClick={() => onRemove(invite.userId)}
                     disabled={busy}
                   >
-                    Cancel invite
+                    {t("groups.membersPage.cancelInvite")}
                   </Button>
                 )}
               </div>
