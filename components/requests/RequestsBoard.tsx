@@ -112,7 +112,10 @@ export default function RequestsBoard({ requests, assignees }: RequestsBoardProp
   }, [requests]);
 
   const mobileLimit = 5;
-  const collapsedStatuses = new Set<RequestStatus>(["COMPLETED", "CANCELED"]);
+  const includeArchived = searchParams?.get("includeArchived") === "true";
+  const collapsedStatuses = includeArchived
+    ? new Set<RequestStatus>()
+    : new Set<RequestStatus>(["COMPLETED", "CANCELED"]);
 
   const toggleStatusExpansion = (status: RequestStatus) => {
     setExpandedStatuses((current) => ({

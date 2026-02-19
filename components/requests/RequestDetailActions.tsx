@@ -6,6 +6,7 @@ import { buildLocalePathname } from "@/lib/i18n/routing";
 import type { RequestStatus } from "@prisma/client";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
+import { Drawer } from "@/components/ui/Drawer";
 import { useToast } from "@/components/ui/Toast";
 import {
   cancelOwnRequest,
@@ -14,6 +15,7 @@ import {
 } from "@/server/actions/requests";
 import { useLocale, useTranslations } from "@/lib/i18n/provider";
 import { canParishionerDeleteRequest } from "@/lib/requests/utils";
+import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 
 type RequestDetailActionsProps = {
   requestId: string;
@@ -35,6 +37,7 @@ export default function RequestDetailActions({
   const t = useTranslations();
   const locale = useLocale();
   const router = useRouter();
+  const isDesktop = useMediaQuery("(min-width: 768px)");
   const { addToast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [responseState, setResponseState] = useState<"ACCEPTED" | "REJECTED" | null>(
@@ -79,7 +82,6 @@ export default function RequestDetailActions({
       const result = await deleteOwnRequest({ requestId });
       if (result.status === "success") {
         setConfirmDeleteOpen(false);
-        addToast({ title: result.message ?? "Request deleted.", status: "success" });
         router.push(buildLocalePathname(locale, "/requests?deleted=1"));
         router.refresh();
         return;
@@ -99,14 +101,22 @@ export default function RequestDetailActions({
         ? t("requests.detail.scheduledRejected")
         : null;
 
+  const confirmDeleteFooter = (
+    <>
+      <Button type="button" variant="secondary" onClick={() => setConfirmDeleteOpen(false)}>
+        Keep request
+      </Button>
+      <Button type="button" variant="danger" onClick={handleDelete} isLoading={isPending}>
+        Delete
+      </Button>
+    </>
+  );
+
   return (
     <div className="space-y-3">
       {hasSchedule ? (
         <div className="rounded-card border border-emerald-100 bg-emerald-50 px-3 py-3 text-sm text-emerald-700">
-          {t("requests.detail.proposedTime")} 
-          <span className="font-semibold">
-            {new Date(scheduledStart as string).toLocaleString()}
-          </span>
+          {t("requests.detail.proposedTime")} <span className="font-semibold">{new Date(scheduledStart as string).toLocaleString()}</span>
           {scheduledEnd ? ` – ${new Date(scheduledEnd).toLocaleTimeString()}` : null}
         </div>
       ) : null}
@@ -125,12 +135,7 @@ export default function RequestDetailActions({
 
       {hasSchedule && !responseState ? (
         <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            onClick={() => handleRespond("ACCEPT")}
-            isLoading={isPending}
-            disabled={isPending}
-          >
+          <Button type="button" onClick={() => handleRespond("ACCEPT")} isLoading={isPending} disabled={isPending}>
             {t("requests.detail.acceptTime")}
           </Button>
           <Button
@@ -158,40 +163,46 @@ export default function RequestDetailActions({
         </Button>
       ) : null}
 
-      {canDeleteOwn ? canDelete ? (
-        <Button
-          type="button"
-          variant="ghost"
-          className="text-rose-700 hover:text-rose-800"
-          onClick={() => setConfirmDeleteOpen(true)}
-          isLoading={isPending}
-          disabled={isPending}
-        >
-          Delete request
-        </Button>
-      ) : (
-        <p className="text-sm text-ink-500">To delete this request, cancel it first.</p>
+      {canDeleteOwn ? (
+        canDelete ? (
+          <Button
+            type="button"
+            variant="ghost"
+            className="text-rose-700 hover:text-rose-800"
+            onClick={() => setConfirmDeleteOpen(true)}
+            isLoading={isPending}
+            disabled={isPending}
+          >
+            Delete request
+          </Button>
+        ) : (
+          <p className="text-sm text-ink-500">To delete this request, cancel it first.</p>
+        )
       ) : null}
 
-      <Modal
-        open={confirmDeleteOpen}
-        onClose={() => setConfirmDeleteOpen(false)}
-        title="Delete request"
-        footer={
-          <div className="flex items-center justify-end gap-2">
-            <Button type="button" variant="secondary" onClick={() => setConfirmDeleteOpen(false)}>
-              Keep request
-            </Button>
-            <Button type="button" variant="danger" onClick={handleDelete} isLoading={isPending}>
-              Delete
-            </Button>
-          </div>
-        }
-      >
-        <p className="text-sm text-ink-600">
-          Are you sure you want to delete this request? This hides it from your request history.
-        </p>
-      </Modal>
+      {isDesktop ? (
+        <Modal
+          open={confirmDeleteOpen}
+          onClose={() => setConfirmDeleteOpen(false)}
+          title="Delete request"
+          footer={confirmDeleteFooter}
+        >
+          <p className="text-sm text-ink-600">
+            Are you sure you want to delete this request? This hides it from your request history.
+          </p>
+        </Modal>
+      ) : (
+        <Drawer
+          open={confirmDeleteOpen}
+          onClose={() => setConfirmDeleteOpen(false)}
+          title="Delete request"
+          footer={confirmDeleteFooter}
+        >
+          <p className="text-sm text-ink-600">
+            Are you sure you want to delete this request? This hides it from your request history.
+          </p>
+        </Drawer>
+      )}
     </div>
   );
 }
