@@ -81,8 +81,12 @@ test("delete/archive status gating follows lifecycle rules", () => {
   assert.equal(canParishionerDeleteRequest("COMPLETED"), true);
   assert.equal(canParishionerDeleteRequest("CANCELED"), true);
   assert.equal(canParishionerDeleteRequest("SUBMITTED"), false);
+  assert.equal(canParishionerDeleteRequest("ACKNOWLEDGED"), false);
+  assert.equal(canParishionerDeleteRequest("SCHEDULED"), false);
 
   assert.equal(canAdminArchiveRequest("COMPLETED"), true);
   assert.equal(canAdminArchiveRequest("CANCELED"), true);
   assert.equal(canAdminArchiveRequest("ACKNOWLEDGED"), false);
+  assert.equal(canAdminArchiveRequest("SUBMITTED"), false);
+  assert.equal(canAdminArchiveRequest("SCHEDULED"), false);
 });

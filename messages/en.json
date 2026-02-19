@@ -556,7 +556,6 @@
     "detail": {
       "pageTitle": "Request details",
       "subtitle": "Track the latest updates",
-      "backToList": "Back to My Requests",
       "preferredTime": "Preferred time window:",
       "noDetails": "No additional details provided.",
       "timeline": "Timeline",

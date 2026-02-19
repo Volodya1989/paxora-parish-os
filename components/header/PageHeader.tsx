@@ -126,7 +126,7 @@ export default function PageHeader({
               }}
             />
           </Link>
-          <span className="min-w-0 text-xs leading-tight sm:text-sm">{parishName}</span>
+          <span className="min-w-0 truncate text-xs leading-tight sm:text-sm">{parishName}</span>
         </div>
       </div>
 
