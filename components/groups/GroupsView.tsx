@@ -68,7 +68,7 @@ export function getDiscoverGroupCardAction(input: {
 
 export function getJoinedGroupMenuActions(canManageGroups: boolean) {
   return canManageGroups
-    ? (["view_members", "view_details", "edit", "archive", "leave"] as const)
+    ? (["view_members", "edit", "archive", "leave"] as const)
     : (["view_members", "leave"] as const);
 }
 
@@ -560,14 +560,6 @@ export default function GroupsView({
                                 return (
                                   <DropdownItem key={action} onClick={() => router.push(buildLocalePathname(locale, `/groups/${group.id}/members`))}>
                                     {t("groups.viewMembers")}
-                                  </DropdownItem>
-                                );
-                              }
-
-                              if (action === "view_details") {
-                                return (
-                                  <DropdownItem key={action} asChild>
-                                    <Link href={buildLocalePathname(locale, `/groups/${group.id}`)}>{t("groups.viewDetails")}</Link>
                                   </DropdownItem>
                                 );
                               }

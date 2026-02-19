@@ -39,5 +39,5 @@ test("regular members get view members and leave in joined-group menu", () => {
 test("leaders keep management actions in joined-group menu", () => {
   const actions = getJoinedGroupMenuActions(true);
 
-  assert.deepEqual(actions, ["view_members", "view_details", "edit", "archive", "leave"]);
+  assert.deepEqual(actions, ["view_members", "edit", "archive", "leave"]);
 });
