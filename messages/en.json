@@ -851,5 +851,93 @@
     "group": "Group",
     "selectGroup": "Select a group",
     "noGroups": "No groups available"
+  },
+  "marketing": {
+    "brandTagline": "People-serving, shepherd-anchored",
+    "pilotBanner": "Pilot program is open for early parish partners.",
+    "cta": {
+      "requestPilot": "Request Pilot Access",
+      "scheduleDemo": "Schedule a Demo",
+      "contactUs": "Contact us",
+      "contactUsForDemo": "Contact us for a demo"
+    },
+    "nav": {
+      "features": "Features",
+      "pricing": "Pricing",
+      "about": "About",
+      "demo": "Demo",
+      "contact": "Contact",
+      "privacy": "Privacy",
+      "terms": "Terms"
+    },
+    "hero": {
+      "eyebrow": "Built for pilot parishes",
+      "title": "Calm weekly coordination for parish life",
+      "description": "Paxora helps clergy, staff, and volunteers align on This Week, service tasks, events, and requests without admin overload.",
+      "visualPlaceholder": "Product screenshot placeholder — replace with real in-app capture."
+    },
+    "features": {
+      "thisWeek": {
+        "title": "This Week",
+        "description": "A shared weekly home with commitments, updates, and priorities."
+      },
+      "serveTasks": {
+        "title": "Serve / Tasks",
+        "description": "Clear ownership for ministry tasks and volunteer opportunities."
+      },
+      "groupsChat": {
+        "title": "Groups / Chat",
+        "description": "Ministry groups with focused chat, updates, and member coordination."
+      },
+      "calendarEvents": {
+        "title": "Calendar / Events",
+        "description": "Weekly calendar context for services and parish events."
+      },
+      "requests": {
+        "title": "Requests",
+        "description": "Simple pathways for pastoral and practical parish requests."
+      },
+      "parishHub": {
+        "title": "Parish Hub",
+        "description": "Central hub for links, bulletin access, and key parish resources."
+      }
+    },
+    "featuresPage": {
+      "title": "Everything your parish needs each week",
+      "description": "These modules work together so your team can serve people, not chase logistics."
+    },
+    "pricing": {
+      "title": "Pilot pricing",
+      "pilotBanner": "Currently in pilot: onboarding a limited number of partner parishes.",
+      "tiers": {
+        "pilot": {
+          "title": "Pilot Partner",
+          "description": "Guided onboarding, feedback loop, and priority support during pilot."
+        },
+        "pro": {
+          "title": "Future Pro Tier",
+          "description": "Planned for post-pilot with expanded administration and support options."
+        }
+      }
+    },
+    "about": {
+      "title": "About Paxora Parish OS",
+      "missionTitle": "Mission",
+      "mission": "We build software that restores shared responsibility and calm rhythm in parish life.",
+      "storyTitle": "Our story",
+      "story": "Paxora started from real parish coordination pain: too many WhatsApp threads, spreadsheets, and last-minute calls. We are building practical tools for Ukrainian and English-speaking parish communities."
+    },
+    "demo": {
+      "title": "Book a guided demo",
+      "description": "See how This Week, tasks, requests, and communication come together for your leadership team.",
+      "placeholder": "Demo screenshot or walkthrough placeholder"
+    },
+    "contact": {
+      "title": "Contact us",
+      "description": "Tell us about your parish and we will reach out to plan pilot onboarding."
+    },
+    "footer": {
+      "copy": "© Paxora Parish OS. Pilot program in progress."
+    }
   }
 }
