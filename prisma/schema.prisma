@@ -1128,3 +1128,15 @@ model PushSubscription {
   @@index([userId, parishId])
   @@index([parishId])
 }
+
+model ContactSubmission {
+  id        String   @id @default(cuid())
+  name      String
+  parish    String
+  email     String
+  message   String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([email])
+}

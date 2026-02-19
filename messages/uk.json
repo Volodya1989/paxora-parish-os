@@ -851,5 +851,11 @@
     "group": "Група",
     "selectGroup": "Оберіть групу",
     "noGroups": "Немає доступних груп"
+  },
+  "marketing": {
+    "brandName": "Paxora Parish OS",
+    "primaryCta": "Request Pilot Access",
+    "secondaryCta": "Schedule a Demo",
+    "pilotBanner": "Pilot launch in progress — onboarding new parishes now"
   }
 }
