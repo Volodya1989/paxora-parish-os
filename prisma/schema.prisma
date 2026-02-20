@@ -233,6 +233,7 @@ model Parish {
   defaultLocale             String                  @default("en")
   inviteCode                String?                 @unique
   inviteCodeCreatedAt       DateTime?
+  deactivatedAt             DateTime?
   createdAt                 DateTime                @default(now())
   emailFromName             String?
   emailFromAddress          String?

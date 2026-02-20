@@ -15,7 +15,12 @@ import { useToast } from "@/components/ui/Toast";
 import ListEmptyState from "@/components/app/list-empty-state";
 import type { PlatformParishRecord } from "@/lib/queries/platformParishes";
 import { locales } from "@/lib/i18n/config";
-import { createPlatformParish, updatePlatformParish } from "@/app/actions/platformParishes";
+import {
+  createPlatformParish,
+  deactivatePlatformParish,
+  safeDeletePlatformParish,
+  updatePlatformParish
+} from "@/app/actions/platformParishes";
 import { startImpersonation } from "@/app/actions/platformImpersonation";
 import type { PlatformParishActionState } from "@/lib/types/platformParishes";
 
@@ -51,6 +56,7 @@ export default function PlatformParishesView({
   const [formState, setFormState] = useState<ParishFormState>(emptyForm);
   const [isPending, startTransition] = useTransition();
   const [isImpersonating, startImpersonationTransition] = useTransition();
+  const [busyParishId, setBusyParishId] = useState<string | null>(null);
 
   const sortedParishes = useMemo(() => parishes, [parishes]);
 
@@ -145,6 +151,32 @@ export default function PlatformParishesView({
         status: "error"
       });
     }
+  };
+
+  const handleDeactivate = (parishId: string, parishName: string) => {
+    if (!window.confirm(`Deactivate ${parishName}? You can only safe-delete a parish after deactivation.`)) {
+      return;
+    }
+
+    setBusyParishId(parishId);
+    startTransition(async () => {
+      const result = await deactivatePlatformParish({ parishId });
+      handleResult(result, "Parish updated");
+      setBusyParishId(null);
+    });
+  };
+
+  const handleSafeDelete = (parishId: string, parishName: string) => {
+    if (!window.confirm(`Safely delete ${parishName}? This only works after deactivation and when no dependent data remains.`)) {
+      return;
+    }
+
+    setBusyParishId(parishId);
+    startTransition(async () => {
+      const result = await safeDeletePlatformParish({ parishId });
+      handleResult(result, "Parish updated");
+      setBusyParishId(null);
+    });
   };
 
   const formContent = (
@@ -252,6 +284,8 @@ export default function PlatformParishesView({
             sortedParishes.map((parish) => {
               const isImpersonated = parish.id === impersonatedParishId;
               const inviteCode = parish.inviteCode;
+              const isDeactivated = Boolean(parish.deactivatedAt);
+              const isBusy = busyParishId === parish.id;
               return (
                 <div
                   key={parish.id}
@@ -275,6 +309,7 @@ export default function PlatformParishesView({
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       <Badge tone="neutral">{parish.defaultLocale.toUpperCase()}</Badge>
                       <Badge tone="neutral">{parish.timezone}</Badge>
+                      {isDeactivated ? <Badge tone="warning">Deactivated</Badge> : null}
                       {isImpersonated ? <Badge tone="warning">Impersonating</Badge> : null}
                     </div>
                   </div>
@@ -304,6 +339,24 @@ export default function PlatformParishesView({
                   <div className="flex flex-wrap items-center gap-2">
                     <Button type="button" variant="secondary" size="sm" onClick={() => openEdit(parish)}>
                       Edit
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => handleDeactivate(parish.id, parish.name)}
+                      disabled={isBusy || isDeactivated}
+                    >
+                      {isDeactivated ? "Deactivated" : "Deactivate"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => handleSafeDelete(parish.id, parish.name)}
+                      disabled={isBusy || !isDeactivated}
+                    >
+                      Safe delete
                     </Button>
                     <Button
                       type="button"

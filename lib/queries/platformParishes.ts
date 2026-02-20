@@ -9,6 +9,7 @@ export type PlatformParishRecord = {
   logoUrl: string | null;
   defaultLocale: string;
   inviteCode: string | null;
+  deactivatedAt: Date | null;
   createdAt: Date;
 };
 
@@ -24,6 +25,7 @@ export async function listPlatformParishes(): Promise<PlatformParishRecord[]> {
       logoUrl: true,
       defaultLocale: true,
       inviteCode: true,
+      deactivatedAt: true,
       createdAt: true
     }
   });

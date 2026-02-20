@@ -17,6 +17,7 @@ import type {
 import { createDefaultParishHubItems } from "@/server/db/parish-hub";
 import { Prisma } from "@prisma/client";
 import { createParishInviteCode } from "@/lib/parish/inviteCode";
+import { z } from "zod";
 
 function buildError(message: string, error: PlatformParishActionError): PlatformParishActionState {
   return { status: "error", message, error };
@@ -54,6 +55,10 @@ function normalizeOptional(value?: string) {
   const trimmed = value?.trim() ?? "";
   return trimmed.length ? trimmed : null;
 }
+
+const platformParishIdSchema = z.object({
+  parishId: z.string().trim().min(1, "Parish is required.")
+});
 
 export async function createPlatformParish(input: {
   name: string;
@@ -168,4 +173,126 @@ export async function updatePlatformParish(input: {
   revalidatePath("/platform/parishes");
 
   return { status: "success", message: "Parish updated." };
+}
+
+export async function deactivatePlatformParish(input: {
+  parishId: string;
+}): Promise<PlatformParishActionState> {
+  try {
+    await requirePlatformSession();
+  } catch {
+    return buildError("You do not have permission to deactivate parishes.", "NOT_AUTHORIZED");
+  }
+
+  const parsed = platformParishIdSchema.safeParse(input);
+  if (!parsed.success) {
+    return buildError(parsed.error.errors[0]?.message ?? "Invalid input.", "VALIDATION_ERROR");
+  }
+
+  const parish = await prisma.parish.findUnique({
+    where: { id: parsed.data.parishId },
+    select: { id: true, name: true, deactivatedAt: true }
+  });
+
+  if (!parish) {
+    return buildError("Parish not found.", "NOT_FOUND");
+  }
+
+  if (parish.deactivatedAt) {
+    return { status: "success", message: "Parish already deactivated." };
+  }
+
+  await prisma.parish.update({
+    where: { id: parish.id },
+    data: { deactivatedAt: new Date() }
+  });
+
+  revalidatePath("/platform/parishes");
+  return { status: "success", message: `${parish.name} deactivated.` };
+}
+
+export async function safeDeletePlatformParish(input: {
+  parishId: string;
+}): Promise<PlatformParishActionState> {
+  try {
+    await requirePlatformSession();
+  } catch {
+    return buildError("You do not have permission to delete parishes.", "NOT_AUTHORIZED");
+  }
+
+  const parsed = platformParishIdSchema.safeParse(input);
+  if (!parsed.success) {
+    return buildError(parsed.error.errors[0]?.message ?? "Invalid input.", "VALIDATION_ERROR");
+  }
+
+  const parish = await prisma.parish.findUnique({
+    where: { id: parsed.data.parishId },
+    select: {
+      id: true,
+      name: true,
+      deactivatedAt: true,
+      _count: {
+        select: {
+          memberships: true,
+          accessRequests: true,
+          groups: true,
+          weeks: true,
+          tasks: true,
+          events: true,
+          eventRequests: true,
+          requests: true,
+          digests: true,
+          announcements: true,
+          chatChannels: true,
+          emailLogs: true,
+          notifications: true,
+          mentions: true,
+          hoursEntries: true,
+          heroNominations: true,
+          parishInvites: true,
+          hubItems: true,
+          deliveryAttempts: true,
+          auditLogs: true,
+          pushSubscriptions: true
+        }
+      }
+    }
+  });
+
+  if (!parish) {
+    return buildError("Parish not found.", "NOT_FOUND");
+  }
+
+  if (!parish.deactivatedAt) {
+    return buildError("Deactivate the parish before safe delete.", "INVALID_STATE");
+  }
+
+  const dependentRecords = Object.values(parish._count).reduce((total, value) => total + value, 0);
+  const usersPointingToParish = await prisma.user.count({
+    where: {
+      OR: [{ activeParishId: parish.id }, { impersonatedParishId: parish.id }]
+    }
+  });
+
+  if (dependentRecords > 0 || usersPointingToParish > 0) {
+    return buildError(
+      "Parish cannot be safely deleted yet. Remove memberships and parish data first.",
+      "INVALID_STATE"
+    );
+  }
+
+  await prisma.$transaction([
+    prisma.user.updateMany({
+      where: { impersonatedParishId: parish.id },
+      data: { impersonatedParishId: null }
+    }),
+    prisma.user.updateMany({
+      where: { activeParishId: parish.id },
+      data: { activeParishId: null }
+    }),
+    prisma.parish.delete({ where: { id: parish.id } })
+  ]);
+
+  revalidatePath("/platform/parishes");
+  return { status: "success", message: `${parish.name} safely deleted.` };
 }
