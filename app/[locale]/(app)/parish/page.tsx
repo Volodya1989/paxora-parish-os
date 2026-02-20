@@ -69,7 +69,7 @@ export default async function ParishHubPage({
       parishLogoUrl={parish?.logoUrl ?? null}
       isLeader={isLeader}
       subtitle={t("parish.subtitle")}
-      gradientClass="from-primary-600 via-primary-500 to-emerald-500"
+      sectionTheme="ParishHub"
     >
       {/* Quick-action panel: Make a Request */}
       <div className="flex items-center gap-3 rounded-2xl border border-primary-100 bg-gradient-to-r from-primary-50/60 to-white px-4 py-3">

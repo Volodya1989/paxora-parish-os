@@ -101,7 +101,7 @@ export default async function CalendarPage({
       parishLogoUrl={parish?.logoUrl ?? null}
       isLeader={isLeader}
       subtitle={t("calendar.subtitle")}
-      gradientClass="from-teal-600 via-teal-500 to-emerald-500"
+      sectionTheme="Events"
       icon={<CalendarIcon className="h-6 w-6 text-white" />}
     >
       <CalendarView

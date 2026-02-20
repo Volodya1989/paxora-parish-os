@@ -12,6 +12,8 @@ import QuickActions from "@/components/this-week/QuickActions";
 import { Modal } from "@/components/ui/Modal";
 import { Drawer } from "@/components/ui/Drawer";
 import { buildLocalePathname } from "@/lib/i18n/routing";
+import { cn } from "@/lib/ui/cn";
+import { sectionThemes } from "@/lib/theme/sectionTheme";
 
 type ParishionerHeaderProps = {
   /** Parish name to display */
@@ -54,6 +56,7 @@ export default function ParishionerHeader({
   const [quotePinnedOpen, setQuotePinnedOpen] = useState(false);
   const logoSrc = parishLogoUrl?.trim() ? parishLogoUrl : "/icon.png";
   const quoteStorageKey = "this-week:quote-expanded";
+  const theme = sectionThemes.ThisWeek;
 
   // Use state to prevent hydration mismatch - start with generic greeting
   // then update to time-based greeting on client
@@ -103,11 +106,10 @@ export default function ParishionerHeader({
 
   return (
     <>
-      <header className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-600 via-primary-500 to-emerald-500 px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] text-white shadow-lg sm:px-5 sm:pb-5 sm:pt-[calc(1.25rem+env(safe-area-inset-top))]">
+      <header className={cn("relative -mx-4 -mt-6 overflow-hidden bg-gradient-to-br px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] text-white md:-mx-8 md:rounded-b-2xl md:px-6", theme.headerGradient)}>
         {/* Decorative background elements */}
-        <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-white/10" />
-        <div className="absolute -bottom-2 left-1/4 h-12 w-12 rounded-full bg-white/5" />
-        <div className="absolute right-1/3 top-1/2 h-8 w-8 rounded-full bg-white/5" />
+        <div className={cn("absolute -right-8 -top-8 h-20 w-20 rounded-full", theme.headerAccentBubble)} />
+        <div className={cn("absolute -bottom-2 left-1/4 h-12 w-12 rounded-full", theme.headerAccentGlow)} />
 
         {/* Top bar with controls */}
         <div className="relative mb-2 flex items-start justify-between gap-2 sm:gap-3">
@@ -145,10 +147,10 @@ export default function ParishionerHeader({
 
         {/* Main greeting */}
         <div className="relative space-y-1">
-          <h1 className="text-lg font-bold tracking-tight sm:text-xl">
+          <h1 className="text-xl font-bold tracking-tight md:text-2xl">
             {greeting}{userName ? `, ${userName}` : ""}!
           </h1>
-          <p className="text-sm font-semibold text-white sm:text-base">
+          <p className="text-xs font-semibold text-white/90 sm:text-sm">
             <span className="break-words">{parishName}</span>
           </p>
           {quote && (

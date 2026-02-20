@@ -72,7 +72,7 @@ export default async function GroupsPage({
       parishLogoUrl={parish?.logoUrl ?? null}
       isLeader={isLeader}
       subtitle={t("groups.subtitle")}
-      gradientClass="from-primary-600 via-primary-500 to-emerald-500"
+      sectionTheme="Community"
       icon={<UsersIcon className="h-6 w-6 text-white" />}
     >
       <GroupsView

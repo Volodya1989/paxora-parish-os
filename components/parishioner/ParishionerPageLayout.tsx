@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import PageHeader from "@/components/header/PageHeader";
+import { type SectionThemeKey } from "@/lib/theme/sectionTheme";
 
 type ParishionerPageLayoutProps = {
   /** Page title shown in PageHeader */
@@ -16,8 +17,10 @@ type ParishionerPageLayoutProps = {
   quote?: string;
   /** Quote attribution (e.g., "Luke 16:10") */
   quoteSource?: string;
-  /** Gradient class for header (e.g., "from-sky-500 via-sky-400 to-cyan-500") */
+  /** Optional custom gradient override for header */
   gradientClass?: string;
+  /** Section-aware theme variant used by header + bottom nav */
+  sectionTheme?: SectionThemeKey;
   /** Optional actions to show in header (e.g., view toggles) */
   actions?: ReactNode;
   /** Optional icon to display next to the title */
@@ -40,7 +43,8 @@ export default function ParishionerPageLayout({
   subtitle,
   quote,
   quoteSource,
-  gradientClass = "from-primary-600 via-primary-500 to-emerald-500",
+  gradientClass,
+  sectionTheme = "ThisWeek",
   actions,
   icon,
   backHref,
@@ -56,6 +60,7 @@ export default function ParishionerPageLayout({
         quote={quote}
         quoteSource={quoteSource}
         gradientClass={gradientClass}
+        sectionTheme={sectionTheme}
         actions={actions}
         icon={icon}
         backHref={backHref}
