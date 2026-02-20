@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "../server/db/prisma";
 import { createDefaultParishHubItems } from "../server/db/parish-hub";
 import { getWeekStartMonday, getWeekLabel } from "../domain/week";
+import { createParishInviteCode } from "../lib/parish/inviteCode";
 
 async function main() {
   const existingParish = await prisma.parish.findFirst();
@@ -48,7 +49,9 @@ async function main() {
   const parish = await prisma.parish.create({
     data: {
       name: "St. Paxora Parish",
-      slug: "st-paxora"
+      slug: "st-paxora",
+      inviteCode: await createParishInviteCode(),
+      inviteCodeCreatedAt: new Date()
     }
   });
 

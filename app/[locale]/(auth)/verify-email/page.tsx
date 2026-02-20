@@ -41,7 +41,7 @@ export default async function VerifyEmailPage({ searchParams, params }: VerifyEm
         {result.success ? (
           <>
             <p className="text-sm text-emerald-600">
-              Email verified. You can now sign in and request access.
+              Email verified. You can now sign in and enter your parish code.
             </p>
             <Link
               className="text-sm text-ink-700 underline"

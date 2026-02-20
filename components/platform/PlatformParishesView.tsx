@@ -92,7 +92,9 @@ export default function PlatformParishesView({
     }
     addToast({
       title: successTitle,
-      description: result.message,
+      description: result.inviteCode
+        ? `${result.message} Parish Code: ${result.inviteCode}`
+        : result.message,
       status: "success"
     });
     router.refresh();
@@ -126,6 +128,23 @@ export default function PlatformParishesView({
       });
       router.refresh();
     });
+  };
+
+  const handleCopyInviteCode = async (inviteCode: string) => {
+    try {
+      await navigator.clipboard.writeText(inviteCode);
+      addToast({
+        title: "Parish code copied",
+        description: `${inviteCode} copied to clipboard.`,
+        status: "success"
+      });
+    } catch {
+      addToast({
+        title: "Copy failed",
+        description: "Unable to copy parish code.",
+        status: "error"
+      });
+    }
   };
 
   const formContent = (
@@ -232,6 +251,7 @@ export default function PlatformParishesView({
           ) : (
             sortedParishes.map((parish) => {
               const isImpersonated = parish.id === impersonatedParishId;
+              const inviteCode = parish.inviteCode;
               return (
                 <div
                   key={parish.id}
@@ -261,6 +281,24 @@ export default function PlatformParishesView({
 
                   <div className="text-sm text-ink-500">
                     <p>{parish.address || "No address set."}</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-medium uppercase tracking-wide text-ink-400">
+                        Parish Code
+                      </span>
+                      <code className="rounded bg-mist-100 px-2 py-1 text-sm font-semibold text-ink-800">
+                        {inviteCode ?? "Not set"}
+                      </code>
+                      {inviteCode ? (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleCopyInviteCode(inviteCode)}
+                        >
+                          Copy
+                        </Button>
+                      ) : null}
+                    </div>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">

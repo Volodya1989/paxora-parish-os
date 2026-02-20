@@ -45,9 +45,9 @@ export default function AccessGateContent({ status, parishName }: AccessGateCont
 
   return (
     <div className="space-y-2">
-      <h2 className="text-h2">Request access</h2>
+      <h2 className="text-h2">Enter Parish Code</h2>
       <p className="text-sm text-ink-500">
-        Ask to join the parish workspace {parishLabel}. Parish leadership reviews every request.
+        Enter your parish code to join the correct parish workspace {parishLabel}.
       </p>
     </div>
   );

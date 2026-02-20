@@ -158,7 +158,7 @@ export default function SignInPage() {
           ) : null}
           {verifySuccess ? (
             <p className="text-sm text-emerald-600">
-              Email verified. You can now request parish access.
+              Email verified. You can now join with your parish code.
             </p>
           ) : null}
           {error ? <p className="text-sm text-red-600">{error}</p> : null}

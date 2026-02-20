@@ -22,29 +22,34 @@ export type PendingAccessRequest = {
 
 async function resolveAccessParishId(userId: string, activeParishId?: string | null) {
   if (activeParishId) {
-    const parish = await prisma.parish.findUnique({
-      where: { id: activeParishId },
-      select: { id: true }
+    const activeMembership = await prisma.membership.findUnique({
+      where: {
+        parishId_userId: {
+          parishId: activeParishId,
+          userId
+        }
+      },
+      select: { parishId: true }
     });
 
-    if (parish?.id) {
-      return parish.id;
+    if (activeMembership?.parishId) {
+      return activeMembership.parishId;
     }
   }
 
-  const fallbackParish = await prisma.parish.findFirst({
-    orderBy: { createdAt: "asc" },
-    select: { id: true }
+  const fallbackMembership = await prisma.membership.findFirst({
+    where: { userId },
+    select: { parishId: true }
   });
 
-  if (fallbackParish?.id && !activeParishId) {
+  if (fallbackMembership?.parishId && activeParishId !== fallbackMembership.parishId) {
     await prisma.user.update({
       where: { id: userId },
-      data: { activeParishId: fallbackParish.id }
+      data: { activeParishId: fallbackMembership.parishId }
     });
   }
 
-  return fallbackParish?.id ?? null;
+  return fallbackMembership?.parishId ?? null;
 }
 
 export async function getAccessGateState(): Promise<AccessGateState> {
@@ -69,7 +74,7 @@ export async function getAccessGateState(): Promise<AccessGateState> {
     };
   }
 
-  const [parish, membership, accessRequest] = await Promise.all([
+  const [parish, membership] = await Promise.all([
     prisma.parish.findUnique({
       where: { id: parishId },
       select: { name: true }
@@ -82,15 +87,6 @@ export async function getAccessGateState(): Promise<AccessGateState> {
         }
       },
       select: { id: true }
-    }),
-    prisma.accessRequest.findUnique({
-      where: {
-        parishId_userId: {
-          parishId,
-          userId: session.user.id
-        }
-      },
-      select: { status: true }
     })
   ]);
 
@@ -105,14 +101,6 @@ export async function getAccessGateState(): Promise<AccessGateState> {
   if (!user?.emailVerifiedAt) {
     return {
       status: "unverified",
-      parishId,
-      parishName: parish?.name ?? null
-    };
-  }
-
-  if (accessRequest?.status === "PENDING") {
-    return {
-      status: "pending",
       parishId,
       parishName: parish?.name ?? null
     };

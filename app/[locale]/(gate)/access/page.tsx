@@ -5,13 +5,13 @@ import Button from "@/components/ui/Button";
 import SectionTitle from "@/components/ui/SectionTitle";
 import { SignOutButton } from "@/components/navigation/SignOutButton";
 import AccessGateContent from "@/components/access/AccessGateContent";
-import { requestParishAccess } from "@/app/actions/access";
+import { joinParishByCodeAction } from "@/app/actions/access";
 import { requestEmailVerification } from "@/app/actions/verification";
 import { getAccessGateState } from "@/lib/queries/access";
 import { buildLocalePathname, getLocaleFromParam } from "@/lib/i18n/routing";
 
 type AccessPageProps = {
-  searchParams?: { verify?: string };
+  searchParams?: { verify?: string; join?: string };
   params: { locale: string };
 };
 
@@ -20,13 +20,13 @@ export default async function AccessPage({ searchParams, params }: AccessPagePro
   const access = await getAccessGateState();
   const resolvedSearchParams = await Promise.resolve(searchParams);
   const verifySent = resolvedSearchParams?.verify === "sent";
+  const joinError = resolvedSearchParams?.join === "invalid";
+  const alreadyMember = resolvedSearchParams?.join === "already";
 
   if (access.status === "approved") {
     // Approved members land on Home (/).
     redirect(buildLocalePathname(locale, "/"));
   }
-
-  const hasParish = Boolean(access.parishId);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-mist-50/70 px-4 py-12">
@@ -51,15 +51,25 @@ export default async function AccessPage({ searchParams, params }: AccessPagePro
             </Button>
           </form>
         ) : access.status === "none" ? (
-          <form className="space-y-3" action={requestParishAccess}>
-            <input type="hidden" name="parishId" value={access.parishId ?? ""} />
-            <Button className="w-full" type="submit" disabled={!hasParish}>
-              Request access
+          <form className="space-y-3" action={joinParishByCodeAction}>
+            <label htmlFor="parish-code" className="text-sm font-medium text-ink-700">
+              Parish code
+            </label>
+            <input
+              id="parish-code"
+              name="code"
+              required
+              className="w-full rounded-input border border-mist-300 px-3 py-2 text-sm uppercase tracking-wide text-ink-900"
+              placeholder="Enter parish code"
+              autoCapitalize="characters"
+              autoCorrect="off"
+            />
+            <Button className="w-full" type="submit">
+              Join Parish
             </Button>
-            {!hasParish ? (
-              <p className="text-xs text-ink-400">
-                There isn&apos;t a parish available yet. Please check back soon.
-              </p>
+            {joinError ? <p className="text-xs text-red-600">Invalid parish code. Try again.</p> : null}
+            {alreadyMember ? (
+              <p className="text-xs text-emerald-600">You are already a member of this parish.</p>
             ) : null}
           </form>
         ) : (

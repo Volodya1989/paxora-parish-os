@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
 import { createDefaultParishHubItems } from "@/server/db/parish-hub";
+import { createParishInviteCode } from "@/lib/parish/inviteCode";
 
 export async function createParish() {
   const session = await getServerSession(authOptions);
@@ -20,7 +21,9 @@ export async function createParish() {
   const parish = await prisma.parish.create({
     data: {
       name: "Mother of God Ukrainian Catholic Parish",
-      slug: `parish-${session.user.id.slice(0, 8)}`
+      slug: `parish-${session.user.id.slice(0, 8)}`,
+      inviteCode: await createParishInviteCode(),
+      inviteCodeCreatedAt: new Date()
     }
   });
 

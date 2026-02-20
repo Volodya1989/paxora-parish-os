@@ -6,53 +6,7 @@ export async function ensureParishBootstrap(userId: string) {
   });
 
   if (!existingMembership) {
-    const existingParish = await prisma.parish.findFirst({
-      orderBy: { createdAt: "asc" }
-    });
-
-    if (existingParish) {
-      const membershipCount = await prisma.membership.count({
-        where: { parishId: existingParish.id }
-      });
-
-      if (membershipCount === 0) {
-        await prisma.membership.create({
-          data: {
-            parishId: existingParish.id,
-            userId,
-            role: "SHEPHERD"
-          }
-        });
-      }
-
-      await prisma.user.update({
-        where: { id: userId },
-        data: { activeParishId: existingParish.id }
-      });
-      return existingParish.id;
-    }
-
-    const parish = await prisma.parish.create({
-      data: {
-        name: "Mother of God Ukrainian Catholic Parish",
-        slug: `parish-${userId.slice(0, 8)}`
-      }
-    });
-
-    await prisma.membership.create({
-      data: {
-        parishId: parish.id,
-        userId,
-        role: "SHEPHERD"
-      }
-    });
-
-    await prisma.user.update({
-      where: { id: userId },
-      data: { activeParishId: parish.id }
-    });
-
-    return parish.id;
+    return null;
   }
 
   const user = await prisma.user.findUnique({

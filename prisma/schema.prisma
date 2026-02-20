@@ -231,6 +231,8 @@ model Parish {
   timezone                  String                  @default("UTC")
   logoUrl                   String?
   defaultLocale             String                  @default("en")
+  inviteCode                String?                 @unique
+  inviteCodeCreatedAt       DateTime?
   createdAt                 DateTime                @default(now())
   emailFromName             String?
   emailFromAddress          String?

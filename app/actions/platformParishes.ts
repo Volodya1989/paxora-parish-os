@@ -16,6 +16,7 @@ import type {
 } from "@/lib/types/platformParishes";
 import { createDefaultParishHubItems } from "@/server/db/parish-hub";
 import { Prisma } from "@prisma/client";
+import { createParishInviteCode } from "@/lib/parish/inviteCode";
 
 function buildError(message: string, error: PlatformParishActionError): PlatformParishActionState {
   return { status: "error", message, error };
@@ -75,18 +76,23 @@ export async function createPlatformParish(input: {
 
   const baseSlug = slugify(parsed.data.name);
   const slug = await ensureUniqueSlug(baseSlug);
+  let createdInviteCode: string | undefined;
 
   try {
+    const inviteCode = await createParishInviteCode();
     const parish = await prisma.parish.create({
       data: {
         name: parsed.data.name.trim(),
         slug,
+        inviteCode,
+        inviteCodeCreatedAt: new Date(),
         address: normalizeOptional(parsed.data.address),
         timezone: parsed.data.timezone.trim(),
         logoUrl: normalizeOptional(parsed.data.logoUrl),
         defaultLocale: parsed.data.defaultLocale
       }
     });
+    createdInviteCode = parish.inviteCode ?? undefined;
 
     await createDefaultParishHubItems(parish.id);
   } catch (error) {
@@ -97,13 +103,18 @@ export async function createPlatformParish(input: {
         data: {
           name: parsed.data.name.trim(),
           slug: retrySlug,
+          inviteCode: await createParishInviteCode(),
+          inviteCodeCreatedAt: new Date(),
           address: normalizeOptional(parsed.data.address),
           timezone: parsed.data.timezone.trim(),
           logoUrl: normalizeOptional(parsed.data.logoUrl),
           defaultLocale: parsed.data.defaultLocale
         }
       });
+      createdInviteCode = parish.inviteCode ?? undefined;
       await createDefaultParishHubItems(parish.id);
+      revalidatePath("/platform/parishes");
+      return { status: "success", message: "Parish created.", inviteCode: createdInviteCode };
     } else {
       throw error;
     }
@@ -111,7 +122,7 @@ export async function createPlatformParish(input: {
 
   revalidatePath("/platform/parishes");
 
-  return { status: "success", message: "Parish created." };
+  return { status: "success", message: "Parish created.", inviteCode: createdInviteCode };
 }
 
 export async function updatePlatformParish(input: {
