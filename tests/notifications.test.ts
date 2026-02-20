@@ -208,10 +208,15 @@ dbTest("mark chat room read clears room unread state and chat notification badge
     data: { email: "reader-read@example.com", passwordHash: "hashed", activeParishId: parish.id }
   });
 
+  // Memberships must predate all notification createdAt values in this test
+  // (2024-01-02) so that the joinedAt ≤ notification.createdAt membership gate
+  // in getStoredNotificationItems does not filter them out.
+  const membershipDate = new Date("2024-01-01T00:00:00.000Z");
+
   await prisma.membership.createMany({
     data: [
-      { parishId: parish.id, userId: actor.id, role: "MEMBER" },
-      { parishId: parish.id, userId: reader.id, role: "MEMBER" }
+      { parishId: parish.id, userId: actor.id, role: "MEMBER", createdAt: membershipDate },
+      { parishId: parish.id, userId: reader.id, role: "MEMBER", createdAt: membershipDate }
     ]
   });
 
@@ -226,8 +231,8 @@ dbTest("mark chat room read clears room unread state and chat notification badge
 
   await prisma.groupMembership.createMany({
     data: [
-      { groupId: group.id, userId: actor.id, status: "ACTIVE", role: "COORDINATOR" },
-      { groupId: group.id, userId: reader.id, status: "ACTIVE" }
+      { groupId: group.id, userId: actor.id, status: "ACTIVE", role: "COORDINATOR", createdAt: membershipDate },
+      { groupId: group.id, userId: reader.id, status: "ACTIVE", createdAt: membershipDate }
     ]
   });
 
