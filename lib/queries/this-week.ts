@@ -432,6 +432,10 @@ export async function getThisWeekData({
         .then((parish) => parish?.id ?? ensureParishBootstrap(session.user.id))
     : await ensureParishBootstrap(session.user.id);
 
+  if (!parishId) {
+    throw new Error("No active parish membership");
+  }
+
   return getThisWeekDataForUser({
     parishId,
     userId: actorUserId,
