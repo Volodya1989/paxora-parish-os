@@ -10,6 +10,7 @@ import Label from "@/components/ui/Label";
 import Select from "@/components/ui/Select";
 import Badge from "@/components/ui/Badge";
 import { Drawer } from "@/components/ui/Drawer";
+import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import ListEmptyState from "@/components/app/list-empty-state";
 import type { PlatformParishRecord } from "@/lib/queries/platformParishes";
@@ -36,6 +37,11 @@ type ParishFormState = {
   defaultLocale: string;
 };
 
+type ConfirmState =
+  | { action: "deactivate"; parishId: string; parishName: string }
+  | { action: "delete"; parishId: string; parishName: string }
+  | null;
+
 const emptyForm: ParishFormState = {
   name: "",
   address: "",
@@ -56,6 +62,7 @@ export default function PlatformParishesView({
   const [isPending, startTransition] = useTransition();
   const [isImpersonating, startImpersonationTransition] = useTransition();
   const [busyParishId, setBusyParishId] = useState<string | null>(null);
+  const [confirmState, setConfirmState] = useState<ConfirmState>(null);
 
   const sortedParishes = useMemo(() => parishes, [parishes]);
 
@@ -152,31 +159,55 @@ export default function PlatformParishesView({
     }
   };
 
+  // Open the appropriate confirmation dialog instead of using window.confirm.
   const handleDeactivate = (parishId: string, parishName: string) => {
-    if (!window.confirm(`Deactivate ${parishName}? You can only safe-delete a parish after deactivation.`)) {
-      return;
-    }
-
-    setBusyParishId(parishId);
-    startTransition(async () => {
-      const result = await deactivatePlatformParish({ parishId });
-      handleResult(result, "Parish updated");
-      setBusyParishId(null);
-    });
+    setConfirmState({ action: "deactivate", parishId, parishName });
   };
 
   const handleSafeDelete = (parishId: string, parishName: string) => {
-    if (!window.confirm(`Safely delete ${parishName}? This only works after deactivation and when no dependent data remains.`)) {
-      return;
-    }
+    setConfirmState({ action: "delete", parishId, parishName });
+  };
 
+  const cancelConfirm = () => setConfirmState(null);
+
+  const executeConfirm = () => {
+    if (!confirmState) return;
+    const { action, parishId } = confirmState;
+    setConfirmState(null);
     setBusyParishId(parishId);
     startTransition(async () => {
-      const result = await safeDeletePlatformParish({ parishId });
+      const result =
+        action === "deactivate"
+          ? await deactivatePlatformParish({ parishId })
+          : await safeDeletePlatformParish({ parishId });
       handleResult(result, "Parish updated");
       setBusyParishId(null);
     });
   };
+
+  // Confirmation dialog content varies by action.
+  const confirmTitle =
+    confirmState?.action === "deactivate" ? "Deactivate parish?" : "Safely delete parish?";
+  const confirmBodyText =
+    confirmState?.action === "deactivate"
+      ? `Deactivating "${confirmState.parishName}" will prevent parishioners from accessing it. You can safely delete it afterward once all data has been removed.`
+      : `"${confirmState?.parishName}" will be permanently deleted. This only succeeds after deactivation and when no dependent data remains. This cannot be undone.`;
+  const confirmButtonLabel = confirmState?.action === "deactivate" ? "Deactivate" : "Delete";
+
+  const confirmFooter = (
+    <>
+      <Button type="button" variant="secondary" onClick={cancelConfirm}>
+        Cancel
+      </Button>
+      <Button type="button" onClick={executeConfirm} isLoading={isPending}>
+        {confirmButtonLabel}
+      </Button>
+    </>
+  );
+
+  const confirmContent = (
+    <p className="text-sm text-ink-700">{confirmBodyText}</p>
+  );
 
   const formContent = (
     <div className="space-y-4">
@@ -244,6 +275,9 @@ export default function PlatformParishesView({
       </Button>
     </>
   );
+
+  const formOpen = isCreateOpen || Boolean(editingParish);
+  const formTitle = editingParish ? "Edit parish" : "Create parish";
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-4 overflow-x-hidden pb-2 md:space-y-5">
@@ -374,9 +408,21 @@ export default function PlatformParishesView({
         </div>
       </Card>
 
-      <Drawer open={isCreateOpen || Boolean(editingParish)} onClose={closeForm} title={editingParish ? "Edit parish" : "Create parish"} footer={formFooter}>
+      {/* Create / Edit form — Drawer (mobile) + Modal (desktop) are responsive siblings */}
+      <Drawer open={formOpen} onClose={closeForm} title={formTitle} footer={formFooter}>
         {formContent}
       </Drawer>
+      <Modal open={formOpen} onClose={closeForm} title={formTitle} footer={formFooter}>
+        {formContent}
+      </Modal>
+
+      {/* Confirmation dialog — replaces window.confirm for Deactivate and Safe delete */}
+      <Drawer open={Boolean(confirmState)} onClose={cancelConfirm} title={confirmTitle} footer={confirmFooter}>
+        {confirmContent}
+      </Drawer>
+      <Modal open={Boolean(confirmState)} onClose={cancelConfirm} title={confirmTitle} footer={confirmFooter}>
+        {confirmContent}
+      </Modal>
     </div>
   );
 }

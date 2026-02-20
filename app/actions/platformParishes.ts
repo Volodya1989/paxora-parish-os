@@ -265,7 +265,6 @@ export async function safeDeletePlatformParish(input: {
             hoursEntries: true,
             heroNominations: true,
             parishInvites: true,
-            hubItems: true,
             deliveryAttempts: true,
             auditLogs: true,
             pushSubscriptions: true
