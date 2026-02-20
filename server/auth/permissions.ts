@@ -14,6 +14,15 @@ export function assertActiveSession(session: Session | null) {
 }
 
 export async function requireAdminOrShepherd(userId: string, parishId: string) {
+  // Platform superadmins have full ADMIN rights while impersonating a parish.
+  const platformUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { platformRole: true, impersonatedParishId: true }
+  });
+  if (platformUser?.platformRole === "SUPERADMIN" && platformUser.impersonatedParishId === parishId) {
+    return { id: userId, role: "ADMIN" as const };
+  }
+
   const membership = await getParishMembership(parishId, userId);
 
   if (!membership) {

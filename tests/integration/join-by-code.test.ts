@@ -43,6 +43,26 @@ dbTest("create parish stores invite code", async () => {
   assert.equal(parish.inviteCode?.length, 7);
 });
 
+dbTest("join by code returns invalid_code for deactivated parish", async () => {
+  const code = await createParishInviteCode();
+  await prisma.parish.create({
+    data: {
+      name: "St. Deactivated",
+      slug: "st-deactivated",
+      inviteCode: code,
+      inviteCodeCreatedAt: new Date(),
+      deactivatedAt: new Date()
+    }
+  });
+
+  const user = await prisma.user.create({
+    data: { email: "deact-joiner@example.com", name: "Deact", passwordHash: "hashed" }
+  });
+
+  const result = await joinParishByCode(user.id, code);
+  assert.equal(result.status, "invalid_code");
+});
+
 dbTest("join by valid/invalid/already-member code", async () => {
   const parishCode = await createParishInviteCode();
   const parish = await prisma.parish.create({

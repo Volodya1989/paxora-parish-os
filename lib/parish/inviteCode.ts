@@ -1,3 +1,4 @@
+import { randomInt } from "crypto";
 import { prisma } from "@/server/db/prisma";
 
 export const PARISH_INVITE_CODE_CHARSET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
@@ -6,8 +7,7 @@ const DEFAULT_INVITE_CODE_LENGTH = 7;
 export function generateParishInviteCode(length = DEFAULT_INVITE_CODE_LENGTH) {
   let code = "";
   for (let index = 0; index < length; index += 1) {
-    const randomIndex = Math.floor(Math.random() * PARISH_INVITE_CODE_CHARSET.length);
-    code += PARISH_INVITE_CODE_CHARSET[randomIndex];
+    code += PARISH_INVITE_CODE_CHARSET[randomInt(PARISH_INVITE_CODE_CHARSET.length)];
   }
   return code;
 }

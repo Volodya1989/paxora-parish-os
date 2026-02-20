@@ -159,7 +159,7 @@ export async function joinParishByCodeAction(formData: FormData) {
   }
 
   if (result.status === "already_member") {
-    redirect(buildLocalePathname(locale, "/access?join=already"));
+    redirect(buildLocalePathname(locale, "/this-week"));
   }
 
   redirect(buildLocalePathname(locale, "/this-week"));
@@ -245,6 +245,11 @@ export async function approveParishAccess(input: FormData | ApproveAccessInput) 
       data: {
         status: "APPROVED"
       }
+    });
+
+    await tx.user.update({
+      where: { id: userId },
+      data: { activeParishId: parishId }
     });
   });
 

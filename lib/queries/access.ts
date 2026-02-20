@@ -77,7 +77,7 @@ export async function getAccessGateState(): Promise<AccessGateState> {
   const [parish, membership] = await Promise.all([
     prisma.parish.findUnique({
       where: { id: parishId },
-      select: { name: true }
+      select: { name: true, deactivatedAt: true }
     }),
     prisma.membership.findUnique({
       where: {
@@ -89,6 +89,16 @@ export async function getAccessGateState(): Promise<AccessGateState> {
       select: { id: true }
     })
   ]);
+
+  // Treat deactivated parishes as unusable regardless of membership.
+  // Clear the stale activeParishId so the user is prompted to join a live parish.
+  if (parish?.deactivatedAt) {
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: { activeParishId: null }
+    });
+    return { status: "none", parishId: null, parishName: null };
+  }
 
   if (membership) {
     return {

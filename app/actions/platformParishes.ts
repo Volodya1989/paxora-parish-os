@@ -211,6 +211,42 @@ export async function deactivatePlatformParish(input: {
   return { status: "success", message: `${parish.name} deactivated.` };
 }
 
+export async function reactivatePlatformParish(input: {
+  parishId: string;
+}): Promise<PlatformParishActionState> {
+  try {
+    await requirePlatformSession();
+  } catch {
+    return buildError("You do not have permission to reactivate parishes.", "NOT_AUTHORIZED");
+  }
+
+  const parsed = platformParishIdSchema.safeParse(input);
+  if (!parsed.success) {
+    return buildError(parsed.error.errors[0]?.message ?? "Invalid input.", "VALIDATION_ERROR");
+  }
+
+  const parish = await prisma.parish.findUnique({
+    where: { id: parsed.data.parishId },
+    select: { id: true, name: true, deactivatedAt: true }
+  });
+
+  if (!parish) {
+    return buildError("Parish not found.", "NOT_FOUND");
+  }
+
+  if (!parish.deactivatedAt) {
+    return { status: "success", message: "Parish is already active." };
+  }
+
+  await prisma.parish.update({
+    where: { id: parish.id },
+    data: { deactivatedAt: null }
+  });
+
+  revalidatePath("/platform/parishes");
+  return { status: "success", message: `${parish.name} reactivated.` };
+}
+
 export async function safeDeletePlatformParish(input: {
   parishId: string;
 }): Promise<PlatformParishActionState> {
@@ -225,74 +261,92 @@ export async function safeDeletePlatformParish(input: {
     return buildError(parsed.error.errors[0]?.message ?? "Invalid input.", "VALIDATION_ERROR");
   }
 
-  const parish = await prisma.parish.findUnique({
+  const parishMeta = await prisma.parish.findUnique({
     where: { id: parsed.data.parishId },
-    select: {
-      id: true,
-      name: true,
-      deactivatedAt: true,
-      _count: {
-        select: {
-          memberships: true,
-          accessRequests: true,
-          groups: true,
-          weeks: true,
-          tasks: true,
-          events: true,
-          eventRequests: true,
-          requests: true,
-          digests: true,
-          announcements: true,
-          chatChannels: true,
-          emailLogs: true,
-          notifications: true,
-          mentions: true,
-          hoursEntries: true,
-          heroNominations: true,
-          parishInvites: true,
-          hubItems: true,
-          deliveryAttempts: true,
-          auditLogs: true,
-          pushSubscriptions: true
-        }
-      }
-    }
+    select: { id: true, name: true, deactivatedAt: true }
   });
 
-  if (!parish) {
+  if (!parishMeta) {
     return buildError("Parish not found.", "NOT_FOUND");
   }
 
-  if (!parish.deactivatedAt) {
+  if (!parishMeta.deactivatedAt) {
     return buildError("Deactivate the parish before safe delete.", "INVALID_STATE");
   }
 
-  const dependentRecords = Object.values(parish._count).reduce((total, value) => total + value, 0);
-  const usersPointingToParish = await prisma.user.count({
-    where: {
-      OR: [{ activeParishId: parish.id }, { impersonatedParishId: parish.id }]
+  // Re-check counts inside an interactive transaction so there is no window
+  // between the precondition check and the delete.
+  const deleteResult = await prisma.$transaction(async (tx) => {
+    const parish = await tx.parish.findUnique({
+      where: { id: parishMeta.id },
+      select: {
+        id: true,
+        deactivatedAt: true,
+        _count: {
+          select: {
+            memberships: true,
+            accessRequests: true,
+            groups: true,
+            weeks: true,
+            tasks: true,
+            events: true,
+            eventRequests: true,
+            requests: true,
+            digests: true,
+            announcements: true,
+            chatChannels: true,
+            emailLogs: true,
+            notifications: true,
+            mentions: true,
+            hoursEntries: true,
+            heroNominations: true,
+            parishInvites: true,
+            deliveryAttempts: true,
+            auditLogs: true,
+            pushSubscriptions: true
+          }
+        }
+      }
+    });
+
+    if (!parish || !parish.deactivatedAt) {
+      return "not_deactivated" as const;
     }
+
+    const dependentRecords = Object.values(parish._count).reduce((total, value) => total + value, 0);
+    const usersPointingToParish = await tx.user.count({
+      where: {
+        OR: [{ activeParishId: parish.id }, { impersonatedParishId: parish.id }]
+      }
+    });
+
+    if (dependentRecords > 0 || usersPointingToParish > 0) {
+      return "has_dependents" as const;
+    }
+
+    await tx.user.updateMany({
+      where: { impersonatedParishId: parish.id },
+      data: { impersonatedParishId: null }
+    });
+    await tx.user.updateMany({
+      where: { activeParishId: parish.id },
+      data: { activeParishId: null }
+    });
+    await tx.parish.delete({ where: { id: parish.id } });
+    return "deleted" as const;
   });
 
-  if (dependentRecords > 0 || usersPointingToParish > 0) {
+  if (deleteResult === "not_deactivated") {
+    return buildError("Deactivate the parish before safe delete.", "INVALID_STATE");
+  }
+
+  if (deleteResult === "has_dependents") {
     return buildError(
       "Parish cannot be safely deleted yet. Remove memberships and parish data first.",
       "INVALID_STATE"
     );
   }
 
-  await prisma.$transaction([
-    prisma.user.updateMany({
-      where: { impersonatedParishId: parish.id },
-      data: { impersonatedParishId: null }
-    }),
-    prisma.user.updateMany({
-      where: { activeParishId: parish.id },
-      data: { activeParishId: null }
-    }),
-    prisma.parish.delete({ where: { id: parish.id } })
-  ]);
-
   revalidatePath("/platform/parishes");
-  return { status: "success", message: `${parish.name} safely deleted.` };
+  return { status: "success", message: `${parishMeta.name} safely deleted.` };
 }

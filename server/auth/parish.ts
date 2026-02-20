@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import type { Session } from "next-auth";
 import { authOptions } from "@/server/auth/options";
 import { getParishMembership } from "@/server/db/groups";
+import { prisma } from "@/server/db/prisma";
 
 export class ParishAuthError extends Error {
   status: number;
@@ -60,6 +61,15 @@ export function ensureActiveParishIdMatches(activeParishId: string, targetParish
 }
 
 export async function requireParishMembershipInActiveParish(userId: string, activeParishId: string) {
+  // Platform superadmins have full ADMIN rights while impersonating a parish.
+  const platformUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { platformRole: true, impersonatedParishId: true }
+  });
+  if (platformUser?.platformRole === "SUPERADMIN" && platformUser.impersonatedParishId === activeParishId) {
+    return { id: userId, role: "ADMIN" as const };
+  }
+
   const membership = await getParishMembership(activeParishId, userId);
 
   if (!membership) {
