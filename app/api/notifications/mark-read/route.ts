@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
 import { NotificationType } from "@prisma/client";
+import { listEligibleChatChannelsForUser } from "@/lib/notifications/chat-membership";
 
 type NotificationCategory = "task" | "announcement" | "event" | "message" | "request";
 
@@ -102,18 +103,18 @@ export async function POST(request: NextRequest) {
 
     if (markAll || category === "message") {
       // Also mark all chat rooms as read
-      const channels = await prisma.chatChannel.findMany({
-        where: { parishId: session.user.activeParishId },
-        select: { id: true }
+      const channels = await listEligibleChatChannelsForUser({
+        userId,
+        parishId: session.user.activeParishId
       });
 
       if (channels.length > 0) {
         await Promise.all(
-          channels.map((ch: { id: string }) =>
+          channels.map((ch) =>
             prisma.chatRoomReadState.upsert({
-              where: { roomId_userId: { roomId: ch.id, userId } },
+              where: { roomId_userId: { roomId: ch.channelId, userId } },
               update: { lastReadAt: now },
-              create: { roomId: ch.id, userId, lastReadAt: now }
+              create: { roomId: ch.channelId, userId, lastReadAt: now }
             })
           )
         );

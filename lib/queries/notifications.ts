@@ -5,6 +5,7 @@ import { isParishLeader } from "@/lib/permissions";
 import { canViewRequest } from "@/lib/requests/access";
 import { parseRequestDetails } from "@/lib/requests/details";
 import { getRequestStatusLabel } from "@/lib/requests/utils";
+import { getChatNotificationCopy, listEligibleChatChannelsForUser } from "@/lib/notifications/chat-membership";
 
 export type NotificationCategory = "message" | "task" | "announcement" | "event" | "request";
 
@@ -40,19 +41,33 @@ async function getStoredNotificationItems(
   userId: string,
   parishId: string
 ): Promise<NotificationsResult> {
-  const [notifications, unreadCount] = await Promise.all([
-    prisma.notification.findMany({
-      where: { userId, parishId },
-      orderBy: { createdAt: "desc" },
-      take: 50
-    }),
-    prisma.notification.count({
-      where: { userId, parishId, readAt: null }
-    })
-  ]);
+  const eligibleChannels = await listEligibleChatChannelsForUser({ userId, parishId });
+  const allowedByChannel = new Map(eligibleChannels.map((channel) => [channel.channelId, channel]));
+
+  const notifications = await prisma.notification.findMany({
+    where: { userId, parishId },
+    orderBy: { createdAt: "desc" },
+    take: 200
+  });
+
+  const filtered = notifications.filter((notification) => {
+    if (notification.type !== "MESSAGE" && notification.type !== "MENTION") return true;
+
+    const channelId = notification.chatChannelId ?? (() => {
+      const match = notification.href.match(/[?&]channel=([^&]+)/);
+      return match?.[1] ?? null;
+    })();
+
+    if (!channelId) return false;
+
+    const channel = allowedByChannel.get(channelId);
+    if (!channel) return false;
+
+    return channel.joinedAt <= notification.createdAt;
+  });
 
   return {
-    items: notifications.map((notification) => ({
+    items: filtered.slice(0, 50).map((notification) => ({
       id: notification.id,
       type: toNotificationCategory(notification.type),
       title: notification.title,
@@ -61,7 +76,7 @@ async function getStoredNotificationItems(
       timestamp: notification.createdAt.toISOString(),
       readAt: notification.readAt?.toISOString() ?? null
     })),
-    count: unreadCount
+    count: filtered.filter((notification) => notification.readAt == null).length
   };
 }
 
@@ -130,37 +145,27 @@ async function getUnreadMessageItems(
   userId: string,
   parishId: string
 ): Promise<NotificationItem[]> {
-  const channels = await prisma.chatChannel.findMany({
-    where: { parishId },
-    select: { id: true, name: true }
-  });
+  const eligibleChannels = await listEligibleChatChannelsForUser({ userId, parishId });
 
-  if (channels.length === 0) return [];
-
-  const channelIds = channels.map((c) => c.id);
-  const channelMap = new Map(channels.map((c) => [c.id, c.name]));
+  if (eligibleChannels.length === 0) return [];
 
   const rows = await prisma.$queryRaw<
-    Array<{ channelId: string; cnt: number; latestBody: string; latestAt: Date }>
+    Array<{ channelId: string; cnt: number; latestAt: Date }>
   >(
     Prisma.sql`
       SELECT
         m."channelId",
         COUNT(*)::int AS cnt,
-        (
-          SELECT m2."body"
-          FROM "ChatMessage" m2
-          WHERE m2."channelId" = m."channelId"
-            AND m2."authorId" != ${userId}
-            AND m2."deletedAt" IS NULL
-          ORDER BY m2."createdAt" DESC
-          LIMIT 1
-        ) AS "latestBody",
         MAX(m."createdAt") AS "latestAt"
       FROM "ChatMessage" m
       LEFT JOIN "ChatRoomReadState" r
         ON r."roomId" = m."channelId" AND r."userId" = ${userId}
-      WHERE m."channelId" IN (${Prisma.join(channelIds)})
+      WHERE ${Prisma.join(
+        eligibleChannels.map(
+          (channel) => Prisma.sql`(m."channelId" = ${channel.channelId} AND m."createdAt" >= ${channel.joinedAt})`
+        ),
+        " OR "
+      )}
         AND m."authorId" != ${userId}
         AND m."deletedAt" IS NULL
         AND m."createdAt" > COALESCE(r."lastReadAt", '1970-01-01')
@@ -169,18 +174,21 @@ async function getUnreadMessageItems(
     `
   );
 
+  const channelMap = new Map(eligibleChannels.map((channel) => [channel.channelId, channel]));
+
   return rows.map((row) => {
-    const channelName = channelMap.get(row.channelId) ?? "Chat";
-    const body = row.latestBody ?? "";
-    const preview = body.length > 80 ? `${body.slice(0, 77)}...` : body;
+    const channel = channelMap.get(row.channelId);
+    const copy = getChatNotificationCopy({
+      channelName: channel?.channelName ?? "Chat",
+      channelType: channel?.channelType ?? "PARISH",
+      groupVisibility: channel?.groupVisibility ?? null
+    });
+
     return {
       id: `msg-${row.channelId}`,
       type: "message" as const,
-      title:
-        row.cnt === 1
-          ? `New message in ${channelName}`
-          : `${row.cnt} new messages in ${channelName}`,
-      description: preview,
+      title: row.cnt === 1 ? copy.title : `${row.cnt} new messages`,
+      description: copy.description,
       href: `/community/chat?channel=${row.channelId}`,
       timestamp: row.latestAt.toISOString()
     };
@@ -193,10 +201,10 @@ async function getNewTaskItems(
 ): Promise<NotificationItem[]> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { lastSeenTasksAt: true }
+    select: { lastSeenTasksAt: true, createdAt: true }
   });
 
-  const since = user?.lastSeenTasksAt ?? new Date("1970-01-01");
+  const since = user?.lastSeenTasksAt ?? user?.createdAt ?? new Date();
 
   const tasks = await prisma.task.findMany({
     where: {
@@ -235,10 +243,10 @@ async function getNewAnnouncementItems(
 ): Promise<NotificationItem[]> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { lastSeenAnnouncementsAt: true }
+    select: { lastSeenAnnouncementsAt: true, createdAt: true }
   });
 
-  const since = user?.lastSeenAnnouncementsAt ?? new Date("1970-01-01");
+  const since = user?.lastSeenAnnouncementsAt ?? user?.createdAt ?? new Date();
 
   const announcements = await prisma.announcement.findMany({
     where: {
@@ -279,10 +287,10 @@ async function getNewEventItems(
 ): Promise<NotificationItem[]> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { lastSeenEventsAt: true }
+    select: { lastSeenEventsAt: true, createdAt: true }
   });
 
-  const since = user?.lastSeenEventsAt ?? new Date("1970-01-01");
+  const since = user?.lastSeenEventsAt ?? user?.createdAt ?? new Date();
 
   const events = await prisma.event.findMany({
     where: {
@@ -437,10 +445,10 @@ async function getRequestNotificationItems(
 ): Promise<NotificationItem[]> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { lastSeenRequestsAt: true }
+    select: { lastSeenRequestsAt: true, createdAt: true }
   });
 
-  const since = user?.lastSeenRequestsAt ?? new Date("1970-01-01");
+  const since = user?.lastSeenRequestsAt ?? user?.createdAt ?? new Date();
   const membership = await getParishMembership(parishId, userId);
   const items: NotificationItem[] = [];
 

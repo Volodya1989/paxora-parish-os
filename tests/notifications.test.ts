@@ -727,3 +727,162 @@ dbTest("notification unread count returns zero when all stored notifications are
   const unreadAfter = await getNotificationUnreadCount(user.id, parish.id);
   assert.equal(unreadAfter, 0);
 });
+
+dbTest("fallback chat notifications are membership-gated and redacted", async () => {
+  const parish = await prisma.parish.create({ data: { name: "St. Jude", slug: "st-jude" } });
+  const actor = await prisma.user.create({
+    data: { email: "actor-fallback@example.com", passwordHash: "hashed", activeParishId: parish.id }
+  });
+  const member = await prisma.user.create({
+    data: { email: "member-fallback@example.com", passwordHash: "hashed", activeParishId: parish.id }
+  });
+  const outsider = await prisma.user.create({
+    data: { email: "outsider-fallback@example.com", passwordHash: "hashed", activeParishId: parish.id }
+  });
+
+  await prisma.membership.createMany({
+    data: [
+      { parishId: parish.id, userId: actor.id, role: "MEMBER" },
+      { parishId: parish.id, userId: member.id, role: "MEMBER" },
+      { parishId: parish.id, userId: outsider.id, role: "MEMBER" }
+    ]
+  });
+
+  const group = await prisma.group.create({
+    data: { parishId: parish.id, createdById: actor.id, name: "Private Circle", status: "ACTIVE", visibility: "PRIVATE" }
+  });
+
+  await prisma.groupMembership.createMany({
+    data: [
+      { groupId: group.id, userId: actor.id, status: "ACTIVE", role: "COORDINATOR" },
+      { groupId: group.id, userId: member.id, status: "ACTIVE" }
+    ]
+  });
+
+  const channel = await prisma.chatChannel.create({
+    data: { parishId: parish.id, groupId: group.id, type: "GROUP", name: "Sensitive" }
+  });
+
+  await prisma.chatMessage.create({
+    data: { channelId: channel.id, authorId: actor.id, body: "secret details" }
+  });
+
+  const memberFeed = await getNotificationItems(member.id, parish.id);
+  const outsiderFeed = await getNotificationItems(outsider.id, parish.id);
+
+  assert.equal(memberFeed.items.length, 1);
+  assert.equal(memberFeed.items[0]?.title, "New message");
+  assert.equal(memberFeed.items[0]?.description, "You have a new message");
+  assert.equal(outsiderFeed.items.length, 0);
+});
+
+dbTest("joined-later member only gets notifications after join time", async () => {
+  const parish = await prisma.parish.create({ data: { name: "St. Anne", slug: "st-anne" } });
+  const actor = await prisma.user.create({
+    data: { email: "actor-later@example.com", passwordHash: "hashed", activeParishId: parish.id }
+  });
+  const member = await prisma.user.create({
+    data: { email: "member-later@example.com", passwordHash: "hashed", activeParishId: parish.id }
+  });
+
+  await prisma.membership.createMany({
+    data: [
+      { parishId: parish.id, userId: actor.id, role: "MEMBER" },
+      { parishId: parish.id, userId: member.id, role: "MEMBER" }
+    ]
+  });
+
+  const group = await prisma.group.create({
+    data: { parishId: parish.id, createdById: actor.id, name: "Choir 2", status: "ACTIVE" }
+  });
+
+  await prisma.groupMembership.create({
+    data: {
+      groupId: group.id,
+      userId: actor.id,
+      status: "ACTIVE",
+      role: "COORDINATOR",
+      createdAt: new Date("2024-01-01T00:00:00.000Z")
+    }
+  });
+
+  const channel = await prisma.chatChannel.create({
+    data: { parishId: parish.id, groupId: group.id, type: "GROUP", name: "Choir 2 chat" }
+  });
+
+  await prisma.chatMessage.create({
+    data: {
+      channelId: channel.id,
+      authorId: actor.id,
+      body: "before join",
+      createdAt: new Date("2024-01-01T10:00:00.000Z")
+    }
+  });
+
+  await prisma.groupMembership.create({
+    data: {
+      groupId: group.id,
+      userId: member.id,
+      status: "ACTIVE",
+      createdAt: new Date("2024-01-01T11:00:00.000Z")
+    }
+  });
+
+  await prisma.chatMessage.create({
+    data: {
+      channelId: channel.id,
+      authorId: actor.id,
+      body: "after join",
+      createdAt: new Date("2024-01-01T12:00:00.000Z")
+    }
+  });
+
+  const memberFeed = await getNotificationItems(member.id, parish.id);
+  assert.equal(memberFeed.items.length, 1);
+  assert.equal(memberFeed.items[0]?.timestamp, new Date("2024-01-01T12:00:00.000Z").toISOString());
+});
+
+dbTest("reader defense excludes bad stored chat notification rows", async () => {
+  const parish = await prisma.parish.create({ data: { name: "St. Mark", slug: "st-mark" } });
+  const outsider = await prisma.user.create({
+    data: { email: "outsider-defense@example.com", passwordHash: "hashed", activeParishId: parish.id }
+  });
+  const actor = await prisma.user.create({
+    data: { email: "actor-defense@example.com", passwordHash: "hashed", activeParishId: parish.id }
+  });
+
+  await prisma.membership.createMany({
+    data: [
+      { parishId: parish.id, userId: outsider.id, role: "MEMBER" },
+      { parishId: parish.id, userId: actor.id, role: "MEMBER" }
+    ]
+  });
+
+  const group = await prisma.group.create({
+    data: { parishId: parish.id, createdById: actor.id, name: "Locked", status: "ACTIVE" }
+  });
+  await prisma.groupMembership.create({
+    data: { groupId: group.id, userId: actor.id, status: "ACTIVE" }
+  });
+
+  const channel = await prisma.chatChannel.create({
+    data: { parishId: parish.id, groupId: group.id, type: "GROUP", name: "Locked chat" }
+  });
+
+  await prisma.notification.create({
+    data: {
+      userId: outsider.id,
+      parishId: parish.id,
+      chatChannelId: channel.id,
+      type: "MESSAGE",
+      title: "Leaked",
+      description: "secret",
+      href: `/community/chat?channel=${channel.id}`,
+      createdAt: new Date()
+    }
+  });
+
+  const feed = await getNotificationItems(outsider.id, parish.id);
+  assert.equal(feed.items.length, 0);
+  assert.equal(feed.count, 0);
+});

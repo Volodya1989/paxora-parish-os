@@ -9,6 +9,7 @@ import {
   resolveTaskWatcherAudience,
   type AudienceRecipient
 } from "@/lib/notifications/audience";
+import { getChatNotificationCopy } from "@/lib/notifications/chat-membership";
 
 const notificationPreferenceFieldByType = {
   [NotificationType.MESSAGE]: "notifyMessageInApp",
@@ -26,6 +27,7 @@ type NotificationCreateInput = {
   description?: string | null;
   href: string;
   createdAt?: Date;
+  chatChannelId?: string | null;
 };
 
 async function createNotificationsForUsers(
@@ -54,7 +56,8 @@ async function createNotificationsForUsers(
       title: input.title,
       description: input.description ?? null,
       href: input.href,
-      createdAt: input.createdAt ?? new Date()
+      createdAt: input.createdAt ?? new Date(),
+      chatChannelId: input.chatChannelId ?? null
     }))
   });
 }
@@ -122,24 +125,28 @@ export async function notifyChatMessageInApp(opts: {
   parishId: string;
   messageBody: string;
   channelType?: string;
+  createdAt?: Date;
+  groupVisibility?: "PUBLIC" | "PRIVATE" | null;
 }) {
-  const { channelId, authorId, channelName, parishId, messageBody, channelType } = opts;
-  const recipients = await resolveChatAudience({ channelId, actorId: authorId });
+  const { channelId, authorId, channelName, parishId, createdAt, groupVisibility } = opts;
+  const eventTime = createdAt ?? new Date();
+  const recipients = await resolveChatAudience({ channelId, actorId: authorId, atTime: eventTime });
   if (recipients.length === 0) return;
 
-  const truncatedBody =
-    messageBody.length > 100 ? `${messageBody.slice(0, 97)}...` : messageBody;
-  const sanitizedBody =
-    channelType === "GROUP"
-      ? `New message in ${channelName}`
-      : truncatedBody;
+  const copy = getChatNotificationCopy({
+    channelName,
+    channelType: (opts.channelType as "ANNOUNCEMENT" | "GROUP" | "PARISH" | undefined) ?? "PARISH",
+    groupVisibility: groupVisibility ?? null
+  });
 
   await createNotificationsForAudience(recipients, {
     parishId,
     type: NotificationType.MESSAGE,
-    title: `${opts.authorName} in ${channelName}`,
-    description: sanitizedBody,
-    href: `/community/chat?channel=${channelId}`
+    title: copy.title,
+    description: copy.description,
+    href: `/community/chat?channel=${channelId}`,
+    createdAt: eventTime,
+    chatChannelId: channelId
   });
 }
 
