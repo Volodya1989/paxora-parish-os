@@ -1,6 +1,7 @@
 import { test, mock } from "node:test";
 import assert from "node:assert/strict";
 import { loadModuleFromRoot } from "../_helpers/load-module";
+import { resolveFromRoot } from "../_helpers/resolve";
 
 const session = {
   user: {
@@ -17,7 +18,7 @@ mock.module("next-auth", {
   }
 });
 
-mock.module("@/server/auth/permissions", {
+mock.module(resolveFromRoot("server/auth/permissions"), {
   namedExports: {
     requireAdminOrShepherd: async () => ({ id: "leader-1", role: "ADMIN" }),
     requirePlatformAdmin: async () => {
