@@ -270,6 +270,8 @@ model Parish {
   deliveryAttempts  DeliveryAttempt[]
   impersonatedUsers User[]             @relation("ImpersonatedParish")
   auditLogs         AuditLog[]         @relation("ParishAuditLogs")
+
+  @@index([deactivatedAt])
 }
 
 model TaskSequence {

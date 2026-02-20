@@ -15,10 +15,10 @@ export async function joinParishByCode(userId: string, codeInput: string): Promi
 
   const parish = await prisma.parish.findUnique({
     where: { inviteCode: code },
-    select: { id: true }
+    select: { id: true, deactivatedAt: true }
   });
 
-  if (!parish) {
+  if (!parish || parish.deactivatedAt) {
     return { status: "invalid_code" };
   }
 

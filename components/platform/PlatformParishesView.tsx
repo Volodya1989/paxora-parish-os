@@ -10,7 +10,6 @@ import Label from "@/components/ui/Label";
 import Select from "@/components/ui/Select";
 import Badge from "@/components/ui/Badge";
 import { Drawer } from "@/components/ui/Drawer";
-import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 import ListEmptyState from "@/components/app/list-empty-state";
 import type { PlatformParishRecord } from "@/lib/queries/platformParishes";
@@ -378,9 +377,6 @@ export default function PlatformParishesView({
       <Drawer open={isCreateOpen || Boolean(editingParish)} onClose={closeForm} title={editingParish ? "Edit parish" : "Create parish"} footer={formFooter}>
         {formContent}
       </Drawer>
-      <Modal open={isCreateOpen || Boolean(editingParish)} onClose={closeForm} title={editingParish ? "Edit parish" : "Create parish"} footer={formFooter}>
-        {formContent}
-      </Modal>
     </div>
   );
 }
