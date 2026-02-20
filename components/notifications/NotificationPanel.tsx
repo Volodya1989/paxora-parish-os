@@ -13,7 +13,7 @@ type NotificationPanelProps = {
   items: NotificationItem[];
   onMarkAllRead: () => void;
   onMarkCategoryRead: (category: NotificationCategory) => void;
-  onMarkNotificationRead: (notificationId: string) => void;
+  onMarkNotificationRead: (item: NotificationItem) => Promise<void>;
   onDeleteNotification: (notificationId: string) => void;
 };
 
@@ -57,15 +57,15 @@ function NotificationRow({
 }: {
   item: NotificationItem;
   onClose: () => void;
-  onMarkNotificationRead: (notificationId: string) => void;
+  onMarkNotificationRead: (item: NotificationItem) => Promise<void>;
   onDeleteNotification: (notificationId: string) => void;
   onMissingHref: () => void;
 }) {
   const router = useRouter();
   const safeHref = getSafeNotificationHref(item.href);
 
-  const handleRowClick = () => {
-    onMarkNotificationRead(item.id);
+  const handleRowClick = async () => {
+    await onMarkNotificationRead(item);
 
     if (!safeHref) {
       onMissingHref();
@@ -79,7 +79,7 @@ function NotificationRow({
   const handleDismiss = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     event.stopPropagation();
-    onMarkNotificationRead(item.id);
+    onMarkNotificationRead(item);
   };
 
   const isUnread = !item.readAt;

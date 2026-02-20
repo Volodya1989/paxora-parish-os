@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
         ? (rawCategory as NotificationCategory)
         : undefined;
     const notificationId = body.notificationId as string | undefined;
+    const channelId = body.channelId as string | undefined;
     const markAll = body.all === true || rawCategory === "all";
     const now = new Date();
     const userId = session.user.id;
@@ -63,6 +64,37 @@ export async function POST(request: NextRequest) {
       // Do NOT update lastSeen* timestamps for individual notifications.
       // Per-item readAt is sufficient; bumping lastSeen here would mark all
       // legacy items of that category as seen, which is incorrect.
+    }
+
+
+    if (channelId) {
+      const eligibleChannels = await listEligibleChatChannelsForUser({
+        userId,
+        parishId: session.user.activeParishId
+      });
+      const isEligible = eligibleChannels.some((channel) => channel.channelId === channelId);
+
+      if (isEligible) {
+        await prisma.chatRoomReadState.upsert({
+          where: { roomId_userId: { roomId: channelId, userId } },
+          update: { lastReadAt: now },
+          create: { roomId: channelId, userId, lastReadAt: now }
+        });
+
+        await prisma.notification.updateMany({
+          where: {
+            userId,
+            parishId: session.user.activeParishId,
+            type: { in: [NotificationType.MESSAGE, NotificationType.MENTION] },
+            readAt: null,
+            OR: [
+              { chatChannelId: channelId },
+              { href: { contains: `channel=${channelId}` } }
+            ]
+          },
+          data: { readAt: now }
+        });
+      }
     }
 
     if (markAll) {
