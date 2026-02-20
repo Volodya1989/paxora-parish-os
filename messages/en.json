@@ -27,6 +27,7 @@
     "goodMorning": "Good morning",
     "goodAfternoon": "Good afternoon",
     "goodEvening": "Good evening",
+    "hi": "Hi",
     "moreGroups": "{count} more groups"
   },
   "header": {

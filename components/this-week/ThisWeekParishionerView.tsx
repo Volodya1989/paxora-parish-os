@@ -100,7 +100,7 @@ export default function ThisWeekParishionerView({
   const hasGratitudeItems = data.gratitudeSpotlight.enabled && data.gratitudeSpotlight.items.length > 0;
 
   return (
-    <div className="space-y-6 overflow-x-hidden">
+    <div className="space-y-6">
       {/* Clean, welcoming header with personalized greeting */}
       <ParishionerHeader
         parishName={resolvedParishName}

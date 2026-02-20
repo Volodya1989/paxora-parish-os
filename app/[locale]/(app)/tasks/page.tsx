@@ -205,7 +205,7 @@ export default async function TasksPage({
       parishLogoUrl={parish?.logoUrl ?? null}
       isLeader={isLeader}
       subtitle={t("serve.myServeSubtitle")}
-      gradientClass="from-sky-500 via-sky-400 to-cyan-500"
+      sectionTheme="Serve"
       icon={<HandHeartIcon className="h-6 w-6 text-white" />}
     >
       <VolunteerHoursSummary ytdHours={ytdHours} tier={milestoneTier} />

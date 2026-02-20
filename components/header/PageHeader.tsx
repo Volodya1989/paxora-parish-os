@@ -8,6 +8,7 @@ import GivingShortcutButton from "@/components/navigation/GivingShortcutButton";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import { useNotificationContext } from "@/components/notifications/NotificationProvider";
 import { cn } from "@/lib/ui/cn";
+import { sectionThemes, type SectionThemeKey } from "@/lib/theme/sectionTheme";
 import { useLocale } from "@/lib/i18n/provider";
 import { buildLocalePathname } from "@/lib/i18n/routing";
 
@@ -30,6 +31,8 @@ type PageHeaderProps = {
   quoteSource?: string;
   /** Optional icon to display next to the title */
   icon?: ReactNode;
+  /** Section-aware theme variant used by header + bottom nav */
+  sectionTheme?: SectionThemeKey;
   /** Fallback href for back button. When set, a back arrow appears top-left. */
   backHref?: string;
 };
@@ -51,16 +54,19 @@ export default function PageHeader({
   parishLogoUrl,
   subtitle,
   actions,
-  gradientClass = "from-primary-600 via-primary-500 to-emerald-500",
+  gradientClass,
   quote,
   quoteSource,
   icon,
-  backHref
+  backHref,
+  sectionTheme = "ThisWeek"
 }: PageHeaderProps) {
   const { count } = useNotificationContext();
   const locale = useLocale();
   const router = useRouter();
   const logoSrc = parishLogoUrl?.trim() ? parishLogoUrl : "/icon.png";
+  const theme = sectionThemes[sectionTheme];
+  const resolvedGradientClass = gradientClass ?? theme.headerGradient;
 
   const handleBack = useCallback(() => {
     if (typeof window !== "undefined" && window.history.length > 1) {
@@ -74,12 +80,12 @@ export default function PageHeader({
     <header
       className={cn(
         "relative -mx-4 -mt-6 overflow-hidden bg-gradient-to-br px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] text-white md:-mx-8 md:rounded-b-2xl md:px-6",
-        gradientClass
+        resolvedGradientClass
       )}
     >
       {/* Decorative background elements */}
-      <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-white/10" />
-      <div className="absolute -bottom-2 left-1/4 h-12 w-12 rounded-full bg-white/5" />
+      <div className={cn("absolute -right-8 -top-8 h-20 w-20 rounded-full", theme.headerAccentBubble)} />
+      <div className={cn("absolute -bottom-2 left-1/4 h-12 w-12 rounded-full", theme.headerAccentGlow)} />
 
       {/* Top bar with parish identity + actions */}
       <div className="relative mb-2 flex items-start justify-between gap-3">
@@ -131,7 +137,7 @@ export default function PageHeader({
       {/* Page title */}
       <div className="relative">
         <div className="flex items-center gap-2">
-          {icon ? <span className="flex-shrink-0">{icon}</span> : null}
+          {icon ? <span className={cn("flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full", theme.headerIconBubble)}>{icon}</span> : null}
           <h1 className="text-xl font-bold tracking-tight md:text-2xl">
             {pageTitle}
           </h1>
