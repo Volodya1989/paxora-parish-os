@@ -15,7 +15,13 @@ import { useToast } from "@/components/ui/Toast";
 import ListEmptyState from "@/components/app/list-empty-state";
 import type { PlatformParishRecord } from "@/lib/queries/platformParishes";
 import { locales } from "@/lib/i18n/config";
-import { createPlatformParish, updatePlatformParish } from "@/app/actions/platformParishes";
+import {
+  createPlatformParish,
+  deactivatePlatformParish,
+  reactivatePlatformParish,
+  safeDeletePlatformParish,
+  updatePlatformParish
+} from "@/app/actions/platformParishes";
 import { startImpersonation } from "@/app/actions/platformImpersonation";
 import type { PlatformParishActionState } from "@/lib/types/platformParishes";
 
@@ -31,6 +37,12 @@ type ParishFormState = {
   logoUrl: string;
   defaultLocale: string;
 };
+
+type ConfirmState =
+  | { action: "deactivate"; parishId: string; parishName: string }
+  | { action: "reactivate"; parishId: string; parishName: string }
+  | { action: "delete"; parishId: string; parishName: string }
+  | null;
 
 const emptyForm: ParishFormState = {
   name: "",
@@ -51,6 +63,8 @@ export default function PlatformParishesView({
   const [formState, setFormState] = useState<ParishFormState>(emptyForm);
   const [isPending, startTransition] = useTransition();
   const [isImpersonating, startImpersonationTransition] = useTransition();
+  const [busyParishId, setBusyParishId] = useState<string | null>(null);
+  const [confirmState, setConfirmState] = useState<ConfirmState>(null);
 
   const sortedParishes = useMemo(() => parishes, [parishes]);
 
@@ -92,7 +106,9 @@ export default function PlatformParishesView({
     }
     addToast({
       title: successTitle,
-      description: result.message,
+      description: result.inviteCode
+        ? `${result.message} Parish Code: ${result.inviteCode}`
+        : result.message,
       status: "success"
     });
     router.refresh();
@@ -127,6 +143,90 @@ export default function PlatformParishesView({
       router.refresh();
     });
   };
+
+  const handleCopyInviteCode = async (inviteCode: string) => {
+    try {
+      await navigator.clipboard.writeText(inviteCode);
+      addToast({
+        title: "Parish code copied",
+        description: `${inviteCode} copied to clipboard.`,
+        status: "success"
+      });
+    } catch {
+      addToast({
+        title: "Copy failed",
+        description: "Unable to copy parish code.",
+        status: "error"
+      });
+    }
+  };
+
+  // Open the appropriate confirmation dialog instead of using window.confirm.
+  const handleDeactivate = (parishId: string, parishName: string) => {
+    setConfirmState({ action: "deactivate", parishId, parishName });
+  };
+
+  const handleReactivate = (parishId: string, parishName: string) => {
+    setConfirmState({ action: "reactivate", parishId, parishName });
+  };
+
+  const handleSafeDelete = (parishId: string, parishName: string) => {
+    setConfirmState({ action: "delete", parishId, parishName });
+  };
+
+  const cancelConfirm = () => setConfirmState(null);
+
+  const executeConfirm = () => {
+    if (!confirmState) return;
+    const { action, parishId } = confirmState;
+    setConfirmState(null);
+    setBusyParishId(parishId);
+    startTransition(async () => {
+      const result =
+        action === "deactivate"
+          ? await deactivatePlatformParish({ parishId })
+          : action === "reactivate"
+            ? await reactivatePlatformParish({ parishId })
+            : await safeDeletePlatformParish({ parishId });
+      handleResult(result, "Parish updated");
+      setBusyParishId(null);
+    });
+  };
+
+  // Confirmation dialog content varies by action.
+  const confirmTitle =
+    confirmState?.action === "deactivate"
+      ? "Deactivate parish?"
+      : confirmState?.action === "reactivate"
+        ? "Reactivate parish?"
+        : "Safely delete parish?";
+  const confirmBodyText =
+    confirmState?.action === "deactivate"
+      ? `Deactivating "${confirmState.parishName}" will prevent parishioners from accessing it. You can safely delete it afterward once all data has been removed.`
+      : confirmState?.action === "reactivate"
+        ? `"${confirmState.parishName}" will be restored to active status. Parishioners will be able to access it again using the existing parish code.`
+        : `"${confirmState?.parishName}" will be permanently deleted. This only succeeds after deactivation and when no dependent data remains. This cannot be undone.`;
+  const confirmButtonLabel =
+    confirmState?.action === "deactivate"
+      ? "Deactivate"
+      : confirmState?.action === "reactivate"
+        ? "Reactivate"
+        : "Delete";
+
+  const confirmFooter = (
+    <>
+      <Button type="button" variant="secondary" onClick={cancelConfirm}>
+        Cancel
+      </Button>
+      <Button type="button" onClick={executeConfirm} isLoading={isPending}>
+        {confirmButtonLabel}
+      </Button>
+    </>
+  );
+
+  const confirmContent = (
+    <p className="text-sm text-ink-700">{confirmBodyText}</p>
+  );
 
   const formContent = (
     <div className="space-y-4">
@@ -195,6 +295,9 @@ export default function PlatformParishesView({
     </>
   );
 
+  const formOpen = isCreateOpen || Boolean(editingParish);
+  const formTitle = editingParish ? "Edit parish" : "Create parish";
+
   return (
     <div className="mx-auto w-full max-w-4xl space-y-4 overflow-x-hidden pb-2 md:space-y-5">
       <Card>
@@ -232,6 +335,9 @@ export default function PlatformParishesView({
           ) : (
             sortedParishes.map((parish) => {
               const isImpersonated = parish.id === impersonatedParishId;
+              const inviteCode = parish.inviteCode;
+              const isDeactivated = Boolean(parish.deactivatedAt);
+              const isBusy = busyParishId === parish.id;
               return (
                 <div
                   key={parish.id}
@@ -255,17 +361,66 @@ export default function PlatformParishesView({
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       <Badge tone="neutral">{parish.defaultLocale.toUpperCase()}</Badge>
                       <Badge tone="neutral">{parish.timezone}</Badge>
+                      {isDeactivated ? <Badge tone="warning">Deactivated</Badge> : null}
                       {isImpersonated ? <Badge tone="warning">Impersonating</Badge> : null}
                     </div>
                   </div>
 
                   <div className="text-sm text-ink-500">
                     <p>{parish.address || "No address set."}</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-medium uppercase tracking-wide text-ink-400">
+                        Parish Code
+                      </span>
+                      <code className="rounded bg-mist-100 px-2 py-1 text-sm font-semibold text-ink-800">
+                        {inviteCode ?? "Not set"}
+                      </code>
+                      {inviteCode ? (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleCopyInviteCode(inviteCode)}
+                        >
+                          Copy
+                        </Button>
+                      ) : null}
+                    </div>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
                     <Button type="button" variant="secondary" size="sm" onClick={() => openEdit(parish)}>
                       Edit
+                    </Button>
+                    {isDeactivated ? (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleReactivate(parish.id, parish.name)}
+                        disabled={isBusy}
+                      >
+                        Reactivate
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleDeactivate(parish.id, parish.name)}
+                        disabled={isBusy}
+                      >
+                        Deactivate
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => handleSafeDelete(parish.id, parish.name)}
+                      disabled={isBusy || !isDeactivated}
+                    >
+                      Safe delete
                     </Button>
                     <Button
                       type="button"
@@ -284,11 +439,20 @@ export default function PlatformParishesView({
         </div>
       </Card>
 
-      <Drawer open={isCreateOpen || Boolean(editingParish)} onClose={closeForm} title={editingParish ? "Edit parish" : "Create parish"} footer={formFooter}>
+      {/* Create / Edit form — Drawer (mobile) + Modal (desktop) are responsive siblings */}
+      <Drawer open={formOpen} onClose={closeForm} title={formTitle} footer={formFooter}>
         {formContent}
       </Drawer>
-      <Modal open={isCreateOpen || Boolean(editingParish)} onClose={closeForm} title={editingParish ? "Edit parish" : "Create parish"} footer={formFooter}>
+      <Modal open={formOpen} onClose={closeForm} title={formTitle} footer={formFooter}>
         {formContent}
+      </Modal>
+
+      {/* Confirmation dialog — replaces window.confirm for Deactivate and Safe delete */}
+      <Drawer open={Boolean(confirmState)} onClose={cancelConfirm} title={confirmTitle} footer={confirmFooter}>
+        {confirmContent}
+      </Drawer>
+      <Modal open={Boolean(confirmState)} onClose={cancelConfirm} title={confirmTitle} footer={confirmFooter}>
+        {confirmContent}
       </Modal>
     </div>
   );

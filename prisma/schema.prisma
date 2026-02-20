@@ -231,6 +231,9 @@ model Parish {
   timezone                  String                  @default("UTC")
   logoUrl                   String?
   defaultLocale             String                  @default("en")
+  inviteCode                String?                 @unique
+  inviteCodeCreatedAt       DateTime?
+  deactivatedAt             DateTime?
   createdAt                 DateTime                @default(now())
   emailFromName             String?
   emailFromAddress          String?
@@ -267,6 +270,8 @@ model Parish {
   deliveryAttempts  DeliveryAttempt[]
   impersonatedUsers User[]             @relation("ImpersonatedParish")
   auditLogs         AuditLog[]         @relation("ParishAuditLogs")
+
+  @@index([deactivatedAt])
 }
 
 model TaskSequence {

@@ -6,12 +6,12 @@ import AccessGateContent from "@/components/access/AccessGateContent";
 
 const parishName = "St. Brigid";
 
-test("Access gate renders request access state", () => {
+test("Access gate renders parish code join state", () => {
   const markup = renderToStaticMarkup(
     createElement(AccessGateContent, { status: "none", parishName })
   );
 
-  assert.match(markup, /Request access/);
+  assert.match(markup, /Enter Parish Code/);
   assert.match(markup, /St. Brigid/);
 });
 
@@ -30,5 +30,5 @@ test("Access gate renders approved state", () => {
   );
 
   assert.match(markup, /Access granted/);
-  assert.match(markup, /dashboard/);
+  assert.match(markup, /workspace/);
 });

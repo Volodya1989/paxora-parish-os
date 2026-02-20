@@ -3,9 +3,7 @@ import { getServerSession } from "next-auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import AppShell from "@/components/navigation/AppShell";
-import ParishSetup from "@/components/setup/ParishSetup";
 import { authOptions } from "@/server/auth/options";
-import { createParish } from "@/server/actions/parish";
 import { getAccessGateState } from "@/lib/queries/access";
 import { getParishMembership } from "@/server/db/groups";
 import { getLocaleFromParam, stripLocale } from "@/lib/i18n/routing";
@@ -33,10 +31,6 @@ export default async function AppLayout({
   const isPlatformAdmin = session.user.platformRole === "SUPERADMIN";
   const access = isPlatformAdmin ? null : await getAccessGateState();
 
-  if (!isPlatformAdmin && !session.user.activeParishId && !access?.parishId) {
-    return <ParishSetup action={createParish} userName={session.user.name} />;
-  }
-
   // Access gate: allow profile page for unapproved users
   if (!isPlatformAdmin && access?.status !== "approved") {
     const isProfileRoute = pathname.startsWith("/profile");
@@ -62,7 +56,7 @@ export default async function AppLayout({
   // Same product, same style for all roles.
   return (
     <AppShell
-      parishRole={membership?.role ?? null}
+      parishRole={isPlatformAdmin && session.user.impersonatedParishId ? "ADMIN" : (membership?.role ?? null)}
       platformRole={session.user.platformRole ?? null}
       impersonation={
         impersonatedParish

@@ -11,8 +11,9 @@ import { listGroupsByParish, getParishMembership } from "@/server/db/groups";
 import { prisma } from "@/server/db/prisma";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
 import { CalendarIcon } from "@/components/icons/ParishIcons";
-import { getLocaleFromParam } from "@/lib/i18n/routing";
+import { buildLocalePathname, getLocaleFromParam } from "@/lib/i18n/routing";
 import { getTranslator } from "@/lib/i18n/translator";
+import { redirect } from "next/navigation";
 
 export default async function CalendarPage({
   params
@@ -38,6 +39,10 @@ export default async function CalendarPage({
         })
         .then((parish) => parish?.id ?? ensureParishBootstrap(userId))
     : await ensureParishBootstrap(userId);
+
+  if (!parishId) {
+    redirect(buildLocalePathname(locale, "/access"));
+  }
 
   const now = getNow();
   const weekRange = getWeekRange({ now });

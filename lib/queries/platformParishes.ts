@@ -8,6 +8,8 @@ export type PlatformParishRecord = {
   timezone: string;
   logoUrl: string | null;
   defaultLocale: string;
+  inviteCode: string | null;
+  deactivatedAt: Date | null;
   createdAt: Date;
 };
 
@@ -22,6 +24,8 @@ export async function listPlatformParishes(): Promise<PlatformParishRecord[]> {
       timezone: true,
       logoUrl: true,
       defaultLocale: true,
+      inviteCode: true,
+      deactivatedAt: true,
       createdAt: true
     }
   });

@@ -15,6 +15,7 @@ import {
   sendJoinRequestDecisionEmail,
   sendJoinRequestSubmittedEmail
 } from "@/lib/email/joinRequests";
+import { joinParishByCode } from "@/lib/parish/joinByCode";
 
 function assertSession() {
   return getServerSession(authOptions).then((session) => {
@@ -146,6 +147,24 @@ export async function requestParishAccess(formData: FormData) {
   revalidatePath(buildLocalePathname(locale, "/profile"));
 }
 
+export async function joinParishByCodeAction(formData: FormData) {
+  const session = await assertSession();
+  const locale = await getLocaleFromCookies();
+  const code = String(formData.get("code") ?? "");
+
+  const result = await joinParishByCode(session.user.id, code);
+
+  if (result.status === "invalid_code") {
+    redirect(buildLocalePathname(locale, "/access?join=invalid"));
+  }
+
+  if (result.status === "already_member") {
+    redirect(buildLocalePathname(locale, "/this-week"));
+  }
+
+  redirect(buildLocalePathname(locale, "/this-week"));
+}
+
 type ApproveAccessInput = {
   parishId: string;
   userId: string;
@@ -226,6 +245,11 @@ export async function approveParishAccess(input: FormData | ApproveAccessInput) 
       data: {
         status: "APPROVED"
       }
+    });
+
+    await tx.user.update({
+      where: { id: userId },
+      data: { activeParishId: parishId }
     });
   });
 

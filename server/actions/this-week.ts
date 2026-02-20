@@ -45,6 +45,10 @@ export async function getThisWeekSummary(
         })
         .then((parish) => parish?.id ?? ensureParishBootstrap(session.user.id))
     : await ensureParishBootstrap(session.user.id);
+
+  if (!parishId) {
+    throw new Error("No active parish membership");
+  }
   const week = await getWeekForSelection(parishId, weekSelection);
   const summary = await getWeekDigestSummary(parishId, week.id);
 

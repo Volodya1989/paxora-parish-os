@@ -81,6 +81,9 @@ export async function getHomeSummary({
 
   const actorUserId = session.user.id;
   const parishId = await resolveParishId(session.user.id, session.user.activeParishId);
+  if (!parishId) {
+    throw new Error("No active parish membership");
+  }
   const week = await getOrCreateCurrentWeek(parishId, now);
   const visibilityWhere: Prisma.TaskWhereInput = {
     OR: [
@@ -112,7 +115,7 @@ export async function getHomeSummary({
 
   const taskSummary = taskCounts.reduce(
     (acc, item) => {
-      const count = item._count?._all ?? 0;
+      const count = typeof item._count === "object" && item._count !== null ? item._count._all ?? 0 : 0;
       if (item.status === "DONE") {
         acc.completedCount = count;
       }
@@ -190,6 +193,9 @@ export async function listCommunityRoomsPreview(): Promise<CommunityRoomPreview[
   }
 
   const parishId = await resolveParishId(session.user.id, session.user.activeParishId);
+  if (!parishId) {
+    return [];
+  }
   const channels = (await listChannelsForUser(parishId, session.user.id)).filter(
     (channel) => channel.type !== "GROUP"
   );

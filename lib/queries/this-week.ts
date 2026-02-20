@@ -120,24 +120,31 @@ export async function getThisWeekDataForUser({
   parishId,
   userId,
   weekSelection = "current",
-  now = getNow()
+  now = getNow(),
+  effectiveRole
 }: {
   parishId: string;
   userId: string;
   weekSelection?: WeekSelection;
   now?: Date;
+  effectiveRole?: ParishRole | null;
 }): Promise<ThisWeekData> {
   const week = await getWeekForSelection(parishId, weekSelection, now);
 
-  const membership = await prisma.membership.findUnique({
-    where: {
-      parishId_userId: {
-        parishId,
-        userId
-      }
-    },
-    select: { role: true }
-  });
+  const membership =
+    effectiveRole !== undefined
+      ? effectiveRole !== null
+        ? { role: effectiveRole }
+        : null
+      : await prisma.membership.findUnique({
+          where: {
+            parishId_userId: {
+              parishId,
+              userId
+            }
+          },
+          select: { role: true }
+        });
 
   const [
     tasks,
@@ -432,10 +439,18 @@ export async function getThisWeekData({
         .then((parish) => parish?.id ?? ensureParishBootstrap(session.user.id))
     : await ensureParishBootstrap(session.user.id);
 
+  if (!parishId) {
+    throw new Error("No active parish membership");
+  }
+
+  const isSuperAdminImpersonating =
+    session.user.platformRole === "SUPERADMIN" && Boolean(session.user.impersonatedParishId);
+
   return getThisWeekDataForUser({
     parishId,
     userId: actorUserId,
     weekSelection,
-    now
+    now,
+    effectiveRole: isSuperAdminImpersonating ? "ADMIN" : undefined
   });
 }
