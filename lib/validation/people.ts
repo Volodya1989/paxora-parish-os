@@ -11,3 +11,7 @@ export const updateMemberRoleSchema = z.object({
 export const removeMemberSchema = z.object({
   memberId
 });
+
+export const deleteUserSchema = z.object({
+  userId: z.string().trim().min(1, "User is required")
+});

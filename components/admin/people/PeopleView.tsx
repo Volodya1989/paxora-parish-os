@@ -15,7 +15,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@/components/ui/Dropdown";
 import { useToast } from "@/components/ui/Toast";
 import RoleChip from "@/components/groups/members/RoleChip";
-import { removeMember, updateMemberRole } from "@/app/actions/people";
+import { deleteUser, removeMember, updateMemberRole } from "@/app/actions/people";
 import { createParishInvite, revokeParishInvite } from "@/app/actions/parishInvites";
 import type { ParishInviteRecord, ParishMemberRecord } from "@/lib/queries/people";
 import type { PeopleActionState } from "@/lib/types/people";
@@ -70,14 +70,22 @@ type PeopleViewProps = {
   invites: ParishInviteRecord[];
   viewerId: string;
   parishId: string;
+  viewerPlatformRole: "SUPERADMIN" | null;
 };
 
-export default function PeopleView({ members, invites, viewerId, parishId }: PeopleViewProps) {
+export default function PeopleView({
+  members,
+  invites,
+  viewerId,
+  parishId,
+  viewerPlatformRole
+}: PeopleViewProps) {
   const { addToast } = useToast();
   const router = useRouter();
   const [pendingMemberId, setPendingMemberId] = useState<string | null>(null);
   const [pendingInviteId, setPendingInviteId] = useState<string | null>(null);
   const [removeTarget, setRemoveTarget] = useState<ParishMemberRecord | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ParishMemberRecord | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<ParishRole>("MEMBER");
@@ -139,6 +147,7 @@ export default function PeopleView({ members, invites, viewerId, parishId }: Peo
   };
 
   const removeName = removeTarget?.name ?? removeTarget?.email ?? "this member";
+  const deleteName = deleteTarget?.name ?? deleteTarget?.email ?? "this user";
   const inviteRows = invites.map((invite) => {
     const isBusy = pendingInviteId === invite.id;
     const invitedBy =
@@ -225,6 +234,11 @@ export default function PeopleView({ members, invites, viewerId, parishId }: Peo
                 <DropdownItem onClick={() => handleRemove(member)} disabled={isBusy}>
                   Remove access
                 </DropdownItem>
+                {viewerPlatformRole === "SUPERADMIN" ? (
+                  <DropdownItem onClick={() => setDeleteTarget(member)} disabled={isBusy || member.userId === viewerId}>
+                    Delete user
+                  </DropdownItem>
+                ) : null}
               </DropdownMenu>
             </Dropdown>
           </div>
@@ -347,6 +361,86 @@ export default function PeopleView({ members, invites, viewerId, parishId }: Peo
       >
         <p>
           Remove {removeName} from this parish? They will lose access immediately.
+        </p>
+      </Drawer>
+
+      <Modal
+        open={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        title="Delete user"
+        footer={
+          <>
+            <Button type="button" variant="ghost" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              onClick={() => {
+                if (!deleteTarget) {
+                  return;
+                }
+                const userId = deleteTarget.userId;
+                setDeleteTarget(null);
+                setPendingMemberId(deleteTarget.id);
+                void runAction(
+                  async () => {
+                    const result = await deleteUser({ userId });
+                    setPendingMemberId(null);
+                    return result;
+                  },
+                  "User deleted"
+                );
+              }}
+            >
+              Delete user
+            </Button>
+          </>
+        }
+      >
+        <p>
+          Delete {deleteName} from the entire platform? This anonymizes the account and removes all
+          membership access across parishes.
+        </p>
+      </Modal>
+
+      <Drawer
+        open={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        title="Delete user"
+        footer={
+          <>
+            <Button type="button" variant="ghost" onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              onClick={() => {
+                if (!deleteTarget) {
+                  return;
+                }
+                const userId = deleteTarget.userId;
+                setDeleteTarget(null);
+                setPendingMemberId(deleteTarget.id);
+                void runAction(
+                  async () => {
+                    const result = await deleteUser({ userId });
+                    setPendingMemberId(null);
+                    return result;
+                  },
+                  "User deleted"
+                );
+              }}
+            >
+              Delete user
+            </Button>
+          </>
+        }
+      >
+        <p>
+          Delete {deleteName} from the entire platform? This anonymizes the account and removes all
+          membership access across parishes.
         </p>
       </Drawer>
 

@@ -9,6 +9,7 @@ import ProfileCard from "@/components/profile/ProfileCard";
 import ProfileDates from "@/components/profile/ProfileDates";
 import ProfileSettings from "@/components/profile/ProfileSettings";
 import VolunteerHoursCard from "@/components/profile/VolunteerHoursCard";
+import DeleteAccountCard from "@/components/profile/DeleteAccountCard";
 import { getParishMembership } from "@/server/db/groups";
 import { isParishLeader } from "@/lib/permissions";
 import { listParishHubItemsForAdmin, ensureParishHubDefaults } from "@/server/actions/parish-hub";
@@ -160,6 +161,8 @@ export default async function ProfilePage({
             }}
           />
         </div>
+
+        <DeleteAccountCard />
 
         {isAdmin && session.user.activeParishId && (
           <Card>

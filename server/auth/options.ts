@@ -28,10 +28,20 @@ export const authOptions: NextAuthOptions = {
 
         const email = normalizeEmail(credentials.email);
         const user = await prisma.user.findUnique({
-          where: { email }
+          where: { email },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            passwordHash: true,
+            activeParishId: true,
+            platformRole: true,
+            impersonatedParishId: true,
+            deletedAt: true
+          }
         });
 
-        if (!user) {
+        if (!user || user.deletedAt) {
           return null;
         }
 
@@ -75,8 +85,14 @@ export const authOptions: NextAuthOptions = {
       if (token.sub) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.sub },
-          select: { activeParishId: true, platformRole: true, impersonatedParishId: true }
+          select: {
+            activeParishId: true,
+            platformRole: true,
+            impersonatedParishId: true,
+            deletedAt: true
+          }
         });
+        token.isDeleted = Boolean(dbUser?.deletedAt);
         token.activeParishId = dbUser?.activeParishId ?? null;
         token.platformRole = dbUser?.platformRole ?? null;
         token.impersonatedParishId = dbUser?.impersonatedParishId ?? null;
@@ -86,6 +102,14 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
+        if (token.isDeleted) {
+          session.user.id = "";
+          session.user.activeParishId = null;
+          session.user.impersonatedParishId = null;
+          session.user.platformRole = null;
+          return session;
+        }
+
         session.user.id = token.sub ?? "";
         session.user.impersonatedParishId = (token.impersonatedParishId as string | null) ?? null;
         session.user.platformRole = (token.platformRole as typeof session.user.platformRole) ?? null;

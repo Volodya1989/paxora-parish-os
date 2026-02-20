@@ -4,10 +4,11 @@ import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
 import type { ParishRole } from "@prisma/client";
 import { authOptions } from "@/server/auth/options";
-import { requireAdminOrShepherd } from "@/server/auth/permissions";
+import { requireAdminOrShepherd, requirePlatformAdmin } from "@/server/auth/permissions";
 import { prisma } from "@/server/db/prisma";
-import { removeMemberSchema, updateMemberRoleSchema } from "@/lib/validation/people";
+import { deleteUserSchema, removeMemberSchema, updateMemberRoleSchema } from "@/lib/validation/people";
 import type { PeopleActionError, PeopleActionState } from "@/lib/types/people";
+import { softDeleteUserAccount } from "@/server/users/deletion";
 
 const leaderRoles: ParishRole[] = ["ADMIN", "SHEPHERD"];
 
@@ -165,4 +166,58 @@ export async function removeMember(input: { memberId: string }): Promise<PeopleA
   revalidatePath("/admin/people");
 
   return { status: "success", message: "Member removed." };
+}
+
+export async function deleteUser(input: { userId: string }): Promise<PeopleActionState> {
+  const parsed = deleteUserSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return buildError(parsed.error.errors[0]?.message ?? "Invalid user.", "VALIDATION_ERROR");
+  }
+
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return buildError("You do not have permission to delete users.", "NOT_AUTHORIZED");
+  }
+
+  try {
+    await requirePlatformAdmin(session.user.id);
+  } catch (error) {
+    return buildError("Only platform admins can fully delete users.", "PLATFORM_ADMIN_REQUIRED");
+  }
+
+  if (session.user.id === parsed.data.userId) {
+    return buildError("You cannot delete your own account from this screen.", "SELF_DELETE_BLOCKED");
+  }
+
+  const target = await prisma.user.findUnique({
+    where: { id: parsed.data.userId },
+    select: { id: true, platformRole: true, deletedAt: true }
+  });
+
+  if (!target) {
+    return buildError("User not found.", "NOT_FOUND");
+  }
+
+  if (target.platformRole === "SUPERADMIN") {
+    const platformAdminCount = await prisma.user.count({
+      where: {
+        platformRole: "SUPERADMIN",
+        deletedAt: null
+      }
+    });
+
+    if (platformAdminCount <= 1) {
+      return buildError("At least one platform admin is required.", "LAST_PLATFORM_ADMIN");
+    }
+  }
+
+  const deleted = await softDeleteUserAccount(parsed.data.userId);
+  if (deleted.status === "not_found") {
+    return buildError("User not found.", "NOT_FOUND");
+  }
+
+  revalidatePath("/admin/people");
+
+  return { status: "success", message: "User deleted." };
 }

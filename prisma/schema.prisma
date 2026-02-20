@@ -334,6 +334,7 @@ model User {
   anniversaryDay          Int?
   greetingsOptIn          Boolean       @default(false)
   lastLoginAt             DateTime?
+  deletedAt               DateTime?
   lastSeenAnnouncementsAt DateTime?
   lastSeenEventsAt        DateTime?
   lastSeenTasksAt         DateTime?
@@ -384,6 +385,8 @@ model User {
   deliveryAttempts         DeliveryAttempt[]
   impersonatedParish       Parish?                  @relation("ImpersonatedParish", fields: [impersonatedParishId], references: [id], onDelete: SetNull)
   auditLogs                AuditLog[]               @relation("AuditActor")
+
+  @@index([deletedAt])
 }
 
 model Notification {
