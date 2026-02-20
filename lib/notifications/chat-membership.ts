@@ -14,15 +14,13 @@ export async function listEligibleChatChannelsForUser(opts: {
 }): Promise<EligibleChannel[]> {
   const { userId, parishId } = opts;
 
-  const [parishMembership, user, channels, channelMemberships, groupMemberships, explicitChannelCounts] =
+  const [parishMembership, channels, channelMemberships, groupMemberships, explicitChannelCounts] =
     await Promise.all([
       prisma.membership.findUnique({
         where: { parishId_userId: { parishId, userId } },
-        select: { id: true }
-      }),
-      prisma.user.findUnique({
-        where: { id: userId },
-        select: { createdAt: true }
+        // createdAt is the authoritative "when did this user join this parish"
+        // timestamp, used to gate notifications on PARISH / ANNOUNCEMENT channels.
+        select: { id: true, createdAt: true }
       }),
       prisma.chatChannel.findMany({
         where: { parishId },
@@ -54,7 +52,10 @@ export async function listEligibleChatChannelsForUser(opts: {
 
   if (!parishMembership) return [];
 
-  const parishJoinedAt = user?.createdAt ?? new Date();
+  // Use the membership's own createdAt as the parish-join anchor for PARISH and
+  // ANNOUNCEMENT channels.  Previously user.createdAt was used, which is wrong
+  // for users who joined a parish long after registering their account.
+  const parishJoinedAt = parishMembership.createdAt ?? new Date();
   const channelMembershipByChannel = new Map(channelMemberships.map((m) => [m.channelId, m.createdAt]));
   const groupMembershipByGroup = new Map(groupMemberships.map((m) => [m.groupId, m.createdAt]));
   const explicitMembershipChannelIds = new Set(explicitChannelCounts.map((c) => c.channelId));

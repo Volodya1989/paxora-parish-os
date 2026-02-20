@@ -455,11 +455,13 @@ model Membership {
   role                ParishRole @default(MEMBER)
   notifyEmailEnabled  Boolean    @default(true)
   weeklyDigestEnabled Boolean    @default(true)
+  createdAt           DateTime   @default(now())
 
   parish Parish @relation(fields: [parishId], references: [id])
   user   User   @relation(fields: [userId], references: [id])
 
   @@unique([parishId, userId])
+  @@index([parishId, createdAt])
 }
 
 model AccessRequest {
