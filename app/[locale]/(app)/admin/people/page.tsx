@@ -39,6 +39,7 @@ export default async function AdminPeoplePage() {
         invites={invites}
         viewerId={session.user.id}
         parishId={session.user.activeParishId}
+        viewerPlatformRole={session.user.platformRole ?? null}
       />
     </ParishionerPageLayout>
   );
