@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useState, useEffect } from "react";
+import { type ReactNode, useState, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useTranslations } from "@/lib/i18n/provider";
 import { useLocale } from "@/lib/i18n/provider";
@@ -32,15 +32,12 @@ type ParishionerHeaderProps = {
   quoteSource?: string;
 };
 
+type GreetingLayoutMode = "full-inline" | "compact-inline" | "compact-below";
+
+const GREETING_RIGHT_GUTTER = 10;
+const LEFT_ROW_GAP = 12;
 const LONG_NAME_THRESHOLD = 14;
 
-/**
- * Warm, welcoming header for the landing page.
- * Shared by both parishioner and admin views.
- * Features a personalized greeting, parish name, and icon-based language toggle.
- *
- * Design goal: "I am home. This is my parish."
- */
 export default function ParishionerHeader({
   parishName,
   parishLogoUrl,
@@ -56,15 +53,31 @@ export default function ParishionerHeader({
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [quoteExpanded, setQuoteExpanded] = useState(true);
   const [quotePinnedOpen, setQuotePinnedOpen] = useState(false);
+  const [timeGreeting, setTimeGreeting] = useState(t("landing.welcome"));
+  const [greetingLayout, setGreetingLayout] = useState<GreetingLayoutMode>("compact-inline");
+
+  const headerTopRowRef = useRef<HTMLDivElement | null>(null);
+  const actionRowRef = useRef<HTMLDivElement | null>(null);
+  const fullGreetingMeasureRef = useRef<HTMLSpanElement | null>(null);
+  const compactGreetingMeasureRef = useRef<HTMLSpanElement | null>(null);
+
   const logoSrc = parishLogoUrl?.trim() ? parishLogoUrl : "/icon.png";
   const quoteStorageKey = "this-week:quote-expanded";
   const theme = sectionThemes.ThisWeek;
-  const resolvedUserName = userName?.trim();
-  const isLongName = (resolvedUserName?.length ?? 0) > LONG_NAME_THRESHOLD;
 
-  // Use state to prevent hydration mismatch - start with generic greeting
-  // then update to time-based greeting on client
-  const [timeGreeting, setTimeGreeting] = useState(t("landing.welcome"));
+  const resolvedUserName = userName?.trim();
+  const compactGreetingText = resolvedUserName
+    ? `${t("landing.hi")}, ${resolvedUserName}!`
+    : `${t("landing.hi")}!`;
+  const fullGreetingText = resolvedUserName
+    ? `${timeGreeting}, ${resolvedUserName}!`
+    : `${timeGreeting}!`;
+
+  const baseLayoutByHeuristic = useMemo<GreetingLayoutMode>(() => {
+    if (!resolvedUserName) return "full-inline";
+    if (resolvedUserName.length > LONG_NAME_THRESHOLD) return "compact-inline";
+    return "full-inline";
+  }, [resolvedUserName]);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -76,6 +89,43 @@ export default function ParishionerHeader({
           : t("landing.goodEvening");
     setTimeGreeting(nextGreeting);
   }, [t]);
+
+  useLayoutEffect(() => {
+    const updateGreetingLayout = () => {
+      const rowWidth = headerTopRowRef.current?.clientWidth ?? 0;
+      const actionsWidth = actionRowRef.current?.offsetWidth ?? 0;
+      const fullWidth = fullGreetingMeasureRef.current?.offsetWidth ?? 0;
+      const compactWidth = compactGreetingMeasureRef.current?.offsetWidth ?? 0;
+
+      if (!rowWidth || !actionsWidth || !compactWidth) {
+        setGreetingLayout(baseLayoutByHeuristic);
+        return;
+      }
+
+      const logoWidth = 40;
+      const availableGreetingWidth = rowWidth - actionsWidth - logoWidth - LEFT_ROW_GAP - GREETING_RIGHT_GUTTER;
+
+      if (availableGreetingWidth <= 0 || compactWidth > availableGreetingWidth) {
+        setGreetingLayout("compact-below");
+        return;
+      }
+
+      if (fullWidth <= availableGreetingWidth) {
+        setGreetingLayout("full-inline");
+        return;
+      }
+
+      setGreetingLayout("compact-inline");
+    };
+
+    updateGreetingLayout();
+
+    const observer = new ResizeObserver(updateGreetingLayout);
+    if (headerTopRowRef.current) observer.observe(headerTopRowRef.current);
+    if (actionRowRef.current) observer.observe(actionRowRef.current);
+
+    return () => observer.disconnect();
+  }, [baseLayoutByHeuristic, fullGreetingText, compactGreetingText]);
 
   useEffect(() => {
     if (!quote) return;
@@ -108,20 +158,40 @@ export default function ParishionerHeader({
     });
   };
 
-  const greetingText = resolvedUserName
-    ? `${isLongName ? t("landing.hi") : timeGreeting}, ${resolvedUserName}!`
-    : `${timeGreeting}!`;
+  const greetingText = greetingLayout === "full-inline" ? fullGreetingText : compactGreetingText;
 
   return (
     <>
-      <header className={cn("relative -mx-4 -mt-6 overflow-hidden bg-gradient-to-br px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] text-white md:-mx-8 md:rounded-b-2xl md:px-6", theme.headerGradient)}>
+      <header className={cn("relative -mx-4 -mt-6 overflow-hidden bg-gradient-to-br px-4 pb-4 pt-[calc(0.75rem+env(safe-area-inset-top))] text-white md:-mx-8 md:rounded-b-2xl md:px-6", theme.headerGradient)}>
         {/* Decorative background elements */}
         <div className={cn("absolute -right-8 -top-8 h-20 w-20 rounded-full", theme.headerAccentBubble)} />
         <div className={cn("absolute -bottom-2 left-1/4 h-12 w-12 rounded-full", theme.headerAccentGlow)} />
 
-        {/* Top controls */}
-        <div className="relative mb-2 flex items-start justify-end gap-2 sm:gap-3">
-          <div className="flex shrink-0 items-center gap-1.5">
+        {/* Hidden text measures to determine greeting fallback layout */}
+        <div className="pointer-events-none absolute -z-10 opacity-0" aria-hidden="true">
+          <span ref={fullGreetingMeasureRef} className="whitespace-nowrap text-[clamp(1.5rem,4.8vw,2rem)] font-bold tracking-tight">{fullGreetingText}</span>
+          <span ref={compactGreetingMeasureRef} className="whitespace-nowrap text-[clamp(1.5rem,4.8vw,2rem)] font-bold tracking-tight">{compactGreetingText}</span>
+        </div>
+
+        <div ref={headerTopRowRef} className="relative flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-3">
+            <Link href={buildLocalePathname(locale, "/this-week")} aria-label={t("header.thisWeek")} className="shrink-0">
+              <img
+                src={logoSrc}
+                alt={`${parishName} logo`}
+                className="h-10 w-10 rounded-md object-contain md:h-12 md:w-12"
+                onError={(e) => { e.currentTarget.src = "/icon.png"; }}
+              />
+            </Link>
+
+            {greetingLayout !== "compact-below" && (
+              <h1 className="min-w-0 truncate whitespace-nowrap text-[clamp(1.5rem,4.8vw,2rem)] font-bold tracking-tight">
+                {greetingText}
+              </h1>
+            )}
+          </div>
+
+          <div ref={actionRowRef} className="flex shrink-0 items-center gap-1.5">
             {showQuickAdd && (
               <button
                 type="button"
@@ -143,24 +213,17 @@ export default function ParishionerHeader({
           </div>
         </div>
 
-        {/* Main greeting */}
-        <div className="relative space-y-1">
-          <div className="flex min-w-0 items-center gap-3">
-            <Link href={buildLocalePathname(locale, "/this-week")} aria-label={t("header.thisWeek")} className="shrink-0">
-              <img
-                src={logoSrc}
-                alt={`${parishName} logo`}
-                className="h-10 w-10 rounded-md object-contain md:h-12 md:w-12"
-                onError={(e) => { e.currentTarget.src = "/icon.png"; }}
-              />
-            </Link>
-            <h1 className="min-w-0 flex-1 truncate whitespace-nowrap text-[clamp(1.5rem,4.8vw,2rem)] font-bold tracking-tight">
-              {greetingText}
+        <div className="relative mt-2 space-y-1">
+          {greetingLayout === "compact-below" && (
+            <h1 className="truncate whitespace-nowrap text-[clamp(1.5rem,4.8vw,2rem)] font-bold tracking-tight">
+              {compactGreetingText}
             </h1>
-          </div>
-          <p className="text-xs font-semibold text-white/90 sm:text-sm">
-            <span className="block truncate">{parishName}</span>
+          )}
+
+          <p className="text-xs font-semibold leading-tight text-white/90 sm:text-sm">
+            <span className="line-clamp-2">{parishName}</span>
           </p>
+
           {quote && (
             quoteExpanded ? (
               <blockquote className="mt-1.5 border-l-4 border-white/40 pl-3 text-xs italic text-white/90">
@@ -188,28 +251,19 @@ export default function ParishionerHeader({
               {t("thisWeek.hideQuote")}
             </button>
           )}
-          {/* Subtle view switch link at bottom of hero */}
-          {actions && (
-            <div className="mt-3 flex justify-end">
-              {actions}
-            </div>
-          )}
+
+          {actions && <div className="mt-3 flex justify-end">{actions}</div>}
         </div>
       </header>
 
-      {/* Quick-add modal/drawer for leaders */}
       {showQuickAdd && (
         <>
           <Modal open={quickAddOpen} onClose={() => setQuickAddOpen(false)} title={t("thisWeek.quickAdd")}>
-            <p className="mb-4 text-sm text-ink-500">
-              {t("thisWeek.quickAddDesc")}
-            </p>
+            <p className="mb-4 text-sm text-ink-500">{t("thisWeek.quickAddDesc")}</p>
             <QuickActions onSelect={() => setQuickAddOpen(false)} />
           </Modal>
           <Drawer open={quickAddOpen} onClose={() => setQuickAddOpen(false)} title={t("thisWeek.quickAdd")}>
-            <p className="mb-4 text-sm text-ink-500">
-              {t("thisWeek.quickAddDesc")}
-            </p>
+            <p className="mb-4 text-sm text-ink-500">{t("thisWeek.quickAddDesc")}</p>
             <QuickActions onSelect={() => setQuickAddOpen(false)} />
           </Drawer>
         </>
