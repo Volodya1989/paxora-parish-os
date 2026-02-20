@@ -33,8 +33,8 @@ export const sectionThemes: Record<SectionThemeKey, SectionTheme> = {
     headerAccentBubble: "bg-white/10",
     headerAccentGlow: "bg-white/5",
     headerIconBubble: "bg-white/15 text-white",
-    navActiveIcon: "border-rose-300 ring-2 ring-rose-200/70 bg-rose-50 text-rose-700",
-    navActiveLabel: "text-rose-700"
+    navActiveIcon: "border-sky-300 ring-2 ring-sky-200/70 bg-sky-50 text-sky-700",
+    navActiveLabel: "text-sky-700"
   },
   Community: {
     headerGradient: "from-sky-600 via-sky-500 to-cyan-500",

@@ -272,7 +272,7 @@ export default function ThisWeekAdminView({
   const activeTaskCount = activeTasks.length;
 
   return (
-    <div className="space-y-6 overflow-x-hidden">
+    <div className="space-y-6">
       {/* Warm hero header — shared with parishioner, with quick-add "+" for leaders */}
       <ParishionerHeader
         parishName={parishName}
