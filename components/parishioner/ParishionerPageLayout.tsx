@@ -25,7 +25,7 @@ type ParishionerPageLayoutProps = {
   actions?: ReactNode;
   /** Optional icon to display next to the title */
   icon?: ReactNode;
-  /** Fallback href for back button. When set, a back arrow appears top-left. */
+  /** Fallback href for back button. When set, a back row appears below the header. */
   backHref?: string;
   /** Page content */
   children: ReactNode;
