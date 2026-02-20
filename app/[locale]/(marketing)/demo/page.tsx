@@ -4,9 +4,9 @@ import { getMarketingCopy } from "@/lib/marketing/content";
 import { buildLocalePathname } from "@/lib/i18n/routing";
 
 export const metadata: Metadata = {
-  title: "Demo | Paxora Parish OS",
+  title: "Demo | Paxora Parish Center App",
   description: "Schedule a guided demo for your parish leadership team.",
-  openGraph: { title: "Demo | Paxora Parish OS", images: ["/og/marketing-default.svg"] },
+  openGraph: { title: "Demo | Paxora Parish Center App", images: ["/og/marketing-default.svg"] },
   twitter: { card: "summary_large_image", images: ["/og/marketing-default.svg"] }
 };
 

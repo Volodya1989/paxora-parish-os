@@ -16,7 +16,7 @@ export default async function MarketingLayout({
   const orgSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: "Paxora Parish OS",
+    name: "Paxora Parish Center App",
     url: getSiteUrl(),
     logo: `${getSiteUrl()}/icon.png`
   };
@@ -32,7 +32,7 @@ export default async function MarketingLayout({
           <Link href={buildLocalePathname(locale, "/")} className="flex items-center gap-3">
             <img src="/icon.png" alt="Paxora logo" className="h-9 w-9 rounded-md object-contain" />
             <div>
-              <p className="text-sm font-semibold text-ink-900">Paxora Parish OS</p>
+              <p className="text-sm font-semibold text-ink-900">Paxora Parish Center App</p>
               <p className="text-xs text-ink-500">{t("marketing.brandTagline")}</p>
             </div>
           </Link>

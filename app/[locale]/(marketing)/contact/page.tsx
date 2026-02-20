@@ -3,9 +3,9 @@ import ContactForm from "@/components/marketing/ContactForm";
 import { getMarketingCopy } from "@/lib/marketing/content";
 
 export const metadata: Metadata = {
-  title: "Contact | Paxora Parish OS",
+  title: "Contact | Paxora Parish Center App",
   description: "Request pilot access or ask for a guided demo.",
-  openGraph: { title: "Contact | Paxora Parish OS", images: ["/og/marketing-default.svg"] },
+  openGraph: { title: "Contact | Paxora Parish Center App", images: ["/og/marketing-default.svg"] },
   twitter: { card: "summary_large_image", images: ["/og/marketing-default.svg"] }
 };
 

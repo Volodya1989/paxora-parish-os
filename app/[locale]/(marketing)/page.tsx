@@ -9,17 +9,17 @@ import { buildLocalePathname } from "@/lib/i18n/routing";
 import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
-  title: "Paxora Parish OS | Week-first parish coordination",
-  description: "Bring calm weekly coordination to your parish with This Week, tasks, events, requests, and parish hub.",
+  title: "Paxora Parish Center App | Parish management app built for modern parish life",
+  description: "Parish management app built for modern parish life, with calm weekly coordination for This Week, tasks, events, requests, and parish hub.",
   openGraph: {
-    title: "Paxora Parish OS",
-    description: "Bring calm weekly coordination to your parish.",
+    title: "Paxora Parish Center App",
+    description: "Parish management app built for modern parish life.",
     images: ["/og/marketing-default.svg"]
   },
   twitter: {
     card: "summary_large_image",
-    title: "Paxora Parish OS",
-    description: "Bring calm weekly coordination to your parish.",
+    title: "Paxora Parish Center App",
+    description: "Parish management app built for modern parish life.",
     images: ["/og/marketing-default.svg"]
   }
 };

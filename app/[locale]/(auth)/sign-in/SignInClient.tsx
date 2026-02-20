@@ -62,8 +62,8 @@ export default function SignInPage() {
           title={t("nav.signIn")}
           subtitle={
             parishName
-              ? `Welcome back to your Paxora Parish Center — ${parishName}.`
-              : "Welcome back to your Paxora Parish Center."
+              ? `Welcome back to your Paxora Parish Center App — ${parishName}.`
+              : "Welcome back to your Paxora Parish Center App."
           }
         />
         <p className="mt-3 text-sm text-ink-500">

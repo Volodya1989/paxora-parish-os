@@ -6,8 +6,8 @@ import { defaultLocale, localeCookie, locales, type Locale } from "@/lib/i18n/co
 import { getLocalePrefix } from "@/lib/i18n/routing";
 
 export const metadata = {
-  title: "Paxora Parish OS",
-  description: "Week-first parish coordination"
+  title: "Paxora Parish Center App",
+  description: "Parish management app built for modern parish life"
 };
 
 export const viewport = {

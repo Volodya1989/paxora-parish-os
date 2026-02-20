@@ -3,9 +3,9 @@ import Card from "@/components/ui/Card";
 import { getMarketingCopy } from "@/lib/marketing/content";
 
 export const metadata: Metadata = {
-  title: "About | Paxora Parish OS",
-  description: "Mission and story behind Paxora Parish OS.",
-  openGraph: { title: "About | Paxora Parish OS", images: ["/og/marketing-default.svg"] },
+  title: "About | Paxora Parish Center App",
+  description: "Mission and story behind the parish management app built for modern parish life.",
+  openGraph: { title: "About | Paxora Parish Center App", images: ["/og/marketing-default.svg"] },
   twitter: { card: "summary_large_image", images: ["/og/marketing-default.svg"] }
 };
 

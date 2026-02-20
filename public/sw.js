@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 
 /**
- * Paxora Parish OS — Service Worker
+ * Paxora Parish Center App — Service Worker
  *
  * Handles:
  * - Push notification display
@@ -35,12 +35,12 @@ sw.addEventListener("push", (event) => {
     payload = event.data.json();
   } catch {
     payload = {
-      title: "Paxora Parish OS",
+      title: "Paxora Parish Center App",
       body: event.data.text() || "You have a new notification"
     };
   }
 
-  const title = payload.title || "Paxora Parish OS";
+  const title = payload.title || "Paxora Parish Center App";
   const options = {
     body: payload.body || "",
     icon: "/apple-icon.png",

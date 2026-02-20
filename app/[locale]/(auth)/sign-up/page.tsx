@@ -47,7 +47,7 @@ export default function SignUpPage() {
           title="Create account"
           subtitle={
             parishName
-              ? `Welcome to your Paxora Parish Center — ${parishName}.`
+              ? `Welcome to your Paxora Parish Center App — ${parishName}.`
               : "Start with a simple parish setup."
           }
         />
