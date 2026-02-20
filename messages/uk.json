@@ -31,7 +31,7 @@
     "moreGroups": "ще {count} груп"
   },
   "header": {
-    "appTitle": "Paxora Parish OS",
+    "appTitle": "Paxora Parish Center App",
     "weekSwitcherLabel": "Перемикач тижня",
     "thisWeek": "Цей тиждень",
     "nextWeek": "Наступний тиждень",
@@ -874,7 +874,7 @@
     "hero": {
       "eyebrow": "Built for pilot parishes",
       "title": "Calm weekly coordination for parish life",
-      "description": "Paxora helps clergy, staff, and volunteers align on This Week, service tasks, events, and requests without admin overload.",
+      "description": "Parish management app built for modern parish life. Paxora helps clergy, staff, and volunteers align on This Week, service tasks, events, and requests without admin overload.",
       "visualPlaceholder": "Product screenshot placeholder — replace with real in-app capture."
     },
     "features": {
@@ -922,9 +922,9 @@
       }
     },
     "about": {
-      "title": "About Paxora Parish OS",
+      "title": "About Paxora Parish Center App",
       "missionTitle": "Mission",
-      "mission": "We build software that restores shared responsibility and calm rhythm in parish life.",
+      "mission": "We build a parish management app that restores shared responsibility and calm rhythm in parish life.",
       "storyTitle": "Our story",
       "story": "Paxora started from real parish coordination pain: too many WhatsApp threads, spreadsheets, and last-minute calls. We are building practical tools for Ukrainian and English-speaking parish communities."
     },
@@ -938,7 +938,7 @@
       "description": "Tell us about your parish and we will reach out to plan pilot onboarding."
     },
     "footer": {
-      "copy": "© Paxora Parish OS. Pilot program in progress."
+      "copy": "© Paxora Parish Center App. Pilot program in progress."
     }
   }
 }

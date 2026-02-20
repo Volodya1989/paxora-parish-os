@@ -29,7 +29,7 @@ export function renderEmailLayout({ title, previewText, content }: EmailLayoutIn
                   </td>
                 </tr>
               </table>
-              <p style="margin:16px 0 0;font-size:12px;color:#7b7f8c;">Paxora Parish OS</p>
+              <p style="margin:16px 0 0;font-size:12px;color:#7b7f8c;">Paxora Parish Center App</p>
             </td>
           </tr>
         </table>

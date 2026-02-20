@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Paxora Parish Center",
+    name: "Paxora Parish Center App",
     short_name: "Parish Center",
-    description: "The all-in-one parish system—weekly rhythm, events, groups, service, and messaging.",
+    description: "Parish management app built for modern parish life—weekly rhythm, events, groups, service, and messaging.",
     start_url: "/this-week",
     scope: "/",
     display: "standalone",
