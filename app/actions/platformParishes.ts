@@ -211,6 +211,42 @@ export async function deactivatePlatformParish(input: {
   return { status: "success", message: `${parish.name} deactivated.` };
 }
 
+export async function reactivatePlatformParish(input: {
+  parishId: string;
+}): Promise<PlatformParishActionState> {
+  try {
+    await requirePlatformSession();
+  } catch {
+    return buildError("You do not have permission to reactivate parishes.", "NOT_AUTHORIZED");
+  }
+
+  const parsed = platformParishIdSchema.safeParse(input);
+  if (!parsed.success) {
+    return buildError(parsed.error.errors[0]?.message ?? "Invalid input.", "VALIDATION_ERROR");
+  }
+
+  const parish = await prisma.parish.findUnique({
+    where: { id: parsed.data.parishId },
+    select: { id: true, name: true, deactivatedAt: true }
+  });
+
+  if (!parish) {
+    return buildError("Parish not found.", "NOT_FOUND");
+  }
+
+  if (!parish.deactivatedAt) {
+    return { status: "success", message: "Parish is already active." };
+  }
+
+  await prisma.parish.update({
+    where: { id: parish.id },
+    data: { deactivatedAt: null }
+  });
+
+  revalidatePath("/platform/parishes");
+  return { status: "success", message: `${parish.name} reactivated.` };
+}
+
 export async function safeDeletePlatformParish(input: {
   parishId: string;
 }): Promise<PlatformParishActionState> {

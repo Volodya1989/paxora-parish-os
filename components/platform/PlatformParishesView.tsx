@@ -18,6 +18,7 @@ import { locales } from "@/lib/i18n/config";
 import {
   createPlatformParish,
   deactivatePlatformParish,
+  reactivatePlatformParish,
   safeDeletePlatformParish,
   updatePlatformParish
 } from "@/app/actions/platformParishes";
@@ -39,6 +40,7 @@ type ParishFormState = {
 
 type ConfirmState =
   | { action: "deactivate"; parishId: string; parishName: string }
+  | { action: "reactivate"; parishId: string; parishName: string }
   | { action: "delete"; parishId: string; parishName: string }
   | null;
 
@@ -164,6 +166,10 @@ export default function PlatformParishesView({
     setConfirmState({ action: "deactivate", parishId, parishName });
   };
 
+  const handleReactivate = (parishId: string, parishName: string) => {
+    setConfirmState({ action: "reactivate", parishId, parishName });
+  };
+
   const handleSafeDelete = (parishId: string, parishName: string) => {
     setConfirmState({ action: "delete", parishId, parishName });
   };
@@ -179,7 +185,9 @@ export default function PlatformParishesView({
       const result =
         action === "deactivate"
           ? await deactivatePlatformParish({ parishId })
-          : await safeDeletePlatformParish({ parishId });
+          : action === "reactivate"
+            ? await reactivatePlatformParish({ parishId })
+            : await safeDeletePlatformParish({ parishId });
       handleResult(result, "Parish updated");
       setBusyParishId(null);
     });
@@ -187,12 +195,23 @@ export default function PlatformParishesView({
 
   // Confirmation dialog content varies by action.
   const confirmTitle =
-    confirmState?.action === "deactivate" ? "Deactivate parish?" : "Safely delete parish?";
+    confirmState?.action === "deactivate"
+      ? "Deactivate parish?"
+      : confirmState?.action === "reactivate"
+        ? "Reactivate parish?"
+        : "Safely delete parish?";
   const confirmBodyText =
     confirmState?.action === "deactivate"
       ? `Deactivating "${confirmState.parishName}" will prevent parishioners from accessing it. You can safely delete it afterward once all data has been removed.`
-      : `"${confirmState?.parishName}" will be permanently deleted. This only succeeds after deactivation and when no dependent data remains. This cannot be undone.`;
-  const confirmButtonLabel = confirmState?.action === "deactivate" ? "Deactivate" : "Delete";
+      : confirmState?.action === "reactivate"
+        ? `"${confirmState.parishName}" will be restored to active status. Parishioners will be able to access it again using the existing parish code.`
+        : `"${confirmState?.parishName}" will be permanently deleted. This only succeeds after deactivation and when no dependent data remains. This cannot be undone.`;
+  const confirmButtonLabel =
+    confirmState?.action === "deactivate"
+      ? "Deactivate"
+      : confirmState?.action === "reactivate"
+        ? "Reactivate"
+        : "Delete";
 
   const confirmFooter = (
     <>
@@ -373,15 +392,27 @@ export default function PlatformParishesView({
                     <Button type="button" variant="secondary" size="sm" onClick={() => openEdit(parish)}>
                       Edit
                     </Button>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => handleDeactivate(parish.id, parish.name)}
-                      disabled={isBusy || isDeactivated}
-                    >
-                      {isDeactivated ? "Deactivated" : "Deactivate"}
-                    </Button>
+                    {isDeactivated ? (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleReactivate(parish.id, parish.name)}
+                        disabled={isBusy}
+                      >
+                        Reactivate
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleDeactivate(parish.id, parish.name)}
+                        disabled={isBusy}
+                      >
+                        Deactivate
+                      </Button>
+                    )}
                     <Button
                       type="button"
                       variant="secondary"
