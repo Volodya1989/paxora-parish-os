@@ -27,6 +27,7 @@
     "goodMorning": "Доброго ранку",
     "goodAfternoon": "Доброго дня",
     "goodEvening": "Доброго вечора",
+    "hi": "Привіт",
     "moreGroups": "ще {count} груп"
   },
   "header": {

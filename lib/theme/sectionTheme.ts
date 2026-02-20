@@ -29,12 +29,12 @@ export const sectionThemes: Record<SectionThemeKey, SectionTheme> = {
     navActiveLabel: "text-primary-700"
   },
   Serve: {
-    headerGradient: "from-sky-500 via-sky-400 to-cyan-500",
+    headerGradient: "from-rose-500 via-pink-500 to-fuchsia-500",
     headerAccentBubble: "bg-white/10",
     headerAccentGlow: "bg-white/5",
     headerIconBubble: "bg-white/15 text-white",
-    navActiveIcon: "border-sky-300 ring-2 ring-sky-200/70 bg-sky-50 text-sky-700",
-    navActiveLabel: "text-sky-700"
+    navActiveIcon: "border-rose-300 ring-2 ring-rose-200/70 bg-rose-50 text-rose-700",
+    navActiveLabel: "text-rose-700"
   },
   Community: {
     headerGradient: "from-sky-600 via-sky-500 to-cyan-500",

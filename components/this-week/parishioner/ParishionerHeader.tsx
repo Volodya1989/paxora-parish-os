@@ -32,6 +32,8 @@ type ParishionerHeaderProps = {
   quoteSource?: string;
 };
 
+const LONG_NAME_THRESHOLD = 14;
+
 /**
  * Warm, welcoming header for the landing page.
  * Shared by both parishioner and admin views.
@@ -57,20 +59,22 @@ export default function ParishionerHeader({
   const logoSrc = parishLogoUrl?.trim() ? parishLogoUrl : "/icon.png";
   const quoteStorageKey = "this-week:quote-expanded";
   const theme = sectionThemes.ThisWeek;
+  const resolvedUserName = userName?.trim();
+  const isLongName = (resolvedUserName?.length ?? 0) > LONG_NAME_THRESHOLD;
 
   // Use state to prevent hydration mismatch - start with generic greeting
   // then update to time-based greeting on client
-  const [greeting, setGreeting] = useState(t("landing.welcome"));
+  const [timeGreeting, setTimeGreeting] = useState(t("landing.welcome"));
 
   useEffect(() => {
     const hour = new Date().getHours();
-    const timeGreeting =
+    const nextGreeting =
       hour < 12
         ? t("landing.goodMorning")
         : hour < 17
           ? t("landing.goodAfternoon")
           : t("landing.goodEvening");
-    setGreeting(timeGreeting);
+    setTimeGreeting(nextGreeting);
   }, [t]);
 
   useEffect(() => {
@@ -104,6 +108,10 @@ export default function ParishionerHeader({
     });
   };
 
+  const greetingText = resolvedUserName
+    ? `${isLongName ? t("landing.hi") : timeGreeting}, ${resolvedUserName}!`
+    : `${timeGreeting}!`;
+
   return (
     <>
       <header className={cn("relative -mx-4 -mt-6 overflow-hidden bg-gradient-to-br px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] text-white md:-mx-8 md:rounded-b-2xl md:px-6", theme.headerGradient)}>
@@ -111,18 +119,8 @@ export default function ParishionerHeader({
         <div className={cn("absolute -right-8 -top-8 h-20 w-20 rounded-full", theme.headerAccentBubble)} />
         <div className={cn("absolute -bottom-2 left-1/4 h-12 w-12 rounded-full", theme.headerAccentGlow)} />
 
-        {/* Top bar with controls */}
-        <div className="relative mb-2 flex items-start justify-between gap-2 sm:gap-3">
-          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-            <Link href={buildLocalePathname(locale, "/this-week")} aria-label={t("header.thisWeek")}>
-              <img
-                src={logoSrc}
-                alt={`${parishName} logo`}
-                className="h-10 w-10 shrink-0 rounded-md object-contain md:h-12 md:w-12"
-                onError={(e) => { e.currentTarget.src = "/icon.png"; }}
-              />
-            </Link>
-          </div>
+        {/* Top controls */}
+        <div className="relative mb-2 flex items-start justify-end gap-2 sm:gap-3">
           <div className="flex shrink-0 items-center gap-1.5">
             {showQuickAdd && (
               <button
@@ -147,11 +145,21 @@ export default function ParishionerHeader({
 
         {/* Main greeting */}
         <div className="relative space-y-1">
-          <h1 className="text-xl font-bold tracking-tight md:text-2xl">
-            {greeting}{userName ? `, ${userName}` : ""}!
-          </h1>
+          <div className="flex min-w-0 items-center gap-3">
+            <Link href={buildLocalePathname(locale, "/this-week")} aria-label={t("header.thisWeek")} className="shrink-0">
+              <img
+                src={logoSrc}
+                alt={`${parishName} logo`}
+                className="h-10 w-10 rounded-md object-contain md:h-12 md:w-12"
+                onError={(e) => { e.currentTarget.src = "/icon.png"; }}
+              />
+            </Link>
+            <h1 className="min-w-0 flex-1 truncate whitespace-nowrap text-[clamp(1.5rem,4.8vw,2rem)] font-bold tracking-tight">
+              {greetingText}
+            </h1>
+          </div>
           <p className="text-xs font-semibold text-white/90 sm:text-sm">
-            <span className="break-words">{parishName}</span>
+            <span className="block truncate">{parishName}</span>
           </p>
           {quote && (
             quoteExpanded ? (
