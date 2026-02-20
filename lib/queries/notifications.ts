@@ -94,14 +94,19 @@ export async function getNotificationUnreadCount(
   userId: string,
   parishId: string
 ): Promise<number> {
+  // Check whether the stored-notification system is active for this user.
   const storedCount = await prisma.notification.count({
     where: { userId, parishId }
   });
 
   if (storedCount > 0) {
-    return prisma.notification.count({
-      where: { userId, parishId, readAt: null }
-    });
+    // The stored path is active: apply the same membership-gated filter used by
+    // getStoredNotificationItems so the badge count is consistent with the bell
+    // feed.  A raw `count({ readAt: null })` would include chat notifications
+    // for channels the user is no longer eligible for, causing the badge to
+    // diverge from the visible item list (privacy leak).
+    const stored = await getStoredNotificationItems(userId, parishId);
+    return stored.count;
   }
 
   const result = await getNotificationItems(userId, parishId);
@@ -112,10 +117,16 @@ export async function getNotificationItems(
   userId: string,
   parishId: string
 ): Promise<NotificationsResult> {
-  const stored = await getStoredNotificationItems(userId, parishId);
+  // If ANY stored notifications exist for this user, use only the stored path.
+  // Do not fall back to the legacy derived path when stored.items is empty due
+  // to membership filtering — that would mix stored + legacy sources and make
+  // the badge count inconsistent with the bell feed.
+  const storedCount = await prisma.notification.count({
+    where: { userId, parishId }
+  });
 
-  if (stored.items.length > 0) {
-    return stored;
+  if (storedCount > 0) {
+    return getStoredNotificationItems(userId, parishId);
   }
 
   const [messages, tasks, announcements, events, pendingRequests, requestUpdates] = await Promise.all([

@@ -842,6 +842,324 @@ dbTest("joined-later member only gets notifications after join time", async () =
   assert.equal(memberFeed.items[0]?.timestamp, new Date("2024-01-01T12:00:00.000Z").toISOString());
 });
 
+// ---------------------------------------------------------------------------
+// NEW TESTS — covering gaps left by the previous patch
+// ---------------------------------------------------------------------------
+
+dbTest("badge count is consistent with bell feed when leaked chat notification rows exist", async () => {
+  // REGRESSION: getNotificationUnreadCount previously did a raw DB count without
+  // chat membership gating, while getNotificationItems applied gating.  This meant
+  // a user could see a nonzero badge even though the bell feed showed 0 items.
+  const parish = await prisma.parish.create({ data: { name: "St. Brendan", slug: "st-brendan" } });
+  const actor = await prisma.user.create({
+    data: { email: "actor-badge@example.com", passwordHash: "hashed", activeParishId: parish.id }
+  });
+  const victim = await prisma.user.create({
+    data: { email: "victim-badge@example.com", passwordHash: "hashed", activeParishId: parish.id }
+  });
+
+  await prisma.membership.createMany({
+    data: [
+      { parishId: parish.id, userId: actor.id, role: "MEMBER" },
+      { parishId: parish.id, userId: victim.id, role: "MEMBER" }
+    ]
+  });
+
+  // Create a group the victim is NOT a member of.
+  const group = await prisma.group.create({
+    data: { parishId: parish.id, createdById: actor.id, name: "Hidden Group Badge", status: "ACTIVE" }
+  });
+  await prisma.groupMembership.create({
+    data: { groupId: group.id, userId: actor.id, status: "ACTIVE", role: "COORDINATOR" }
+  });
+  const channel = await prisma.chatChannel.create({
+    data: { parishId: parish.id, groupId: group.id, type: "GROUP", name: "Hidden Badge Chat" }
+  });
+
+  // Simulate a leaked notification row (e.g. created by a prior buggy path).
+  await prisma.notification.create({
+    data: {
+      userId: victim.id,
+      parishId: parish.id,
+      chatChannelId: channel.id,
+      type: "MESSAGE",
+      title: "Leaked",
+      description: "secret",
+      href: `/community/chat?channel=${channel.id}`,
+      createdAt: new Date()
+    }
+  });
+
+  const items = await getNotificationItems(victim.id, parish.id);
+  const count = await getNotificationUnreadCount(victim.id, parish.id);
+
+  // Both must agree: the notification is filtered out.
+  assert.equal(items.count, 0, "bell feed count should be 0 after gating");
+  assert.equal(count, 0, "badge count must match bell feed count — not raw DB count");
+  assert.equal(items.items.length, 0, "bell feed should show 0 items");
+});
+
+dbTest("getNotificationItems does not fall back to legacy path when stored notifications exist but are all filtered", async () => {
+  // REGRESSION: when stored.items.length === 0 (all chat notifications filtered
+  // for ineligible channels) the function previously fell back to the legacy
+  // derived path, mixing sources and returning inconsistent counts.
+  const parish = await prisma.parish.create({ data: { name: "St. Casimir", slug: "st-casimir" } });
+  const actor = await prisma.user.create({
+    data: { email: "actor-fallback2@example.com", passwordHash: "hashed", activeParishId: parish.id }
+  });
+  const victim = await prisma.user.create({
+    data: { email: "victim-fallback2@example.com", passwordHash: "hashed", activeParishId: parish.id }
+  });
+
+  await prisma.membership.createMany({
+    data: [
+      { parishId: parish.id, userId: actor.id, role: "MEMBER" },
+      { parishId: parish.id, userId: victim.id, role: "MEMBER" }
+    ]
+  });
+
+  // Group channel the victim cannot access.
+  const group = await prisma.group.create({
+    data: { parishId: parish.id, createdById: actor.id, name: "No-Access Group", status: "ACTIVE" }
+  });
+  await prisma.groupMembership.create({
+    data: { groupId: group.id, userId: actor.id, status: "ACTIVE" }
+  });
+  const channel = await prisma.chatChannel.create({
+    data: { parishId: parish.id, groupId: group.id, type: "GROUP", name: "No-Access Chat" }
+  });
+
+  // Store a leaked notification AND a real chat message that would appear in the
+  // legacy path if the fallback fired.
+  await prisma.notification.create({
+    data: {
+      userId: victim.id,
+      parishId: parish.id,
+      chatChannelId: channel.id,
+      type: "MESSAGE",
+      title: "Leaked",
+      href: `/community/chat?channel=${channel.id}`,
+      createdAt: new Date()
+    }
+  });
+
+  // Also post an actual message in that channel — the legacy path would return
+  // this as an unread item if the fallback fired.
+  await prisma.chatMessage.create({
+    data: { channelId: channel.id, authorId: actor.id, body: "should not appear" }
+  });
+
+  const result = await getNotificationItems(victim.id, parish.id);
+
+  // The stored notification was filtered; we must NOT fall back to legacy.
+  assert.equal(result.items.length, 0, "must not fall back to legacy when stored rows exist");
+  assert.equal(result.count, 0);
+});
+
+dbTest("mark-chat-room-read clears notification by chatChannelId (not only href)", async () => {
+  // REGRESSION: markChatRoomReadAndNotifications only matched href; rows that
+  // carry chatChannelId but have a slightly different href would not be cleared.
+  const parish = await prisma.parish.create({ data: { name: "St. Edmund", slug: "st-edmund" } });
+  const actor = await prisma.user.create({
+    data: { email: "actor-chid@example.com", passwordHash: "hashed", activeParishId: parish.id }
+  });
+  const reader = await prisma.user.create({
+    data: { email: "reader-chid@example.com", passwordHash: "hashed", activeParishId: parish.id }
+  });
+
+  await prisma.membership.createMany({
+    data: [
+      { parishId: parish.id, userId: actor.id, role: "MEMBER" },
+      { parishId: parish.id, userId: reader.id, role: "MEMBER" }
+    ]
+  });
+
+  const channel = await prisma.chatChannel.create({
+    data: { parishId: parish.id, type: "PARISH", name: "General chid" }
+  });
+
+  // A notification that stores chatChannelId but uses a non-standard href.
+  // The mark-read logic must match it via chatChannelId, not only href.
+  await prisma.notification.create({
+    data: {
+      userId: reader.id,
+      parishId: parish.id,
+      chatChannelId: channel.id,
+      type: "MESSAGE",
+      title: "Test",
+      href: `/community/chat?channel=${channel.id}&msg=abc123`,
+      createdAt: new Date()
+    }
+  });
+
+  const now = new Date();
+  const result = await markChatRoomReadAndNotifications({
+    userId: reader.id,
+    parishId: parish.id,
+    channelId: channel.id,
+    now
+  });
+
+  // Should have cleared the notification via the chatChannelId OR-branch.
+  assert.equal(result.clearedNotifications, 1, "notification matched by chatChannelId must be cleared");
+
+  const notification = await prisma.notification.findFirst({
+    where: { userId: reader.id, parishId: parish.id, type: "MESSAGE" }
+  });
+  assert.ok(notification?.readAt, "notification must be marked read");
+});
+
+dbTest("parish member only sees PARISH-channel notifications after their membership createdAt", async () => {
+  // Validates that Membership.createdAt is used (not user.createdAt) when gating
+  // PARISH/ANNOUNCEMENT channel notifications for a user who joined late.
+  const parish = await prisma.parish.create({ data: { name: "St. Florian", slug: "st-florian" } });
+  const actor = await prisma.user.create({
+    data: {
+      email: "actor-parish-join@example.com",
+      passwordHash: "hashed",
+      activeParishId: parish.id,
+      createdAt: new Date("2023-01-01T00:00:00.000Z") // old account
+    }
+  });
+  const laterMember = await prisma.user.create({
+    data: {
+      email: "later-parish-join@example.com",
+      passwordHash: "hashed",
+      activeParishId: parish.id,
+      createdAt: new Date("2023-01-01T00:00:00.000Z") // same old account creation date
+    }
+  });
+
+  // Actor has been a parish member since the start; laterMember joined later.
+  await prisma.membership.create({
+    data: {
+      parishId: parish.id,
+      userId: actor.id,
+      role: "MEMBER",
+      createdAt: new Date("2023-01-01T00:00:00.000Z")
+    }
+  });
+  // laterMember joined after a message was already posted in the PARISH channel.
+  await prisma.membership.create({
+    data: {
+      parishId: parish.id,
+      userId: laterMember.id,
+      role: "MEMBER",
+      createdAt: new Date("2024-06-01T00:00:00.000Z") // joined mid-2024
+    }
+  });
+
+  // PARISH channel with no explicit ChatChannelMembership rows (open to all members).
+  const channel = await prisma.chatChannel.create({
+    data: { parishId: parish.id, type: "PARISH", name: "General Florian" }
+  });
+
+  // Message posted BEFORE laterMember joined.
+  await prisma.chatMessage.create({
+    data: {
+      channelId: channel.id,
+      authorId: actor.id,
+      body: "old message before late member",
+      createdAt: new Date("2024-01-01T00:00:00.000Z")
+    }
+  });
+
+  // Message posted AFTER laterMember joined.
+  await prisma.chatMessage.create({
+    data: {
+      channelId: channel.id,
+      authorId: actor.id,
+      body: "new message after late member",
+      createdAt: new Date("2024-07-01T00:00:00.000Z")
+    }
+  });
+
+  // getNotificationItems uses the legacy path (no stored notifications yet).
+  const feed = await getNotificationItems(laterMember.id, parish.id);
+
+  // laterMember's membership.createdAt is 2024-06-01; only the July message
+  // should appear (the January message predates their membership).
+  assert.equal(feed.items.length, 1, "only post-join messages should appear");
+  assert.ok(
+    new Date(feed.items[0]!.timestamp) >= new Date("2024-06-01T00:00:00.000Z"),
+    "visible message must be after membership.createdAt"
+  );
+});
+
+dbTest("removed-then-rejoined group member sees only post-rejoin notifications", async () => {
+  // GroupMembership.createdAt reflects the latest join time.  After a user
+  // leaves and rejoins a group, the membership record is recreated with a new
+  // createdAt; pre-removal notifications must not be shown.
+  const parish = await prisma.parish.create({ data: { name: "St. Perpetua", slug: "st-perpetua" } });
+  const actor = await prisma.user.create({
+    data: { email: "actor-rejoin@example.com", passwordHash: "hashed", activeParishId: parish.id }
+  });
+  const rejoinMember = await prisma.user.create({
+    data: { email: "rejoin@example.com", passwordHash: "hashed", activeParishId: parish.id }
+  });
+
+  await prisma.membership.createMany({
+    data: [
+      { parishId: parish.id, userId: actor.id, role: "MEMBER" },
+      { parishId: parish.id, userId: rejoinMember.id, role: "MEMBER" }
+    ]
+  });
+
+  const group = await prisma.group.create({
+    data: { parishId: parish.id, createdById: actor.id, name: "Choir Rejoin", status: "ACTIVE" }
+  });
+  await prisma.groupMembership.create({
+    data: {
+      groupId: group.id,
+      userId: actor.id,
+      status: "ACTIVE",
+      role: "COORDINATOR",
+      createdAt: new Date("2024-01-01T00:00:00.000Z")
+    }
+  });
+
+  const channel = await prisma.chatChannel.create({
+    data: { parishId: parish.id, groupId: group.id, type: "GROUP", name: "Rejoin Chat" }
+  });
+
+  // Message posted BEFORE rejoinMember's current membership started.
+  await prisma.chatMessage.create({
+    data: {
+      channelId: channel.id,
+      authorId: actor.id,
+      body: "pre-rejoin message",
+      createdAt: new Date("2024-03-01T00:00:00.000Z")
+    }
+  });
+
+  // Simulate a rejoin: the membership record has the new join date.
+  await prisma.groupMembership.create({
+    data: {
+      groupId: group.id,
+      userId: rejoinMember.id,
+      status: "ACTIVE",
+      createdAt: new Date("2024-06-01T00:00:00.000Z") // rejoined June
+    }
+  });
+
+  // Message posted AFTER rejoin.
+  await prisma.chatMessage.create({
+    data: {
+      channelId: channel.id,
+      authorId: actor.id,
+      body: "post-rejoin message",
+      createdAt: new Date("2024-07-01T00:00:00.000Z")
+    }
+  });
+
+  const feed = await getNotificationItems(rejoinMember.id, parish.id);
+  assert.equal(feed.items.length, 1, "only post-rejoin message visible");
+  assert.ok(
+    new Date(feed.items[0]!.timestamp) >= new Date("2024-06-01T00:00:00.000Z"),
+    "visible message must be after rejoin date"
+  );
+});
+
 dbTest("reader defense excludes bad stored chat notification rows", async () => {
   const parish = await prisma.parish.create({ data: { name: "St. Mark", slug: "st-mark" } });
   const outsider = await prisma.user.create({
