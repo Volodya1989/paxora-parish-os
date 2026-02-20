@@ -393,6 +393,7 @@ model Notification {
   id          String           @id @default(cuid())
   userId      String
   parishId    String
+  chatChannelId String?
   type        NotificationType
   title       String
   description String?
@@ -402,10 +403,12 @@ model Notification {
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   parish Parish @relation(fields: [parishId], references: [id], onDelete: Cascade)
+  chatChannel ChatChannel? @relation(fields: [chatChannelId], references: [id], onDelete: SetNull)
 
   @@index([userId, parishId, createdAt])
   @@index([userId, parishId, readAt])
   @@index([userId, type, createdAt])
+  @@index([chatChannelId])
 }
 
 model Mention {
@@ -452,11 +455,13 @@ model Membership {
   role                ParishRole @default(MEMBER)
   notifyEmailEnabled  Boolean    @default(true)
   weeklyDigestEnabled Boolean    @default(true)
+  createdAt           DateTime   @default(now())
 
   parish Parish @relation(fields: [parishId], references: [id])
   user   User   @relation(fields: [userId], references: [id])
 
   @@unique([parishId, userId])
+  @@index([parishId, createdAt])
 }
 
 model AccessRequest {
@@ -708,6 +713,7 @@ model ChatChannel {
   memberships   ChatChannelMembership[]
   pinnedMessage ChatPinnedMessage?
   readStates    ChatRoomReadState[]
+  notifications Notification[]
 
   @@index([parishId])
 }

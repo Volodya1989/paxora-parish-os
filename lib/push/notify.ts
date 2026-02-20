@@ -1,5 +1,7 @@
 import { prisma } from "@/server/db/prisma";
 import { sendPushToUsers, type PushPayload } from "./sendPush";
+import { resolveChatAudience } from "@/lib/notifications/audience";
+import { getChatNotificationCopy } from "@/lib/notifications/chat-membership";
 
 /**
  * Notify chat channel members when a new message is posted.
@@ -12,19 +14,16 @@ export async function notifyChatMessage(opts: {
   channelName: string;
   parishId: string;
   messageBody: string;
+  createdAt?: Date;
 }) {
-  const { channelId, authorId, channelName, parishId, messageBody } = opts;
+  const { channelId, authorId, channelName, parishId } = opts;
 
-  // Get channel info to determine recipient strategy
   const channel = await prisma.chatChannel.findUnique({
     where: { id: channelId },
     select: {
       type: true,
-      groupId: true,
-      parishId: true,
       group: {
         select: {
-          name: true,
           visibility: true
         }
       }
@@ -33,56 +32,24 @@ export async function notifyChatMessage(opts: {
 
   if (!channel) return;
 
-  let recipientIds: string[] = [];
+  const recipients = await resolveChatAudience({
+    channelId,
+    actorId: authorId,
+    atTime: opts.createdAt ?? new Date()
+  });
 
-  if (channel.type === "GROUP" && channel.groupId) {
-    // Notify active group members
-    const members = await prisma.groupMembership.findMany({
-      where: { groupId: channel.groupId, status: "ACTIVE" },
-      select: { userId: true }
-    });
-    recipientIds = members.map((m) => m.userId);
-  } else if (channel.type === "ANNOUNCEMENT") {
-    // Notify all parish members for announcement channels
-    const members = await prisma.membership.findMany({
-      where: { parishId },
-      select: { userId: true }
-    });
-    recipientIds = members.map((m) => m.userId);
-  } else {
-    // PARISH channel: check if it has explicit memberships
-    const channelMembers = await prisma.chatChannelMembership.findMany({
-      where: { channelId },
-      select: { userId: true }
-    });
-
-    if (channelMembers.length > 0) {
-      recipientIds = channelMembers.map((m) => m.userId);
-    } else {
-      // Open parish channel - notify all parish members
-      const members = await prisma.membership.findMany({
-        where: { parishId },
-        select: { userId: true }
-      });
-      recipientIds = members.map((m) => m.userId);
-    }
-  }
-
-  // Exclude the author
-  recipientIds = recipientIds.filter((id) => id !== authorId);
-
+  const recipientIds = recipients.map((r) => r.userId);
   if (recipientIds.length === 0) return;
 
-  const truncatedBody =
-    messageBody.length > 100 ? `${messageBody.slice(0, 97)}...` : messageBody;
-  const sanitizedBody =
-    channel.type === "GROUP"
-      ? `New message in ${channel.group?.name ?? channelName}`
-      : truncatedBody;
+  const copy = getChatNotificationCopy({
+    channelName,
+    channelType: channel.type,
+    groupVisibility: channel.group?.visibility ?? null
+  });
 
   const payload: PushPayload = {
-    title: `${opts.authorName} in ${channelName}`,
-    body: sanitizedBody,
+    title: copy.title,
+    body: copy.description,
     url: `/community/chat?channel=${channelId}`,
     tag: `chat-${channelId}`,
     category: "message"

@@ -78,7 +78,10 @@ async function getChannelOrThrow(parishId: string, channelId: string) {
       parishId: true,
       groupId: true,
       type: true,
-      lockedAt: true
+      lockedAt: true,
+      group: {
+        select: { visibility: true }
+      }
     }
   });
 
@@ -484,7 +487,8 @@ export async function postMessage(
     authorName: message.author.name ?? message.author.email ?? "Parish member",
     channelName: channel.type === "GROUP" ? "Group Chat" : "Parish Chat",
     parishId,
-    messageBody: trimmed || "Shared an image"
+    messageBody: trimmed || "Shared an image",
+    createdAt: now
   }).catch(() => {});
 
   notifyChatMessageInApp({
@@ -494,7 +498,9 @@ export async function postMessage(
     channelName: channel.type === "GROUP" ? "Group Chat" : "Parish Chat",
     parishId,
     messageBody: trimmed || "Shared an image",
-    channelType: channel.type
+    channelType: channel.type,
+    createdAt: now,
+    groupVisibility: channel.type === "GROUP" ? (channel.group?.visibility ?? null) : null
   }).catch((error) => {
     console.error("[chat] Failed to create in-app notification:", error);
   });

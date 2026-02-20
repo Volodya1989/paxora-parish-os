@@ -13,6 +13,11 @@ type NotificationsState = {
 
 const POLL_INTERVAL = 60_000; // 60 seconds
 
+function extractChannelIdFromHref(href: string): string | null {
+  const match = href.match(/[?&]channel=([^&]+)/);
+  return match?.[1] ?? null;
+}
+
 export function useNotifications() {
   const [state, setState] = useState<NotificationsState>({
     items: [],
@@ -77,22 +82,25 @@ export function useNotifications() {
   const markAllRead = useCallback(() => markCategoryRead("all"), [markCategoryRead]);
 
   const markNotificationRead = useCallback(
-    async (notificationId: string) => {
+    async (item: NotificationItem) => {
       setState((prev) => {
-        const updatedItems = prev.items.map((item) =>
-          item.id === notificationId
-            ? { ...item, readAt: item.readAt ?? new Date().toISOString() }
-            : item
+        const updatedItems = prev.items.map((existing) =>
+          existing.id === item.id
+            ? { ...existing, readAt: existing.readAt ?? new Date().toISOString() }
+            : existing
         );
         const unreadCount = countUnreadItems(updatedItems);
         void updateAppBadge(unreadCount, "notifications.markOne.optimistic");
         return { ...prev, items: updatedItems, count: unreadCount };
       });
+
+      const channelId = item.type === "message" ? extractChannelIdFromHref(item.href) : null;
+
       try {
         await fetch("/api/notifications/mark-read", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ notificationId })
+          body: JSON.stringify({ notificationId: item.id, channelId })
         });
         await fetchNotifications();
       } catch {

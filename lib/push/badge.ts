@@ -1,5 +1,6 @@
 import { prisma } from "@/server/db/prisma";
 import { Prisma } from "@prisma/client";
+import { listEligibleChatChannelsForUser } from "@/lib/notifications/chat-membership";
 
 /**
  * Compute the badge count for a user within a parish.
@@ -17,15 +18,8 @@ export async function getBadgeCount(userId: string, parishId: string): Promise<n
 }
 
 async function getUnreadMessageCount(userId: string, parishId: string): Promise<number> {
-  // Get all channels this user can see in this parish
-  const channels = await prisma.chatChannel.findMany({
-    where: { parishId },
-    select: { id: true }
-  });
-
+  const channels = await listEligibleChatChannelsForUser({ userId, parishId });
   if (channels.length === 0) return 0;
-
-  const channelIds = channels.map((c) => c.id);
 
   const rows = await prisma.$queryRaw<Array<{ count: number }>>(
     Prisma.sql`
@@ -35,7 +29,12 @@ async function getUnreadMessageCount(userId: string, parishId: string): Promise<
         FROM "ChatMessage" m
         LEFT JOIN "ChatRoomReadState" r
           ON r."roomId" = m."channelId" AND r."userId" = ${userId}
-        WHERE m."channelId" IN (${Prisma.join(channelIds)})
+        WHERE ${Prisma.join(
+          channels.map(
+            (channel) => Prisma.sql`(m."channelId" = ${channel.channelId} AND m."createdAt" >= ${channel.joinedAt})`
+          ),
+          " OR "
+        )}
           AND m."authorId" != ${userId}
           AND m."deletedAt" IS NULL
           AND m."createdAt" > COALESCE(r."lastReadAt", '1970-01-01')
@@ -50,10 +49,10 @@ async function getUnreadMessageCount(userId: string, parishId: string): Promise<
 async function getNewTasksCount(userId: string, parishId: string): Promise<number> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { lastSeenTasksAt: true }
+    select: { lastSeenTasksAt: true, createdAt: true }
   });
 
-  const since = user?.lastSeenTasksAt ?? new Date("1970-01-01");
+  const since = user?.lastSeenTasksAt ?? user?.createdAt ?? new Date();
 
   return prisma.task.count({
     where: {
@@ -69,10 +68,10 @@ async function getNewTasksCount(userId: string, parishId: string): Promise<numbe
 async function getNewAnnouncementsCount(userId: string, parishId: string): Promise<number> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { lastSeenAnnouncementsAt: true }
+    select: { lastSeenAnnouncementsAt: true, createdAt: true }
   });
 
-  const since = user?.lastSeenAnnouncementsAt ?? new Date("1970-01-01");
+  const since = user?.lastSeenAnnouncementsAt ?? user?.createdAt ?? new Date();
 
   return prisma.announcement.count({
     where: {
@@ -86,10 +85,10 @@ async function getNewAnnouncementsCount(userId: string, parishId: string): Promi
 async function getNewEventsCount(userId: string, parishId: string): Promise<number> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { lastSeenEventsAt: true }
+    select: { lastSeenEventsAt: true, createdAt: true }
   });
 
-  const since = user?.lastSeenEventsAt ?? new Date("1970-01-01");
+  const since = user?.lastSeenEventsAt ?? user?.createdAt ?? new Date();
 
   return prisma.event.count({
     where: {

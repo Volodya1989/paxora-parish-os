@@ -43,6 +43,7 @@ export async function resolveParishAudience(parishId: string): Promise<AudienceR
 export async function resolveChatAudience(opts: {
   channelId: string;
   actorId?: string;
+  atTime?: Date;
 }): Promise<AudienceRecipient[]> {
   const channel = await prisma.chatChannel.findUnique({
     where: { id: opts.channelId },
@@ -53,7 +54,11 @@ export async function resolveChatAudience(opts: {
 
   if (channel.type === "GROUP" && channel.groupId) {
     const members = await prisma.groupMembership.findMany({
-      where: { groupId: channel.groupId, status: "ACTIVE" },
+      where: {
+        groupId: channel.groupId,
+        status: "ACTIVE",
+        ...(opts.atTime ? { createdAt: { lte: opts.atTime } } : {})
+      },
       select: { userId: true }
     });
 
@@ -64,14 +69,23 @@ export async function resolveChatAudience(opts: {
   }
 
   const channelMembers = await prisma.chatChannelMembership.findMany({
-    where: { channelId: channel.id },
+    where: {
+      channelId: channel.id,
+      ...(opts.atTime ? { createdAt: { lte: opts.atTime } } : {})
+    },
     select: { userId: true }
   });
 
   const baseAudience =
     channelMembers.length > 0
       ? channelMembers.map((member) => ({ userId: member.userId, reason: "channel_member" as const }))
-      : await resolveParishAudience(channel.parishId);
+      : (await prisma.membership.findMany({
+          where: {
+            parishId: channel.parishId,
+            ...(opts.atTime ? { createdAt: { lte: opts.atTime } } : {})
+          },
+          select: { userId: true }
+        })).map((member) => ({ userId: member.userId, reason: "parish_member" as const }));
 
   return withoutActor(dedupeRecipients(baseAudience), opts.actorId);
 }

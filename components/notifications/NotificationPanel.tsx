@@ -13,7 +13,7 @@ type NotificationPanelProps = {
   items: NotificationItem[];
   onMarkAllRead: () => void;
   onMarkCategoryRead: (category: NotificationCategory) => void;
-  onMarkNotificationRead: (notificationId: string) => void;
+  onMarkNotificationRead: (item: NotificationItem) => Promise<void>;
   onDeleteNotification: (notificationId: string) => void;
 };
 
@@ -57,15 +57,15 @@ function NotificationRow({
 }: {
   item: NotificationItem;
   onClose: () => void;
-  onMarkNotificationRead: (notificationId: string) => void;
+  onMarkNotificationRead: (item: NotificationItem) => Promise<void>;
   onDeleteNotification: (notificationId: string) => void;
   onMissingHref: () => void;
 }) {
   const router = useRouter();
   const safeHref = getSafeNotificationHref(item.href);
 
-  const handleRowClick = () => {
-    onMarkNotificationRead(item.id);
+  const handleRowClick = async () => {
+    await onMarkNotificationRead(item);
 
     if (!safeHref) {
       onMissingHref();
@@ -79,7 +79,7 @@ function NotificationRow({
   const handleDismiss = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     event.stopPropagation();
-    onMarkNotificationRead(item.id);
+    onMarkNotificationRead(item);
   };
 
   const isUnread = !item.readAt;
@@ -158,6 +158,7 @@ export function NotificationPanel({
   const t = useTranslations();
   const { addToast } = useToast();
   const panelRef = useRef<HTMLDivElement>(null);
+  const mobilePanelRef = useRef<HTMLDivElement>(null);
 
   const handleMissingHref = () => {
     addToast({ title: "This notification has no link.", status: "warning" });
@@ -179,7 +180,15 @@ export function NotificationPanel({
     if (!open) return;
 
     const handleClick = (event: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      // Check both containers: panelRef = desktop panel, mobilePanelRef = mobile drawer.
+      // Previously panelContent (with ref={panelRef}) was rendered into both DOM nodes;
+      // React attached the ref only to the last one (mobile), so on desktop the
+      // contains() check always returned false and onClose() fired on every click.
+      const inside =
+        (panelRef.current?.contains(target) ?? false) ||
+        (mobilePanelRef.current?.contains(target) ?? false);
+      if (!inside) {
         onClose();
       }
     };
@@ -207,7 +216,7 @@ export function NotificationPanel({
   };
 
   const panelContent = (
-    <div ref={panelRef} role="dialog" aria-label={t("notifications.title")}>
+    <div role="dialog" aria-label={t("notifications.title")}>
       {/* Header */}
       <div className="flex items-center justify-between border-b border-mist-200 px-4 py-3">
         <h2 className="text-sm font-semibold text-ink-900">{t("notifications.title")}</h2>
@@ -277,7 +286,15 @@ export function NotificationPanel({
     <>
       {/* Desktop: absolute positioned dropdown */}
       <div className="pointer-events-none fixed inset-0 z-50 hidden md:block">
-        <div className="pointer-events-auto absolute left-16 top-4 w-80 rounded-card border border-mist-200 bg-white shadow-overlay">
+        {/* ref lives here so the click-outside handler can correctly identify
+            clicks within the desktop panel. The panel is only rendered once at
+            this DOM node; previously panelContent (with ref) was reused in the
+            mobile drawer too, causing React to redirect the ref to the mobile
+            node and breaking click-through on desktop. */}
+        <div
+          ref={panelRef}
+          className="pointer-events-auto absolute left-16 top-4 w-80 rounded-card border border-mist-200 bg-white shadow-overlay"
+        >
           {panelContent}
         </div>
       </div>
@@ -290,7 +307,10 @@ export function NotificationPanel({
           aria-label={t("buttons.close")}
           onClick={onClose}
         />
-        <div className="relative w-full rounded-t-card border border-mist-200 bg-white pb-[env(safe-area-inset-bottom)] shadow-overlay">
+        <div
+          ref={mobilePanelRef}
+          className="relative w-full rounded-t-card border border-mist-200 bg-white pb-[env(safe-area-inset-bottom)] shadow-overlay"
+        >
           <div className="mx-auto mb-2 mt-3 h-1.5 w-12 rounded-full bg-mist-200" />
           {panelContent}
         </div>

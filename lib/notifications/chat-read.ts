@@ -34,7 +34,12 @@ export async function markChatRoomReadAndNotifications(input: MarkChatReadInput)
         parishId: input.parishId,
         type: { in: [NotificationType.MESSAGE, NotificationType.MENTION] },
         readAt: null,
-        href: { contains: `channel=${input.channelId}` }
+        // Match both: rows that store the FK directly (new rows) and legacy rows
+        // that only have the channel encoded in the href.
+        OR: [
+          { chatChannelId: input.channelId },
+          { href: { contains: `channel=${input.channelId}` } }
+        ]
       },
       data: {
         readAt: now
