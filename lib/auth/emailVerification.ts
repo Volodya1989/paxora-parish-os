@@ -3,6 +3,7 @@
 import crypto from "node:crypto";
 import { prisma } from "@/server/db/prisma";
 import { sendVerificationEmail } from "@/lib/email/verification";
+import { consumeVerifyEmailRateLimit, resolveActionClientAddress } from "@/lib/security/authPublicRateLimit";
 
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -55,6 +56,12 @@ export async function issueEmailVerification(userId: string): Promise<Verificati
 }
 
 export async function verifyEmailToken(token: string) {
+  const clientAddress = await resolveActionClientAddress();
+  const rateLimit = consumeVerifyEmailRateLimit({ token, clientAddress });
+  if (!rateLimit.allowed) {
+    return { success: false };
+  }
+
   const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
   const record = await prisma.emailVerificationToken.findUnique({
     where: { tokenHash },
