@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useTranslations } from "@/lib/i18n/provider";
 import EngagementModal from "@/components/pwa/EngagementModal";
+import { getClientShellContext } from "@/lib/monitoring/sentry-shell-context";
 import { subscribeToPush } from "@/lib/push/client/register";
 import {
   BeforeInstallPromptEvent,
@@ -41,11 +42,16 @@ export default function EngagementPrompts() {
   const [highIntent, setHighIntent] = useState(false);
   const [installBusy, setInstallBusy] = useState(false);
   const [notifBusy, setNotifBusy] = useState(false);
+  const [isNativeWrapper, setIsNativeWrapper] = useState(false);
 
   const isIOS = useMemo(() => isIOSDevice(), []);
 
   useEffect(() => {
+    const shellContext = getClientShellContext();
+    const nativeWrapper = shellContext.shell === "native_wrapper";
+
     setSessionCount(incrementSessionCount());
+    setIsNativeWrapper(nativeWrapper);
     setIsStandalone(isRunningStandalone());
     setInstallAvailable(canShowInstallCTA());
 
@@ -101,7 +107,7 @@ export default function EngagementPrompts() {
   }, [pathname]);
 
   useEffect(() => {
-    if (!sessionCount || a2hsOpen || notifOpen) {
+    if (isNativeWrapper || !sessionCount || a2hsOpen || notifOpen) {
       return;
     }
 
@@ -109,10 +115,10 @@ export default function EngagementPrompts() {
       setA2hsOpen(true);
       markPromptShown("a2hs", sessionCount);
     }
-  }, [a2hsOpen, isStandalone, notifOpen, sessionCount]);
+  }, [a2hsOpen, isNativeWrapper, isStandalone, notifOpen, sessionCount]);
 
   useEffect(() => {
-    if (!sessionCount || a2hsOpen || notifOpen) {
+    if (isNativeWrapper || !sessionCount || a2hsOpen || notifOpen) {
       return;
     }
 
@@ -127,7 +133,7 @@ export default function EngagementPrompts() {
       setNotifOpen(true);
       markPromptShown("notifications", sessionCount);
     }
-  }, [a2hsOpen, highIntent, isStandalone, notifOpen, notificationPermission, sessionCount]);
+  }, [a2hsOpen, highIntent, isNativeWrapper, isStandalone, notifOpen, notificationPermission, sessionCount]);
 
   const closeA2hs = () => {
     setA2hsOpen(false);
@@ -237,6 +243,10 @@ export default function EngagementPrompts() {
       {t("pwa.notifications.body")}
     </p>
   );
+
+  if (isNativeWrapper) {
+    return null;
+  }
 
   return (
     <>
