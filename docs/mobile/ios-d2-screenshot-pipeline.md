@@ -31,6 +31,16 @@ At minimum, every screenshot run must include:
 
 > If ASC requirements change, update this matrix first and reference the change in run notes.
 
+### ASC target specs (portrait)
+Use these as the default export dimensions for upload readiness checks:
+
+| Device class | Expected portrait resolution | Notes |
+|---|---:|---|
+| 6.7-inch | 1290 x 2796 | iPhone 14 Pro Max / 15 Pro Max class |
+| 6.5-inch | 1242 x 2688 | iPhone 11 Pro Max / XS Max class |
+
+If the capture tool exports a different pixel size, classify as packaging failure and recapture before upload.
+
 ## Capture matrix (minimum viable)
 Use one locale at minimum (`en-US`). Add additional locales only when Product requires localized listing screenshots.
 
@@ -53,6 +63,7 @@ artifacts/
     <YYYY-MM-DD>/
       IOS-D2-screenshot-checklist.md
       source-build.txt
+      screenshot-plan.csv
       asc-upload/
       screenshots/
         iphone-6.7/
@@ -81,6 +92,7 @@ Rules:
    ```
 2. Confirm run directory exists in `artifacts/ios-d2/<date>/`.
 3. Fill build metadata (`CFBundleShortVersionString`, `CFBundleVersion`, commit SHA) in checklist.
+4. Use `screenshot-plan.csv` as the default screenshot ID → filename mapping while capturing.
 
 ### 2) Prepare capture environment (macOS)
 1. Open `ios/App/App.xcworkspace` in Xcode.
@@ -102,6 +114,7 @@ Use checklist pass/fail fields for each screenshot ID:
 - No clipped text, broken layout, debug overlays, or dev banners.
 - Correct locale copy and no placeholder/mixed-language strings.
 - Visual parity between 6.7" and 6.5" captures.
+- PNG dimensions match required ASC target specs for each class.
 
 ### 5) Package for ASC upload
 1. Copy final approved PNGs into `asc-upload/` (or zip from class folders).
@@ -140,6 +153,7 @@ Use checklist pass/fail fields for each screenshot ID:
 - [ ] File names follow `SS-<nn>-<surface>-iphone-<class>-<locale>.png`
 - [ ] Both required classes present (6.7 and 6.5)
 - [ ] Upload set contains only final approved images
+- [ ] PNG dimensions match class targets (6.7 = 1290x2796, 6.5 = 1242x2688)
 - [ ] Checklist signed by operator + reviewer
 
 ## Final sign-off
@@ -149,6 +163,7 @@ Use checklist pass/fail fields for each screenshot ID:
 
 ## Failure triage hints
 - **Missing one device class capture:** block upload; rerun missing class before ASC submission.
+- **Wrong resolution (not 1290x2796 or 1242x2688):** recapture on correct simulator class and replace only impacted files.
 - **Wrong app state/content drift:** restore seed data and recapture affected `SS-<nn>` only.
 - **Layout/copy regression:** log defect with screenshot ID + device class + build number.
 - **Policy-sensitive content visible (payments/external donation shortcuts in native mode):** classify as App Review risk and resolve before upload.
@@ -157,6 +172,7 @@ Use checklist pass/fail fields for each screenshot ID:
 ## Quick-start (Product/Design/QA)
 1. Generate a run template: `bash scripts/mobile/generate-ios-d2-screenshot-template.sh`.
 2. Fill build metadata + owners in `IOS-D2-screenshot-checklist.md`.
-3. Capture `SS-01..SS-05` on both 6.7" and 6.5" iPhone classes (macOS/Xcode).
-4. Mark pass/fail per screenshot row and reviewer/date.
-5. Package approved files for ASC upload and link the dated artifact folder in release notes.
+3. Use `screenshot-plan.csv` to follow the default file names.
+4. Capture `SS-01..SS-05` on both 6.7" and 6.5" iPhone classes (macOS/Xcode).
+5. Mark pass/fail per screenshot row and reviewer/date.
+6. Package approved files for ASC upload and link the dated artifact folder in release notes.

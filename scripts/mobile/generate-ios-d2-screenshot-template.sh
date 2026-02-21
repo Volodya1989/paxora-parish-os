@@ -5,6 +5,7 @@ RUN_DATE="${1:-$(date +%F)}"
 OUTPUT_DIR="artifacts/ios-d2/${RUN_DATE}"
 CHECKLIST_FILE="${OUTPUT_DIR}/IOS-D2-screenshot-checklist.md"
 BUILD_FILE="${OUTPUT_DIR}/source-build.txt"
+PLAN_FILE="${OUTPUT_DIR}/screenshot-plan.csv"
 
 mkdir -p "${OUTPUT_DIR}/asc-upload" "${OUTPUT_DIR}/screenshots/iphone-6.7" "${OUTPUT_DIR}/screenshots/iphone-6.5"
 
@@ -39,6 +40,7 @@ if [[ ! -f "${CHECKLIST_FILE}" ]]; then
 - [ ] File names follow `SS-<nn>-<surface>-iphone-<class>-<locale>.png`
 - [ ] Both required classes present (6.7 and 6.5)
 - [ ] Upload set contains only final approved images
+- [ ] PNG dimensions match class targets (6.7 = 1290x2796, 6.5 = 1242x2688)
 - [ ] Checklist signed by operator + reviewer
 
 ## Final sign-off
@@ -58,6 +60,23 @@ build_source=
 BUILDINFO
 fi
 
+if [[ ! -f "${PLAN_FILE}" ]]; then
+  cat > "${PLAN_FILE}" <<'PLAN'
+screenshot_id,surface_slug,device_class,locale,file_name
+SS-01,this-week,iphone-6.7,en-US,SS-01-this-week-iphone-6.7-en-US.png
+SS-01,this-week,iphone-6.5,en-US,SS-01-this-week-iphone-6.5-en-US.png
+SS-02,tasks-serve,iphone-6.7,en-US,SS-02-tasks-serve-iphone-6.7-en-US.png
+SS-02,tasks-serve,iphone-6.5,en-US,SS-02-tasks-serve-iphone-6.5-en-US.png
+SS-03,event-detail,iphone-6.7,en-US,SS-03-event-detail-iphone-6.7-en-US.png
+SS-03,event-detail,iphone-6.5,en-US,SS-03-event-detail-iphone-6.5-en-US.png
+SS-04,chat-thread-attachment,iphone-6.7,en-US,SS-04-chat-thread-attachment-iphone-6.7-en-US.png
+SS-04,chat-thread-attachment,iphone-6.5,en-US,SS-04-chat-thread-attachment-iphone-6.5-en-US.png
+SS-05,profile-settings,iphone-6.7,en-US,SS-05-profile-settings-iphone-6.7-en-US.png
+SS-05,profile-settings,iphone-6.5,en-US,SS-05-profile-settings-iphone-6.5-en-US.png
+PLAN
+fi
+
 echo "Prepared ${OUTPUT_DIR}"
 echo "- Checklist: ${CHECKLIST_FILE}"
 echo "- Build metadata: ${BUILD_FILE}"
+echo "- Capture plan: ${PLAN_FILE}"
