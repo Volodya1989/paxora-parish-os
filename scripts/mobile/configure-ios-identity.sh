@@ -15,7 +15,7 @@ if [[ ! -f "$PBXPROJ" || ! -f "$INFO_PLIST" ]]; then
 fi
 
 BUNDLE_ID="${IOS_BUNDLE_ID:-com.paxora.parishcenter}"
-DISPLAY_NAME="${IOS_DISPLAY_NAME:-Paxora Parish Center}"
+DISPLAY_NAME="${IOS_DISPLAY_NAME:-Paxora Parish Center App}"
 VERSION_NAME="${IOS_VERSION_NAME:-1.0.0}"
 BUILD_NUMBER="${IOS_BUILD_NUMBER:-1}"
 DEVELOPMENT_TEAM="${IOS_DEVELOPMENT_TEAM:-}"
