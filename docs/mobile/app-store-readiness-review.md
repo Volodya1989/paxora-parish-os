@@ -89,7 +89,7 @@ IOS-A2 depends on IOS-A1 output. Since IOS-A1 never produced the `ios/` project,
 | P1-4 | **No crash/error monitoring** | Operating blind on iOS wrapper; TestFlight crashes invisible | `package.json`, new Sentry config | Add `@sentry/nextjs` with iOS context tags |
 | P1-5 | **PWA engagement prompts may fire inside Capacitor WebView** | "Add to Home Screen" prompts inside a native app are confusing and may trigger rejection | `components/pwa/EngagementPrompts.tsx` | Add `Capacitor.isNativePlatform()` guard to suppress PWA prompts in native shell |
 | P1-6 | **Giving/donation links policy risk** | External payment links can trigger IAP policy rejection | Giving-related components | Add feature flag to hide/disable giving shortcuts in iOS builds |
-| P1-7 | **Support email not codified in app** | App Store Connect requires support URL + email; currently only in docs, not exposed as structured metadata | App Store Connect metadata, contact page | Add explicit support email to contact page and App Store listing |
+| P1-7 | **Support email not codified in app** | App Store Connect requires support URL + email; currently only in docs, not exposed as structured metadata | App Store Connect metadata, contact page | **Addressed in IOS-B5**: support email + legal links now present in contact/privacy/terms surfaces and metadata mapping. |
 
 **App Review note template (donation behavior):**
 - "In our iOS native shell build, external donation/payment shortcuts are suppressed when `NEXT_PUBLIC_IOS_SAFE_GIVING_STRATEGY=hide_in_ios_native` and `NEXT_PUBLIC_IOS_NATIVE_SHELL=true`. In this mode, `/api/parish/giving-shortcut` returns `shortcut: null` and no giving shortcut is rendered in app headers."
@@ -101,7 +101,7 @@ IOS-A2 depends on IOS-A1 output. Since IOS-A1 never produced the `ios/` project,
 | P2-1 | **No CI lane for iOS builds** | Manual Xcode builds are error-prone and not reproducible | `.github/workflows/` | Add Fastlane or `xcodebuild` CI step |
 | P2-2 | **No screenshot pipeline** | App Store requires 6.7" and 6.5" iPhone screenshots minimum | `scripts/mobile/` | Create checklist doc with device sizes; optionally add Fastlane snapshot |
 | P2-3 | **Version/build bump process undocumented** | Each TestFlight upload needs unique build number | `docs/mobile/` | Document `CFBundleVersion` increment strategy (CI-based or manual) |
-| P2-4 | **App Store Connect metadata not prepared** | Description, keywords, categories, age rating, privacy nutrition labels | `docs/mobile/` | Create metadata template doc with all required fields |
+| P2-4 | **App Store Connect metadata not prepared** | Description, keywords, categories, age rating, privacy nutrition labels | `docs/mobile/` | **Partially addressed in IOS-B5** via `docs/mobile/app-store-connect-metadata.md` (legal/support/deletion fields); extend for full listing copy in IOS-D1. |
 | P2-5 | **R2 env var naming inconsistency** | Ops confusion during deployment | `.env.example`, `docs/pilot-runbook.md` | Align variable names across docs and code |
 
 ---

@@ -95,7 +95,7 @@
 ## 4) Legal/Compliance for App Store
 - **Privacy Policy:** implemented route.
 - **Terms:** implemented route.
-- **Support URL/contact email/data deletion instructions:** contact page exists, but explicit support email and precise deletion flow wording appear incomplete.
+- **Support URL/contact email/data deletion instructions:** addressed via IOS-B5 updates on in-app contact/legal/deletion surfaces and metadata handoff doc (`docs/mobile/app-store-connect-metadata.md`).
 - **Sign in with Apple requirement:** likely **NOT REQUIRED** if only first-party credentials login is offered (no Google/Facebook/etc. in auth providers). **UNKNOWN — needs legal confirmation for final interpretation.**
 - **In-app purchases/donations:** giving shortcut can open external links; high Apple policy risk if used to bypass IAP categories.
 - **Content moderation/reporting:** role moderation exists, but explicit user-facing reporting/appeals flow appears missing.
