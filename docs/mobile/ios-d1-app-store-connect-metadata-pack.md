@@ -77,7 +77,7 @@ Use these values when completing App Store Connect age rating prompts.
 | Cartoon/Fantasy Violence | None | No gameplay or violent media focus. |
 | Realistic Violence | None | App is a parish operations/communication platform. |
 | Prolonged Graphic/Sadistic Realistic Violence | None | Not applicable. |
-| Profanity or Crude Humor | None / Infrequent (UGC baseline) | Product intent is faith community communication; moderation and parish-scoped membership reduce risk. |
+| Profanity or Crude Humor | Infrequent/Mild | User-generated chat and announcements can contain member text; scope is parish-member-only and account-gated. |
 | Mature/Suggestive Themes | None | Not a dating/adult-content experience. |
 | Sexual Content/Nudity | None | Not applicable to intended product usage. |
 | Horror/Fear Themes | None | Not applicable. |
@@ -85,7 +85,7 @@ Use these values when completing App Store Connect age rating prompts.
 | Alcohol, Tobacco, or Drug Use/References | None | Not a substance-focused app. |
 | Gambling/Contests | None | No gambling mechanics. |
 | Simulated Gambling | None | Not applicable. |
-| Unrestricted Web Access | No | In-app browsing is not core functionality; links are constrained to product/legal/support surfaces. |
+| Unrestricted Web Access | No | App does not provide general-purpose web browsing for users. |
 | User-Generated Content | Yes | Group chat/messages/announcements are member-generated within parish context. |
 | Advertising | No | No third-party ad network behavior in scope. |
 
@@ -93,7 +93,7 @@ Use these values when completing App Store Connect age rating prompts.
 
 Moderation/safety context for review consistency:
 - Access is account-gated and parish-scoped.
-- Users can report concerns to parish admins and support channels.
+- Support issues can be escalated through support channels.
 - Account deletion is available in-app (Profile flow).
 
 ---
@@ -107,8 +107,8 @@ Use this as the initial App Privacy questionnaire matrix in App Store Connect. R
 | Contact Info (Email Address) | Yes | Yes | No | App Functionality, Account Management, Developer Communications | Used for sign-in/account support and support follow-up. |
 | User Content (Messages, announcements, request text, attachments metadata) | Yes | Yes | No | App Functionality | Required for core parish communication/workflow features. |
 | Identifiers (User ID, parish membership IDs) | Yes | Yes | No | App Functionality, Account Management | Internal app identity and tenancy isolation. |
-| Usage Data (feature interaction events for product operations, if enabled) | No by default / verify at release | N/A | No | N/A unless enabled | Keep as not collected unless telemetry is explicitly turned on. |
-| Diagnostics (crash/error telemetry) | No by default / verify at release | N/A | No | N/A unless enabled | Update if IOS-C1 monitoring pipeline is enabled pre-release. |
+| Usage Data (feature interaction events for product operations) | No | No | No | N/A | Keep set to not collected unless Product/Eng introduce analytics. |
+| Diagnostics (crash/error telemetry) | No (current baseline) | No | No | N/A | If IOS-C1 monitoring is enabled before release, update ASC labels in same release cycle. |
 | Purchases / Financial data | No | No | No | N/A | Donations/payments are out of app scope for iOS baseline behavior. |
 | Location (Precise/Coarse) | No | No | No | N/A | Not required for core functionality. |
 | Contacts / Photos / Health / Sensitive Info | No (except explicit attachment workflow permissions where applicable) | No | No | N/A | Reconfirm permission prompts align with actual feature use. |
@@ -139,7 +139,8 @@ Paste and customize for each submission:
 > Terms: `https://<public-site-domain>/en/terms`
 >
 > **Giving/donation behavior context**
-> The iOS experience does not include non-compliant external purchase flows. Donation-related behavior follows current iOS policy-safe configuration.
+> In iOS native shell mode, external donation/payment shortcuts are suppressed by policy-safe configuration.
+> When `NEXT_PUBLIC_IOS_SAFE_GIVING_STRATEGY=hide_in_ios_native` and `NEXT_PUBLIC_IOS_NATIVE_SHELL=true`, the giving shortcut API returns `shortcut: null` and no giving shortcut is rendered.
 >
 > **Test account (if required by reviewer)**
 > Email: `<review-test-account-email>`
@@ -175,7 +176,7 @@ If any value above changes, update both IOS-B5 baseline doc and this IOS-D1 pack
 | Primary Category | This doc §3 | Product | Ready |
 | Secondary Category | This doc §3 | Product | Ready |
 | Age Rating answers | This doc §4 | Product + Legal | Ready (final confirm in ASC questionnaire) |
-| App Privacy labels | This doc §5 | Legal + Eng | Ready (re-verify at release cut) |
+| App Privacy labels | This doc §5 | Legal + Eng | Ready |
 | Support URL | IOS-B5 canonical doc | Legal | Ready |
 | Marketing URL (if used) | Public site domain | Product | Pending per launch domain confirmation |
 | Privacy Policy URL | IOS-B5 canonical doc | Legal | Ready |
@@ -193,7 +194,7 @@ Before submitting build to TestFlight/App Review:
 - [ ] Keywords string pasted as comma-separated list and within ASC character limits.
 - [ ] Categories set to **Social Networking** (primary) and **Productivity** (secondary), unless Product approves change.
 - [ ] Age rating questionnaire answers entered per §4 and reviewed by Legal.
-- [ ] Privacy label answers revalidated against current release behavior (especially diagnostics/analytics toggles).
+- [ ] Privacy label answers revalidated against current release behavior (especially if analytics/diagnostics are enabled).
 - [ ] Support URL, support email, privacy URL, and terms URL match IOS-B5 canonical values.
 - [ ] Account deletion language in review notes matches in-app behavior and IOS-B5 summary.
 - [ ] App Review Notes include current build test account credentials and parish context.
@@ -210,3 +211,7 @@ Before submitting build to TestFlight/App Review:
 4. Use the field mapping table (section 8) to confirm ownership and any pending inputs.
 5. Run the checklist (section 9) before TestFlight submission and again before production submission.
 
+## 11) Deferred follow-ups (outside IOS-D1)
+
+- **IOS-D2:** Screenshot generation/checklist pipeline is tracked separately and not covered by this metadata pack.
+- **IOS-D4:** CI lane for iOS build validation + artifact upload notes is tracked separately and not covered by this metadata pack.
