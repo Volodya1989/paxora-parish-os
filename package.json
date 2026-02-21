@@ -15,7 +15,10 @@
     "prisma:studio": "prisma studio",
     "prisma:seed": "prisma db seed",
     "prisma:migrate:deploy": "prisma migrate deploy",
-    "mobile:ios:identity": "bash scripts/mobile/configure-ios-identity.sh"
+    "mobile:ios:identity": "bash scripts/mobile/configure-ios-identity.sh",
+    "mobile:web:build": "npm run build",
+    "mobile:ios:sync": "bash scripts/mobile/bootstrap-capacitor-ios.sh",
+    "mobile:ios:pipeline": "npm run mobile:web:build && npm run mobile:ios:sync"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
