@@ -19,7 +19,8 @@
     "mobile:web:build": "npm run build",
     "mobile:ios:sync": "bash scripts/mobile/bootstrap-capacitor-ios.sh",
     "mobile:ios:pipeline": "npm run mobile:web:build && npm run mobile:ios:sync",
-    "mobile:ios:assets": "bash scripts/mobile/configure-ios-assets.sh"
+    "mobile:ios:assets": "bash scripts/mobile/configure-ios-assets.sh",
+    "mobile:ios:c4:evidence": "bash scripts/mobile/generate-ios-c4-evidence-template.sh"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

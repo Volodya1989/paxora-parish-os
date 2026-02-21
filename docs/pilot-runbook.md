@@ -68,6 +68,8 @@ pnpm build
 
 ## Pilot smoke checklist (<15 minutes)
 
+Baseline pilot checks (keep as-is):
+
 1. Admin login works.
 2. Parish switch/active parish context works.
 3. Announcement publish succeeds.
@@ -75,3 +77,7 @@ pnpm build
 5. Event create + RSVP succeeds.
 6. Access request submit + approve succeeds.
 7. Reliability page loads and displays recent failures (if any).
+
+iOS/TestFlight-specific extension:
+- Run `docs/mobile/ios-c4-app-store-qa-smoke-suite.md` for App Store smoke coverage (auth, onboarding, tasks, events, chat upload, giving shortcut policy behavior + evidence template).
+- Optional scaffold: `bash scripts/mobile/generate-ios-c4-evidence-template.sh` to generate a dated run-record file.
