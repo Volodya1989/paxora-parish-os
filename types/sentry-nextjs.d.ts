@@ -12,6 +12,8 @@ declare module "@sentry/nextjs" {
     beforeSend?: (event: Event) => Event | null;
   }): void;
 
+  export function captureException(error: unknown): string;
+
   export const captureRequestError: (...args: unknown[]) => unknown;
 
   export function withSentryConfig<T>(nextConfig: T, options: Record<string, unknown>): T;

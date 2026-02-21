@@ -26,6 +26,7 @@ Recommended low-risk defaults:
   - `sentry.client.config.ts`
   - `sentry.server.config.ts`
   - `sentry.edge.config.ts`
+- `app/global-error.tsx` captures top-level client render crashes and forwards them to Sentry in App Router.
 
 Tag values used by this story:
 - iOS wrapper / TestFlight path:
@@ -39,7 +40,7 @@ Tag values used by this story:
 
 ## Verification checklist (including TestFlight)
 1. Deploy with Sentry DSNs configured.
-2. In a TestFlight build, trigger a controlled test error in a non-critical flow.
+2. In a TestFlight build, trigger a controlled test error in a non-critical flow (for example, throw from a test-only screen and let `app/global-error.tsx` report it).
 3. Confirm event appears in Sentry with tags:
    - `app_platform=ios`
    - `app_shell=native_wrapper`
