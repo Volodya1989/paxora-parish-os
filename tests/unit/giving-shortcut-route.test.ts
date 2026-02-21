@@ -3,7 +3,14 @@ import assert from "node:assert/strict";
 import { resolveFromRoot } from "../_helpers/resolve";
 import { loadModuleFromRoot } from "../_helpers/load-module";
 
-const listParishHubItemsForMember = mock.fn(async () => []);
+type MockHubItem = {
+  icon: string;
+  targetType: "EXTERNAL" | "INTERNAL";
+  targetUrl?: string;
+  internalRoute?: string;
+};
+
+const listParishHubItemsForMember = mock.fn<() => Promise<MockHubItem[]>>(async () => []);
 
 mock.module(resolveFromRoot("server/actions/parish-hub"), {
   namedExports: {
