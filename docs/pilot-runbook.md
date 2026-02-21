@@ -83,4 +83,7 @@ Baseline pilot checks (keep as-is):
 
 iOS/TestFlight-specific extension:
 - Run `docs/mobile/ios-c4-app-store-qa-smoke-suite.md` for App Store smoke coverage (auth, onboarding, tasks, events, chat upload, giving shortcut policy behavior + evidence template).
-- Optional scaffold: `bash scripts/mobile/generate-ios-c4-evidence-template.sh` to generate a dated run-record file.
+- For App Store listing assets, run `docs/mobile/ios-d2-screenshot-pipeline.md` (required 6.7" + 6.5" screenshot classes, capture matrix, QA/sign-off checklist, ASC packaging workflow).
+- Optional scaffolds:
+  - `bash scripts/mobile/generate-ios-c4-evidence-template.sh` for IOS-C4 smoke run records.
+  - `bash scripts/mobile/generate-ios-d2-screenshot-template.sh` for IOS-D2 screenshot run folders/checklists.
