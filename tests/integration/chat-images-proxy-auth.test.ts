@@ -19,26 +19,26 @@ mock.module("next-auth", {
   }
 });
 
-mock.module("@/lib/storage/r2", {
+mock.module("../../lib/storage/r2", {
   namedExports: {
     signR2GetUrl: () => "https://r2.test/signed-get"
   }
 });
 
-mock.module("@/server/db/groups", {
+mock.module("../../server/db/groups", {
   namedExports: {
     getParishMembership: async () => state.parishMembership,
     getGroupMembership: async () => state.groupMembership
   }
 });
 
-mock.module("@/lib/permissions", {
+mock.module("../../lib/permissions", {
   namedExports: {
     isParishLeader: (role: string) => role === "ADMIN" || role === "SHEPHERD"
   }
 });
 
-mock.module("@/server/db/prisma", {
+mock.module("../../server/db/prisma", {
   namedExports: {
     prisma: {
       chatChannel: {
