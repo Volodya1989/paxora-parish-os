@@ -416,7 +416,7 @@ Quick-execute commands to start working on this plan:
 | IOS-A1 | 🔶 **PARTIAL** — Config + script authored; packages not installed, `ios/` project not generated, `webDir` architecture conflict unresolved | Eng | P0 | None | M |
 | IOS-A2 | 🔶 **PARTIAL** — Identity script authored + npm alias added; blocked by IOS-A1 (no `ios/` project to configure) | Eng | P0 | IOS-A1 | S |
 | IOS-A3 | ✅ **COMPLETED** — Added deterministic npm pipeline (`mobile:web:build` + `mobile:ios:sync` + `mobile:ios:pipeline`), aligned Capacitor `webDir` with Next build output, and documented local/CI commands for TestFlight prep | Eng | P0 | IOS-A1 | S |
-| IOS-A4 | Add iOS icon/launch assets mapped from brand pack | Product + Eng | P0 | IOS-A2 | S |
+| IOS-A4 | 🔶 **PARTIAL** — Added reproducible iOS icon/launch asset pipeline + docs/checklist; blocked on missing brand-pack source files and missing generated `ios/App` Xcode project in-repo snapshot | Product + Eng | P0 | IOS-A2 | S |
 
 ### Acceptance criteria
 - `ios/` project builds on CI/local with documented commands.
