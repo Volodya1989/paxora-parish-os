@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { APP_STORE_PATHS, APP_STORE_SUPPORT_EMAIL } from "@/lib/mobile/appStoreMetadata";
+import { getLocaleFromParam, buildLocalePathname } from "@/lib/i18n/routing";
 
 export const metadata: Metadata = {
   title: "Privacy | Paxora Parish Center App",
@@ -7,7 +9,12 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image", images: ["/og/marketing-default.svg"] }
 };
 
-export default function PrivacyPage() {
+export default async function PrivacyPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale: localeParam } = await params;
+  const locale = getLocaleFromParam(localeParam);
+  const supportPath = buildLocalePathname(locale, APP_STORE_PATHS.support);
+  const accountDeletionPath = buildLocalePathname(locale, APP_STORE_PATHS.accountDeletion);
+
   return (
     <section className="prose max-w-none prose-sm prose-headings:text-ink-900 prose-p:text-ink-700">
       <h1>Privacy Policy</h1>
@@ -47,8 +54,25 @@ export default function PrivacyPage() {
         and authorized parish leaders may request data export or deletion support.
       </p>
 
+      <h2>Account and data deletion</h2>
+      <p>
+        Any member can start account deletion from the in-app Profile page at <a href={accountDeletionPath}>Delete account</a>.
+        The user must type DELETE to confirm. Access to the account ends immediately after confirmation.
+      </p>
+      <p>
+        What is deleted: profile data, sign-in access, and personal account ownership links. Parish records such as events,
+        tasks, and messages remain for parish continuity and are reassigned to &quot;Deleted User&quot;.
+      </p>
+      <p>
+        If you need help with a deletion request or parish-level data removal, contact <a href={`mailto:${APP_STORE_SUPPORT_EMAIL}`}>{APP_STORE_SUPPORT_EMAIL}</a>.
+        We respond to deletion-related support requests within 7 calendar days.
+      </p>
+
       <h2>Contact</h2>
-      <p>For privacy requests or questions, please contact us through the Contact page.</p>
+      <p>
+        For privacy requests or questions, email <a href={`mailto:${APP_STORE_SUPPORT_EMAIL}`}>{APP_STORE_SUPPORT_EMAIL}</a>
+        or use our <a href={supportPath}>Support page</a>.
+      </p>
     </section>
   );
 }

@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { APP_STORE_PATHS, APP_STORE_SUPPORT_EMAIL } from "@/lib/mobile/appStoreMetadata";
+import { buildLocalePathname, getLocaleFromParam } from "@/lib/i18n/routing";
 
 export const metadata: Metadata = {
   title: "Terms | Paxora Parish Center App",
@@ -7,7 +9,12 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image", images: ["/og/marketing-default.svg"] }
 };
 
-export default function TermsPage() {
+export default async function TermsPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale: localeParam } = await params;
+  const locale = getLocaleFromParam(localeParam);
+  const supportPath = buildLocalePathname(locale, APP_STORE_PATHS.support);
+  const accountDeletionPath = buildLocalePathname(locale, APP_STORE_PATHS.accountDeletion);
+
   return (
     <section className="prose max-w-none prose-sm prose-headings:text-ink-900 prose-p:text-ink-700">
       <h1>Terms of Service</h1>
@@ -43,6 +50,12 @@ export default function TermsPage() {
         secure, and improve the service for participating parishes.
       </p>
 
+      <h2>Account deletion</h2>
+      <p>
+        Members can delete their own account at any time from <a href={accountDeletionPath}>Profile → Delete account</a>.
+        Deletion removes login access immediately and anonymizes historical activity to Deleted User for parish records.
+      </p>
+
       <h2>Service availability</h2>
       <p>
         We work to provide reliable service, but pilot features may evolve over time as we improve stability and product fit.
@@ -50,6 +63,11 @@ export default function TermsPage() {
 
       <h2>Liability</h2>
       <p>To the maximum extent allowed by law, the service is provided &quot;as is&quot; during pilot participation.</p>
+
+      <h2>Support contact</h2>
+      <p>
+        Support URL: <a href={supportPath}>Contact and support</a>. Support email: <a href={`mailto:${APP_STORE_SUPPORT_EMAIL}`}>{APP_STORE_SUPPORT_EMAIL}</a>.
+      </p>
     </section>
   );
 }

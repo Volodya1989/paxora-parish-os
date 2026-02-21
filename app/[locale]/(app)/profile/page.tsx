@@ -110,6 +110,12 @@ export default async function ProfilePage({
               >
                 <span className="min-w-0 truncate">{t("profile.importantDates")}</span>
               </a>
+              <a
+                href="#account-deletion"
+                className="inline-flex w-full min-h-[2.25rem] items-center justify-center rounded-button border border-mist-200 bg-white px-3 py-1.5 text-center text-xs font-medium leading-tight text-ink-900 transition hover:border-mist-300 hover:bg-mist-50 focus-ring whitespace-normal break-words sm:w-auto"
+              >
+                <span className="min-w-0 truncate">{t("profile.accountDeletion")}</span>
+              </a>
             </div>
           </div>
         </Card>
