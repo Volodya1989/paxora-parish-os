@@ -14,7 +14,10 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "prisma:seed": "prisma db seed",
-    "prisma:migrate:deploy": "prisma migrate deploy"
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "mobile:prepare:webdir": "node scripts/mobile/prepare-capacitor-webdir.mjs",
+    "mobile:ios:bootstrap": "bash scripts/mobile/bootstrap-capacitor-ios.sh",
+    "mobile:ios:sync": "bash scripts/mobile/build-and-sync-ios.sh"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
