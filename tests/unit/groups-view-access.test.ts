@@ -33,11 +33,11 @@ test("request-to-join group still triggers request flow", () => {
 test("regular members get view members and leave in joined-group menu", () => {
   const actions = getJoinedGroupMenuActions(false);
 
-  assert.deepEqual(actions, ["view_members", "leave"]);
+  assert.deepEqual(actions, ["view_members", "leave", "report"]);
 });
 
 test("leaders keep management actions in joined-group menu", () => {
   const actions = getJoinedGroupMenuActions(true);
 
-  assert.deepEqual(actions, ["view_members", "edit", "archive", "leave"]);
+  assert.deepEqual(actions, ["view_members", "edit", "archive", "leave", "report"]);
 });
