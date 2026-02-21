@@ -80,7 +80,8 @@
     "inProgress": "In Progress",
     "done": "Done",
     "loading": "Loading",
-    "error": "Error"
+    "error": "Error",
+    "reportContent": "Reportar contenido"
   },
   "notifications": {
     "title": "Notifications",
@@ -444,5 +445,29 @@
     "deleteGroup": "Are you sure you want to permanently delete this group?",
     "deleteEvent": "Are you sure you want to delete this event?",
     "deleteTask": "Are you sure you want to delete this task?"
+  },
+  "moderation": {
+    "reportSubmitted": "Reporte enviado",
+    "reportAlreadySubmitted": "Reporte ya enviado",
+    "reportSubmittedDescription": "Gracias. Nuestro equipo revisará este contenido.",
+    "reportAlreadySubmittedDescription": "Gracias: este reporte ya está en la cola de moderación.",
+    "reportFailed": "No se pudo enviar el reporte",
+    "reportFailedDescription": "No pudimos enviar tu reporte. Inténtalo de nuevo.",
+    "queueTitle": "Reportes de contenido",
+    "queueSubtitle": "Cola de moderación para contenido reportado en chat, anuncios y grupos.",
+    "queue": {
+      "type": "Tipo",
+      "targetId": "ID objetivo",
+      "reporter": "Reportado por",
+      "created": "Creado",
+      "status": "Estado",
+      "action": "Acción",
+      "markReviewed": "Marcar revisado",
+      "dismiss": "Descartar",
+      "emptyAction": "—"
+    },
+    "reportUpdated": "Reporte actualizado",
+    "reportUpdateFailed": "No se pudo actualizar",
+    "reportUpdateFailedDescription": "No pudimos actualizar ese reporte."
   }
 }

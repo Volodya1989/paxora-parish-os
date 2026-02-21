@@ -85,7 +85,8 @@
     "back": "Назад",
     "cancel": "Скасувати",
     "tryAgain": "Спробуйте ще раз.",
-    "myParish": "Моя парафія"
+    "myParish": "Моя парафія",
+    "reportContent": "Поскаржитися на вміст"
   },
   "notifications": {
     "title": "Сповіщення",
@@ -941,5 +942,29 @@
     "footer": {
       "copy": "© Paxora Parish Center App. Pilot program in progress."
     }
+  },
+  "moderation": {
+    "reportSubmitted": "Скаргу надіслано",
+    "reportAlreadySubmitted": "Скаргу вже надіслано",
+    "reportSubmittedDescription": "Дякуємо. Наша команда перегляне цей вміст.",
+    "reportAlreadySubmittedDescription": "Дякуємо — ця скарга вже в черзі модерації.",
+    "reportFailed": "Не вдалося надіслати скаргу",
+    "reportFailedDescription": "Не вдалося надіслати скаргу. Спробуйте ще раз.",
+    "queueTitle": "Скарги на вміст",
+    "queueSubtitle": "Черга модерації для позначеного вмісту чату, оголошень і груп.",
+    "queue": {
+      "type": "Тип",
+      "targetId": "ID цілі",
+      "reporter": "Хто поскаржився",
+      "created": "Створено",
+      "status": "Статус",
+      "action": "Дія",
+      "markReviewed": "Позначити як переглянуте",
+      "dismiss": "Відхилити",
+      "emptyAction": "—"
+    },
+    "reportUpdated": "Скаргу оновлено",
+    "reportUpdateFailed": "Оновлення не вдалося",
+    "reportUpdateFailedDescription": "Не вдалося оновити цю скаргу."
   }
 }

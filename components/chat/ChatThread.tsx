@@ -263,6 +263,7 @@ export default function ChatThread({
   onDelete,
   onReply,
   onEdit,
+  onReport,
   onToggleReaction,
   onViewThread,
   onVotePoll,
@@ -282,6 +283,7 @@ export default function ChatThread({
   onDelete: (messageId: string) => void;
   onReply: (message: ChatMessage) => void;
   onEdit: (message: ChatMessage) => void;
+  onReport?: (messageId: string) => void;
   onToggleReaction?: (messageId: string, emoji: string) => void;
   onViewThread?: (message: ChatMessage) => void;
   onVotePoll?: (pollId: string, optionId: string) => Promise<void> | void;
@@ -385,6 +387,7 @@ export default function ChatThread({
                     }
                     onReply={onReply}
                     onEdit={onEdit}
+                    onReport={onReport}
                     onPin={onPin}
                     onDelete={onDelete}
                     onToggleReaction={onToggleReaction}
@@ -456,6 +459,7 @@ function MessageRow({
   onOpenAttachment,
   onReply,
   onEdit,
+  onReport,
   onPin,
   onDelete,
   onToggleReaction,
@@ -477,6 +481,7 @@ function MessageRow({
   onOpenAttachment: (attachment: ChatMessage["attachments"][number]) => void;
   onReply: (message: ChatMessage) => void;
   onEdit: (message: ChatMessage) => void;
+  onReport?: (messageId: string) => void;
   onPin: (messageId: string) => void;
   onDelete: (messageId: string) => void;
   onToggleReaction?: (messageId: string, emoji: string) => void;
@@ -536,7 +541,8 @@ function MessageRow({
   const reactions = message.reactions ?? [];
   const hasReactions = reactions.length > 0;
   const canReact = Boolean(onToggleReaction && !isDeleted);
-  const hasActions = canReply || canModify || canModerate || canReact;
+  const canReport = Boolean(onReport && !isDeleted);
+  const hasActions = canReply || canModify || canModerate || canReact || canReport;
   const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   const [hasPlayedEmojiEffect, setHasPlayedEmojiEffect] = useState(false);
   const [isEmojiVisible, setIsEmojiVisible] = useState(isMine);
@@ -1009,6 +1015,21 @@ function MessageRow({
                           <path d="M8.5 3.528v4.644c0 .729-.29 1.428-.805 1.944l-1.217 1.216a8.75 8.75 0 013.55.621l.502.201a7.25 7.25 0 004.178.365l-2.403-2.403a2.75 2.75 0 01-.805-1.944V3.528a40.205 40.205 0 00-3 0zm-1 0a41.695 41.695 0 00-2.765.17A.75.75 0 004 4.432v.084c0 .258.104.505.29.69L5.5 6.415V8.172c0 .331-.132.649-.366.883l-2.3 2.3a.75.75 0 00.326 1.264 9.56 9.56 0 003.611.71H8.5v3.92a.75.75 0 001.5 0v-3.92h1.729a9.56 9.56 0 003.611-.71.75.75 0 00.326-1.264l-2.3-2.3a1.25 1.25 0 01-.366-.883V6.415l1.21-1.21a.975.975 0 00.29-.69v-.083a.75.75 0 00-.735-.734 41.695 41.695 0 00-5.265-.17z" />
                         </svg>
                         Pin
+                      </button>
+                    ) : null}
+                    {canReport ? (
+                      <button
+                        type="button"
+                        className="flex items-center gap-3 px-4 py-2.5 text-left text-sm text-ink-700 active:bg-mist-50"
+                        onClick={() => {
+                          onReport?.(message.id);
+                          closeMenu();
+                        }}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4 text-ink-400" aria-hidden="true">
+                          <path fillRule="evenodd" d="M3 3.5A1.5 1.5 0 014.5 2h8A1.5 1.5 0 0114 3.5v1.764a1.5 1.5 0 00.44 1.06l2.06 2.06a1.5 1.5 0 01.44 1.06V16.5a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 013 16.5v-13zM10 6.25a.75.75 0 00-.75.75v3a.75.75 0 001.5 0V7a.75.75 0 00-.75-.75zm0 7a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                        </svg>
+                        {t("common.reportContent")}
                       </button>
                     ) : null}
                     {canModify ? (

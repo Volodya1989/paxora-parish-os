@@ -8,6 +8,7 @@ import Card from "@/components/ui/Card";
 import { cn } from "@/lib/ui/cn";
 import type { AnnouncementListItem } from "@/lib/queries/announcements";
 import { useTranslations } from "@/lib/i18n/provider";
+import ReportContentButton from "@/components/moderation/ReportContentButton";
 
 type AnnouncementRowProps = {
   announcement: AnnouncementListItem;
@@ -17,6 +18,7 @@ type AnnouncementRowProps = {
   onDelete?: (id: string) => void;
   isBusy?: boolean;
   isReadOnly?: boolean;
+  showReportAction?: boolean;
 };
 
 function formatDate(date: Date) {
@@ -40,7 +42,8 @@ export default function AnnouncementRow({
   onEdit,
   onDelete,
   isBusy = false,
-  isReadOnly = false
+  isReadOnly = false,
+  showReportAction = false
 }: AnnouncementRowProps) {
   const t = useTranslations();
   const isPublished = Boolean(announcement.publishedAt);
@@ -94,7 +97,11 @@ export default function AnnouncementRow({
         </p>
       </div>
 
-      {isReadOnly ? null : (
+      {isReadOnly ? (
+        showReportAction ? (
+          <ReportContentButton contentType="ANNOUNCEMENT" contentId={announcement.id} variant="secondary" />
+        ) : null
+      ) : (
         <div className="flex items-center gap-2">
           <Button
             size="sm"

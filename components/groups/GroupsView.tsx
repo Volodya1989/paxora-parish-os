@@ -34,6 +34,7 @@ import {
   DropdownTrigger
 } from "@/components/ui/Dropdown";
 import HiddenGroupIcon from "@/components/groups/HiddenGroupIcon";
+import { submitContentReport } from "@/server/actions/content-reports";
 
 type GroupsViewProps = {
   groups: GroupListItem[];
@@ -68,8 +69,8 @@ export function getDiscoverGroupCardAction(input: {
 
 export function getJoinedGroupMenuActions(canManageGroups: boolean) {
   return canManageGroups
-    ? (["view_members", "edit", "archive", "leave"] as const)
-    : (["view_members", "leave"] as const);
+    ? (["view_members", "edit", "archive", "leave", "report"] as const)
+    : (["view_members", "leave", "report"] as const);
 }
 
 export default function GroupsView({
@@ -273,6 +274,27 @@ export default function GroupsView({
     router.push(contactParishHref);
   };
 
+
+  const handleReportGroup = async (groupId: string) => {
+    try {
+      const result = await submitContentReport({ contentType: "GROUP_CONTENT", contentId: groupId });
+      addToast({
+        title: result.duplicate
+          ? t("moderation.reportAlreadySubmitted")
+          : t("moderation.reportSubmitted"),
+        description: result.duplicate
+          ? t("moderation.reportAlreadySubmittedDescription")
+          : t("moderation.reportSubmittedDescription"),
+        status: "success"
+      });
+    } catch (error) {
+      addToast({
+        title: t("moderation.reportFailed"),
+        description: t("moderation.reportFailedDescription"),
+        status: "error"
+      });
+    }
+  };
 
   const handleMemberResult = async (
     groupId: string,
@@ -570,6 +592,14 @@ export default function GroupsView({
 
                               if (action === "archive") {
                                 return <DropdownItem key={action} onClick={() => handleArchive(group.id)}>{t("groups.archive")}</DropdownItem>;
+                              }
+
+                              if (action === "report") {
+                                return (
+                                  <DropdownItem key={action} onClick={() => void handleReportGroup(group.id)}>
+                                    {t("common.reportContent")}
+                                  </DropdownItem>
+                                );
                               }
 
                               return (
