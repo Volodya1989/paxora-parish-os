@@ -31,6 +31,8 @@ Recommended low-risk defaults:
 - `app/global-error.tsx` captures top-level client render crashes and forwards them to Sentry in App Router.
 
 Tag values used by this story:
+- Related operational validation: see IOS-C2 behavior matrix for supported iOS push modes and QA evidence requirements.
+- IOS-C2 push support matrix and QA checklist: `docs/mobile/ios-c2-push-behavior-matrix.md`
 - iOS wrapper / TestFlight path:
   - `app_platform=ios`
   - `app_shell=native_wrapper`
