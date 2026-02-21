@@ -194,6 +194,7 @@ npx prisma migrate dev
 - Optional: set `SENTRY_ENVIRONMENT` / `NEXT_PUBLIC_SENTRY_ENVIRONMENT` and `SENTRY_RELEASE` / `NEXT_PUBLIC_SENTRY_RELEASE` for filtering and release tracking.
 - Keep `SENTRY_TRACES_SAMPLE_RATE` and `NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE` at `0` unless you explicitly want performance tracing.
 - If DSNs are unset, Sentry stays disabled and the app continues to run normally.
+- Runtime dependency is `@sentry/nextjs` via `vendor/sentry-nextjs` and is expected to forward event envelopes when DSNs are configured.
 
 ### Run the app
 ```bash

@@ -3,6 +3,8 @@
 ## Purpose
 Add production-safe error visibility for both standard web sessions and iOS native shell/TestFlight sessions.
 
+> Note: this repository currently vendors `@sentry/nextjs` under `vendor/sentry-nextjs`. The vendored runtime forwards envelopes to Sentry DSN endpoints (non-no-op) and preserves IOS-C1 shell tags.
+
 ## Required environment variables
 - `SENTRY_DSN` (server runtime DSN)
 - `NEXT_PUBLIC_SENTRY_DSN` (browser runtime DSN)
