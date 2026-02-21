@@ -94,6 +94,30 @@ test("sign-in authorize applies rate limiting before credential lookup", async (
   assert.equal(lookups, limit);
 });
 
+
+test("sign-in limiter handles NextAuth header map shape", async () => {
+  let lookups = 0;
+  prismaMock.user.findUnique = async () => {
+    lookups += 1;
+    return null;
+  };
+
+  const { authOptions } = await loadModuleFromRoot<typeof import("@/server/auth/options")>(
+    "server/auth/options"
+  );
+  const credentialsProvider = authOptions.providers?.[0] as any;
+
+  const limit = 10;
+  for (let i = 0; i < limit + 1; i += 1) {
+    await credentialsProvider.options.authorize(
+      { email: "header-map@example.com", password: "wrong-password" },
+      { headers: { "x-forwarded-for": "198.51.100.12" } }
+    );
+  }
+
+  assert.equal(lookups, limit);
+});
+
 test("forgot-password request is throttled after threshold", async () => {
   let userLookups = 0;
   prismaMock.user.findUnique = async () => {

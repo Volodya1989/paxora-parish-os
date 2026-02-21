@@ -15,6 +15,12 @@ const AUTH_PASSWORD_RESET_SUBMIT_MAX_ATTEMPTS = 10;
 const AUTH_EMAIL_VERIFY_WINDOW_MS = 15 * 60 * 1000;
 const AUTH_EMAIL_VERIFY_MAX_ATTEMPTS = 10;
 
+type HeaderMap = Record<string, string | string[] | undefined>;
+
+type HeaderCarrier = {
+  headers?: Headers | HeaderMap;
+};
+
 const signInLimiter = new SlidingWindowRateLimiter({
   maxAttempts: AUTH_SIGN_IN_MAX_ATTEMPTS,
   windowMs: AUTH_SIGN_IN_WINDOW_MS
@@ -35,8 +41,21 @@ const emailVerifyLimiter = new SlidingWindowRateLimiter({
   windowMs: AUTH_EMAIL_VERIFY_WINDOW_MS
 });
 
-function resolveClientAddress(headers: Headers): string {
-  const forwardedFor = headers.get("x-forwarded-for");
+function getHeaderValue(headers: Headers | HeaderMap, name: string): string | null {
+  if (headers instanceof Headers) {
+    return headers.get(name);
+  }
+
+  const raw = headers[name] ?? headers[name.toLowerCase()] ?? headers[name.toUpperCase()];
+  if (Array.isArray(raw)) {
+    return raw[0] ?? null;
+  }
+
+  return raw ?? null;
+}
+
+function resolveClientAddress(headers: Headers | HeaderMap): string {
+  const forwardedFor = getHeaderValue(headers, "x-forwarded-for");
   if (forwardedFor) {
     const first = forwardedFor.split(",")[0]?.trim();
     if (first) {
@@ -44,7 +63,7 @@ function resolveClientAddress(headers: Headers): string {
     }
   }
 
-  const realIp = headers.get("x-real-ip")?.trim();
+  const realIp = getHeaderValue(headers, "x-real-ip")?.trim();
   if (realIp) {
     return realIp;
   }
@@ -52,12 +71,8 @@ function resolveClientAddress(headers: Headers): string {
   return "unknown";
 }
 
-function resolveRequestHeaders(request?: Request): Headers {
-  if (request) {
-    return request.headers;
-  }
-
-  return new Headers();
+function resolveRequestHeaders(request?: HeaderCarrier): Headers | HeaderMap {
+  return request?.headers ?? {};
 }
 
 export async function resolveActionClientAddress(): Promise<string> {
@@ -71,7 +86,7 @@ export async function resolveActionClientAddress(): Promise<string> {
 
 export function consumeSignInRateLimit(input: {
   email: string;
-  request?: Request;
+  request?: HeaderCarrier;
 }): RateLimitDecision {
   const normalizedEmail = normalizeEmail(input.email);
   const client = resolveClientAddress(resolveRequestHeaders(input.request));
