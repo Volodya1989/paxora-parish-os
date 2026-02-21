@@ -1,6 +1,7 @@
 import { beforeEach, mock, test } from "node:test";
 import assert from "node:assert/strict";
 import { loadModuleFromRoot } from "../_helpers/load-module";
+import { resolveFromRoot } from "../_helpers/resolve";
 
 const prismaMock = {
   user: {
@@ -22,7 +23,7 @@ const prismaMock = {
   $transaction: async () => null
 };
 
-mock.module("@/server/db/prisma", {
+mock.module(resolveFromRoot("server/db/prisma"), {
   namedExports: {
     prisma: prismaMock
   }
@@ -37,7 +38,7 @@ mock.module("bcryptjs", {
   }
 });
 
-mock.module("@/server/auth/bootstrap", {
+mock.module(resolveFromRoot("server/auth/bootstrap"), {
   namedExports: {
     ensureParishBootstrap: async () => undefined
   }
@@ -49,13 +50,13 @@ mock.module("next/headers", {
   }
 });
 
-mock.module("@/lib/email/passwordReset", {
+mock.module(resolveFromRoot("lib/email/passwordReset"), {
   namedExports: {
     sendResetPasswordEmail: async () => undefined
   }
 });
 
-mock.module("@/lib/email/verification", {
+mock.module(resolveFromRoot("lib/email/verification"), {
   namedExports: {
     sendVerificationEmail: async () => undefined
   }
