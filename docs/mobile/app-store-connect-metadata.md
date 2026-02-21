@@ -30,3 +30,8 @@ When deletion is confirmed:
 For deletion help or parish-level data removal requests, users can email **support@paxora.app**.
 
 Target response time for deletion support requests: **within 7 calendar days**.
+
+
+## Related IOS-D1 listing pack
+
+For full App Store listing content (description, keywords, categories, age rating, privacy labels, App Review notes, and pre-submit checklist), use `docs/mobile/ios-d1-app-store-connect-metadata-pack.md`.
