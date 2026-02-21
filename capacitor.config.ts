@@ -6,7 +6,7 @@ const appUrl = process.env.CAPACITOR_APP_URL ?? "http://localhost:3000";
 const capacitorConfig = {
   appId: "com.paxora.parishcenter",
   appName: "Paxora Parish Center",
-  webDir: "out",
+  webDir: ".next",
   server: {
     url: appUrl,
     cleartext: appUrl.startsWith("http://")
