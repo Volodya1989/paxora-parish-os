@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/server/db/prisma";
 import { ensureParishBootstrap } from "@/server/auth/bootstrap";
 import { normalizeEmail } from "@/lib/validation/auth";
+import { consumeSignInRateLimit } from "@/lib/security/authPublicRateLimit";
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
@@ -21,8 +22,16 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" }
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         if (!credentials?.email || !credentials.password) {
+          return null;
+        }
+
+        const rateLimit = consumeSignInRateLimit({
+          email: credentials.email,
+          request
+        });
+        if (!rateLimit.allowed) {
           return null;
         }
 

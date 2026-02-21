@@ -6,6 +6,11 @@ import { z } from "zod";
 import { prisma } from "@/server/db/prisma";
 import { normalizeEmail } from "@/lib/validation/auth";
 import { sendResetPasswordEmail } from "@/lib/email/passwordReset";
+import {
+  consumePasswordResetRequestRateLimit,
+  consumePasswordResetSubmitRateLimit,
+  resolveActionClientAddress
+} from "@/lib/security/authPublicRateLimit";
 
 const PASSWORD_RESET_TTL_MS = 60 * 60 * 1000;
 
@@ -41,6 +46,15 @@ export async function requestPasswordReset(
   }
 
   const normalizedEmail = normalizeEmail(parsed.data.email);
+  const clientAddress = await resolveActionClientAddress();
+  const rateLimit = consumePasswordResetRequestRateLimit({
+    email: normalizedEmail,
+    clientAddress
+  });
+  if (!rateLimit.allowed) {
+    return { success: true };
+  }
+
   const user = await prisma.user.findUnique({
     where: { email: normalizedEmail },
     select: { id: true, email: true, name: true }
@@ -102,6 +116,16 @@ export async function resetPassword(
 
   if (!parsed.success) {
     return { error: parsed.error.errors[0]?.message ?? "Invalid input" };
+  }
+
+  const clientAddress = await resolveActionClientAddress();
+
+  const rateLimit = consumePasswordResetSubmitRateLimit({
+    token: parsed.data.token,
+    clientAddress
+  });
+  if (!rateLimit.allowed) {
+    return { error: "This reset link is invalid or expired." };
   }
 
   const tokenHash = crypto.createHash("sha256").update(parsed.data.token).digest("hex");
