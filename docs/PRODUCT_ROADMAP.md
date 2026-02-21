@@ -397,3 +397,100 @@ Quick-execute commands to start working on this plan:
 ---
 
 *This roadmap is based entirely on code, docs, and configuration found in the repo. Items marked "Not found in repo" were confirmed absent through systematic search.*
+
+---
+
+## 11. Mobile App Store Readiness Roadmap (iOS first, Android second)
+
+**Goal:** Ship a minimally invasive native packaging path for current Next.js/PWA experience, pass App Store review on iPhone, then follow with Android Play submission.
+
+### Delivery principles
+- Reuse existing web app routes/components/server actions.
+- Avoid rewrites; package with Capacitor first.
+- Close P0 security/policy items before native submission.
+
+## 11.1 Epic A — iOS Submission Foundation (P0)
+
+| Story ID | Story | Owner | Priority | Dependencies | Estimate |
+|---|---|---|---|---|---|
+| IOS-A1 | Add Capacitor to monorepo and generate `ios/` project (`com.paxora.parishcenter`) | Eng | P0 | None | M |
+| IOS-A2 | Configure iOS app identity (bundle id, signing team, display name, app version/build) | Eng | P0 | IOS-A1 | S |
+| IOS-A3 | Build and sync web assets into Capacitor pipeline for reproducible TestFlight builds | Eng | P0 | IOS-A1 | S |
+| IOS-A4 | Add iOS icon/launch assets mapped from brand pack | Product + Eng | P0 | IOS-A2 | S |
+
+### Acceptance criteria
+- `ios/` project builds on CI/local with documented commands.
+- App launches authenticated shell and routes to current web app.
+- Version/build bump checklist exists for each submission.
+
+## 11.2 Epic B — App Review Blockers & Policy Compliance (P0)
+
+| Story ID | Story | Owner | Priority | Dependencies | Estimate |
+|---|---|---|---|---|---|
+| IOS-B1 | Secure chat media proxy with auth + parish/channel membership validation in `app/api/chat/images/[...key]/route.ts` | Eng | P0 | None | S |
+| IOS-B2 | Add security headers baseline in `next.config.mjs` (CSP, frame-ancestors, HSTS, referrer-policy, permissions-policy) | Eng | P0 | None | S |
+| IOS-B3 | Add auth/public endpoint rate limiting (sign-in/reset/password/email verification) | Eng | P0 | IOS-B2 | M |
+| IOS-B4 | Make iOS-safe giving strategy (feature flag to hide or compliant behavior for external donation links) | Product + Legal + Eng | P0 | None | S |
+| IOS-B5 | Finalize legal metadata for store: support URL, support email, privacy/terms URL mapping, deletion instructions | Product + Legal | P0 | None | S |
+
+### Acceptance criteria
+- Security and policy stories validated in staging with manual QA checklist.
+- App Review notes include donation behavior explanation and test credentials.
+
+## 11.3 Epic C — iOS Product Quality & Reliability (P1)
+
+| Story ID | Story | Owner | Priority | Dependencies | Estimate |
+|---|---|---|---|---|---|
+| IOS-C1 | Integrate Sentry (web + iOS wrapper context) for error/crash visibility | Eng | P1 | IOS-A1 | S |
+| IOS-C2 | Validate push notification behavior matrix for iOS wrapper vs installed PWA and document supported mode | Eng | P1 | IOS-A1 | M |
+| IOS-C3 | Add explicit in-app “Report content” affordance for chat/announcements/groups | Product + Eng | P1 | IOS-B1 | M |
+| IOS-C4 | Add App Store QA smoke suite (auth, onboarding, tasks, events, chat upload, giving shortcut behavior) | QA + Eng | P1 | IOS-B1, IOS-B4 | S |
+| IOS-C5 | Normalize R2 env naming in docs/runbook to match runtime env keys | Eng/Ops | P1 | None | S |
+
+### Acceptance criteria
+- Error events visible in monitoring from TestFlight build.
+- QA checklist passes in TestFlight with tracked evidence screenshots.
+
+## 11.4 Epic D — App Store Operations (P1)
+
+| Story ID | Story | Owner | Priority | Dependencies | Estimate |
+|---|---|---|---|---|---|
+| IOS-D1 | Create App Store Connect metadata pack (description, keywords, categories, age rating, privacy labels) | Product + Legal | P1 | IOS-B5 | S |
+| IOS-D2 | Build screenshot generation/checklist pipeline (iPhone sizes required by ASC) | Product + Design + Eng | P1 | IOS-A4 | M |
+| IOS-D3 | Define release runbook for TestFlight → Production including rollback and hotfix path | Ops + Eng | P1 | IOS-C4 | S |
+| IOS-D4 | Add CI lane for iOS build validation + artifact upload notes | Eng | P1 | IOS-A3 | M |
+
+### Acceptance criteria
+- One dry-run submission completed in TestFlight with complete metadata package.
+- Release runbook approved by Eng/Product/Ops.
+
+## 11.5 Epic E — Android Follow-up (P1/P2 after iOS approval)
+
+| Story ID | Story | Owner | Priority | Dependencies | Estimate |
+|---|---|---|---|---|---|
+| AND-E1 | Generate and configure `android/` project via Capacitor | Eng | P1 | iOS launch complete | S |
+| AND-E2 | Configure Android package, signing keystore, versioning, adaptive icons, splash | Eng | P1 | AND-E1 | M |
+| AND-E3 | Validate push behavior for Android WebView/Capacitor and define final implementation path | Eng | P1 | AND-E1 | M |
+| AND-E4 | Prepare Play Console listing assets and Data Safety form | Product + Legal | P1 | AND-E2 | S |
+| AND-E5 | Android QA smoke suite + staged rollout plan (internal, closed, production) | QA + Eng | P2 | AND-E2, AND-E3 | S |
+
+### Acceptance criteria
+- Internal testing track available with signed AAB.
+- Data Safety and privacy policy mapping accepted by Play Console.
+
+## 11.6 Definition of Done (DoD) for Mobile Submission Stories
+
+A mobile story is **Done** only when:
+1. Code/config/docs merged and linked in PR.
+2. Security/privacy implications reviewed (if applicable).
+3. QA evidence attached (screenshots/video + test steps).
+4. Runbook updated (`docs/pilot-runbook.md` or mobile release runbook).
+5. Rollback path documented.
+
+## 11.7 Sequenced Milestones
+
+- **Milestone M1 (Week 1):** IOS-A1..A4 complete (wrapper + identity + assets).
+- **Milestone M2 (Week 2):** IOS-B1..B5 complete (review blockers/security/legal).
+- **Milestone M3 (Week 3):** IOS-C1..C5 complete (reliability + QA + moderation).
+- **Milestone M4 (Week 4):** IOS-D1..D4 complete and submit iOS app.
+- **Milestone M5 (Post-approval):** AND-E1..E5 for Android rollout.
