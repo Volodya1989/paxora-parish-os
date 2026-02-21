@@ -1,6 +1,6 @@
 # IOS-A1 Implementation Notes
 
-Status: **COMPLETED (repo-level scaffolding)**
+Status: **PARTIAL — config files authored, bootstrap not executed, architecture conflict (webDir vs server-rendered app) unresolved**
 
 ## What was added
 - `capacitor.config.ts` at repo root with app identity:

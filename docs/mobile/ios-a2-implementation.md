@@ -1,6 +1,6 @@
 # IOS-A2 Implementation Notes
 
-Status: **COMPLETED (automation + identity config tooling)**
+Status: **PARTIAL — script authored but blocked by IOS-A1; never validated against real Xcode project files**
 
 ## What was added
 - `scripts/mobile/configure-ios-identity.sh` to configure iOS app identity in a Capacitor-generated project:

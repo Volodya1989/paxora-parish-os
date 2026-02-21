@@ -413,8 +413,8 @@ Quick-execute commands to start working on this plan:
 
 | Story ID | Story | Owner | Priority | Dependencies | Estimate |
 |---|---|---|---|---|---|
-| IOS-A1 | ✅ **COMPLETED** — Add Capacitor to monorepo and generate `ios/` project (`com.paxora.parishcenter`) | Eng | P0 | None | M |
-| IOS-A2 | ✅ **COMPLETED** — Configure iOS app identity (bundle id, signing team, display name, app version/build) | Eng | P0 | IOS-A1 | S |
+| IOS-A1 | 🔶 **PARTIAL** — Config + script authored; packages not installed, `ios/` project not generated, `webDir` architecture conflict unresolved | Eng | P0 | None | M |
+| IOS-A2 | 🔶 **PARTIAL** — Identity script authored + npm alias added; blocked by IOS-A1 (no `ios/` project to configure) | Eng | P0 | IOS-A1 | S |
 | IOS-A3 | Build and sync web assets into Capacitor pipeline for reproducible TestFlight builds | Eng | P0 | IOS-A1 | S |
 | IOS-A4 | Add iOS icon/launch assets mapped from brand pack | Product + Eng | P0 | IOS-A2 | S |
 
