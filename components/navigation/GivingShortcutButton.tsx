@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { HandHeartIcon } from "@/components/icons/ParishIcons";
+import { isGivingShortcutAllowed } from "@/lib/giving/iosSafeGiving";
 import { useTranslations } from "@/lib/i18n/provider";
 import { cn } from "@/lib/ui/cn";
 
@@ -18,8 +19,14 @@ type GivingShortcutButtonProps = {
 export default function GivingShortcutButton({ className }: GivingShortcutButtonProps) {
   const t = useTranslations();
   const [shortcut, setShortcut] = useState<GivingShortcut | null>(null);
+  const givingAllowed = isGivingShortcutAllowed();
 
   useEffect(() => {
+    if (!givingAllowed) {
+      setShortcut(null);
+      return;
+    }
+
     let mounted = true;
 
     void fetch("/api/parish/giving-shortcut", { cache: "no-store" })
@@ -36,9 +43,9 @@ export default function GivingShortcutButton({ className }: GivingShortcutButton
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [givingAllowed]);
 
-  if (!shortcut) {
+  if (!givingAllowed || !shortcut) {
     return null;
   }
 

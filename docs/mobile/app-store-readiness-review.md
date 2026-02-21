@@ -91,6 +91,9 @@ IOS-A2 depends on IOS-A1 output. Since IOS-A1 never produced the `ios/` project,
 | P1-6 | **Giving/donation links policy risk** | External payment links can trigger IAP policy rejection | Giving-related components | Add feature flag to hide/disable giving shortcuts in iOS builds |
 | P1-7 | **Support email not codified in app** | App Store Connect requires support URL + email; currently only in docs, not exposed as structured metadata | App Store Connect metadata, contact page | Add explicit support email to contact page and App Store listing |
 
+**App Review note template (donation behavior):**
+- "In our iOS native shell build, external donation/payment shortcuts are suppressed when `NEXT_PUBLIC_IOS_SAFE_GIVING_STRATEGY=hide_in_ios_native` and `NEXT_PUBLIC_IOS_NATIVE_SHELL=true`. In this mode, `/api/parish/giving-shortcut` returns `shortcut: null` and no giving shortcut is rendered in app headers."
+
 ### P2 — Should fix before production but won't block initial review
 
 | # | Gap | Why it matters | File(s) to modify | Minimal fix |
