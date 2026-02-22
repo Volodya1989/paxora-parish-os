@@ -19,6 +19,17 @@ if [[ ! -f capacitor.config.ts ]]; then
 fi
 
 if [[ ! -d ios/App ]]; then
+  if [[ -d ios ]]; then
+    if [[ -z "$(find ios -mindepth 1 -maxdepth 1 -print -quit)" ]]; then
+      echo "[bootstrap] Removing empty ios/ placeholder directory before adding platform"
+      rm -rf ios
+    else
+      echo "[bootstrap] Existing ios/ directory detected without ios/App; skipping cap add and proceeding to sync"
+    fi
+  fi
+fi
+
+if [[ ! -d ios/App && ! -d ios ]]; then
   echo "[bootstrap] Adding iOS wrapper project"
   npx cap add ios
 fi
