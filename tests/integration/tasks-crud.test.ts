@@ -283,7 +283,7 @@ dbTest("rolloverTasksForWeek allows leaders", async () => {
       weekId: fromWeek.id,
       ownerId: admin.id,
       createdById: admin.id,
-      displayId: "SERV-1",
+      displayId: "SERV-9001",
       title: "Carryover",
       status: "OPEN"
     }
