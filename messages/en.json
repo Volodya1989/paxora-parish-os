@@ -757,7 +757,32 @@
     "addComment": "Add a comment",
     "activity": "Activity",
     "activityHint": "Recent changes and updates.",
-    "noActivity": "No activity yet."
+    "noActivity": "No activity yet.",
+    "leadLabel": "Lead:",
+    "unassigned": "Unassigned",
+    "dueDateLabel": "Due date:",
+    "dueDateTbd": "TBD",
+    "leaveVolunteer": "Leave",
+    "volunteerAction": "Volunteer",
+    "volunteerClosed": "Closed",
+    "removeVolunteer": "Remove",
+    "mentionLabel": "Mention",
+    "refreshing": "Refreshing details…",
+    "toasts": {
+      "loadFailed": "Unable to load details",
+      "updateFailed": "Update failed",
+      "commentAdded": "Comment added",
+      "mentionTargetMissing": "Mention target no longer exists",
+      "idCopied": "Task ID copied",
+      "idCopyFailed": "Unable to copy Task ID",
+      "movedToInProgress": "Moved to in progress",
+      "markedComplete": "Marked complete",
+      "reopenedTask": "Reopened task",
+      "assignedToYou": "Assigned to you",
+      "leftVolunteerList": "Left volunteer list",
+      "addedToVolunteers": "Added to volunteers",
+      "volunteerRemoved": "Volunteer removed"
+    }
   },
   "emptyStates": {
     "noMatches": "No matches found",
@@ -1042,6 +1067,11 @@
       "nextAction": "Wait for a parish leader to review your request.",
       "whatNext": "You’ll receive an email as soon as your status changes."
     },
+    "rejected": {
+      "title": "Access request declined",
+      "nextAction": "Your request to join this parish was not approved.",
+      "whatNext": "If you believe this was a mistake, contact the parish office directly or try joining with a parish code."
+    },
     "unverified": {
       "title": "Verify your email",
       "nextAction": "Confirm your email address before requesting access {parishLabel}.",
@@ -1056,5 +1086,83 @@
   "eventDelete": {
     "toastTitle": "Event removed",
     "toastDescription": "The event has been removed from the calendar."
+  },
+  "eventCreateDialog": {
+    "title": "New event",
+    "description": "Add a service or parish gathering to the shared schedule.",
+    "successTitle": "Event scheduled",
+    "successDescription": "The service is now on the calendar.",
+    "submitLabel": "Save event"
+  },
+  "eventEditForm": {
+    "successTitle": "Event updated",
+    "successDescription": "Your changes are saved to the calendar.",
+    "submitLabel": "Save changes"
+  },
+  "taskEdit": {
+    "dialogTitle": "Edit task",
+    "dialogDescription": "Make quick updates so your team stays aligned.",
+    "toastUpdatedTitle": "Task updated",
+    "toastUpdatedDescription": "Your changes are saved.",
+    "title": "Title",
+    "titlePlaceholder": "Update the task title",
+    "notesOptional": "Notes (optional)",
+    "notesPlaceholder": "Update details, context, or links.",
+    "estimatedHours": "Estimated hours (optional)",
+    "estimatedHoursPlaceholder": "e.g. 2",
+    "dueDate": "Due date",
+    "privateHint": "Private commitment only.",
+    "visibility": "Visibility",
+    "visibilityPublic": "Public (shared with the parish)",
+    "visibilityPrivate": "Private (just you)",
+    "visibilityPublicHint": "Public tasks created by members require approval before they appear for everyone.",
+    "volunteersNeeded": "Volunteers needed",
+    "volunteersHint": "Set this above 1 to allow multiple volunteers to join.",
+    "group": "Group",
+    "noGroup": "No group",
+    "leadOptional": "Lead (optional)",
+    "assigneeOptional": "Assignee (optional)",
+    "youSuffix": "(You)",
+    "saveChanges": "Save changes"
+  },
+  "taskCompletion": {
+    "dialogTitle": "Complete task",
+    "logHoursTitle": "Log volunteer hours",
+    "logHoursDescription": "Keep gratitude grounded with a quick hours entry for this task.",
+    "howToLog": "How to log hours",
+    "useEstimated": "Use estimated allocation",
+    "enterActual": "Enter actual hours",
+    "skipLogging": "Skip logging for now",
+    "estimatedInfo": "Estimated allocation will use {label} and distribute it across participants.",
+    "noEstimate": "No estimate set",
+    "hoursPerParticipant": "Hours per participant",
+    "hoursPlaceholder": "e.g. 1.5",
+    "skipInfo": "No hours entry will be created for this completion.",
+    "completeTask": "Complete task"
+  },
+  "groupEdit": {
+    "dialogTitle": "Edit group",
+    "dialogDescription": "Update details so members know how to connect and contribute.",
+    "toastUpdatedTitle": "Group updated",
+    "toastUpdatedDescription": "Your changes are live.",
+    "errorGeneric": "We couldn't update that group. Please try again.",
+    "toastErrorTitle": "Unable to save",
+    "toastErrorDescription": "Please check the details and try again.",
+    "photoLabel": "Group photo",
+    "groupName": "Group name",
+    "groupNamePlaceholder": "e.g. Hospitality Team",
+    "descriptionOptional": "Description (optional)",
+    "descriptionPlaceholder": "Share what this group is responsible for.",
+    "visibility": "Visibility",
+    "joinSettings": "Join settings",
+    "publicDesc": "Public · Anyone in the parish can see this group",
+    "privateDesc": "Private · Only members can see this group",
+    "inviteOnly": "Invite only",
+    "openJoin": "Anyone can join instantly",
+    "requestToJoin": "Request approval to join",
+    "nameRequired": "Group name is required.",
+    "nameTooLong": "Group name must be {max} characters or fewer.",
+    "descriptionTooLong": "Description must be {max} characters or fewer.",
+    "saveChanges": "Save changes"
   }
 }

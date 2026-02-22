@@ -29,19 +29,16 @@ async function ensureGroupChatChannel(
   tx: Prisma.TransactionClient,
   input: { parishId: string; groupId: string; groupName: string }
 ) {
-  const existing = await tx.chatChannel.findFirst({
+  return tx.chatChannel.upsert({
     where: {
-      parishId: input.parishId,
-      groupId: input.groupId,
-      type: "GROUP"
+      ChatChannel_parish_group_type: {
+        parishId: input.parishId,
+        groupId: input.groupId,
+        type: "GROUP"
+      }
     },
-    select: { id: true }
-  });
-
-  if (existing) return existing;
-
-  return tx.chatChannel.create({
-    data: {
+    update: {},
+    create: {
       parishId: input.parishId,
       groupId: input.groupId,
       type: "GROUP",

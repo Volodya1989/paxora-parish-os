@@ -48,6 +48,7 @@ export default function TaskEditDialog({
   forcePrivate = false,
   hideEstimatedHours = false
 }: TaskEditDialogProps) {
+  const t = useTranslations();
   const { addToast } = useToast();
   const router = useRouter();
   const [state, formAction] = useActionState<TaskActionState, FormData>(
@@ -92,15 +93,15 @@ export default function TaskEditDialog({
     modalFormRef.current?.reset();
     drawerFormRef.current?.reset();
     addToast({
-      title: "Task updated",
-      description: "Your changes are saved.",
+      title: t("taskEdit.toastUpdatedTitle"),
+      description: t("taskEdit.toastUpdatedDescription"),
       status: "success"
     });
     onOpenChange(false);
     startTransition(() => {
       router.refresh();
     });
-  }, [addToast, onOpenChange, router, startTransition, state]);
+  }, [addToast, onOpenChange, router, startTransition, state, t]);
 
   const renderForm = (ref: RefObject<HTMLFormElement>) => (
     <form
@@ -112,41 +113,41 @@ export default function TaskEditDialog({
       <input type="hidden" name="taskId" value={task?.id ?? ""} />
       <input type="hidden" name="editContext" value={forcePrivate ? "my_commitments" : "default"} />
       <div className="space-y-2">
-        <Label htmlFor={titleId}>Title</Label>
+        <Label htmlFor={titleId}>{t("taskEdit.title")}</Label>
         <Input
           id={titleId}
           name="title"
-          placeholder="Update the task title"
+          placeholder={t("taskEdit.titlePlaceholder")}
           defaultValue={task?.title ?? ""}
           required
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor={notesId}>Notes (optional)</Label>
+        <Label htmlFor={notesId}>{t("taskEdit.notesOptional")}</Label>
         <Textarea
           id={notesId}
           name="notes"
-          placeholder="Update details, context, or links."
+          placeholder={t("taskEdit.notesPlaceholder")}
           rows={4}
           defaultValue={task?.notes ?? ""}
         />
       </div>
       {!hideEstimatedHours ? (
         <div className="space-y-2">
-        <Label htmlFor={estimatedHoursId}>Estimated hours (optional)</Label>
+        <Label htmlFor={estimatedHoursId}>{t("taskEdit.estimatedHours")}</Label>
         <Input
           id={estimatedHoursId}
           name="estimatedHours"
           type="number"
           min={0}
           step="0.25"
-          placeholder="e.g. 2"
+          placeholder={t("taskEdit.estimatedHoursPlaceholder")}
           defaultValue={task?.estimatedHours ?? ""}
         />
         </div>
       ) : null}
       <div className="space-y-2">
-        <Label htmlFor={dueAtId}>Due date</Label>
+        <Label htmlFor={dueAtId}>{t("taskEdit.dueDate")}</Label>
         <Input
           id={dueAtId}
           name="dueAt"
@@ -158,12 +159,12 @@ export default function TaskEditDialog({
         <>
           <input type="hidden" name="visibility" value="private" />
           <p className="rounded-xl border border-mist-200 bg-mist-50 px-3 py-2 text-xs text-ink-500">
-            Private commitment only.
+            {t("taskEdit.privateHint")}
           </p>
         </>
       ) : (
         <div className="space-y-2">
-          <Label htmlFor={visibilityId}>Visibility</Label>
+          <Label htmlFor={visibilityId}>{t("taskEdit.visibility")}</Label>
           <SelectMenu
             id={visibilityId}
             name="visibility"
@@ -173,12 +174,12 @@ export default function TaskEditDialog({
               setVisibility(nextVisibility);
             }}
             options={[
-              { value: "public", label: "Public (shared with the parish)" },
-              { value: "private", label: "Private (just you)" }
+              { value: "public", label: t("taskEdit.visibilityPublic") },
+              { value: "private", label: t("taskEdit.visibilityPrivate") }
             ]}
           />
           <p className="text-xs text-ink-400">
-            Public tasks created by members require approval before they appear for everyone.
+            {t("taskEdit.visibilityPublicHint")}
           </p>
         </div>
       )}
@@ -191,7 +192,7 @@ export default function TaskEditDialog({
       ) : (
         <>
           <div className="space-y-2">
-            <Label htmlFor={volunteersId}>Volunteers needed</Label>
+            <Label htmlFor={volunteersId}>{t("taskEdit.volunteersNeeded")}</Label>
             <Input
               id={volunteersId}
               name="volunteersNeeded"
@@ -201,26 +202,26 @@ export default function TaskEditDialog({
               defaultValue={volunteersNeeded}
             />
             <p className="text-xs text-ink-400">
-              Set this above 1 to allow multiple volunteers to join.
+              {t("taskEdit.volunteersHint")}
             </p>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor={groupId}>Group</Label>
+              <Label htmlFor={groupId}>{t("taskEdit.group")}</Label>
               <SelectMenu
                 id={groupId}
                 name="groupId"
                 defaultValue={task?.group?.id ?? ""}
-                placeholder="No group"
+                placeholder={t("taskEdit.noGroup")}
                 options={[
-                  { value: "", label: "No group" },
+                  { value: "", label: t("taskEdit.noGroup") },
                   ...groupOptions.map((group) => ({ value: group.id, label: group.name }))
                 ]}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor={ownerId}>
-                {volunteersNeeded > 1 ? "Lead (optional)" : "Assignee (optional)"}
+                {volunteersNeeded > 1 ? t("taskEdit.leadOptional") : t("taskEdit.assigneeOptional")}
               </Label>
               <SelectMenu
                 id={ownerId}
@@ -228,7 +229,7 @@ export default function TaskEditDialog({
                 defaultValue={task?.owner?.id ?? ""}
                 options={memberOptions.map((member) => ({
                   value: member.id,
-                  label: `${member.name}${member.id === currentUserId ? " (You)" : ""}`
+                  label: `${member.name}${member.id === currentUserId ? ` ${t("taskEdit.youSuffix")}` : ""}`
                 }))}
               />
             </div>
@@ -247,15 +248,15 @@ export default function TaskEditDialog({
 
   return (
     <>
-      <Modal open={open} onClose={() => onOpenChange(false)} title="Edit task">
+      <Modal open={open} onClose={() => onOpenChange(false)} title={t("taskEdit.dialogTitle")}>
         <p className="mb-4 text-sm text-ink-500">
-          Make quick updates so your team stays aligned.
+          {t("taskEdit.dialogDescription")}
         </p>
         {renderForm(modalFormRef)}
       </Modal>
-      <Drawer open={open} onClose={() => onOpenChange(false)} title="Edit task">
+      <Drawer open={open} onClose={() => onOpenChange(false)} title={t("taskEdit.dialogTitle")}>
         <p className="mb-4 text-sm text-ink-500">
-          Make quick updates so your team stays aligned.
+          {t("taskEdit.dialogDescription")}
         </p>
         {renderForm(drawerFormRef)}
       </Drawer>
@@ -273,7 +274,7 @@ function TaskEditActions({ onCancel }: { onCancel: () => void }) {
         {t("buttons.cancel")}
       </Button>
       <Button type="submit" isLoading={pending}>
-        Save changes
+        {t("taskEdit.saveChanges")}
       </Button>
     </div>
   );

@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
 
-export type AccessGateStatus = "none" | "pending" | "approved" | "unverified";
+export type AccessGateStatus = "none" | "pending" | "approved" | "unverified" | "rejected";
 
 export type AccessGateState = {
   status: AccessGateStatus;
@@ -111,6 +111,40 @@ export async function getAccessGateState(): Promise<AccessGateState> {
   if (!user?.emailVerifiedAt) {
     return {
       status: "unverified",
+      parishId,
+      parishName: parish?.name ?? null
+    };
+  }
+
+  const pendingRequest = await prisma.accessRequest.findFirst({
+    where: {
+      parishId,
+      userId: session.user.id,
+      status: "PENDING"
+    },
+    select: { id: true }
+  });
+
+  if (pendingRequest) {
+    return {
+      status: "pending",
+      parishId,
+      parishName: parish?.name ?? null
+    };
+  }
+
+  const rejectedRequest = await prisma.accessRequest.findFirst({
+    where: {
+      parishId,
+      userId: session.user.id,
+      status: "REJECTED"
+    },
+    select: { id: true }
+  });
+
+  if (rejectedRequest) {
+    return {
+      status: "rejected",
       parishId,
       parishName: parish?.name ?? null
     };
