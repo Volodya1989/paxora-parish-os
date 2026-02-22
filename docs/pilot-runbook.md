@@ -85,6 +85,7 @@ iOS/TestFlight-specific extension:
 - Run `docs/mobile/ios-c4-app-store-qa-smoke-suite.md` for App Store smoke coverage (auth, onboarding, tasks, events, chat upload, giving shortcut policy behavior + evidence template).
 - For App Store listing assets, run `docs/mobile/ios-d2-screenshot-pipeline.md` (required 6.7" + 6.5" screenshot classes, capture matrix, QA/sign-off checklist, ASC packaging workflow).
 - For TestFlight → Production promotion operations (go/no-go, evidence pack, rollback, hotfix), run `docs/mobile/ios-d3-testflight-to-production-runbook.md`.
+- For CI-side iOS wrapper validation artifacts (IOS-D4 lane, artifact naming, retention, inspection order), run `docs/mobile/ios-d4-ci-build-validation.md`.
 - Optional scaffolds:
   - `bash scripts/mobile/generate-ios-c4-evidence-template.sh` for IOS-C4 smoke run records.
   - `bash scripts/mobile/generate-ios-d2-screenshot-template.sh` for IOS-D2 screenshot run folders/checklists.
