@@ -7,7 +7,7 @@ import type { Locale } from "@/lib/i18n/config";
 
 type I18nContextValue = {
   locale: Locale;
-  t: (key: string) => string;
+  t: (key: string, variables?: Record<string, string | number>) => string;
 };
 
 const I18nContext = createContext<I18nContextValue | null>(null);
