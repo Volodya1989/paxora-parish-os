@@ -5,6 +5,10 @@ Operational runbook for promoting an iOS wrapper build from TestFlight candidate
 
 Use this runbook for every iOS release after IOS-C4 evidence is complete.
 
+Epic D acceptance mapping:
+- Dry-run TestFlight submission must be recorded for the target release train.
+- Runbook approval must be recorded from Eng/Product/Ops before production promotion.
+
 ## Dependencies and release gate
 - Story dependency: **IOS-C4** smoke suite must be complete with artifacts (`docs/mobile/ios-c4-app-store-qa-smoke-suite.md`).
 - Related reliability/policy docs:
@@ -28,6 +32,7 @@ Status values: `TODO` / `IN_PROGRESS` / `DONE` / `BLOCKED`.
 | Item | Owner | Status | Evidence / Link |
 |---|---|---|---|
 | Release window confirmed (date/time + on-call coverage) | Ops | TODO |  |
+| Dry-run TestFlight submission record linked (build, date, outcome) | Ops/Eng | TODO |  |
 | Candidate commit SHA + changelog frozen | Eng | TODO |  |
 | iOS version/build number plan confirmed | Eng | TODO |  |
 | App Store Connect access + roles validated | Ops | TODO |  |
@@ -64,6 +69,7 @@ Attach one complete IOS-C4 run record and artifact bundle for this exact build.
 | QA sign-off | QA | TODO |  |
 | Product sign-off | Product | TODO |  |
 | Ops sign-off | Ops | TODO |  |
+| Runbook approval note captured (Eng/Product/Ops) | Ops | TODO |  |
 
 ### 3.2 Runtime/policy-sensitive release checks (required)
 Use policy-safe wording aligned with readiness review:
@@ -125,6 +131,8 @@ Invoke rollback immediately on any of:
 3. **Build/App Store rollback options (Eng + Ops)**
    - Prefer stopping rollout and keeping prior stable production build live.
    - If new build already live, remove rollout momentum (phased stop) and prepare expedited hotfix build.
+   - Production metadata rollback options: pause phased release, remove/replace release notes that instruct adoption, and mark the current version as halted in release tracker.
+   - TestFlight metadata rollback options: expire the problematic build for tester groups, remove it from external groups, and annotate “do not test/use” in build notes.
    - Update release metadata/status notes to prevent accidental resume.
 4. **Validation and logging (QA + Eng)**
    - Re-run targeted IOS-C4 critical checks (auth, tasks/events persistence, chat upload, giving behavior).
@@ -174,6 +182,7 @@ Minimal regression checklist (must pass):
 - Candidate build # / version:
 - Commit SHA:
 - Sentry release tag:
+- Dry-run TestFlight submission link:
 - Release mode (manual/phased):
 
 ## Phase status summary
