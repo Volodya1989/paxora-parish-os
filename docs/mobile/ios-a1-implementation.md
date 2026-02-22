@@ -43,7 +43,7 @@ CAPACITOR_APP_URL="https://<staging-or-production-host>" npm run mobile:ios:sync
 ## CI non-macOS behavior
 - On non-macOS runners (for example `ubuntu-latest`), the bootstrap script runs `npx cap copy ios` instead of `npx cap sync ios` to avoid `pod install` / Xcode dependency failures.
 - On macOS, the script continues to run full `npx cap sync ios`.
-- If CI is missing Capacitor dependencies, bootstrap exits with an explicit error instead of mutating lockfiles via `npm install`.
+- If Capacitor dependencies are missing, bootstrap installs `@capacitor/core`, `@capacitor/cli`, and `@capacitor/ios` before continuing.
 
 ## Why this resolves prior mismatch
 Capacitor now syncs from `.next`, and the production asset step for iOS uses `npm run build` (which writes `.next`). This removes the previous `webDir: out` vs Next build-output mismatch risk.

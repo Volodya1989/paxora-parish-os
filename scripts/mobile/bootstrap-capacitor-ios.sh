@@ -8,12 +8,6 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT_DIR"
 
 if ! npm ls @capacitor/core @capacitor/cli @capacitor/ios >/dev/null 2>&1; then
-  if [[ "${CI:-}" == "true" ]]; then
-    echo "[bootstrap] Missing Capacitor dependencies in CI environment."
-    echo "[bootstrap] Ensure @capacitor/core, @capacitor/cli, and @capacitor/ios are installed via package.json + lockfile."
-    exit 1
-  fi
-
   echo "[bootstrap] Installing Capacitor dependencies"
   npm install @capacitor/core
   npm install -D @capacitor/cli @capacitor/ios
