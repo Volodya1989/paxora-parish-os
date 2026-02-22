@@ -73,6 +73,7 @@ export function Sidebar({
       ? [
           { labelKey: "nav.requests", href: routes.adminRequests, icon: "RQ", testId: "requests" },
           { labelKey: "nav.reliability", href: routes.adminReliability, icon: "RL", testId: "reliability" },
+          { labelKey: "nav.reports", href: routes.adminReports, icon: "RP", testId: "reports" },
           { labelKey: "nav.people", href: routes.adminPeople, icon: "PE", testId: "people" }
         ]
       : []),

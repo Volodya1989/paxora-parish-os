@@ -12,6 +12,7 @@ type ReportRow = {
   id: string;
   contentType: "CHAT_MESSAGE" | "ANNOUNCEMENT" | "GROUP_CONTENT";
   contentId: string;
+  reason: string | null;
   status: "OPEN" | "REVIEWED" | "DISMISSED";
   createdAt: Date;
   reporter: {
@@ -51,6 +52,7 @@ export default function ContentReportsQueue({ reports }: { reports: ReportRow[] 
             <tr className="text-left text-xs uppercase tracking-wide text-ink-500">
               <th className="px-4 py-3 font-semibold">{t("moderation.queue.type")}</th>
               <th className="px-4 py-3 font-semibold">{t("moderation.queue.targetId")}</th>
+              <th className="px-4 py-3 font-semibold">{t("moderation.queue.reason")}</th>
               <th className="px-4 py-3 font-semibold">{t("moderation.queue.reporter")}</th>
               <th className="px-4 py-3 font-semibold">{t("moderation.queue.created")}</th>
               <th className="px-4 py-3 font-semibold">{t("moderation.queue.status")}</th>
@@ -62,6 +64,13 @@ export default function ContentReportsQueue({ reports }: { reports: ReportRow[] 
               <tr key={report.id} className="text-sm text-ink-700">
                 <td className="px-4 py-3">{report.contentType}</td>
                 <td className="px-4 py-3 font-mono text-xs">{report.contentId}</td>
+                <td className="max-w-xs px-4 py-3">
+                  {report.reason ? (
+                    <span className="line-clamp-3 text-sm text-ink-600">{report.reason}</span>
+                  ) : (
+                    <span className="text-xs text-ink-400">{t("moderation.queue.emptyAction")}</span>
+                  )}
+                </td>
                 <td className="px-4 py-3">{report.reporter.name ?? report.reporter.email}</td>
                 <td className="px-4 py-3">{new Date(report.createdAt).toLocaleString()}</td>
                 <td className="px-4 py-3">{report.status}</td>
