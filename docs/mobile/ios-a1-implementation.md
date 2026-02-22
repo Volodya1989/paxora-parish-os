@@ -40,5 +40,12 @@ Optional: pin the wrapped web app endpoint used by the native shell:
 CAPACITOR_APP_URL="https://<staging-or-production-host>" npm run mobile:ios:sync
 ```
 
+## CI non-macOS behavior
+- On non-macOS runners (for example `ubuntu-latest`), the bootstrap script uses copy/skip behavior to avoid `pod install` / Xcode dependency failures:
+  - if `ios/App` exists and Capacitor deps are present, it runs `npx cap copy ios`;
+  - if wrapper/dependencies are missing, it exits successfully with explicit skip guidance.
+- On macOS, the script continues to run full `npx cap sync ios` (or fails in CI if required Capacitor deps are missing).
+- In local non-CI environments with missing Capacitor deps, bootstrap still installs them for convenience.
+
 ## Why this resolves prior mismatch
 Capacitor now syncs from `.next`, and the production asset step for iOS uses `npm run build` (which writes `.next`). This removes the previous `webDir: out` vs Next build-output mismatch risk.

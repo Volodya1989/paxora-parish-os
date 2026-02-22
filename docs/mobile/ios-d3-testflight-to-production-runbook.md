@@ -16,6 +16,7 @@ Epic D acceptance mapping:
   - `docs/mobile/ios-c2-push-behavior-matrix.md`
   - `docs/mobile/app-store-readiness-review.md`
   - `docs/mobile/ios-a1-implementation.md`
+  - `docs/mobile/ios-d4-ci-build-validation.md` (CI lane outputs + artifact inspection during candidate validation)
 
 ## Roles
 | Role | Responsibility |
