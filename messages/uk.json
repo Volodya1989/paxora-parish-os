@@ -152,7 +152,8 @@
     "emptyScheduleDesc": "Нові служби та події з'являться тут після додавання.",
     "calendarView": "Календар",
     "scheduleView": "Розклад",
-    "viewToggleLabel": "Перемикання між календарем і розкладом"
+    "viewToggleLabel": "Перемикання між календарем і розкладом",
+    "today": "Сьогодні"
   },
   "parish": {
     "title": "Парафія",
@@ -376,7 +377,7 @@
     "suggestGroup": "Запропонувати групу",
     "memberSingular": "учасник",
     "memberPlural": "учасники",
-    "joined": "У групі",
+    "joined": "Приєднано",
     "invited": "Запрошено",
     "requestPending": "Запит очікує",
     "accept": "Прийняти",
@@ -395,7 +396,7 @@
     "joinGroupAria": "Долучитися до {name}",
     "requestJoinAria": "Подати запит на вступ до {name}",
     "leave": "Покинути групу",
-    "leftGroup": "Ви покинули групу",
+    "leftGroup": "Ви вийшли з групи",
     "edit": "Редагувати",
     "archive": "Архівувати",
     "viewDetails": "Деталі",
@@ -436,7 +437,33 @@
       "membersTab": "Учасники ({count})",
       "pendingTab": "Очікують ({count})",
       "emptyMembers": "Додайте парафіян, щоб сформувати спокійну та злагоджену команду."
-    }
+    },
+    "noDescription": "Опис відсутній.",
+    "requestedBy": "Запит від {name}",
+    "parishionerFallback": "Парафіянин",
+    "updateFailedTitle": "Не вдалося оновити",
+    "updateFailedDescription": "Не вдалося оновити цю групу. Спробуйте ще раз.",
+    "notEnoughAccessTitle": "Недостатньо прав",
+    "groupArchivedTitle": "Групу архівовано",
+    "groupArchivedDescription": "Групу приховано, але її можна відновити.",
+    "undo": "Скасувати",
+    "groupRestoredTitle": "Групу відновлено",
+    "groupRestoredDescription": "Група знову у списку активних.",
+    "groupDeletedTitle": "Групу видалено",
+    "groupDeletedDescription": "Групу та всі її членства видалено назавжди.",
+    "tryAgain": "Спробуйте ще раз.",
+    "deleteDialogTitle": "Видалити групу назавжди",
+    "deleteDialogQuestion": "Ви впевнені, що хочете назавжди видалити",
+    "deleteDialogDetails": "Буде видалено всі членства та історію чату. Завдання, події й години волонтерства збережуться, але без прив’язки до цієї групи.",
+    "deleteDialogConfirm": "Видалити назавжди",
+    "discoverTitle": "Групи, до яких можна приєднатися",
+    "yourGroupsTitle": "Ваші групи",
+    "requestSent": "Запит надіслано",
+    "archived": "Архівовано",
+    "pending": "Очікує",
+    "notApproved": "Не схвалено",
+    "restore": "Відновити",
+    "deletePermanently": "Видалити назавжди"
   },
   "chat": {
     "noChannelsTitle": "Канали недоступні",
@@ -854,7 +881,14 @@
     "groupVisibilityHint": "Групові події бачать лише учасники вибраного служіння.",
     "group": "Група",
     "selectGroup": "Оберіть групу",
-    "noGroups": "Немає доступних груп"
+    "noGroups": "Немає доступних груп",
+    "weekdayMon": "Пн",
+    "weekdayTue": "Вт",
+    "weekdayWed": "Ср",
+    "weekdayThu": "Чт",
+    "weekdayFri": "Пт",
+    "weekdaySat": "Сб",
+    "weekdaySun": "Нд"
   },
   "marketing": {
     "brandTagline": "People-serving, shepherd-anchored",
@@ -974,5 +1008,53 @@
     "reportUpdated": "Скаргу оновлено",
     "reportUpdateFailed": "Оновлення не вдалося",
     "reportUpdateFailedDescription": "Не вдалося оновити цю скаргу."
+  },
+  "accessPage": {
+    "title": "Доступ до парафії",
+    "subtitle": "Спокійний крок онбордингу перед входом до робочого простору.",
+    "unverified": {
+      "verifySent": "Перевірте пошту — ми надіслали посилання для підтвердження.",
+      "resendCta": "Надіслати лист підтвердження ще раз"
+    },
+    "none": {
+      "codeLabel": "Код парафії",
+      "codePlaceholder": "Введіть код парафії",
+      "joinCta": "Приєднатися до парафії",
+      "invalidCode": "Неправильний код парафії. Спробуйте ще раз.",
+      "alreadyMember": "Ви вже є учасником цієї парафії."
+    },
+    "pending": {
+      "ctaLabel": "Ми повідомимо вас електронною поштою.",
+      "whatNext": "Можете закрити вкладку й повернутися після схвалення доступу лідером.",
+      "refreshCta": "Оновити статус"
+    }
+  },
+  "accessGate": {
+    "parishLabelNamed": "у парафії {parish}",
+    "parishLabelFallback": "для цієї парафії",
+    "approved": {
+      "title": "Доступ надано",
+      "nextAction": "Усе готово — переходьте до робочого простору.",
+      "whatNext": "Далі вас буде перенаправлено на головну сторінку парафії."
+    },
+    "pending": {
+      "title": "Доступ очікує схвалення",
+      "nextAction": "Зачекайте, поки лідер парафії розгляне запит.",
+      "whatNext": "Щойно статус зміниться, ви отримаєте листа."
+    },
+    "unverified": {
+      "title": "Підтвердьте email",
+      "nextAction": "Підтвердьте email перед запитом доступу {parishLabel}.",
+      "whatNext": "Після підтвердження поверніться сюди та продовжте онбординг."
+    },
+    "none": {
+      "title": "Введіть код парафії",
+      "nextAction": "Введіть код парафії, щоб приєднатися до правильного простору {parishLabel}.",
+      "whatNext": "Після надсилання запит перегляне керівництво парафії."
+    }
+  },
+  "eventDelete": {
+    "toastTitle": "Подію видалено",
+    "toastDescription": "Подію прибрано з календаря."
   }
 }

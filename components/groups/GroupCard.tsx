@@ -127,9 +127,9 @@ export default function GroupCard({
         meta={(
           <>
             {group.visibility === "PRIVATE" ? <HiddenGroupIcon /> : null}
-            {isArchived ? <Badge tone="attention">Archived</Badge> : null}
-            {isPending ? <Badge tone="attention">Pending</Badge> : null}
-            {isRejected ? <Badge tone="neutral">Not approved</Badge> : null}
+            {isArchived ? <Badge tone="attention">{t("groups.archived")}</Badge> : null}
+            {isPending ? <Badge tone="attention">{t("groups.pending")}</Badge> : null}
+            {isRejected ? <Badge tone="neutral">{t("groups.notApproved")}</Badge> : null}
             {isMember ? <span className="text-xs font-medium text-primary-600">{t("groups.joined")}</span> : null}
           </>
         )}
@@ -167,9 +167,9 @@ export default function GroupCard({
                 <Link href={buildLocalePathname(locale, `/groups/${group.id}`)}>{t("groups.viewDetails")}</Link>
               </DropdownItem>
               {canManageMembers ? <DropdownItem onClick={onManageMembers}>{t("groups.viewMembers")}</DropdownItem> : null}
-              {canManageGroup ? <DropdownItem onClick={onEdit}>Edit</DropdownItem> : null}
-              {canManageGroup ? (isArchived ? <><DropdownItem onClick={onRestore}>Restore</DropdownItem><DropdownItem onClick={onDelete} className="text-rose-600 hover:bg-rose-50 focus-visible:bg-rose-50">Delete permanently</DropdownItem></> : <DropdownItem onClick={onArchive}>Archive</DropdownItem>) : null}
-              {isMember && !isArchived ? <DropdownItem onClick={onLeave} className="text-rose-600 hover:bg-rose-50 focus-visible:bg-rose-50">Leave group</DropdownItem> : null}
+              {canManageGroup ? <DropdownItem onClick={onEdit}>{t("groups.edit")}</DropdownItem> : null}
+              {canManageGroup ? (isArchived ? <><DropdownItem onClick={onRestore}>{t("groups.restore")}</DropdownItem><DropdownItem onClick={onDelete} className="text-rose-600 hover:bg-rose-50 focus-visible:bg-rose-50">{t("groups.deletePermanently")}</DropdownItem></> : <DropdownItem onClick={onArchive}>{t("groups.archive")}</DropdownItem>) : null}
+              {isMember && !isArchived ? <DropdownItem onClick={onLeave} className="text-rose-600 hover:bg-rose-50 focus-visible:bg-rose-50">{t("groups.leave")}</DropdownItem> : null}
             </DropdownMenu>
           </Dropdown>
         ) : null}

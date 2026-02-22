@@ -13,11 +13,6 @@ import type { EventDetail } from "@/lib/queries/events";
 import { useTranslations } from "@/lib/i18n/provider";
 import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 
-const copy = {
-  title: "Event removed",
-  description: "The event has been removed from the calendar."
-};
-
 type EventDeleteFormProps = {
   event: EventDetail;
 };
@@ -44,8 +39,8 @@ export default function EventDeleteForm({ event }: EventDeleteFormProps) {
 
     handledSuccess.current = true;
     addToast({
-      title: copy.title,
-      description: copy.description,
+      title: t("eventDelete.toastTitle"),
+      description: t("eventDelete.toastDescription"),
       status: "success"
     });
     startTransition(() => {
