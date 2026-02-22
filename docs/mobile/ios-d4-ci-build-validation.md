@@ -17,9 +17,9 @@ This story depends on IOS-A3 and reuses its baseline command sequence (`npm ci`,
 The lane executes, in order:
 1. Dependency install (`npm ci`)
 2. Core quality checks:
-   - `npm run lint`
-   - `npm run typecheck`
-   - `npm test`
+   - Always: `npm run lint`
+   - When `@sentry/nextjs` is available in the dependency graph: `npm run typecheck`, `npm test`
+   - When `@sentry/nextjs` is missing, typecheck/test are skipped and the reason is recorded in `run-metadata.txt`
 3. IOS-A3 iOS pipeline baseline:
    - `npm run mobile:ios:pipeline`
 
@@ -29,6 +29,8 @@ Current IOS-D4 lane runs on `ubuntu-latest` for broad CI availability and fast f
 Because native Xcode build/archive tooling is not available in this environment, native archive validation is explicitly marked as **skipped** in generated run metadata:
 - `ios_native_build=skipped`
 - `skip_reason=xcodebuild is not available on ubuntu-latest; use a macOS lane for native archive validation`
+
+The lane also records whether `@sentry/nextjs` is present in the installed dependency graph. If absent, `typecheck` and `test` are skipped with an explicit metadata reason so operators can distinguish dependency-precondition skips from pipeline regressions.
 
 This is intentional for IOS-D4 scope: deterministic wrapper sync/build validation + evidence bundle generation.
 
@@ -42,6 +44,7 @@ The lane uploads a single artifact bundle via `actions/upload-artifact`:
 - `run-metadata.txt`
   - run ID/attempt, commit SHA/ref, runner OS
   - explicit native build skip marker for non-macOS
+  - quality-check execution set and skip reason (when applicable)
 - `mobile-ios-pipeline.log`
   - captured output of `npm run mobile:ios:pipeline`
 - `ios-app-project.tgz` (if present)
