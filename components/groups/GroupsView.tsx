@@ -34,7 +34,7 @@ import {
   DropdownTrigger
 } from "@/components/ui/Dropdown";
 import HiddenGroupIcon from "@/components/groups/HiddenGroupIcon";
-import { submitContentReport } from "@/server/actions/content-reports";
+import ReportContentDialog from "@/components/moderation/ReportContentDialog";
 
 type GroupsViewProps = {
   groups: GroupListItem[];
@@ -96,6 +96,7 @@ export default function GroupsView({
   const [pendingGroupId, setPendingGroupId] = useState<string | null>(null);
   const [restrictedGroupName, setRestrictedGroupName] = useState<string | null>(null);
   const [optimisticMembershipStatus, setOptimisticMembershipStatus] = useState<Record<string, "ACTIVE" | "REQUESTED">>({});
+  const [reportingGroupId, setReportingGroupId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
@@ -275,25 +276,8 @@ export default function GroupsView({
   };
 
 
-  const handleReportGroup = async (groupId: string) => {
-    try {
-      const result = await submitContentReport({ contentType: "GROUP_CONTENT", contentId: groupId });
-      addToast({
-        title: result.duplicate
-          ? t("moderation.reportAlreadySubmitted")
-          : t("moderation.reportSubmitted"),
-        description: result.duplicate
-          ? t("moderation.reportAlreadySubmittedDescription")
-          : t("moderation.reportSubmittedDescription"),
-        status: "success"
-      });
-    } catch (error) {
-      addToast({
-        title: t("moderation.reportFailed"),
-        description: t("moderation.reportFailedDescription"),
-        status: "error"
-      });
-    }
+  const handleReportGroup = (groupId: string) => {
+    setReportingGroupId(groupId);
   };
 
   const handleMemberResult = async (
@@ -951,6 +935,14 @@ export default function GroupsView({
             />
           );
         })()
+      ) : null}
+      {reportingGroupId ? (
+        <ReportContentDialog
+          open={Boolean(reportingGroupId)}
+          onOpenChange={(open) => { if (!open) setReportingGroupId(null); }}
+          contentType="GROUP_CONTENT"
+          contentId={reportingGroupId}
+        />
       ) : null}
     </div>
   );

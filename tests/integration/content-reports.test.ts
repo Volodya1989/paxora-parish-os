@@ -26,6 +26,12 @@ mock.module("next/cache", {
   }
 });
 
+mock.module("@/lib/notifications/notify", {
+  namedExports: {
+    notifyContentReportSubmittedInApp: async () => undefined
+  }
+});
+
 async function resetDatabase() {
   await prisma.contentReport.deleteMany();
   await prisma.chatMessage.deleteMany();
@@ -103,9 +109,120 @@ dbTest("submitContentReport enforces parish scoping for chat messages", async ()
   await assert.rejects(() =>
     actions.submitContentReport({
       contentType: "CHAT_MESSAGE",
-      contentId: messageB.id
+      contentId: messageB.id,
+      reason: "This message is inappropriate and harmful"
     })
   );
+});
+
+dbTest("submitContentReport rejects empty or too-short reason", async () => {
+  const parish = await prisma.parish.create({ data: { name: "Parish V", slug: "parish-v" } });
+  const user = await prisma.user.create({
+    data: {
+      email: "reporter-v@example.com",
+      passwordHash: "hash",
+      activeParishId: parish.id
+    }
+  });
+
+  await prisma.membership.create({
+    data: { parishId: parish.id, userId: user.id, role: "MEMBER" }
+  });
+
+  const announcement = await prisma.announcement.create({
+    data: {
+      parishId: parish.id,
+      title: "Test",
+      body: "Body",
+      publishedAt: new Date()
+    }
+  });
+
+  session.user.id = user.id;
+  session.user.activeParishId = parish.id;
+
+  // No reason at all
+  await assert.rejects(
+    () =>
+      actions.submitContentReport({
+        contentType: "ANNOUNCEMENT",
+        contentId: announcement.id
+      }),
+    { message: "Reason is required (minimum 10 characters)" }
+  );
+
+  // Empty string
+  await assert.rejects(
+    () =>
+      actions.submitContentReport({
+        contentType: "ANNOUNCEMENT",
+        contentId: announcement.id,
+        reason: ""
+      }),
+    { message: "Reason is required (minimum 10 characters)" }
+  );
+
+  // Too short (under 10 chars)
+  await assert.rejects(
+    () =>
+      actions.submitContentReport({
+        contentType: "ANNOUNCEMENT",
+        contentId: announcement.id,
+        reason: "short"
+      }),
+    { message: "Reason is required (minimum 10 characters)" }
+  );
+
+  // Whitespace-only
+  await assert.rejects(
+    () =>
+      actions.submitContentReport({
+        contentType: "ANNOUNCEMENT",
+        contentId: announcement.id,
+        reason: "         "
+      }),
+    { message: "Reason is required (minimum 10 characters)" }
+  );
+});
+
+dbTest("submitContentReport succeeds with valid reason", async () => {
+  const parish = await prisma.parish.create({ data: { name: "Parish S", slug: "parish-s" } });
+  const user = await prisma.user.create({
+    data: {
+      email: "reporter-s@example.com",
+      passwordHash: "hash",
+      activeParishId: parish.id
+    }
+  });
+
+  await prisma.membership.create({
+    data: { parishId: parish.id, userId: user.id, role: "MEMBER" }
+  });
+
+  const announcement = await prisma.announcement.create({
+    data: {
+      parishId: parish.id,
+      title: "Test Success",
+      body: "Body",
+      publishedAt: new Date()
+    }
+  });
+
+  session.user.id = user.id;
+  session.user.activeParishId = parish.id;
+
+  const result = await actions.submitContentReport({
+    contentType: "ANNOUNCEMENT",
+    contentId: announcement.id,
+    reason: "This announcement contains misleading information"
+  });
+
+  assert.equal(result.duplicate, false);
+  assert.ok(result.id);
+
+  const stored = await prisma.contentReport.findUnique({ where: { id: result.id } });
+  assert.equal(stored?.reason, "This announcement contains misleading information");
+  assert.equal(stored?.status, "OPEN");
 });
 
 dbTest("submitContentReport deduplicates same reporter/content pair", async () => {
@@ -141,12 +258,12 @@ dbTest("submitContentReport deduplicates same reporter/content pair", async () =
   const first = await actions.submitContentReport({
     contentType: "ANNOUNCEMENT",
     contentId: announcement.id,
-    reason: "Abuse"
+    reason: "Abusive content that needs review"
   });
   const second = await actions.submitContentReport({
     contentType: "ANNOUNCEMENT",
     contentId: announcement.id,
-    reason: "Duplicate"
+    reason: "Duplicate report with updated reason"
   });
 
   assert.equal(first.duplicate, false);
@@ -194,7 +311,8 @@ dbTest("updateContentReportStatus requires admin/shepherd", async () => {
       parishId: parish.id,
       reporterUserId: member.id,
       contentType: "GROUP_CONTENT",
-      contentId: "group-xyz"
+      contentId: "group-xyz",
+      reason: "This group contains inappropriate content"
     }
   });
 
@@ -218,4 +336,25 @@ dbTest("updateContentReportStatus requires admin/shepherd", async () => {
   const stored = await prisma.contentReport.findUnique({ where: { id: report.id } });
   assert.equal(stored?.status, "DISMISSED");
   assert.equal(stored?.reviewerUserId, admin.id);
+});
+
+dbTest("listParishContentReports requires admin/shepherd", async () => {
+  const parish = await prisma.parish.create({ data: { name: "Parish L", slug: "parish-l" } });
+
+  const member = await prisma.user.create({
+    data: {
+      email: "member-l@example.com",
+      passwordHash: "hash",
+      activeParishId: parish.id
+    }
+  });
+
+  await prisma.membership.create({
+    data: { parishId: parish.id, userId: member.id, role: "MEMBER" }
+  });
+
+  session.user.id = member.id;
+  session.user.activeParishId = parish.id;
+
+  await assert.rejects(() => actions.listParishContentReports());
 });

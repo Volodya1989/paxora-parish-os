@@ -8,6 +8,9 @@ import { getGroupMembership, getParishMembership } from "@/server/db/groups";
 import { isParishLeader } from "@/lib/permissions";
 import { requireAdminOrShepherd } from "@/server/auth/permissions";
 import type { ContentReportStatus } from "@prisma/client";
+import { notifyContentReportSubmittedInApp } from "@/lib/notifications/notify";
+
+const MIN_REASON_LENGTH = 10;
 
 type SubmitContentReportInput = {
   contentType: "CHAT_MESSAGE" | "ANNOUNCEMENT" | "GROUP_CONTENT";
@@ -166,7 +169,10 @@ export async function submitContentReport(input: SubmitContentReportInput) {
     await ensureCanReportGroupContent(parishId, userId, contentId);
   }
 
-  const reason = normalizeOptionalText(input.reason, 120);
+  const reason = normalizeOptionalText(input.reason, 500);
+  if (!reason || reason.length < MIN_REASON_LENGTH) {
+    throw new Error("Reason is required (minimum 10 characters)");
+  }
   const details = normalizeOptionalText(input.details, 500);
 
   const existing = await prisma.contentReport.findUnique({
@@ -222,6 +228,14 @@ export async function submitContentReport(input: SubmitContentReportInput) {
 
   revalidatePath("/admin/reports");
 
+  notifyContentReportSubmittedInApp({
+    parishId,
+    reporterId: userId,
+    contentType: input.contentType
+  }).catch((error) => {
+    console.error("[content-reports] Failed to create in-app notification:", error);
+  });
+
   return {
     id: created.id,
     duplicate: false
@@ -276,6 +290,7 @@ export async function listParishContentReports() {
       id: true,
       contentType: true,
       contentId: true,
+      reason: true,
       status: true,
       createdAt: true,
       reporter: {

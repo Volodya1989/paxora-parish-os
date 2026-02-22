@@ -418,3 +418,36 @@ export async function notifyTaskStatusChangedInApp(opts: {
     href: `/tasks?taskId=${opts.taskId}`
   });
 }
+
+const contentReportTypeLabels: Record<string, string> = {
+  CHAT_MESSAGE: "chat message",
+  ANNOUNCEMENT: "announcement",
+  GROUP_CONTENT: "group"
+};
+
+export async function notifyContentReportSubmittedInApp(opts: {
+  parishId: string;
+  reporterId: string;
+  contentType: string;
+}) {
+  const leaders = await prisma.membership.findMany({
+    where: {
+      parishId: opts.parishId,
+      role: { in: ["ADMIN", "SHEPHERD"] }
+    },
+    select: { userId: true }
+  });
+
+  const recipients = leaders.map((member) => member.userId).filter((id) => id !== opts.reporterId);
+  if (recipients.length === 0) return;
+
+  const typeLabel = contentReportTypeLabels[opts.contentType] ?? "content";
+
+  await createNotificationsForUsers(recipients, {
+    parishId: opts.parishId,
+    type: NotificationType.REQUEST,
+    title: `New ${typeLabel} report submitted`,
+    description: "A parishioner reported content for review.",
+    href: "/admin/reports"
+  });
+}

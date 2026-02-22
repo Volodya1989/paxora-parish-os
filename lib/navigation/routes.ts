@@ -11,5 +11,6 @@ export const routes = {
   adminRequests: "/admin/requests",
   adminPeople: "/admin/people",
   adminReliability: "/admin/reliability",
+  adminReports: "/admin/reports",
   platformParishes: "/platform/parishes"
 } as const;

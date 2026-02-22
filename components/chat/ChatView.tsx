@@ -32,7 +32,7 @@ import {
   unpinMessage,
   votePoll
 } from "@/server/actions/chat";
-import { submitContentReport } from "@/server/actions/content-reports";
+import ReportContentDialog from "@/components/moderation/ReportContentDialog";
 import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 import { useTranslations } from "@/lib/i18n/provider";
 import { useChatFontSize } from "@/lib/chat/useChatFontSize";
@@ -149,6 +149,7 @@ export default function ChatView({
   const [isLoadingOlder, setIsLoadingOlder] = useState(false);
   const [editingMessage, setEditingMessage] = useState<ChatMessage | null>(null);
   const [threadRoot, setThreadRoot] = useState<ChatMessage | null>(null);
+  const [reportingMessageId, setReportingMessageId] = useState<string | null>(null);
   const [threadEditingMessage, setThreadEditingMessage] = useState<ChatMessage | null>(null);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const prefersReducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
@@ -500,25 +501,8 @@ export default function ChatView({
     }
   };
 
-  const handleReport = async (messageId: string) => {
-    try {
-      const result = await submitContentReport({ contentType: "CHAT_MESSAGE", contentId: messageId });
-      addToast({
-        title: result.duplicate
-          ? t("moderation.reportAlreadySubmitted")
-          : t("moderation.reportSubmitted"),
-        description: result.duplicate
-          ? t("moderation.reportAlreadySubmittedDescription")
-          : t("moderation.reportSubmittedDescription"),
-        status: "success"
-      });
-    } catch (error) {
-      addToast({
-        title: t("moderation.reportFailed"),
-        description: t("moderation.reportFailedDescription"),
-        status: "error"
-      });
-    }
+  const handleReport = (messageId: string) => {
+    setReportingMessageId(messageId);
   };
 
   const handleDelete = async (messageId: string) => {
@@ -988,6 +972,14 @@ export default function ChatView({
             ))}
           </div>
         </Modal>
+      ) : null}
+      {reportingMessageId ? (
+        <ReportContentDialog
+          open={Boolean(reportingMessageId)}
+          onOpenChange={(open) => { if (!open) setReportingMessageId(null); }}
+          contentType="CHAT_MESSAGE"
+          contentId={reportingMessageId}
+        />
       ) : null}
     </div>
   );
