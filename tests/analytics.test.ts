@@ -23,12 +23,19 @@ test("analytics client is a no-op when disabled", async () => {
 
 test("analytics client dispatches events when enabled", async () => {
   const sent: Array<{ event: string; properties: Record<string, unknown> }> = [];
+  const storage = new Map<string, string>();
   const analytics = createAnalyticsClient({
     env: { enabled: "true", key: "phc_test" },
     transport: async (payload) => {
       sent.push({ event: payload.event, properties: payload.properties as Record<string, unknown> });
     },
-    getWindow: () => ({}) as Window
+    getWindow: () => ({}) as Window,
+    getStorage: () => ({
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        storage.set(key, value);
+      }
+    })
   });
 
   analytics.setGlobalProperties({ parishId: "p1", role: "ADMIN", locale: "en" });
@@ -39,6 +46,26 @@ test("analytics client dispatches events when enabled", async () => {
   assert.equal(sent[0]?.event, "task_completed");
   assert.equal(sent[0]?.properties.parishId, "p1");
   assert.equal(sent[0]?.properties.taskId, "t1");
+  assert.equal(typeof sent[0]?.properties.distinct_id, "string");
+});
+
+test("identify overrides anonymous distinct id", async () => {
+  const sent: Array<{ event: string; properties: Record<string, unknown> }> = [];
+  const analytics = createAnalyticsClient({
+    env: { enabled: "true", key: "phc_test" },
+    transport: async (payload) => {
+      sent.push({ event: payload.event, properties: payload.properties as Record<string, unknown> });
+    },
+    getWindow: () => ({}) as Window
+  });
+
+  analytics.identify("known-user");
+  analytics.track("chat_message_sent", { channelId: "ch1" });
+
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(sent[0]?.event, "$identify");
+  assert.equal(sent[1]?.event, "chat_message_sent");
+  assert.equal(sent[1]?.properties.distinct_id, "known-user");
 });
 
 test("page view tracker records route changes once per unique path", () => {

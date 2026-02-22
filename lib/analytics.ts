@@ -19,6 +19,13 @@ export type AnalyticsClient = {
 
 type Transport = (payload: { event: string; properties: AnalyticsProperties }) => Promise<void>;
 
+type StorageLike = {
+  getItem: (key: string) => string | null;
+  setItem: (key: string, value: string) => void;
+};
+
+const DISTINCT_ID_STORAGE_KEY = "paxora.analytics.distinctId";
+
 function createPosthogTransport(env: AnalyticsEnv, getWindow: () => Window | undefined): Transport {
   return async (payload) => {
     if (!env.key) return;
@@ -27,16 +34,15 @@ function createPosthogTransport(env: AnalyticsEnv, getWindow: () => Window | und
 
     const host = env.host || "https://us.i.posthog.com";
     const endpoint = `${host.replace(/\/$/, "")}/capture/`;
-    const fullPayload = {
+    const body = JSON.stringify({
       api_key: env.key,
       event: payload.event,
       properties: {
         ...payload.properties,
         token: env.key
       }
-    };
+    });
 
-    const body = JSON.stringify(fullPayload);
     const beaconOk =
       typeof navigator !== "undefined" &&
       typeof navigator.sendBeacon === "function" &&
@@ -55,24 +61,60 @@ function createPosthogTransport(env: AnalyticsEnv, getWindow: () => Window | und
   };
 }
 
+function generateDistinctId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `anon_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function getDistinctIdFromStorage(storage?: StorageLike): string {
+  if (!storage) {
+    return generateDistinctId();
+  }
+
+  const existing = storage.getItem(DISTINCT_ID_STORAGE_KEY);
+  if (existing) {
+    return existing;
+  }
+
+  const created = generateDistinctId();
+  storage.setItem(DISTINCT_ID_STORAGE_KEY, created);
+  return created;
+}
+
 export function createAnalyticsClient({
   env,
   transport,
-  getWindow
+  getWindow,
+  getStorage
 }: {
   env: AnalyticsEnv;
   transport: Transport;
   getWindow: () => Window | undefined;
+  getStorage?: () => StorageLike | undefined;
 }): AnalyticsClient {
   let globalProperties: AnalyticsProperties = {};
+  let identifiedDistinctId: string | null = null;
 
   const isEnabled = () => env.enabled === "true" && Boolean(env.key);
+
+  const resolveDistinctId = () => {
+    if (identifiedDistinctId) {
+      return identifiedDistinctId;
+    }
+    return getDistinctIdFromStorage(getStorage?.());
+  };
 
   const send = (event: string, properties?: AnalyticsProperties) => {
     if (!isEnabled() || !getWindow()) return;
 
     const mergedProperties = Object.fromEntries(
-      Object.entries({ ...globalProperties, ...properties }).filter(([, value]) => value !== undefined)
+      Object.entries({
+        distinct_id: resolveDistinctId(),
+        ...globalProperties,
+        ...properties
+      }).filter(([, value]) => value !== undefined)
     );
 
     void transport({ event, properties: mergedProperties }).catch(() => {
@@ -83,9 +125,13 @@ export function createAnalyticsClient({
   return {
     isEnabled,
     init: async () => {
-      // No heavy SDK init required for lightweight transport.
+      if (!isEnabled() || !getWindow()) {
+        return;
+      }
+      resolveDistinctId();
     },
     identify: (distinctId, properties) => {
+      identifiedDistinctId = distinctId;
       send("$identify", {
         distinct_id: distinctId,
         ...properties
@@ -122,5 +168,6 @@ export const analytics = createAnalyticsClient({
     },
     () => (typeof window === "undefined" ? undefined : window)
   ),
-  getWindow: () => (typeof window === "undefined" ? undefined : window)
+  getWindow: () => (typeof window === "undefined" ? undefined : window),
+  getStorage: () => (typeof window === "undefined" ? undefined : window.localStorage)
 });
