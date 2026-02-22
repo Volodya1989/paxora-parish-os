@@ -196,6 +196,23 @@ npx prisma migrate dev
 - If DSNs are unset, Sentry stays disabled and the app continues to run normally.
 - Runtime dependency is `@sentry/nextjs` via `vendor/sentry-nextjs` and is expected to forward event envelopes when DSNs are configured.
 
+### Product analytics setup (Roadmap Item 10)
+- Required env vars:
+  - `NEXT_PUBLIC_ANALYTICS_ENABLED=true`
+  - `NEXT_PUBLIC_POSTHOG_KEY=<your project key>`
+  - Optional `NEXT_PUBLIC_POSTHOG_HOST` (defaults to `https://us.i.posthog.com`)
+- Rollout procedure:
+  1. Deploy with `NEXT_PUBLIC_ANALYTICS_ENABLED=false` to verify no behavior changes.
+  2. Set `NEXT_PUBLIC_POSTHOG_KEY`, then flip `NEXT_PUBLIC_ANALYTICS_ENABLED=true`.
+  3. Validate events in PostHog live stream.
+- Disable procedure (no redeploy risk): set `NEXT_PUBLIC_ANALYTICS_ENABLED=false` in runtime environment and restart the app.
+- Initial events tracked:
+  - `page_viewed` (route changes)
+  - `rsvp_submitted`
+  - `task_completed`
+  - `chat_message_sent`
+- Safety defaults: analytics is no-op unless explicitly enabled, and payloads avoid message bodies or other sensitive content.
+
 ### Run the app
 ```bash
 npm run dev
