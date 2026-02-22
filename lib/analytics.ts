@@ -25,6 +25,35 @@ type StorageLike = {
 };
 
 const DISTINCT_ID_STORAGE_KEY = "paxora.analytics.distinctId";
+const RETRY_ATTEMPTS = 2;
+const RETRY_BASE_MS = 500;
+
+export async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  maxRetries: number = RETRY_ATTEMPTS,
+  baseDelay: number = RETRY_BASE_MS
+): Promise<Response> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, init);
+      if (response.ok || attempt === maxRetries) {
+        return response;
+      }
+      // Retry on server errors (5xx), not client errors (4xx)
+      if (response.status < 500) {
+        return response;
+      }
+      lastError = new Error(`HTTP ${response.status}`);
+    } catch (error) {
+      lastError = error;
+      if (attempt === maxRetries) break;
+    }
+    await new Promise((resolve) => setTimeout(resolve, baseDelay * Math.pow(2, attempt)));
+  }
+  throw lastError;
+}
 
 function createPosthogTransport(env: AnalyticsEnv, getWindow: () => Window | undefined): Transport {
   return async (payload) => {
@@ -52,7 +81,7 @@ function createPosthogTransport(env: AnalyticsEnv, getWindow: () => Window | und
       return;
     }
 
-    await fetch(endpoint, {
+    await fetchWithRetry(endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body,
