@@ -32,6 +32,7 @@ import {
   unpinMessage,
   votePoll
 } from "@/server/actions/chat";
+import { submitContentReport } from "@/server/actions/content-reports";
 import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 import { useTranslations } from "@/lib/i18n/provider";
 import { useChatFontSize } from "@/lib/chat/useChatFontSize";
@@ -499,6 +500,27 @@ export default function ChatView({
     }
   };
 
+  const handleReport = async (messageId: string) => {
+    try {
+      const result = await submitContentReport({ contentType: "CHAT_MESSAGE", contentId: messageId });
+      addToast({
+        title: result.duplicate
+          ? t("moderation.reportAlreadySubmitted")
+          : t("moderation.reportSubmitted"),
+        description: result.duplicate
+          ? t("moderation.reportAlreadySubmittedDescription")
+          : t("moderation.reportSubmittedDescription"),
+        status: "success"
+      });
+    } catch (error) {
+      addToast({
+        title: t("moderation.reportFailed"),
+        description: t("moderation.reportFailedDescription"),
+        status: "error"
+      });
+    }
+  };
+
   const handleDelete = async (messageId: string) => {
     await deleteMessage(messageId);
     setMessages((prev) =>
@@ -779,6 +801,7 @@ export default function ChatView({
             onPin={handlePin}
             onUnpin={handleUnpin}
             onDelete={handleDelete}
+            onReport={handleReport}
             onToggleReaction={handleToggleReaction}
             onViewThread={(message) => {
               setThreadEditingMessage(null);
@@ -836,6 +859,7 @@ export default function ChatView({
                   onPin={handlePin}
                   onUnpin={handleUnpin}
                   onDelete={handleDelete}
+                  onReport={handleReport}
                   onToggleReaction={handleToggleReaction}
                   isLoading={false}
                   highlightedMessageId={highlightedMessageId}
@@ -919,6 +943,7 @@ export default function ChatView({
                 onPin={handlePin}
                 onUnpin={handleUnpin}
                 onDelete={handleDelete}
+                onReport={handleReport}
                 onToggleReaction={handleToggleReaction}
                 isLoading={false}
                 highlightedMessageId={highlightedMessageId}

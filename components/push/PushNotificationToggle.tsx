@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { getClientShellContext } from "@/lib/monitoring/sentry-shell-context";
 import {
   isPushSupported,
   isInstalledPWA,
@@ -16,7 +17,8 @@ type PushState =
   | "unsupported"
   | "denied"
   | "enabled"
-  | "disabled";
+  | "disabled"
+  | "wrapper_unsupported";
 
 /**
  * Push notification toggle for the profile/settings page.
@@ -26,15 +28,25 @@ export default function PushNotificationToggle() {
   const [state, setState] = useState<PushState>("loading");
   const [busy, setBusy] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [isNativeWrapper, setIsNativeWrapper] = useState(false);
 
   useEffect(() => {
     async function check() {
+      const shellContext = getClientShellContext();
+      const nativeWrapper = shellContext.shell === "native_wrapper";
+
+      setIsNativeWrapper(nativeWrapper);
+      setIsStandalone(isInstalledPWA());
+
+      if (nativeWrapper) {
+        setState("wrapper_unsupported");
+        return;
+      }
+
       if (!isPushSupported()) {
         setState("unsupported");
         return;
       }
-
-      setIsStandalone(isInstalledPWA());
 
       const permission = getNotificationPermission();
       if (permission === "denied") {
@@ -81,6 +93,21 @@ export default function PushNotificationToggle() {
     );
   }
 
+
+  if (state === "wrapper_unsupported") {
+    return (
+      <div className="flex items-center justify-between py-3">
+        <div>
+          <p className="text-sm font-medium text-gray-900">Push notifications</p>
+          <p className="text-xs text-gray-500">
+            Not available in this iOS wrapper mode. Use the installed home-screen app to test push notifications.
+          </p>
+        </div>
+        <div className="h-6 w-11 rounded-full bg-gray-100" />
+      </div>
+    );
+  }
+
   if (state === "unsupported") {
     return (
       <div className="flex items-center justify-between py-3">
@@ -88,7 +115,7 @@ export default function PushNotificationToggle() {
           <p className="text-sm font-medium text-gray-900">Push notifications</p>
           <p className="text-xs text-gray-500">
             Not supported in this browser.
-            {!isStandalone && " Try installing the app to your home screen."}
+            {!isStandalone && !isNativeWrapper && " Try installing the app to your home screen."}
           </p>
         </div>
         <div className="h-6 w-11 rounded-full bg-gray-100" />

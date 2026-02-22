@@ -238,6 +238,7 @@ export default function AnnouncementsView({
                     onTogglePublish={handleTogglePublish}
                     onArchive={handleArchive}
                     isBusy={pendingId === announcement.id}
+                    showReportAction
                     isReadOnly
                   />
                 ))

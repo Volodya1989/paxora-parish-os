@@ -85,7 +85,8 @@
     "back": "Back",
     "cancel": "Cancel",
     "tryAgain": "Please try again.",
-    "myParish": "My Parish"
+    "myParish": "My Parish",
+    "reportContent": "Report content"
   },
   "notifications": {
     "title": "Notifications",
@@ -110,6 +111,7 @@
     "quickActionsDesc": "Jump to your most-used profile controls.",
     "notificationSettings": "Notification settings",
     "importantDates": "Important dates",
+    "accountDeletion": "Account deletion",
     "parishHub": "Parish Hub",
     "parishHubDesc": "Configure the parish hub grid for quick access to resources.",
     "accessRequests": "Access requests",
@@ -940,5 +942,29 @@
     "footer": {
       "copy": "© Paxora Parish Center App. Pilot program in progress."
     }
+  },
+  "moderation": {
+    "reportSubmitted": "Report submitted",
+    "reportAlreadySubmitted": "Report already submitted",
+    "reportSubmittedDescription": "Thanks. Our team will review this content.",
+    "reportAlreadySubmittedDescription": "Thanks — this report is already in the moderation queue.",
+    "reportFailed": "Report failed",
+    "reportFailedDescription": "We couldn't submit your report. Please try again.",
+    "queueTitle": "Content reports",
+    "queueSubtitle": "Moderation queue for reported chat, announcements, and groups content.",
+    "queue": {
+      "type": "Type",
+      "targetId": "Target ID",
+      "reporter": "Reporter",
+      "created": "Created",
+      "status": "Status",
+      "action": "Action",
+      "markReviewed": "Mark reviewed",
+      "dismiss": "Dismiss",
+      "emptyAction": "—"
+    },
+    "reportUpdated": "Report updated",
+    "reportUpdateFailed": "Update failed",
+    "reportUpdateFailedDescription": "We couldn't update that report."
   }
 }

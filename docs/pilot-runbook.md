@@ -18,11 +18,14 @@
 - `VAPID_SUBJECT`
 
 ### Storage
-- `R2_ACCOUNT_ID`
-- `R2_ACCESS_KEY_ID`
-- `R2_SECRET_ACCESS_KEY`
-- `R2_BUCKET`
-- `R2_PUBLIC_BASE_URL`
+- Required:
+  - `CLOUDFLARE_ACCOUNT_ID`
+  - `CLOUDFLARE_R2_ACCESS_KEY_ID`
+  - `CLOUDFLARE_R2_SECRET_ACCESS_KEY`
+  - `CLOUDFLARE_R2_BUCKET`
+  - `CLOUDFLARE_R2_ENDPOINT`
+- Optional:
+  - `CLOUDFLARE_R2_PUBLIC_URL` (for CDN/direct public object URLs)
 
 ### Migrations + data
 - Run Prisma migrations before app start.
@@ -68,6 +71,8 @@ pnpm build
 
 ## Pilot smoke checklist (<15 minutes)
 
+Baseline pilot checks (keep as-is):
+
 1. Admin login works.
 2. Parish switch/active parish context works.
 3. Announcement publish succeeds.
@@ -75,3 +80,12 @@ pnpm build
 5. Event create + RSVP succeeds.
 6. Access request submit + approve succeeds.
 7. Reliability page loads and displays recent failures (if any).
+
+iOS/TestFlight-specific extension:
+- Run `docs/mobile/ios-c4-app-store-qa-smoke-suite.md` for App Store smoke coverage (auth, onboarding, tasks, events, chat upload, giving shortcut policy behavior + evidence template).
+- For App Store listing assets, run `docs/mobile/ios-d2-screenshot-pipeline.md` (required 6.7" + 6.5" screenshot classes, capture matrix, QA/sign-off checklist, ASC packaging workflow).
+- For TestFlight → Production promotion operations (go/no-go, evidence pack, rollback, hotfix), run `docs/mobile/ios-d3-testflight-to-production-runbook.md`.
+- For CI-side iOS wrapper validation artifacts (IOS-D4 lane, artifact naming, retention, inspection order), run `docs/mobile/ios-d4-ci-build-validation.md`.
+- Optional scaffolds:
+  - `bash scripts/mobile/generate-ios-c4-evidence-template.sh` for IOS-C4 smoke run records.
+  - `bash scripts/mobile/generate-ios-d2-screenshot-template.sh` for IOS-D2 screenshot run folders/checklists.

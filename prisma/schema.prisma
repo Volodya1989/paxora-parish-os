@@ -190,6 +190,18 @@ enum DeliveryStatus {
   FAILURE
 }
 
+enum ContentReportType {
+  CHAT_MESSAGE
+  ANNOUNCEMENT
+  GROUP_CONTENT
+}
+
+enum ContentReportStatus {
+  OPEN
+  REVIEWED
+  DISMISSED
+}
+
 enum ParishEmailDomainStatus {
   DEFAULT
   PENDING
@@ -270,6 +282,7 @@ model Parish {
   deliveryAttempts  DeliveryAttempt[]
   impersonatedUsers User[]             @relation("ImpersonatedParish")
   auditLogs         AuditLog[]         @relation("ParishAuditLogs")
+  contentReports    ContentReport[]
 
   @@index([deactivatedAt])
 }
@@ -385,6 +398,8 @@ model User {
   deliveryAttempts         DeliveryAttempt[]
   impersonatedParish       Parish?                  @relation("ImpersonatedParish", fields: [impersonatedParishId], references: [id], onDelete: SetNull)
   auditLogs                AuditLog[]               @relation("AuditActor")
+  submittedContentReports  ContentReport[]          @relation("ContentReportReporter")
+  reviewedContentReports   ContentReport[]          @relation("ContentReportReviewer")
 
   @@index([deletedAt])
 }
@@ -1089,6 +1104,28 @@ model Announcement {
   emailLogs EmailLog[]
 
   @@index([parishId, publishedAt])
+}
+
+model ContentReport {
+  id             String              @id @default(cuid())
+  parishId       String
+  reporterUserId String
+  reviewerUserId String?
+  contentType    ContentReportType
+  contentId      String
+  reason         String?
+  details        String?
+  status         ContentReportStatus @default(OPEN)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  parish   Parish @relation(fields: [parishId], references: [id], onDelete: Cascade)
+  reporter User   @relation("ContentReportReporter", fields: [reporterUserId], references: [id], onDelete: Cascade)
+  reviewer User?  @relation("ContentReportReviewer", fields: [reviewerUserId], references: [id], onDelete: SetNull)
+
+  @@unique([parishId, reporterUserId, contentType, contentId], name: "ContentReport_dedupe")
+  @@index([parishId, status, createdAt])
+  @@index([contentType, contentId])
 }
 
 model Account {
