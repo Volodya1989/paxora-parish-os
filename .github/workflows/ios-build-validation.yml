@@ -1,0 +1,82 @@
+name: iOS Build Validation
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  ios-build-validation:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      CI: true
+      CAPACITOR_APP_URL: http://localhost:3000
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Prepare CI artifact bundle
+        run: |
+          set -euo pipefail
+          set -o pipefail
+          ARTIFACT_DIR="artifacts/ios-d4/${GITHUB_RUN_ID}"
+          mkdir -p "$ARTIFACT_DIR"
+
+          {
+            echo "run_id=${GITHUB_RUN_ID}"
+            echo "run_attempt=${GITHUB_RUN_ATTEMPT}"
+            echo "sha=${GITHUB_SHA}"
+            echo "ref=${GITHUB_REF}"
+            echo "runner_os=${RUNNER_OS}"
+            echo "ios_native_build=skipped"
+            echo "skip_reason=xcodebuild is not available on ubuntu-latest; use a macOS lane for native archive validation"
+          } > "$ARTIFACT_DIR/run-metadata.txt"
+
+          npm run mobile:ios:pipeline | tee "$ARTIFACT_DIR/mobile-ios-pipeline.log"
+
+          if [[ -d ios/App ]]; then
+            tar -czf "$ARTIFACT_DIR/ios-app-project.tgz" ios/App
+          fi
+
+          if [[ -f capacitor.config.ts ]]; then
+            cp capacitor.config.ts "$ARTIFACT_DIR/capacitor.config.ts"
+          fi
+
+      - name: Upload iOS validation artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-d4-validation-${{ github.run_id }}
+          path: artifacts/ios-d4/${{ github.run_id }}
+          retention-days: 14
+
+      - name: Append job summary
+        run: |
+          {
+            echo "## IOS-D4 iOS build validation"
+            echo "- Baseline commands: npm ci + npm run mobile:ios:pipeline"
+            echo "- Quality checks: npm run lint, npm run typecheck, npm test"
+            echo "- Native iOS archive build: skipped on ubuntu-latest by design"
+            echo "- Artifact bundle: ios-d4-validation-${GITHUB_RUN_ID}"
+          } >> "$GITHUB_STEP_SUMMARY"
