@@ -1042,6 +1042,11 @@
       "nextAction": "Wait for a parish leader to review your request.",
       "whatNext": "You’ll receive an email as soon as your status changes."
     },
+    "rejected": {
+      "title": "Access request declined",
+      "nextAction": "Your request to join this parish was not approved.",
+      "whatNext": "If you believe this was a mistake, contact the parish office directly or try joining with a parish code."
+    },
     "unverified": {
       "title": "Verify your email",
       "nextAction": "Confirm your email address before requesting access {parishLabel}.",

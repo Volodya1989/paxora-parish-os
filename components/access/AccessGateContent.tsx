@@ -34,6 +34,16 @@ export default function AccessGateContent({ status, parishName, locale }: Access
     );
   }
 
+  if (status === "rejected") {
+    return (
+      <div className="space-y-2">
+        <h2 className="text-h2">{t("accessGate.rejected.title")}</h2>
+        <p className="text-sm text-ink-500">{t("accessGate.rejected.nextAction")}</p>
+        <p className="text-xs text-ink-400">{t("accessGate.rejected.whatNext")}</p>
+      </div>
+    );
+  }
+
   if (status === "unverified") {
     return (
       <div className="space-y-2">
