@@ -26,12 +26,6 @@ mock.module("next/cache", {
   }
 });
 
-mock.module("@/lib/notifications/notify", {
-  namedExports: {
-    notifyContentReportSubmittedInApp: async () => undefined
-  }
-});
-
 async function resetDatabase() {
   await prisma.contentReport.deleteMany();
   await prisma.chatMessage.deleteMany();

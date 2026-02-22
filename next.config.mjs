@@ -1,4 +1,17 @@
-import { withSentryConfig } from "@sentry/nextjs";
+const resolveWithSentryConfig = async () => {
+  try {
+    const sentry = await import("@sentry/nextjs");
+    if (typeof sentry.withSentryConfig === "function") {
+      return sentry.withSentryConfig;
+    }
+  } catch {
+    // Optional in local/unit-test environments.
+  }
+
+  return (config) => config;
+};
+
+const withSentryConfig = await resolveWithSentryConfig();
 
 const contentSecurityPolicy = [
   "default-src 'self'",
