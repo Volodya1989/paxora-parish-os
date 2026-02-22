@@ -730,6 +730,7 @@ model ChatChannel {
   readStates    ChatRoomReadState[]
   notifications Notification[]
 
+  @@unique([parishId, groupId, type], name: "ChatChannel_parish_group_type")
   @@index([parishId])
 }
 
