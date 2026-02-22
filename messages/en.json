@@ -152,7 +152,8 @@
     "emptyScheduleDesc": "New services and events will show up here as they're added.",
     "calendarView": "Calendar",
     "scheduleView": "Schedule",
-    "viewToggleLabel": "Switch between calendar and schedule views"
+    "viewToggleLabel": "Switch between calendar and schedule views",
+    "today": "Today"
   },
   "parish": {
     "title": "Parish Hub",
@@ -457,7 +458,12 @@
     "deleteDialogConfirm": "Delete permanently",
     "discoverTitle": "Groups you can join",
     "yourGroupsTitle": "Your groups",
-    "requestSent": "Request sent"
+    "requestSent": "Request sent",
+    "archived": "Archived",
+    "pending": "Pending",
+    "notApproved": "Not approved",
+    "restore": "Restore",
+    "deletePermanently": "Delete permanently"
   },
   "chat": {
     "noChannelsTitle": "No channels available",

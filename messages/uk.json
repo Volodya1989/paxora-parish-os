@@ -152,7 +152,8 @@
     "emptyScheduleDesc": "Нові служби та події з'являться тут після додавання.",
     "calendarView": "Календар",
     "scheduleView": "Розклад",
-    "viewToggleLabel": "Перемикання між календарем і розкладом"
+    "viewToggleLabel": "Перемикання між календарем і розкладом",
+    "today": "Сьогодні"
   },
   "parish": {
     "title": "Парафія",
@@ -457,7 +458,12 @@
     "deleteDialogConfirm": "Видалити назавжди",
     "discoverTitle": "Групи, до яких можна приєднатися",
     "yourGroupsTitle": "Ваші групи",
-    "requestSent": "Запит надіслано"
+    "requestSent": "Запит надіслано",
+    "archived": "Архівовано",
+    "pending": "Очікує",
+    "notApproved": "Не схвалено",
+    "restore": "Відновити",
+    "deletePermanently": "Видалити назавжди"
   },
   "chat": {
     "noChannelsTitle": "Канали недоступні",
