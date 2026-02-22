@@ -25,6 +25,32 @@ type GroupCreateResult = {
   groupId?: string;
 };
 
+async function ensureGroupChatChannel(
+  tx: Prisma.TransactionClient,
+  input: { parishId: string; groupId: string; groupName: string }
+) {
+  const existing = await tx.chatChannel.findFirst({
+    where: {
+      parishId: input.parishId,
+      groupId: input.groupId,
+      type: "GROUP"
+    },
+    select: { id: true }
+  });
+
+  if (existing) return existing;
+
+  return tx.chatChannel.create({
+    data: {
+      parishId: input.parishId,
+      groupId: input.groupId,
+      type: "GROUP",
+      name: input.groupName
+    },
+    select: { id: true }
+  });
+}
+
 function assertSession(session: Session | null) {
   if (!session?.user?.id || !session.user.activeParishId) {
     throw new Error("Unauthorized");
@@ -236,6 +262,14 @@ async function createGroupInternal(input: {
         );
       }
 
+      if (createdGroup.status === "ACTIVE") {
+        await ensureGroupChatChannel(tx, {
+          parishId,
+          groupId: createdGroup.id,
+          groupName: createdGroup.name
+        });
+      }
+
       return createdGroup;
     })
     .catch((error: unknown) => {
@@ -306,7 +340,7 @@ export async function approveGroupRequest(input: {
 
   const group = await prisma.group.findUnique({
     where: { id: input.groupId },
-    select: { parishId: true, status: true, createdById: true }
+    select: { parishId: true, status: true, createdById: true, name: true }
   });
 
   if (!group || group.parishId !== parishId) {
@@ -342,6 +376,12 @@ export async function approveGroupRequest(input: {
         status: "ACTIVE",
         approvedByUserId: userId
       }
+    });
+
+    await ensureGroupChatChannel(tx, {
+      parishId,
+      groupId: input.groupId,
+      groupName: group.name
     });
   });
 

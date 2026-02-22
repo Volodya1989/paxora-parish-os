@@ -116,6 +116,123 @@ dbTest("create group succeeds with valid input", async () => {
   assert.equal(creatorMembership?.status, "ACTIVE");
 });
 
+
+dbTest("create group provisions a group chat channel", async () => {
+  const parish = await prisma.parish.create({
+    data: { name: "St. Martha", slug: "st-martha" }
+  });
+  const user = await prisma.user.create({
+    data: {
+      email: "leader-chat@example.com",
+      name: "Leader Chat",
+      passwordHash: "hashed",
+      activeParishId: parish.id
+    }
+  });
+  await prisma.membership.create({
+    data: {
+      parishId: parish.id,
+      userId: user.id,
+      role: "ADMIN"
+    }
+  });
+
+  session.user.id = user.id;
+  session.user.activeParishId = parish.id;
+
+  const createdGroup = await actions.createGroup({
+    parishId: parish.id,
+    actorUserId: user.id,
+    name: "Hospitality",
+    visibility: "PUBLIC",
+    joinPolicy: "OPEN"
+  });
+
+  const chatChannels = await prisma.chatChannel.findMany({
+    where: {
+      parishId: parish.id,
+      groupId: createdGroup.id,
+      type: "GROUP"
+    }
+  });
+
+  assert.equal(chatChannels.length, 1);
+  assert.equal(chatChannels[0]?.name, "Hospitality");
+});
+
+
+dbTest("approving pending group request provisions chat channel", async () => {
+  const parish = await prisma.parish.create({
+    data: { name: "St. Lucy", slug: "st-lucy" }
+  });
+  const requester = await prisma.user.create({
+    data: {
+      email: "requester@example.com",
+      name: "Requester",
+      passwordHash: "hashed",
+      activeParishId: parish.id
+    }
+  });
+  const admin = await prisma.user.create({
+    data: {
+      email: "approver@example.com",
+      name: "Approver",
+      passwordHash: "hashed",
+      activeParishId: parish.id
+    }
+  });
+
+  await prisma.membership.createMany({
+    data: [
+      { parishId: parish.id, userId: requester.id, role: "MEMBER" },
+      { parishId: parish.id, userId: admin.id, role: "ADMIN" }
+    ]
+  });
+
+  session.user.id = requester.id;
+  session.user.activeParishId = parish.id;
+
+  const submitResult = await actions.submitGroupCreationRequest({
+    parishId: parish.id,
+    actorUserId: requester.id,
+    name: "Youth Team",
+    visibility: "PUBLIC",
+    joinPolicy: "REQUEST_TO_JOIN"
+  });
+
+  assert.equal(submitResult.status, "success");
+  assert.ok(submitResult.groupId);
+
+  const beforeApprovalChannels = await prisma.chatChannel.count({
+    where: {
+      parishId: parish.id,
+      groupId: submitResult.groupId,
+      type: "GROUP"
+    }
+  });
+  assert.equal(beforeApprovalChannels, 0);
+
+  session.user.id = admin.id;
+  session.user.activeParishId = parish.id;
+
+  await actions.approveGroupRequest({
+    parishId: parish.id,
+    actorUserId: admin.id,
+    groupId: submitResult.groupId
+  });
+
+  const afterApprovalChannels = await prisma.chatChannel.findMany({
+    where: {
+      parishId: parish.id,
+      groupId: submitResult.groupId,
+      type: "GROUP"
+    }
+  });
+
+  assert.equal(afterApprovalChannels.length, 1);
+  assert.equal(afterApprovalChannels[0]?.name, "Youth Team");
+});
+
 dbTest("archive, restore, and undo", async () => {
   const parish = await prisma.parish.create({
     data: { name: "St. Jude", slug: "st-jude" }

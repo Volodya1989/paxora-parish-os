@@ -210,3 +210,98 @@ test.skip("archive and undo", async () => {
   const restored = await prisma.task.findUnique({ where: { id: task.id } });
   assert.equal(restored?.archivedAt, null);
 });
+
+
+dbTest("rolloverTasksForWeek rejects non-leader members", async () => {
+  const parish = await prisma.parish.create({
+    data: { name: "St. Clare", slug: "st-clare" }
+  });
+  const member = await prisma.user.create({
+    data: {
+      email: "member-rollover@example.com",
+      name: "Member",
+      passwordHash: "hashed",
+      activeParishId: parish.id
+    }
+  });
+
+  await prisma.membership.create({
+    data: {
+      parishId: parish.id,
+      userId: member.id,
+      role: "MEMBER"
+    }
+  });
+
+  session.user.id = member.id;
+  session.user.activeParishId = parish.id;
+
+  const fromWeek = await getOrCreateCurrentWeek(parish.id, new Date("2024-02-05T00:00:00.000Z"));
+  const toWeek = await getOrCreateCurrentWeek(parish.id, new Date("2024-02-12T00:00:00.000Z"));
+
+  const formData = new FormData();
+  formData.set("fromWeekId", fromWeek.id);
+  formData.set("toWeekId", toWeek.id);
+
+  await assert.rejects(
+    () => actions.rolloverTasksForWeek(formData),
+    /Only parish leaders can roll over tasks\./
+  );
+});
+
+
+dbTest("rolloverTasksForWeek allows leaders", async () => {
+  const parish = await prisma.parish.create({
+    data: { name: "St. Catherine", slug: "st-catherine" }
+  });
+  const admin = await prisma.user.create({
+    data: {
+      email: "leader-rollover@example.com",
+      name: "Leader",
+      passwordHash: "hashed",
+      activeParishId: parish.id
+    }
+  });
+
+  await prisma.membership.create({
+    data: {
+      parishId: parish.id,
+      userId: admin.id,
+      role: "ADMIN"
+    }
+  });
+
+  session.user.id = admin.id;
+  session.user.activeParishId = parish.id;
+
+  const fromWeek = await getOrCreateCurrentWeek(parish.id, new Date("2024-03-04T00:00:00.000Z"));
+  const toWeek = await getOrCreateCurrentWeek(parish.id, new Date("2024-03-11T00:00:00.000Z"));
+
+  await prisma.task.create({
+    data: {
+      parishId: parish.id,
+      weekId: fromWeek.id,
+      ownerId: admin.id,
+      createdById: admin.id,
+      displayId: "SERV-1",
+      title: "Carryover",
+      status: "OPEN"
+    }
+  });
+
+  const formData = new FormData();
+  formData.set("fromWeekId", fromWeek.id);
+  formData.set("toWeekId", toWeek.id);
+
+  await actions.rolloverTasksForWeek(formData);
+
+  const rolled = await prisma.task.count({
+    where: {
+      parishId: parish.id,
+      weekId: toWeek.id,
+      rolledFromTaskId: { not: null }
+    }
+  });
+
+  assert.equal(rolled, 1);
+});
