@@ -757,7 +757,32 @@
     "addComment": "Add a comment",
     "activity": "Activity",
     "activityHint": "Recent changes and updates.",
-    "noActivity": "No activity yet."
+    "noActivity": "No activity yet.",
+    "leadLabel": "Lead:",
+    "unassigned": "Unassigned",
+    "dueDateLabel": "Due date:",
+    "dueDateTbd": "TBD",
+    "leaveVolunteer": "Leave",
+    "volunteerAction": "Volunteer",
+    "volunteerClosed": "Closed",
+    "removeVolunteer": "Remove",
+    "mentionLabel": "Mention",
+    "refreshing": "Refreshing details…",
+    "toasts": {
+      "loadFailed": "Unable to load details",
+      "updateFailed": "Update failed",
+      "commentAdded": "Comment added",
+      "mentionTargetMissing": "Mention target no longer exists",
+      "idCopied": "Task ID copied",
+      "idCopyFailed": "Unable to copy Task ID",
+      "movedToInProgress": "Moved to in progress",
+      "markedComplete": "Marked complete",
+      "reopenedTask": "Reopened task",
+      "assignedToYou": "Assigned to you",
+      "leftVolunteerList": "Left volunteer list",
+      "addedToVolunteers": "Added to volunteers",
+      "volunteerRemoved": "Volunteer removed"
+    }
   },
   "emptyStates": {
     "noMatches": "No matches found",

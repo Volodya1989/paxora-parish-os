@@ -39,9 +39,9 @@ function formatTimestamp(value: string) {
   });
 }
 
-function formatDueDate(value?: string) {
+function formatDueDate(value: string | undefined, fallback: string) {
   if (!value) {
-    return "TBD";
+    return fallback;
   }
   return formatTimestamp(value);
 }
@@ -127,8 +127,8 @@ export default function TaskDetailDialog({
       setDetail(data);
     } catch (error) {
       addToast({
-        title: "Unable to load details",
-        description: "Please try again.",
+        title: t("taskDetail.toasts.loadFailed"),
+        description: t("common.tryAgain"),
         status: "error"
       });
     } finally {
@@ -211,8 +211,8 @@ export default function TaskDetailDialog({
       await refreshDetail();
     } catch (error) {
       addToast({
-        title: "Update failed",
-        description: "Please try again.",
+        title: t("taskDetail.toasts.updateFailed"),
+        description: t("common.tryAgain"),
         status: "error"
       });
     }
@@ -224,7 +224,7 @@ export default function TaskDetailDialog({
     }
     await handleAction(
       () => addTaskComment({ taskId, body: comment.trim(), mentionEntities: buildMentionEntities(comment.trim()) }),
-      "Comment added"
+      t("taskDetail.toasts.commentAdded")
     );
     setComment("");
   };
@@ -239,14 +239,14 @@ export default function TaskDetailDialog({
       return;
     }
     if (detail) {
-      addToast({ title: "Mention target no longer exists", status: "neutral" });
+      addToast({ title: t("taskDetail.toasts.mentionTargetMissing"), status: "neutral" });
     }
   }, [addToast, detail, open, highlightedCommentId, detail?.comments.length]);
 
   const content = (
     <div className="space-y-6 text-sm text-ink-700">
       <div className="space-y-2">
-        <h3 className="text-h3">{taskSummary?.title ?? "Task details"}</h3>
+        <h3 className="text-h3">{taskSummary?.title ?? t("taskDetail.title")}</h3>
         {taskSummary?.displayId ? (
           <div className="flex items-center gap-2 text-xs text-ink-500">
             <span className="rounded-full bg-mist-100 px-2 py-1 font-semibold text-ink-600">{taskSummary.displayId}</span>
@@ -255,8 +255,8 @@ export default function TaskDetailDialog({
               className="underline underline-offset-2"
               onClick={() =>
                 copyTaskDisplayId(taskSummary.displayId)
-                  .then(() => addToast({ title: "Task ID copied", status: "success" }))
-                  .catch(() => addToast({ title: "Unable to copy Task ID", status: "error" }))
+                  .then(() => addToast({ title: t("taskDetail.toasts.idCopied"), status: "success" }))
+                  .catch(() => addToast({ title: t("taskDetail.toasts.idCopyFailed"), status: "error" }))
               }
             >
               {t("taskDetail.copyId")}
@@ -284,18 +284,18 @@ export default function TaskDetailDialog({
           ) : null}
         </div>
         <p className="text-xs text-ink-500">
-          Lead:{" "}
+          {t("taskDetail.leadLabel")}{" "}
           <span
             className="font-medium text-ink-700"
-            title={taskSummary?.owner?.name ?? "Unassigned"}
+            title={taskSummary?.owner?.name ?? t("taskDetail.unassigned")}
           >
-            {ownerCompactName ?? "Unassigned"}
+            {ownerCompactName ?? t("taskDetail.unassigned")}
           </span>
         </p>
         <p className="text-xs text-ink-500">
-          Due date:{" "}
+          {t("taskDetail.dueDateLabel")}{" "}
           <span className="font-medium text-ink-700">
-            {taskSummary ? formatDueDate(taskSummary.dueAt) : "TBD"}
+            {taskSummary ? formatDueDate(taskSummary.dueAt, t("taskDetail.dueDateTbd")) : t("taskDetail.dueDateTbd")}
           </span>
         </p>
       </div>
@@ -307,7 +307,7 @@ export default function TaskDetailDialog({
               type="button"
               variant="secondary"
               onClick={() =>
-                handleAction(() => markTaskInProgress({ taskId }), "Moved to in progress")
+                handleAction(() => markTaskInProgress({ taskId }), t("taskDetail.toasts.movedToInProgress"))
               }
             >
               {t("taskDetail.startServing")}
@@ -319,7 +319,7 @@ export default function TaskDetailDialog({
               onClick={() =>
                 onRequestComplete
                   ? onRequestComplete(taskId)
-                  : handleAction(() => markTaskDone({ taskId }), "Marked complete")
+                  : handleAction(() => markTaskDone({ taskId }), t("taskDetail.toasts.markedComplete"))
               }
             >
               {t("taskDetail.completeTask")}
@@ -329,7 +329,7 @@ export default function TaskDetailDialog({
             <Button
               type="button"
               variant="secondary"
-              onClick={() => handleAction(() => markTaskOpen({ taskId }), "Reopened task")}
+              onClick={() => handleAction(() => markTaskOpen({ taskId }), t("taskDetail.toasts.reopenedTask"))}
             >
               {t("taskDetail.reopenTask")}
             </Button>
@@ -341,7 +341,7 @@ export default function TaskDetailDialog({
         <div className="flex flex-wrap gap-2">
           <Button
             type="button"
-            onClick={() => handleAction(() => assignTaskToSelf({ taskId }), "Assigned to you")}
+            onClick={() => handleAction(() => assignTaskToSelf({ taskId }), t("taskDetail.toasts.assignedToYou"))}
           >
             {t("taskDetail.assignToMe")}
           </Button>
@@ -363,23 +363,23 @@ export default function TaskDetailDialog({
                   type="button"
                   variant="secondary"
                   onClick={() =>
-                    handleAction(() => leaveTaskVolunteer({ taskId }), "Left volunteer list")
+                    handleAction(() => leaveTaskVolunteer({ taskId }), t("taskDetail.toasts.leftVolunteerList"))
                   }
                 >
-                  Leave
+                  {t("taskDetail.leaveVolunteer")}
                 </Button>
               ) : (
                 <Button
                   type="button"
                   onClick={() =>
-                    handleAction(() => volunteerForTask({ taskId }), "Added to volunteers")
+                    handleAction(() => volunteerForTask({ taskId }), t("taskDetail.toasts.addedToVolunteers"))
                   }
                   disabled={
                     !canVolunteer ||
                     (detail?.volunteers.length ?? 0) >= (taskSummary?.volunteersNeeded ?? 0)
                   }
                 >
-                  {canVolunteer ? "Volunteer" : "Closed"}
+                  {canVolunteer ? t("taskDetail.volunteerAction") : t("taskDetail.volunteerClosed")}
                 </Button>
               )
             ) : null}
@@ -417,11 +417,11 @@ export default function TaskDetailDialog({
                               taskId: taskId ?? "",
                               volunteerUserId: volunteer.id
                             }),
-                          "Volunteer removed"
+                          t("taskDetail.toasts.volunteerRemoved")
                         )
                       }
                     >
-                      Remove
+                      {t("taskDetail.removeVolunteer")}
                     </Button>
                   ) : null}
                 </div>
@@ -463,7 +463,7 @@ export default function TaskDetailDialog({
         </div>
         {mentionUsers.length ? (
           <div className="flex flex-wrap items-center gap-2 text-xs text-ink-500">
-            <span className="text-ink-400">Mention</span>
+            <span className="text-ink-400">{t("taskDetail.mentionLabel")}</span>
             {mentionUsers.map((user) => (
               <button
                 key={user.id}
@@ -519,7 +519,7 @@ export default function TaskDetailDialog({
       </div>
 
       {isLoading ? (
-        <p className="text-xs text-ink-400">Refreshing details…</p>
+        <p className="text-xs text-ink-400">{t("taskDetail.refreshing")}</p>
       ) : null}
     </div>
   );

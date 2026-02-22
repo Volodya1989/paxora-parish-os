@@ -757,7 +757,32 @@
     "addComment": "Додати коментар",
     "activity": "Активність",
     "activityHint": "Нещодавні зміни та оновлення.",
-    "noActivity": "Поки що немає активності."
+    "noActivity": "Поки що немає активності.",
+    "leadLabel": "Відповідальний:",
+    "unassigned": "Не призначено",
+    "dueDateLabel": "Дата виконання:",
+    "dueDateTbd": "Невідомо",
+    "leaveVolunteer": "Вийти",
+    "volunteerAction": "Долучитися",
+    "volunteerClosed": "Закрито",
+    "removeVolunteer": "Видалити",
+    "mentionLabel": "Згадати",
+    "refreshing": "Оновлення деталей…",
+    "toasts": {
+      "loadFailed": "Не вдалося завантажити деталі",
+      "updateFailed": "Оновлення не вдалося",
+      "commentAdded": "Коментар додано",
+      "mentionTargetMissing": "Згаданий запис більше не існує",
+      "idCopied": "ID завдання скопійовано",
+      "idCopyFailed": "Не вдалося скопіювати ID завдання",
+      "movedToInProgress": "Переведено у процес",
+      "markedComplete": "Позначено як виконане",
+      "reopenedTask": "Завдання відкрито знову",
+      "assignedToYou": "Призначено вам",
+      "leftVolunteerList": "Ви вийшли зі списку волонтерів",
+      "addedToVolunteers": "Додано до волонтерів",
+      "volunteerRemoved": "Волонтера видалено"
+    }
   },
   "emptyStates": {
     "noMatches": "Нічого не знайдено",
