@@ -116,6 +116,23 @@ export async function getAccessGateState(): Promise<AccessGateState> {
     };
   }
 
+  const pendingRequest = await prisma.accessRequest.findFirst({
+    where: {
+      parishId,
+      userId: session.user.id,
+      status: "PENDING"
+    },
+    select: { id: true }
+  });
+
+  if (pendingRequest) {
+    return {
+      status: "pending",
+      parishId,
+      parishName: parish?.name ?? null
+    };
+  }
+
   return {
     status: "none",
     parishId,

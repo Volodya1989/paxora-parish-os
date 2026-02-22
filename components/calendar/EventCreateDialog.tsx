@@ -6,11 +6,7 @@ import { Modal } from "@/components/ui/Modal";
 import EventForm from "@/components/calendar/EventForm";
 import { createEvent } from "@/server/actions/events";
 import { initialEventActionState } from "@/server/actions/eventState";
-
-const formCopy = {
-  title: "New event",
-  description: "Add a service or parish gathering to the shared schedule."
-};
+import { useTranslations } from "@/lib/i18n/provider";
 
 type EventCreateDialogProps = {
   open: boolean;
@@ -31,6 +27,7 @@ export default function EventCreateDialog({
   canCreateGroupEvents,
   defaultType
 }: EventCreateDialogProps) {
+  const t = useTranslations();
   const modalId = useId();
   const drawerId = useId();
 
@@ -41,9 +38,9 @@ export default function EventCreateDialog({
       initialState={initialEventActionState}
       onCancel={() => onOpenChange(false)}
       onSuccess={() => onOpenChange(false)}
-      successTitle="Event scheduled"
-      successDescription="The service is now on the calendar."
-      submitLabel="Save event"
+      successTitle={t("eventCreateDialog.successTitle")}
+      successDescription={t("eventCreateDialog.successDescription")}
+      submitLabel={t("eventCreateDialog.submitLabel")}
       groupOptions={groupOptions}
       canCreatePublicEvents={canCreatePublicEvents}
       canCreatePrivateEvents={canCreatePrivateEvents}
@@ -54,12 +51,12 @@ export default function EventCreateDialog({
 
   return (
     <>
-      <Modal open={open} onClose={() => onOpenChange(false)} title={formCopy.title}>
-        <p className="mb-4 text-sm text-ink-500">{formCopy.description}</p>
+      <Modal open={open} onClose={() => onOpenChange(false)} title={t("eventCreateDialog.title")}>
+        <p className="mb-4 text-sm text-ink-500">{t("eventCreateDialog.description")}</p>
         {renderForm(modalId)}
       </Modal>
-      <Drawer open={open} onClose={() => onOpenChange(false)} title={formCopy.title}>
-        <p className="mb-4 text-sm text-ink-500">{formCopy.description}</p>
+      <Drawer open={open} onClose={() => onOpenChange(false)} title={t("eventCreateDialog.title")}>
+        <p className="mb-4 text-sm text-ink-500">{t("eventCreateDialog.description")}</p>
         {renderForm(drawerId)}
       </Drawer>
     </>
