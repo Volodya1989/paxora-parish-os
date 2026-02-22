@@ -25,6 +25,7 @@ import {
 import type { TaskListItem } from "@/lib/queries/tasks";
 import { useTranslations } from "@/lib/i18n/provider";
 import { getScrollBehavior, getServeCardAnchorId, isTaskCardFullyVisible } from "@/lib/tasks/serveCardMove";
+import { trackTaskCompleted } from "@/lib/analytics-events";
 
 type TasksListProps = {
   tasks: TaskListItem[];
@@ -276,6 +277,11 @@ export default function TasksList({
       movedToStatus: "DONE",
       action: async () => {
       await markTaskDone({ taskId, hoursMode, manualHours });
+      trackTaskCompleted({
+        taskId,
+        hoursMode,
+        hadManualHours: typeof manualHours === "number"
+      });
       addToast({
         title: "Completed",
         description: "This task is now marked as complete.",

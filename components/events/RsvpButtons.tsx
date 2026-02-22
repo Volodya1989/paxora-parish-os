@@ -7,6 +7,7 @@ import Button from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { setRsvp } from "@/app/actions/rsvp";
 import { cn } from "@/lib/ui/cn";
+import { trackRsvpSubmitted } from "@/lib/analytics-events";
 
 type RsvpButtonsProps = {
   eventId: string;
@@ -58,6 +59,10 @@ export default function RsvpButtons({
         const result = await setRsvp({ eventId, response });
         setCurrentResponse(result.response);
         onRsvpUpdated?.(result.rsvpTotalCount);
+        trackRsvpSubmitted({
+          eventId,
+          response
+        });
         router.refresh();
         addToast({
           title: "RSVP saved",
