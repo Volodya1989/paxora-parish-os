@@ -1,8 +1,8 @@
 SUMMARY STATUS
-- Fully Implemented: [4, 5]
-- Partially Implemented: [6, 8]
+- Fully Implemented: [4, 5, 6, 7]
+- Partially Implemented: [8]
 - Not Implemented: [10]
-- Needs Refactor / Fix: [3, 7, 9]
+- Needs Refactor / Fix: [3, 9]
 
 ITEM-BY-ITEM ANALYSIS
 
@@ -57,39 +57,36 @@ Claude Action Required:
 - No action required.
 
 Item 6 – Polish onboarding flow copy and sequencing
-Status: Partial
+Status: Fully
 
 Evidence:
-- Files involved: `app/[locale]/(auth)/post-login/page.tsx`, `app/[locale]/(gate)/access/page.tsx`, `components/access/AccessGateContent.tsx`
-- Components involved: access gate and post-login redirect
-- APIs involved: `getAccessGateState`, `requestEmailVerification`, `joinParishByCodeAction`
+- Files involved: `app/[locale]/(gate)/access/page.tsx`, `components/access/AccessGateContent.tsx`, `messages/en.json`, `messages/uk.json`, `tests/unit/access-gate.test.tsx`
+- Components involved: access gate and post-login access handoff UX
+- APIs involved: unchanged (`getAccessGateState`, `requestEmailVerification`, `joinParishByCodeAction`)
 - DB schema impact: none
-- UI impact: sequence exists, but copy/locale polish incomplete
+- UI impact: each access state now has one clear CTA + explicit "what happens next" guidance in EN/UK
 
 Gap Identified:
-- Access screen copy remains mostly hardcoded English.
-- Sequencing is functional but lacks stronger next-step cues for each status state in localized content.
+- No remaining onboarding-copy or sequencing gap found in the audited access states.
 
 Claude Action Required:
-- Move access/onboarding copy to i18n keys and tighten status-specific CTA text (unverified/pending/none) so next action is explicit across locales.
+- No further action required for Item 6.
 
 Item 7 – Finish i18n sweep (hardcoded English -> t())
-Status: Needs Fix
+Status: Fully
 
 Evidence:
-- Files involved: `components/groups/GroupCreateDialog.tsx`, `components/calendar/EventForm.tsx`, `components/tasks/TaskCreateDialog.tsx`, `components/groups/GroupsView.tsx`, `components/calendar/EventDeleteForm.tsx`
-- Components involved: group/task/event creation and delete UX
+- Files involved: `components/groups/GroupsView.tsx`, `components/calendar/EventForm.tsx`, `components/calendar/EventDeleteForm.tsx`, `app/[locale]/(gate)/access/page.tsx`, `components/access/AccessGateContent.tsx`, `messages/en.json`, `messages/uk.json`, `tests/unit/i18n-roadmap-items-6-7.test.ts`
+- Components involved: group discovery/manage flows, event recurrence and delete flows, access gate onboarding copy
 - APIs involved: none
 - DB schema impact: none
-- UI impact: mixed-language experience persists (especially modal/delete and weekday labels)
+- UI impact: remaining hardcoded English in target UX paths replaced with translation keys; weekdays localized; destructive confirmation copy localized
 
 Gap Identified:
-- `GroupCreateDialog` and `TaskCreateDialog` are largely localized, but other high-traffic adjacent flows still contain hardcoded English.
-- `EventForm` weekday labels are hardcoded (`Mon`…`Sun`).
-- Group/event delete confirmations include hardcoded English strings.
+- No remaining hardcoded-English gap in the audited Item 7 priority paths.
 
 Claude Action Required:
-- Complete i18n sweep for remaining hardcoded strings in event/group destructive and form-adjacent flows; update locale files and parity tests.
+- No further action required for Item 7.
 
 Item 8 – Add confirmation modals for destructive actions
 Status: Partial

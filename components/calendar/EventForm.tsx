@@ -279,13 +279,13 @@ export default function EventForm({
   ];
 
   const weekdayOptions = [
-    { label: "Mon", value: 1 },
-    { label: "Tue", value: 2 },
-    { label: "Wed", value: 3 },
-    { label: "Thu", value: 4 },
-    { label: "Fri", value: 5 },
-    { label: "Sat", value: 6 },
-    { label: "Sun", value: 0 }
+    { label: t("eventForm.weekdayMon"), value: 1 },
+    { label: t("eventForm.weekdayTue"), value: 2 },
+    { label: t("eventForm.weekdayWed"), value: 3 },
+    { label: t("eventForm.weekdayThu"), value: 4 },
+    { label: t("eventForm.weekdayFri"), value: 5 },
+    { label: t("eventForm.weekdaySat"), value: 6 },
+    { label: t("eventForm.weekdaySun"), value: 0 }
   ];
 
   const recurrenceFreqValue =

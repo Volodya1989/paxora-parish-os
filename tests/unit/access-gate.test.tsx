@@ -8,27 +8,28 @@ const parishName = "St. Brigid";
 
 test("Access gate renders parish code join state", () => {
   const markup = renderToStaticMarkup(
-    createElement(AccessGateContent, { status: "none", parishName })
+    createElement(AccessGateContent, { status: "none", parishName, locale: "en" })
   );
 
-  assert.match(markup, /Enter Parish Code/);
+  assert.match(markup, /Enter parish code/);
   assert.match(markup, /St. Brigid/);
+  assert.match(markup, /Once accepted/);
 });
 
 test("Access gate renders pending state", () => {
   const markup = renderToStaticMarkup(
-    createElement(AccessGateContent, { status: "pending", parishName })
+    createElement(AccessGateContent, { status: "pending", parishName, locale: "en" })
   );
 
   assert.match(markup, /Access pending/);
-  assert.match(markup, /in review/);
+  assert.match(markup, /receive an email/);
 });
 
 test("Access gate renders approved state", () => {
   const markup = renderToStaticMarkup(
-    createElement(AccessGateContent, { status: "approved", parishName })
+    createElement(AccessGateContent, { status: "approved", parishName, locale: "en" })
   );
 
   assert.match(markup, /Access granted/);
-  assert.match(markup, /workspace/);
+  assert.match(markup, /redirected/);
 });

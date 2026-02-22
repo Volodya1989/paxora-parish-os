@@ -436,7 +436,28 @@
       "membersTab": "Members ({count})",
       "pendingTab": "Pending ({count})",
       "emptyMembers": "Add parishioners to build a calm, coordinated team."
-    }
+    },
+    "noDescription": "No description provided.",
+    "requestedBy": "Requested by {name}",
+    "parishionerFallback": "Parishioner",
+    "updateFailedTitle": "Update failed",
+    "updateFailedDescription": "We couldn’t update that group. Please try again.",
+    "notEnoughAccessTitle": "Not enough access",
+    "groupArchivedTitle": "Group archived",
+    "groupArchivedDescription": "This group is tucked away but can be restored.",
+    "undo": "Undo",
+    "groupRestoredTitle": "Group restored",
+    "groupRestoredDescription": "This group is back in the active list.",
+    "groupDeletedTitle": "Group deleted",
+    "groupDeletedDescription": "The group and its memberships have been permanently removed.",
+    "tryAgain": "Please try again.",
+    "deleteDialogTitle": "Delete group permanently",
+    "deleteDialogQuestion": "Are you sure you want to permanently delete",
+    "deleteDialogDetails": "This will remove all memberships and chat history. Tasks, events, and volunteer hours will be preserved but unlinked from this group.",
+    "deleteDialogConfirm": "Delete permanently",
+    "discoverTitle": "Groups you can join",
+    "yourGroupsTitle": "Your groups",
+    "requestSent": "Request sent"
   },
   "chat": {
     "noChannelsTitle": "No channels available",
@@ -854,7 +875,14 @@
     "groupVisibilityHint": "Group-only events appear for members of the selected ministry.",
     "group": "Group",
     "selectGroup": "Select a group",
-    "noGroups": "No groups available"
+    "noGroups": "No groups available",
+    "weekdayMon": "Mon",
+    "weekdayTue": "Tue",
+    "weekdayWed": "Wed",
+    "weekdayThu": "Thu",
+    "weekdayFri": "Fri",
+    "weekdaySat": "Sat",
+    "weekdaySun": "Sun"
   },
   "marketing": {
     "brandTagline": "People-serving, shepherd-anchored",
@@ -974,5 +1002,53 @@
     "reportUpdated": "Report updated",
     "reportUpdateFailed": "Update failed",
     "reportUpdateFailedDescription": "We couldn't update that report."
+  },
+  "accessPage": {
+    "title": "Parish access",
+    "subtitle": "A calm onboarding step before you enter the workspace.",
+    "unverified": {
+      "verifySent": "Check your email for a verification link.",
+      "resendCta": "Resend verification email"
+    },
+    "none": {
+      "codeLabel": "Parish code",
+      "codePlaceholder": "Enter parish code",
+      "joinCta": "Join parish",
+      "invalidCode": "Invalid parish code. Try again.",
+      "alreadyMember": "You are already a member of this parish."
+    },
+    "pending": {
+      "ctaLabel": "We’ll notify you by email.",
+      "whatNext": "You can safely close this tab and return once a leader approves access.",
+      "refreshCta": "Refresh status"
+    }
+  },
+  "accessGate": {
+    "parishLabelNamed": "at {parish}",
+    "parishLabelFallback": "for this parish",
+    "approved": {
+      "title": "Access granted",
+      "nextAction": "You’re all set to enter the workspace.",
+      "whatNext": "Next you’ll be redirected to your parish home."
+    },
+    "pending": {
+      "title": "Access pending",
+      "nextAction": "Wait for a parish leader to review your request.",
+      "whatNext": "You’ll receive an email as soon as your status changes."
+    },
+    "unverified": {
+      "title": "Verify your email",
+      "nextAction": "Confirm your email address before requesting access {parishLabel}.",
+      "whatNext": "After verification, return here and continue onboarding."
+    },
+    "none": {
+      "title": "Enter parish code",
+      "nextAction": "Enter your parish code to join the correct workspace {parishLabel}.",
+      "whatNext": "Once accepted, your request will be reviewed by parish leadership."
+    }
+  },
+  "eventDelete": {
+    "toastTitle": "Event removed",
+    "toastDescription": "The event has been removed from the calendar."
   }
 }
