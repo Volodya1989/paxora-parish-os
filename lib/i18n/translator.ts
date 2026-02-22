@@ -17,7 +17,7 @@ export function createTranslator(
   messages: Messages,
   fallbackMessages: Messages = getMessages(defaultLocale)
 ) {
-  return (key: string) => {
+  return (key: string, variables?: Record<string, string | number>) => {
     const value = resolveNested(messages, key) ?? resolveNested(fallbackMessages, key);
     if (!value) {
       if (process.env.NODE_ENV !== "production") {
@@ -27,7 +27,14 @@ export function createTranslator(
       return key;
     }
 
-    return value;
+    if (!variables) {
+      return value;
+    }
+
+    return value.replace(/\{(\w+)\}/g, (placeholder, name: string) => {
+      const replacement = variables[name];
+      return replacement === undefined ? placeholder : String(replacement);
+    });
   };
 }
 
