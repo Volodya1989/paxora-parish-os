@@ -163,6 +163,32 @@ dbTest("super admin safe delete removes parish with active members and dependent
   assert.ok(week.id);
 });
 
+
+
+dbTest("safe delete blocked when parish is not deactivated", async () => {
+  const superAdmin = await createSuperAdmin("superadmin-active@example.com");
+  const code = await createParishInviteCode();
+  const parish = await prisma.parish.create({
+    data: {
+      name: "St. Active",
+      slug: "st-active",
+      inviteCode: code,
+      inviteCodeCreatedAt: new Date()
+    }
+  });
+
+  session.user.id = superAdmin.id;
+  session.user.activeParishId = parish.id;
+
+  const result = await parishActions.safeDeletePlatformParish({ parishId: parish.id });
+
+  assert.equal(result.status, "error");
+  assert.equal(result.error, "INVALID_STATE");
+
+  const stillExists = await prisma.parish.findUnique({ where: { id: parish.id } });
+  assert.ok(stillExists);
+});
+
 dbTest("regression: safe delete succeeds for deactivated parish with zero memberships", async () => {
   const superAdmin = await createSuperAdmin("superadmin-regression@example.com");
   const parish = await createDeactivatedParish("St. Regression", "st-regression");

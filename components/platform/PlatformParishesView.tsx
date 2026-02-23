@@ -207,7 +207,7 @@ export default function PlatformParishesView({
       ? "Deactivate parish?"
       : confirmState?.action === "reactivate"
         ? "Reactivate parish?"
-        : "Safely delete parish?";
+         : "Delete parish";
   const confirmBodyText =
     confirmState?.action === "deactivate"
       ? `Deactivating "${confirmState.parishName}" will prevent parishioners from accessing it. You can safely delete it afterward once all data has been removed.`
@@ -219,7 +219,7 @@ export default function PlatformParishesView({
       ? "Deactivate"
       : confirmState?.action === "reactivate"
         ? "Reactivate"
-        : "Delete";
+        : "Delete parish";
 
   const confirmFooter = (
     <>
