@@ -481,7 +481,9 @@ export default function TasksList({
         }}
         taskSummary={detailTask}
         currentUserId={currentUserId}
-        onRequestComplete={(taskId) => setCompleteTaskId(taskId)}
+        onRequestComplete={(taskId) => {
+          void handleComplete(taskId);
+        }}
       />
       <TaskCompletionDialog
         task={completionTask}

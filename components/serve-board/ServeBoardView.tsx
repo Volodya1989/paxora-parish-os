@@ -723,7 +723,7 @@ export default function ServeBoardView({
           }
         }}
         currentUserId={currentUserId}
-        onRequestComplete={(taskId) => setCompleteTaskId(taskId)}
+        onRequestComplete={(taskId) => handleStatusChange(taskId, "DONE")}
       />
       <TaskCompletionDialog
         task={completionTask}
