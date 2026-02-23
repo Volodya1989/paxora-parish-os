@@ -23,6 +23,7 @@ import Link from "next/link";
 import { routes } from "@/lib/navigation/routes";
 import { useTranslations } from "@/lib/i18n/provider";
 import { getOwnerParamForViewChange, shouldShowOwnershipFilter, shouldShowParishionerAddButton } from "@/lib/tasks/serveView";
+import { listUserTags, type UserTagItem } from "@/server/actions/tasks";
 
 type TasksViewProps = {
   title?: string;
@@ -55,7 +56,7 @@ export default function TasksView({
   weekId,
   tasks,
   summary,
-  filteredCount,
+  filteredCount: _filteredCount,
   filters,
   groupOptions,
   memberOptions,
@@ -83,7 +84,6 @@ export default function TasksView({
 
   const createParam = searchParams?.get("create");
   const hasTasks = summary.total > 0;
-  const hasMatches = filteredCount > 0;
   const showCreateButton = canManageTasks || viewMode === "mine";
   const isMyCommitmentsView = viewMode === "mine";
   const isParishionerMyCommitments = !canManageTasks && isMyCommitmentsView;
@@ -94,6 +94,8 @@ export default function TasksView({
     viewMode
   });
   const [showCommitmentsInfo, setShowCommitmentsInfo] = useState(false);
+  const [privateTagFilter, setPrivateTagFilter] = useState<"all" | "untagged" | string>("all");
+  const [userTags, setUserTags] = useState<UserTagItem[]>([]);
 
   const clearFilters = () => {
     const params = new URLSearchParams(searchParams?.toString() ?? "");
@@ -201,6 +203,40 @@ export default function TasksView({
     }
   }, [createParam, showCreateButton]);
 
+  useEffect(() => {
+    if (viewMode === "opportunities") {
+      return;
+    }
+    void listUserTags().then(setUserTags).catch(() => setUserTags([]));
+  }, [tasks, viewMode]);
+
+  useEffect(() => {
+    if (privateTagFilter === "all" || privateTagFilter === "untagged") {
+      return;
+    }
+    if (!userTags.some((tag) => tag.id === privateTagFilter)) {
+      setPrivateTagFilter("all");
+    }
+  }, [privateTagFilter, userTags]);
+
+  const taggedTasks = useMemo(() => {
+    if (privateTagFilter === "all") {
+      return tasks;
+    }
+    return tasks.filter((task) => {
+      if (task.visibility !== "PRIVATE") {
+        return true;
+      }
+      if (privateTagFilter === "untagged") {
+        return task.userTags.length === 0;
+      }
+      return task.userTags.some((tag) => tag.id === privateTagFilter);
+    });
+  }, [privateTagFilter, tasks]);
+
+  const showPrivateTagChips = viewMode !== "opportunities" && tasks.some((task) => task.visibility === "PRIVATE");
+  const hasMatches = taggedTasks.length > 0;
+
   /* ─── View toggle (unified for both roles) ─── */
   const viewOptions = canManageTasks
     ? [
@@ -257,7 +293,7 @@ export default function TasksView({
 
     return (
       <TasksList
-        tasks={tasks}
+        tasks={taggedTasks}
         groupOptions={groupOptions}
         memberOptions={memberOptions}
         currentUserId={currentUserId}
@@ -358,6 +394,30 @@ export default function TasksView({
           />
         </div>
       </Drawer>
+
+      {showPrivateTagChips ? (
+        <div className="flex flex-wrap gap-2">
+          {[
+            { id: "all", label: t("tasks.tags.filters.all") },
+            { id: "untagged", label: t("tasks.tags.filters.untagged") },
+            ...userTags.map((tag) => ({ id: tag.id, label: tag.name }))
+          ].map((chip) => (
+            <button
+              key={chip.id}
+              type="button"
+              onClick={() => setPrivateTagFilter(chip.id)}
+              className={cn(
+                "rounded-full border px-3 py-1 text-xs font-semibold transition",
+                privateTagFilter === chip.id
+                  ? "border-primary-200 bg-primary-100 text-primary-800"
+                  : "border-mist-200 bg-white text-ink-600 hover:bg-mist-50"
+              )}
+            >
+              {chip.label}
+            </button>
+          ))}
+        </div>
+      ) : null}
 
       {/* Inline filters (desktop only) */}
       <div className="hidden md:block">
