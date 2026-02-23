@@ -231,6 +231,15 @@ export default function ServeBoardView({
 
   const handleStatusChange = (taskId: string, status: "OPEN" | "IN_PROGRESS" | "DONE") => {
     if (status === "DONE") {
+      const task = tasksById.get(taskId);
+      if (task?.visibility === "PRIVATE") {
+        void runTaskAction(
+          taskId,
+          () => updateTaskStatus({ taskId, status: "DONE", hoursMode: "skip" }),
+          t("serve.toasts.markedComplete")
+        );
+        return;
+      }
       setCompleteTaskId(taskId);
       return;
     }
@@ -714,7 +723,7 @@ export default function ServeBoardView({
           }
         }}
         currentUserId={currentUserId}
-        onRequestComplete={(taskId) => setCompleteTaskId(taskId)}
+        onRequestComplete={(taskId) => handleStatusChange(taskId, "DONE")}
       />
       <TaskCompletionDialog
         task={completionTask}
