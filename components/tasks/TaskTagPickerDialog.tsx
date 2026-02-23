@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Button from "@/components/ui/Button";
 import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
@@ -35,7 +35,9 @@ export default function TaskTagPickerDialog({ open, onOpenChange, task, onApplie
   const [newTagName, setNewTagName] = useState("");
   const [editingTagId, setEditingTagId] = useState<string | null>(null);
   const [editingTagName, setEditingTagName] = useState("");
-
+  const [longPressTagId, setLongPressTagId] = useState<string | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const suppressNextClickTagIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!open) {
@@ -51,6 +53,31 @@ export default function TaskTagPickerDialog({ open, onOpenChange, task, onApplie
   }, [addToast, open, t]);
 
   const selectedTagIds = new Set(task?.userTags.map((tag) => tag.id) ?? []);
+
+  const startLongPress = (tagId: string) => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+    }
+    longPressTimerRef.current = setTimeout(() => {
+      setLongPressTagId(tagId);
+      suppressNextClickTagIdRef.current = tagId;
+    }, 1000);
+  };
+
+  const cancelLongPress = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+      }
+    };
+  }, []);
 
   const toggleTag = async (tagId: string) => {
     if (!task) return;
@@ -101,6 +128,7 @@ export default function TaskTagPickerDialog({ open, onOpenChange, task, onApplie
       setTags((prev) => prev.map((tag) => (tag.id === tagId ? updated : tag)));
       setEditingTagId(null);
       setEditingTagName("");
+      setLongPressTagId(null);
       onApplied();
     } catch {
       addToast({ title: t("tasks.tags.toasts.renameFailed"), status: "error" });
@@ -117,6 +145,9 @@ export default function TaskTagPickerDialog({ open, onOpenChange, task, onApplie
       if (editingTagId === tagId) {
         setEditingTagId(null);
         setEditingTagName("");
+      }
+      if (longPressTagId === tagId) {
+        setLongPressTagId(null);
       }
       onApplied();
     } catch {
@@ -168,7 +199,18 @@ export default function TaskTagPickerDialog({ open, onOpenChange, task, onApplie
               <button
                 type="button"
                 disabled={isBusy}
-                onClick={() => void toggleTag(tag.id)}
+                onClick={() => {
+                  if (suppressNextClickTagIdRef.current === tag.id) {
+                    suppressNextClickTagIdRef.current = null;
+                    return;
+                  }
+                  void toggleTag(tag.id);
+                }}
+                onPointerDown={() => startLongPress(tag.id)}
+                onPointerUp={cancelLongPress}
+                onPointerLeave={cancelLongPress}
+                onPointerCancel={cancelLongPress}
+                onContextMenu={(event) => event.preventDefault()}
                 className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
                   selected
                     ? "border-primary-200 bg-primary-100 text-primary-800"
@@ -200,6 +242,7 @@ export default function TaskTagPickerDialog({ open, onOpenChange, task, onApplie
                     onClick={() => {
                       setEditingTagId(null);
                       setEditingTagName("");
+                      setLongPressTagId(null);
                     }}
                   >
                     {t("tasks.tags.cancel")}
@@ -214,18 +257,21 @@ export default function TaskTagPickerDialog({ open, onOpenChange, task, onApplie
                     onClick={() => {
                       setEditingTagId(tag.id);
                       setEditingTagName(tag.name);
+                      setLongPressTagId(tag.id);
                     }}
                   >
                     {t("tasks.tags.rename")}
                   </button>
-                  <button
-                    type="button"
-                    disabled={isBusy}
-                    className="text-xs font-medium text-rose-600 hover:text-rose-700"
-                    onClick={() => void handleDelete(tag.id)}
-                  >
-                    {t("tasks.tags.delete")}
-                  </button>
+                  {longPressTagId === tag.id ? (
+                    <button
+                      type="button"
+                      disabled={isBusy}
+                      className="text-xs font-medium text-rose-600 hover:text-rose-700"
+                      onClick={() => void handleDelete(tag.id)}
+                    >
+                      {t("tasks.tags.delete")}
+                    </button>
+                  ) : null}
                 </>
               )}
             </div>
