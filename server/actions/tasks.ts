@@ -100,15 +100,7 @@ export async function createTask(
     };
   }
 
-  const membership = await prisma.membership.findUnique({
-    where: {
-      parishId_userId: {
-        parishId,
-        userId
-      }
-    },
-    select: { role: true }
-  });
+  const membership = await getParishMembership(parishId, userId);
 
   if (!membership) {
     return {
@@ -581,15 +573,7 @@ export async function updateTask(
 
   const editContext = formData.get("editContext") === "my_commitments" ? "my_commitments" : "default";
 
-  const membership = await prisma.membership.findUnique({
-    where: {
-      parishId_userId: {
-        parishId,
-        userId
-      }
-    },
-    select: { role: true }
-  });
+  const membership = await getParishMembership(parishId, userId);
 
   if (!membership) {
     return {
@@ -675,15 +659,7 @@ export async function approveTask({ taskId }: { taskId: string }) {
     throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
   }
 
-  const membership = await prisma.membership.findUnique({
-    where: {
-      parishId_userId: {
-        parishId,
-        userId
-      }
-    },
-    select: { role: true }
-  });
+  const membership = await getParishMembership(parishId, userId);
 
   if (!membership || !isParishLeader(membership.role)) {
     throw new Error("Unauthorized");
@@ -747,15 +723,7 @@ export async function rejectTask({ taskId }: { taskId: string }) {
     throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
   }
 
-  const membership = await prisma.membership.findUnique({
-    where: {
-      parishId_userId: {
-        parishId,
-        userId
-      }
-    },
-    select: { role: true }
-  });
+  const membership = await getParishMembership(parishId, userId);
 
   if (!membership || !isParishLeader(membership.role)) {
     throw new Error("Unauthorized");
