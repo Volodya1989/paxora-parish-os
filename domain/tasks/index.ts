@@ -444,16 +444,18 @@ export async function markTaskDone({
     throw new Error("Add at least one participant before completing this task.");
   }
 
+  const isPrivateTask = taskDetails.visibility === "PRIVATE";
   const hoursMode = hours?.mode ?? "estimated";
+  const effectiveHoursMode = isPrivateTask ? "skip" : hoursMode;
   const hasParticipants = participants.size > 0;
   // A-016: log volunteer hours when tasks are completed.
-  const shouldLogHours = hoursMode !== "skip" && hasParticipants;
+  const shouldLogHours = effectiveHoursMode !== "skip" && hasParticipants;
   const estimatedHours = taskDetails.estimatedHours ?? 0;
   const volunteersNeeded = Math.max(1, taskDetails.volunteersNeeded);
   const manualHours = hours?.manualHours ?? null;
 
   const hoursPerParticipant =
-    hoursMode === "manual" && manualHours !== null
+    effectiveHoursMode === "manual" && manualHours !== null
       ? manualHours
       : shouldLogHours
         ? calculateEstimatedHoursPerParticipant({
@@ -463,7 +465,7 @@ export async function markTaskDone({
           })
         : null;
 
-  if (hoursMode === "manual" && manualHours === null) {
+  if (effectiveHoursMode === "manual" && manualHours === null) {
     throw new Error("Enter the hours served before completing this task.");
   }
 
@@ -492,7 +494,7 @@ export async function markTaskDone({
             update: {
               hours: hoursPerParticipant,
               estimatedHours: taskDetails.estimatedHours,
-              source: hoursMode === "manual" ? "MANUAL" : "ESTIMATED",
+              source: effectiveHoursMode === "manual" ? "MANUAL" : "ESTIMATED",
               groupId: taskDetails.groupId
             },
             create: {
@@ -503,7 +505,7 @@ export async function markTaskDone({
               groupId: taskDetails.groupId,
               estimatedHours: taskDetails.estimatedHours,
               hours: hoursPerParticipant,
-              source: hoursMode === "manual" ? "MANUAL" : "ESTIMATED"
+              source: effectiveHoursMode === "manual" ? "MANUAL" : "ESTIMATED"
             }
           })
         )

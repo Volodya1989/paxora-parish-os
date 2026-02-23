@@ -711,6 +711,51 @@ dbTest("tasks default due dates and allow assignment and status changes", async 
 });
 
 
+dbTest("private task completion does not create volunteer hour entries", async () => {
+  const parish = await prisma.parish.create({
+    data: { name: "St. Private", slug: "st-private" }
+  });
+  const member = await prisma.user.create({
+    data: {
+      email: "private-member@example.com",
+      name: "Private Member",
+      passwordHash: "hashed",
+      activeParishId: parish.id
+    }
+  });
+
+  await prisma.membership.create({ data: { parishId: parish.id, userId: member.id, role: "MEMBER" } });
+
+  const week = await getOrCreateCurrentWeek(parish.id);
+  const task = await createTask({
+    parishId: parish.id,
+    weekId: week.id,
+    ownerId: member.id,
+    createdById: member.id,
+    title: "Private task completion",
+    visibility: "PRIVATE",
+    approvalStatus: "APPROVED",
+    estimatedHours: 4
+  });
+
+  await markTaskDone({
+    taskId: task.id,
+    parishId: parish.id,
+    actorUserId: member.id,
+    hours: {
+      mode: "manual",
+      manualHours: 2
+    }
+  });
+
+  const completed = await prisma.task.findUnique({ where: { id: task.id } });
+  assert.equal(completed?.status, "DONE");
+
+  const hourEntries = await prisma.hoursEntry.findMany({ where: { taskId: task.id } });
+  assert.equal(hourEntries.length, 0);
+});
+
+
 dbTest("createTask assigns parish-scoped stable display IDs even during concurrent creates", async () => {
   const parish = await prisma.parish.create({ data: { name: "St. Paul", slug: "st-paul" } });
   const creator = await prisma.user.create({

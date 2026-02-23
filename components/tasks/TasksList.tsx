@@ -259,6 +259,29 @@ export default function TasksList({
   };
 
   const handleComplete = async (taskId: string) => {
+    const task = tasks.find((item) => item.id === taskId);
+    if (task?.visibility === "PRIVATE") {
+      await runTaskAction({
+        taskId,
+        type: "status",
+        movedToStatus: "DONE",
+        action: async () => {
+          await markTaskDone({ taskId, hoursMode: "skip" });
+          trackTaskCompleted({
+            taskId,
+            hoursMode: "skip",
+            hadManualHours: false
+          });
+          addToast({
+            title: "Completed",
+            description: "This task is now marked as complete.",
+            status: "success"
+          });
+        }
+      });
+      return;
+    }
+
     setCompleteTaskId(taskId);
   };
 
