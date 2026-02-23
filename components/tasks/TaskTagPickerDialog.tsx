@@ -63,6 +63,9 @@ export default function TaskTagPickerDialog({ open, onOpenChange, task, onApplie
         removeTagIds: isSelected ? [tagId] : []
       });
       onApplied();
+      if (!isSelected) {
+        onOpenChange(false);
+      }
     } catch {
       addToast({ title: t("tasks.tags.toasts.updateFailed"), status: "error" });
     } finally {
