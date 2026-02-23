@@ -1,7 +1,14 @@
 import { prisma } from "@/server/db/prisma";
 
+function buildVirtualImpersonationMembership(parishId: string, userId: string) {
+  return {
+    id: `virtual-impersonation:${parishId}:${userId}`,
+    role: "ADMIN" as const
+  };
+}
+
 export async function getParishMembership(parishId: string, userId: string) {
-  return prisma.membership.findUnique({
+  const membership = await prisma.membership.findUnique({
     where: {
       parishId_userId: {
         parishId,
@@ -13,6 +20,21 @@ export async function getParishMembership(parishId: string, userId: string) {
       role: true
     }
   });
+
+  if (membership) {
+    return membership;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { platformRole: true, impersonatedParishId: true }
+  });
+
+  if (user?.platformRole === "SUPERADMIN" && user.impersonatedParishId === parishId) {
+    return buildVirtualImpersonationMembership(parishId, userId);
+  }
+
+  return null;
 }
 
 export async function getGroupMembership(groupId: string, userId: string) {
