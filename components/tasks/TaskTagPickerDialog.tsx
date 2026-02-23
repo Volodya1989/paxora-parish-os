@@ -6,6 +6,7 @@ import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
 import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 import { useToast } from "@/components/ui/Toast";
+import { useTranslations } from "@/lib/i18n/provider";
 import type { TaskListItem } from "@/lib/queries/tasks";
 import {
   createUserTag,
@@ -23,6 +24,7 @@ type Props = {
 
 export default function TaskTagPickerDialog({ open, onOpenChange, task, onApplied }: Props) {
   const { addToast } = useToast();
+  const t = useTranslations();
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [tags, setTags] = useState<UserTagItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -38,10 +40,10 @@ export default function TaskTagPickerDialog({ open, onOpenChange, task, onApplie
     void listUserTags()
       .then((items) => setTags(items))
       .catch(() => {
-        addToast({ title: "Couldn't load tags", status: "error" });
+        addToast({ title: t("tasks.tags.toasts.loadFailed"), status: "error" });
       })
       .finally(() => setIsLoading(false));
-  }, [addToast, open]);
+  }, [addToast, open, t]);
 
   const selectedTagIds = new Set(task?.userTags.map((tag) => tag.id) ?? []);
 
@@ -57,7 +59,7 @@ export default function TaskTagPickerDialog({ open, onOpenChange, task, onApplie
       });
       onApplied();
     } catch (error) {
-      addToast({ title: "Couldn't update tags", status: "error" });
+      addToast({ title: t("tasks.tags.toasts.updateFailed"), status: "error" });
     } finally {
       setIsBusy(false);
     }
@@ -76,7 +78,7 @@ export default function TaskTagPickerDialog({ open, onOpenChange, task, onApplie
       setIsAdding(false);
       onApplied();
     } catch (error) {
-      addToast({ title: "Couldn't create tag", status: "error" });
+      addToast({ title: t("tasks.tags.toasts.createFailed"), status: "error" });
     } finally {
       setIsBusy(false);
     }
@@ -84,7 +86,7 @@ export default function TaskTagPickerDialog({ open, onOpenChange, task, onApplie
 
   const content = (
     <div className="space-y-3">
-      <p className="text-sm text-ink-600">Organize this private task with personal tags.</p>
+      <p className="text-sm text-ink-600">{t("tasks.tags.description")}</p>
       <div>
         {isAdding ? (
           <div className="flex gap-2">
@@ -97,10 +99,10 @@ export default function TaskTagPickerDialog({ open, onOpenChange, task, onApplie
                   void handleCreate();
                 }
               }}
-              placeholder="Tag name"
+              placeholder={t("tasks.tags.newPlaceholder")}
               className="h-9 flex-1 rounded-full border border-mist-200 px-3 text-sm"
             />
-            <Button type="button" size="sm" onClick={() => void handleCreate()} isLoading={isBusy}>Add</Button>
+            <Button type="button" size="sm" onClick={() => void handleCreate()} isLoading={isBusy}>{t("tasks.tags.add")}</Button>
           </div>
         ) : (
           <button
@@ -108,13 +110,13 @@ export default function TaskTagPickerDialog({ open, onOpenChange, task, onApplie
             className="rounded-full border border-dashed border-mist-300 px-3 py-1.5 text-xs font-semibold text-ink-600"
             onClick={() => setIsAdding(true)}
           >
-            + New tag
+            {t("tasks.tags.new")}
           </button>
         )}
       </div>
       <div className="flex flex-wrap gap-2">
-        {isLoading ? <p className="text-xs text-ink-500">Loading…</p> : null}
-        {!isLoading && tags.length === 0 ? <p className="text-xs text-ink-500">No tags yet.</p> : null}
+        {isLoading ? <p className="text-xs text-ink-500">{t("tasks.tags.loading")}</p> : null}
+        {!isLoading && tags.length === 0 ? <p className="text-xs text-ink-500">{t("tasks.tags.empty")}</p> : null}
         {tags.map((tag) => {
           const selected = selectedTagIds.has(tag.id);
           return (
@@ -139,14 +141,14 @@ export default function TaskTagPickerDialog({ open, onOpenChange, task, onApplie
 
   if (isDesktop) {
     return (
-      <Modal open={open} onClose={() => onOpenChange(false)} title="Task tags">
+      <Modal open={open} onClose={() => onOpenChange(false)} title={t("tasks.tags.title")}>
         {content}
       </Modal>
     );
   }
 
   return (
-    <Drawer open={open} onClose={() => onOpenChange(false)} title="Task tags">
+    <Drawer open={open} onClose={() => onOpenChange(false)} title={t("tasks.tags.title")}>
       {content}
     </Drawer>
   );

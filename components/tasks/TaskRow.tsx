@@ -5,7 +5,7 @@ import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@/components/ui/Dropdown";
 import { cn } from "@/lib/ui/cn";
-import { ListChecksIcon } from "@/components/icons/ParishIcons";
+import { ListChecksIcon, TagIcon } from "@/components/icons/ParishIcons";
 import type { TaskListItem } from "@/lib/queries/tasks";
 import { useTranslations } from "@/lib/i18n/provider";
 import { getTaskGroupBadgeClass, truncateGroupBadgeLabel } from "@/lib/tasks/groupBadge";
@@ -275,7 +275,7 @@ export default function TaskRow({
                         onEditTags(task);
                       }}
                     >
-                      Edit tags
+                      {t("tasks.tags.edit")}
                     </DropdownItem>
                   ) : null}
                   <DropdownItem
@@ -348,9 +348,10 @@ export default function TaskRow({
                       event.stopPropagation();
                       onEditTags(task);
                     }}
+                    aria-label={t("tasks.tags.openPicker")}
                     className="inline-flex min-h-[34px] items-center rounded-full border border-mist-200 px-2 py-1 text-xs font-medium text-ink-600 transition hover:bg-mist-50"
                   >
-                    #
+                    <TagIcon className="h-3.5 w-3.5" />
                   </button>
                 ) : null}
 

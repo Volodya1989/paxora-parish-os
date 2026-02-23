@@ -190,6 +190,15 @@ export function TrashIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+
+export function TagIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M20 13l-7 7L3 10V4h6l11 9z" />
+      <circle cx="7.5" cy="7.5" r="1" fill="currentColor" />
+    </svg>
+  );
+}
 export function PlusIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" {...props}>

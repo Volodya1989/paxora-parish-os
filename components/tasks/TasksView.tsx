@@ -389,8 +389,8 @@ export default function TasksView({
       {showPrivateTagChips ? (
         <div className="flex flex-wrap gap-2">
           {[
-            { id: "all", label: "All" },
-            { id: "untagged", label: "Untagged" },
+            { id: "all", label: t("tasks.tags.filters.all") },
+            { id: "untagged", label: t("tasks.tags.filters.untagged") },
             ...userTags.map((tag) => ({ id: tag.id, label: tag.name }))
           ].map((chip) => (
             <button

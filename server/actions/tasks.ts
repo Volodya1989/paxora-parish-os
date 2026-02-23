@@ -107,7 +107,7 @@ async function assertPrivateTaskOwner({
     throw new Error("Only private tasks support personal tags.");
   }
 
-  if (task.ownerId !== userId && task.createdById !== userId) {
+  if (task.ownerId !== userId) {
     throw new Error("Forbidden");
   }
 

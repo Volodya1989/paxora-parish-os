@@ -367,6 +367,26 @@
       "short": "Personal commitments — visible only to you.",
       "detail": "Use My commitments for your private service tasks. To volunteer for parish-wide needs, switch to Help needed.",
       "infoLabel": "What is My commitments?"
+    },
+    "tags": {
+      "title": "Task tags",
+      "description": "Organize this private task with personal tags.",
+      "new": "+ New tag",
+      "newPlaceholder": "Tag name",
+      "add": "Add",
+      "loading": "Loading…",
+      "empty": "No tags yet.",
+      "edit": "Edit tags",
+      "openPicker": "Open tag picker",
+      "filters": {
+        "all": "All",
+        "untagged": "Untagged"
+      },
+      "toasts": {
+        "loadFailed": "Could not load tags",
+        "updateFailed": "Could not update tags",
+        "createFailed": "Could not create tag"
+      }
     }
   },
   "groups": {

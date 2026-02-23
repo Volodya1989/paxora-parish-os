@@ -97,10 +97,10 @@ test("TaskRow shows private and group badges without expanding", () => {
   assert.match(markup, />Private</);
   assert.match(markup, /LongGroupN…/);
   assert.match(markup, /title="LongGroupNameExample"/);
-  assert.match(markup, />#</);
+  assert.match(markup, /aria-label="Open tag picker"/);
 });
 
 test("TaskRow hides tag action for public tasks", () => {
   const markup = renderTask(baseTask);
-  assert.doesNotMatch(markup, />#</);
+  assert.doesNotMatch(markup, /aria-label="Open tag picker"/);
 });
