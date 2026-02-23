@@ -6,6 +6,7 @@ import TaskEditDialog from "@/components/tasks/TaskEditDialog";
 import TaskDetailDialog from "@/components/tasks/TaskDetailDialog";
 import TaskCompletionDialog from "@/components/tasks/TaskCompletionDialog";
 import TaskRow from "@/components/tasks/TaskRow";
+import TaskTagPickerDialog from "@/components/tasks/TaskTagPickerDialog";
 import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
@@ -50,6 +51,7 @@ export default function TasksList({
   const [editingTask, setEditingTask] = useState<TaskListItem | null>(null);
   const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
   const [deleteTaskTarget, setDeleteTaskTarget] = useState<TaskListItem | null>(null);
+  const [tagTask, setTagTask] = useState<TaskListItem | null>(null);
   const [completeTaskId, setCompleteTaskId] = useState<string | null>(null);
   const [showCompleted, setShowCompleted] = useState(false);
   const [lastMovedTaskId, setLastMovedTaskId] = useState<string | null>(null);
@@ -373,6 +375,7 @@ export default function TasksList({
                 onArchive={handleArchive}
                 onEdit={handleEdit}
                 onDelete={handleDeleteRequest}
+                onEditTags={setTagTask}
                 currentUserId={currentUserId}
                 isBusy={pendingTaskId === task.id}
                 isStatusUpdating={pendingTaskId === task.id && pendingAction?.type === "status"}
@@ -408,6 +411,7 @@ export default function TasksList({
                 onArchive={handleArchive}
                 onEdit={handleEdit}
                 onDelete={handleDeleteRequest}
+                onEditTags={setTagTask}
                 currentUserId={currentUserId}
                 isBusy={pendingTaskId === task.id}
                 isStatusUpdating={pendingTaskId === task.id && pendingAction?.type === "status"}
@@ -445,6 +449,7 @@ export default function TasksList({
                   onArchive={handleArchive}
                   onEdit={handleEdit}
                   onDelete={handleDeleteRequest}
+                  onEditTags={setTagTask}
                   currentUserId={currentUserId}
                   isBusy={pendingTaskId === task.id}
                   isStatusUpdating={pendingTaskId === task.id && pendingAction?.type === "status"}
@@ -494,6 +499,16 @@ export default function TasksList({
           }
         }}
         onConfirm={handleConfirmComplete}
+      />
+      <TaskTagPickerDialog
+        open={Boolean(tagTask)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setTagTask(null);
+          }
+        }}
+        task={tagTask}
+        onApplied={refreshList}
       />
       </div>
       <Modal

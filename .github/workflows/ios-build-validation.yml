@@ -1,5 +1,7 @@
 name: iOS Build Validation
 
+# Temporarily disabled while iOS lane is paused; set IOS_BUILD_VALIDATION_ENABLED=true to re-enable.
+
 on:
   pull_request:
   push:
@@ -7,8 +9,12 @@ on:
       - main
   workflow_dispatch:
 
+env:
+  IOS_BUILD_VALIDATION_ENABLED: "false"
+
 jobs:
   ios-build-validation:
+    if: ${{ env.IOS_BUILD_VALIDATION_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
