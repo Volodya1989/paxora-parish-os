@@ -1,20 +1,25 @@
 import type { AccessGateStatus } from "@/lib/queries/access";
+import { getTranslations } from "@/lib/i18n/server";
+import type { Locale } from "@/lib/i18n/config";
 
 type AccessGateContentProps = {
   status: AccessGateStatus;
   parishName?: string | null;
+  locale: Locale;
 };
 
-export default function AccessGateContent({ status, parishName }: AccessGateContentProps) {
-  const parishLabel = parishName ? `at ${parishName}` : "for this parish";
+export default function AccessGateContent({ status, parishName, locale }: AccessGateContentProps) {
+  const t = getTranslations(locale);
+  const parishLabel = parishName
+    ? t("accessGate.parishLabelNamed").replace("{parish}", parishName)
+    : t("accessGate.parishLabelFallback");
 
   if (status === "approved") {
     return (
       <div className="space-y-2">
-        <h2 className="text-h2">Access granted</h2>
-        <p className="text-sm text-ink-500">
-          You&apos;re approved {parishLabel}. Continue to the workspace to start this week.
-        </p>
+        <h2 className="text-h2">{t("accessGate.approved.title")}</h2>
+        <p className="text-sm text-ink-500">{t("accessGate.approved.nextAction")}</p>
+        <p className="text-xs text-ink-400">{t("accessGate.approved.whatNext")}</p>
       </div>
     );
   }
@@ -22,11 +27,19 @@ export default function AccessGateContent({ status, parishName }: AccessGateCont
   if (status === "pending") {
     return (
       <div className="space-y-2">
-        <h2 className="text-h2">Access pending</h2>
-        <p className="text-sm text-ink-500">
-          Your request is in review. A parish leader will approve or decline it and we&apos;ll email
-          you as soon as status changes.
-        </p>
+        <h2 className="text-h2">{t("accessGate.pending.title")}</h2>
+        <p className="text-sm text-ink-500">{t("accessGate.pending.nextAction")}</p>
+        <p className="text-xs text-ink-400">{t("accessGate.pending.whatNext")}</p>
+      </div>
+    );
+  }
+
+  if (status === "rejected") {
+    return (
+      <div className="space-y-2">
+        <h2 className="text-h2">{t("accessGate.rejected.title")}</h2>
+        <p className="text-sm text-ink-500">{t("accessGate.rejected.nextAction")}</p>
+        <p className="text-xs text-ink-400">{t("accessGate.rejected.whatNext")}</p>
       </div>
     );
   }
@@ -34,21 +47,22 @@ export default function AccessGateContent({ status, parishName }: AccessGateCont
   if (status === "unverified") {
     return (
       <div className="space-y-2">
-        <h2 className="text-h2">Verify your email</h2>
+        <h2 className="text-h2">{t("accessGate.unverified.title")}</h2>
         <p className="text-sm text-ink-500">
-          Confirm your email address before requesting access {parishLabel}. You can resend the
-          verification email below.
+          {t("accessGate.unverified.nextAction").replace("{parishLabel}", parishLabel)}
         </p>
+        <p className="text-xs text-ink-400">{t("accessGate.unverified.whatNext")}</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-2">
-      <h2 className="text-h2">Enter Parish Code</h2>
+      <h2 className="text-h2">{t("accessGate.none.title")}</h2>
       <p className="text-sm text-ink-500">
-        Enter your parish code to join the correct parish workspace {parishLabel}.
+        {t("accessGate.none.nextAction").replace("{parishLabel}", parishLabel)}
       </p>
+      <p className="text-xs text-ink-400">{t("accessGate.none.whatNext")}</p>
     </div>
   );
 }

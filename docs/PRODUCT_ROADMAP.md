@@ -313,7 +313,7 @@ Currently `/` redirects to `/this-week` for authenticated users (`app/[locale]/(
 ### Week 2: Notification + Onboarding Polish
 
 - [ ] H1-4: Notification read/unread normalization
-- [ ] H1-6: Onboarding copy + CTA sequencing
+- [x] H1-6: Onboarding copy + CTA sequencing
 - [ ] H1-7: Serve vs Tasks nav clarity
 - [ ] H1-10: Request visibility role-matrix verification
 - **Milestone:** Pilot-ready onboarding and reliable notifications
@@ -321,7 +321,7 @@ Currently `/` redirects to `/this-week` for authenticated users (`app/[locale]/(
 ### Week 3: UX Polish + Destructive Action Safety
 
 - [ ] H1-8: Confirmation modals for destructive actions
-- [ ] H2-2: i18n hardcoded English sweep (start)
+- [x] H2-2: i18n hardcoded English sweep (start)
 - [ ] H2-4: Membership transaction safety
 - [ ] H2-3: Consolidate duplicate membership logic
 - **Milestone:** No data-loss UX risks; i18n sweep underway
@@ -346,7 +346,7 @@ Currently `/` redirects to `/this-week` for authenticated users (`app/[locale]/(
 - [ ] H2-5: Chat search
 - [ ] H2-6: Improved admin invite flow
 - [ ] H2-9: Accessibility pass
-- [ ] H2-2: i18n sweep completion
+- [x] H2-2: i18n sweep completion
 - **Milestone:** Adoption-ready for second wave of pilot parishes
 
 ### Weeks 7-12: Scale and Monetize

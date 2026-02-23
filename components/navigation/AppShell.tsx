@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useEffect, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import MobileTabs from "@/components/navigation/MobileTabs";
+import AnalyticsProvider from "@/components/analytics/AnalyticsProvider";
 import Sidebar from "@/components/navigation/Sidebar";
 import NotificationProvider from "@/components/notifications/NotificationProvider";
 import { ToastProvider, ToastViewport, useToast } from "@/components/ui/Toast";
@@ -20,30 +21,34 @@ type AppShellProps = {
     parishId: string;
     parishName: string | null;
   } | null;
+  parishId?: string | null;
+  locale: string;
 };
 
-export function AppShell({ children, parishRole, platformRole, impersonation }: AppShellProps) {
+export function AppShell({ children, parishRole, platformRole, impersonation, parishId, locale }: AppShellProps) {
   const pathname = usePathname();
 
   return (
-    <ToastProvider>
-      <NotificationProvider>
-        <PushRegistration />
-        <EngagementPrompts />
-        <InviteToastListener />
-        <div className="flex min-h-screen w-full overflow-x-clip">
-          <Sidebar currentPath={pathname} parishRole={parishRole} platformRole={platformRole} />
-          <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-            {impersonation ? (
-              <ImpersonationBanner parishName={impersonation.parishName} />
-            ) : null}
-            {children}
-            <MobileTabs currentPath={pathname} parishRole={parishRole} platformRole={platformRole} />
+    <AnalyticsProvider parishId={parishId} role={parishRole} locale={locale}>
+      <ToastProvider>
+        <NotificationProvider>
+          <PushRegistration />
+          <EngagementPrompts />
+          <InviteToastListener />
+          <div className="flex min-h-screen w-full overflow-x-clip">
+            <Sidebar currentPath={pathname} parishRole={parishRole} platformRole={platformRole} />
+            <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+              {impersonation ? (
+                <ImpersonationBanner parishName={impersonation.parishName} />
+              ) : null}
+              {children}
+              <MobileTabs currentPath={pathname} parishRole={parishRole} platformRole={platformRole} />
+            </div>
           </div>
-        </div>
-        <ToastViewport />
-      </NotificationProvider>
-    </ToastProvider>
+          <ToastViewport />
+        </NotificationProvider>
+      </ToastProvider>
+    </AnalyticsProvider>
   );
 }
 

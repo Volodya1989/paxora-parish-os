@@ -118,10 +118,10 @@ export default function GroupsView({
       pendingGroups.map((group) => ({
         id: group.id,
         title: group.name,
-        description: group.description ?? "No description provided.",
-        meta: `Requested by ${group.createdBy?.name ?? group.createdBy?.email ?? "Parishioner"}`
+        description: group.description ?? t("groups.noDescription"),
+        meta: t("groups.requestedBy").replace("{name}", group.createdBy?.name ?? group.createdBy?.email ?? t("groups.parishionerFallback"))
       })),
-    [pendingGroups]
+    [pendingGroups, t]
   );
 
   const myInvites = useMemo(
@@ -161,8 +161,8 @@ export default function GroupsView({
       await action();
     } catch (error) {
       addToast({
-        title: "Update failed",
-        description: "We couldn't update that group. Please try again.",
+        title: t("groups.updateFailedTitle"),
+        description: t("groups.updateFailedDescription"),
         status: "error"
       });
     } finally {
@@ -174,7 +174,7 @@ export default function GroupsView({
   const handleArchive = async (groupId: string) => {
     if (!canManageGroups) {
       addToast({
-        title: "Not enough access",
+        title: t("groups.notEnoughAccessTitle"),
         description: t("groups.limitedAccessMessage"),
         status: "warning"
       });
@@ -184,10 +184,10 @@ export default function GroupsView({
     await runGroupAction(groupId, async () => {
       await archiveGroup({ parishId, actorUserId, groupId });
       addToast({
-        title: "Group archived",
-        description: "This group is tucked away but can be restored.",
+        title: t("groups.groupArchivedTitle"),
+        description: t("groups.groupArchivedDescription"),
         status: "success",
-        actionLabel: "Undo",
+        actionLabel: t("groups.undo"),
         onAction: () => {
           void runGroupAction(groupId, async () => {
             await restoreGroup({ parishId, actorUserId, groupId });
@@ -200,7 +200,7 @@ export default function GroupsView({
   const handleRestore = async (groupId: string) => {
     if (!canManageGroups) {
       addToast({
-        title: "Not enough access",
+        title: t("groups.notEnoughAccessTitle"),
         description: t("groups.limitedAccessMessage"),
         status: "warning"
       });
@@ -210,8 +210,8 @@ export default function GroupsView({
     await runGroupAction(groupId, async () => {
       await restoreGroup({ parishId, actorUserId, groupId });
       addToast({
-        title: "Group restored",
-        description: "This group is back in the active list.",
+        title: t("groups.groupRestoredTitle"),
+        description: t("groups.groupRestoredDescription"),
         status: "success"
       });
     });
@@ -220,7 +220,7 @@ export default function GroupsView({
   const handleDeleteRequest = (groupId: string) => {
     if (!canManageGroups) {
       addToast({
-        title: "Not enough access",
+        title: t("groups.notEnoughAccessTitle"),
         description: t("groups.limitedAccessMessage"),
         status: "warning"
       });
@@ -237,8 +237,8 @@ export default function GroupsView({
     await runGroupAction(groupId, async () => {
       await deleteGroup({ parishId, actorUserId, groupId });
       addToast({
-        title: "Group deleted",
-        description: "The group and its memberships have been permanently removed.",
+        title: t("groups.groupDeletedTitle"),
+        description: t("groups.groupDeletedDescription"),
         status: "success"
       });
     });
@@ -247,7 +247,7 @@ export default function GroupsView({
   const handleEdit = (groupId: string) => {
     if (!canManageGroups) {
       addToast({
-        title: "Not enough access",
+        title: t("groups.notEnoughAccessTitle"),
         description: t("groups.limitedAccessMessage"),
         status: "warning"
       });
@@ -295,8 +295,8 @@ export default function GroupsView({
     const result = await action();
     if (result.status === "error") {
       addToast({
-        title: "Update failed",
-        description: result.message || "Please try again.",
+        title: t("groups.updateFailedTitle"),
+        description: result.message || t("groups.tryAgain"),
         status: "error"
       });
       setPendingGroupId(null);
@@ -503,7 +503,7 @@ export default function GroupsView({
           <>
             <section className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-ink-500">Your groups</h2>
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-ink-500">{t("groups.yourGroupsTitle")}</h2>
                 <span className="text-xs text-ink-400">{joinedGroups.length}</span>
               </div>
 
@@ -612,7 +612,7 @@ export default function GroupsView({
 
             {discoverGroups.length > 0 ? (
               <section className="space-y-3">
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-ink-500">Groups you can join</h2>
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-ink-500">{t("groups.discoverTitle")}</h2>
                 <div className="space-y-2">
                   {discoverGroups.map((group) => {
                     const status = optimisticMembershipStatus[group.id] ?? group.viewerMembershipStatus;
@@ -635,7 +635,7 @@ export default function GroupsView({
                         void handleMemberResult(
                           group.id,
                           () => requestToJoin({ groupId: group.id }),
-                          "Request sent",
+                          t("groups.requestSent"),
                           "REQUESTED"
                         );
                         return;
@@ -645,7 +645,7 @@ export default function GroupsView({
                         void handleMemberResult(
                           group.id,
                           () => joinGroup({ groupId: group.id }),
-                          "Joined",
+                          t("groups.joined"),
                           "ACTIVE"
                         );
                       }
@@ -696,7 +696,7 @@ export default function GroupsView({
                                 void handleMemberResult(
                                   group.id,
                                   () => joinGroup({ groupId: group.id }),
-                                  "Joined",
+                                  t("groups.joined"),
                                   "ACTIVE"
                                 )
                               }
@@ -714,7 +714,7 @@ export default function GroupsView({
                                 void handleMemberResult(
                                   group.id,
                                   () => requestToJoin({ groupId: group.id }),
-                                  "Request sent",
+                                  t("groups.requestSent"),
                                   "REQUESTED"
                                 )
                               }
@@ -755,35 +755,35 @@ export default function GroupsView({
                   void handleMemberResult(
                     group.id,
                     () => joinGroup({ groupId: group.id }),
-                    "Joined"
+                    t("groups.joined")
                   )
                 }
                 onRequestJoin={() =>
                   void handleMemberResult(
                     group.id,
                     () => requestToJoin({ groupId: group.id }),
-                    "Request sent"
+                    t("groups.requestSent")
                   )
                 }
                 onLeave={() =>
                   void handleMemberResult(
                     group.id,
                     () => leaveGroup({ groupId: group.id }),
-                    "Left group"
+                    t("groups.leftGroup")
                   )
                 }
                 onAcceptInvite={() =>
                   void handleMemberResult(
                     group.id,
                     () => acceptInvite({ groupId: group.id }),
-                    "Invite accepted"
+                    t("groups.inviteAccepted")
                   )
                 }
                 onDeclineInvite={() =>
                   void handleMemberResult(
                     group.id,
                     () => declineInvite({ groupId: group.id }),
-                    "Invite declined"
+                    t("groups.inviteDeclined")
                   )
                 }
                 isBusy={pendingGroupId === group.id}
@@ -869,30 +869,29 @@ export default function GroupsView({
           ? groups.find((g) => g.id === deletingGroupId)
           : null;
         const dialogOpen = Boolean(deletingGroup);
-        const dialogTitle = "Delete group permanently";
+        const dialogTitle = t("groups.deleteDialogTitle");
         const dialogBody = (
           <div className="space-y-3">
             <p>
-              Are you sure you want to permanently delete{" "}
+              {t("groups.deleteDialogQuestion")} {" "}
               <span className="font-semibold">{deletingGroup?.name}</span>?
             </p>
             <p>
-              This will remove all memberships and chat history. Tasks, events, and
-              volunteer hours will be preserved but unlinked from this group.
+              {t("groups.deleteDialogDetails")}
             </p>
-            <p className="font-medium text-rose-600">This action cannot be undone.</p>
+            <p className="font-medium text-rose-600">{t("confirm.cannotUndo")}</p>
           </div>
         );
         const dialogFooter = (
           <>
             <Button variant="secondary" onClick={() => setDeletingGroupId(null)}>
-              Cancel
+              {t("buttons.cancel")}
             </Button>
             <Button
               variant="danger"
               onClick={() => void handleDeleteConfirm()}
             >
-              Delete permanently
+              {t("groups.deleteDialogConfirm")}
             </Button>
           </>
         );

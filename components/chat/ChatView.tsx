@@ -36,6 +36,7 @@ import ReportContentDialog from "@/components/moderation/ReportContentDialog";
 import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 import { useTranslations } from "@/lib/i18n/provider";
 import { useChatFontSize } from "@/lib/chat/useChatFontSize";
+import { trackChatMessageSent } from "@/lib/analytics-events";
 
 function sortMessages(items: ChatMessage[]) {
   return [...items].sort((a, b) => {
@@ -433,6 +434,12 @@ export default function ChatView({
 
       const attachments = await uploadAttachments(files);
       const created = await postMessage(channel.id, body, { attachments, mentionEntities });
+      trackChatMessageSent({
+        channelId: channel.id,
+        hasAttachments: attachments.length > 0,
+        isReply: false,
+        mentionCount: mentionEntities.length
+      });
       justSentRef.current = true;
       setMessages((prev) => {
         const next = [...prev, parseMessage(created)];
@@ -481,6 +488,12 @@ export default function ChatView({
         parentMessageId: threadRoot.id,
         attachments,
         mentionEntities
+      });
+      trackChatMessageSent({
+        channelId: channel.id,
+        hasAttachments: attachments.length > 0,
+        isReply: true,
+        mentionCount: mentionEntities.length
       });
       setMessages((prev) => {
         const next = [...prev, parseMessage(created)];

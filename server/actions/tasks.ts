@@ -42,6 +42,7 @@ import {
 } from "@/lib/validation/tasks";
 import type { TaskActionState } from "@/server/actions/taskState";
 import { prisma } from "@/server/db/prisma";
+import { getParishMembership } from "@/server/db/groups";
 import { getTaskDetail as getTaskDetailQuery } from "@/lib/queries/tasks";
 import { extractMentionedUserIds, mentionSnippet, normalizeMentionEntities } from "@/lib/mentions";
 import { listMentionableUsersForTask } from "@/lib/mentions/permissions";
@@ -835,7 +836,14 @@ export async function deferTask(formData: FormData) {
 
 export async function rolloverTasksForWeek(formData: FormData) {
   const session = await getServerSession(authOptions);
-  const { parishId } = assertSession(session);
+  const { userId, parishId } = assertSession(session);
+
+  const parishMembership = await getParishMembership(parishId, userId);
+  const isLeader = parishMembership ? isParishLeader(parishMembership.role) : false;
+
+  if (!isLeader) {
+    throw new Error("Only parish leaders can roll over tasks.");
+  }
 
   const parsed = rolloverTasksSchema.safeParse({
     fromWeekId: formData.get("fromWeekId"),

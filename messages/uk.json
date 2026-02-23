@@ -14,6 +14,7 @@
     "signOut": "Вийти",
     "reliability": "Надійність",
     "reports": "Скарги",
+    "statistics": "Статистика",
     "community": "Спільнота",
     "events": "Події"
   },
@@ -152,7 +153,8 @@
     "emptyScheduleDesc": "Нові служби та події з'являться тут після додавання.",
     "calendarView": "Календар",
     "scheduleView": "Розклад",
-    "viewToggleLabel": "Перемикання між календарем і розкладом"
+    "viewToggleLabel": "Перемикання між календарем і розкладом",
+    "today": "Сьогодні"
   },
   "parish": {
     "title": "Парафія",
@@ -376,7 +378,7 @@
     "suggestGroup": "Запропонувати групу",
     "memberSingular": "учасник",
     "memberPlural": "учасники",
-    "joined": "У групі",
+    "joined": "Приєднано",
     "invited": "Запрошено",
     "requestPending": "Запит очікує",
     "accept": "Прийняти",
@@ -395,7 +397,7 @@
     "joinGroupAria": "Долучитися до {name}",
     "requestJoinAria": "Подати запит на вступ до {name}",
     "leave": "Покинути групу",
-    "leftGroup": "Ви покинули групу",
+    "leftGroup": "Ви вийшли з групи",
     "edit": "Редагувати",
     "archive": "Архівувати",
     "viewDetails": "Деталі",
@@ -436,7 +438,33 @@
       "membersTab": "Учасники ({count})",
       "pendingTab": "Очікують ({count})",
       "emptyMembers": "Додайте парафіян, щоб сформувати спокійну та злагоджену команду."
-    }
+    },
+    "noDescription": "Опис відсутній.",
+    "requestedBy": "Запит від {name}",
+    "parishionerFallback": "Парафіянин",
+    "updateFailedTitle": "Не вдалося оновити",
+    "updateFailedDescription": "Не вдалося оновити цю групу. Спробуйте ще раз.",
+    "notEnoughAccessTitle": "Недостатньо прав",
+    "groupArchivedTitle": "Групу архівовано",
+    "groupArchivedDescription": "Групу приховано, але її можна відновити.",
+    "undo": "Скасувати",
+    "groupRestoredTitle": "Групу відновлено",
+    "groupRestoredDescription": "Група знову у списку активних.",
+    "groupDeletedTitle": "Групу видалено",
+    "groupDeletedDescription": "Групу та всі її членства видалено назавжди.",
+    "tryAgain": "Спробуйте ще раз.",
+    "deleteDialogTitle": "Видалити групу назавжди",
+    "deleteDialogQuestion": "Ви впевнені, що хочете назавжди видалити",
+    "deleteDialogDetails": "Буде видалено всі членства та історію чату. Завдання, події й години волонтерства збережуться, але без прив’язки до цієї групи.",
+    "deleteDialogConfirm": "Видалити назавжди",
+    "discoverTitle": "Групи, до яких можна приєднатися",
+    "yourGroupsTitle": "Ваші групи",
+    "requestSent": "Запит надіслано",
+    "archived": "Архівовано",
+    "pending": "Очікує",
+    "notApproved": "Не схвалено",
+    "restore": "Відновити",
+    "deletePermanently": "Видалити назавжди"
   },
   "chat": {
     "noChannelsTitle": "Канали недоступні",
@@ -730,7 +758,32 @@
     "addComment": "Додати коментар",
     "activity": "Активність",
     "activityHint": "Нещодавні зміни та оновлення.",
-    "noActivity": "Поки що немає активності."
+    "noActivity": "Поки що немає активності.",
+    "leadLabel": "Відповідальний:",
+    "unassigned": "Не призначено",
+    "dueDateLabel": "Дата виконання:",
+    "dueDateTbd": "Невідомо",
+    "leaveVolunteer": "Вийти",
+    "volunteerAction": "Долучитися",
+    "volunteerClosed": "Закрито",
+    "removeVolunteer": "Видалити",
+    "mentionLabel": "Згадати",
+    "refreshing": "Оновлення деталей…",
+    "toasts": {
+      "loadFailed": "Не вдалося завантажити деталі",
+      "updateFailed": "Оновлення не вдалося",
+      "commentAdded": "Коментар додано",
+      "mentionTargetMissing": "Згаданий запис більше не існує",
+      "idCopied": "ID завдання скопійовано",
+      "idCopyFailed": "Не вдалося скопіювати ID завдання",
+      "movedToInProgress": "Переведено у процес",
+      "markedComplete": "Позначено як виконане",
+      "reopenedTask": "Завдання відкрито знову",
+      "assignedToYou": "Призначено вам",
+      "leftVolunteerList": "Ви вийшли зі списку волонтерів",
+      "addedToVolunteers": "Додано до волонтерів",
+      "volunteerRemoved": "Волонтера видалено"
+    }
   },
   "emptyStates": {
     "noMatches": "Нічого не знайдено",
@@ -854,7 +907,14 @@
     "groupVisibilityHint": "Групові події бачать лише учасники вибраного служіння.",
     "group": "Група",
     "selectGroup": "Оберіть групу",
-    "noGroups": "Немає доступних груп"
+    "noGroups": "Немає доступних груп",
+    "weekdayMon": "Пн",
+    "weekdayTue": "Вт",
+    "weekdayWed": "Ср",
+    "weekdayThu": "Чт",
+    "weekdayFri": "Пт",
+    "weekdaySat": "Сб",
+    "weekdaySun": "Нд"
   },
   "marketing": {
     "brandTagline": "People-serving, shepherd-anchored",
@@ -974,5 +1034,172 @@
     "reportUpdated": "Скаргу оновлено",
     "reportUpdateFailed": "Оновлення не вдалося",
     "reportUpdateFailedDescription": "Не вдалося оновити цю скаргу."
+  },
+  "accessPage": {
+    "title": "Доступ до парафії",
+    "subtitle": "Спокійний крок онбордингу перед входом до робочого простору.",
+    "unverified": {
+      "verifySent": "Перевірте пошту — ми надіслали посилання для підтвердження.",
+      "resendCta": "Надіслати лист підтвердження ще раз"
+    },
+    "none": {
+      "codeLabel": "Код парафії",
+      "codePlaceholder": "Введіть код парафії",
+      "joinCta": "Приєднатися до парафії",
+      "invalidCode": "Неправильний код парафії. Спробуйте ще раз.",
+      "alreadyMember": "Ви вже є учасником цієї парафії."
+    },
+    "pending": {
+      "ctaLabel": "Ми повідомимо вас електронною поштою.",
+      "whatNext": "Можете закрити вкладку й повернутися після схвалення доступу лідером.",
+      "refreshCta": "Оновити статус"
+    }
+  },
+  "accessGate": {
+    "parishLabelNamed": "у парафії {parish}",
+    "parishLabelFallback": "для цієї парафії",
+    "approved": {
+      "title": "Доступ надано",
+      "nextAction": "Усе готово — переходьте до робочого простору.",
+      "whatNext": "Далі вас буде перенаправлено на головну сторінку парафії."
+    },
+    "pending": {
+      "title": "Доступ очікує схвалення",
+      "nextAction": "Зачекайте, поки лідер парафії розгляне запит.",
+      "whatNext": "Щойно статус зміниться, ви отримаєте листа."
+    },
+    "rejected": {
+      "title": "Запит на доступ відхилено",
+      "nextAction": "Ваш запит на приєднання до цієї парафії не схвалено.",
+      "whatNext": "Якщо це помилка, зверніться безпосередньо до канцелярії парафії або спробуйте приєднатися за кодом парафії."
+    },
+    "unverified": {
+      "title": "Підтвердьте email",
+      "nextAction": "Підтвердьте email перед запитом доступу {parishLabel}.",
+      "whatNext": "Після підтвердження поверніться сюди та продовжте онбординг."
+    },
+    "none": {
+      "title": "Введіть код парафії",
+      "nextAction": "Введіть код парафії, щоб приєднатися до правильного простору {parishLabel}.",
+      "whatNext": "Після надсилання запит перегляне керівництво парафії."
+    }
+  },
+  "eventDelete": {
+    "toastTitle": "Подію видалено",
+    "toastDescription": "Подію прибрано з календаря."
+  },
+  "eventCreateDialog": {
+    "title": "Нова подія",
+    "description": "Додайте службу або парафіяльну зустріч до спільного розкладу.",
+    "successTitle": "Подію заплановано",
+    "successDescription": "Служба тепер у календарі.",
+    "submitLabel": "Зберегти подію"
+  },
+  "eventEditForm": {
+    "successTitle": "Подію оновлено",
+    "successDescription": "Ваші зміни збережено в календарі.",
+    "submitLabel": "Зберегти зміни"
+  },
+  "taskEdit": {
+    "dialogTitle": "Редагувати завдання",
+    "dialogDescription": "Оновіть деталі, щоб команда була в курсі.",
+    "toastUpdatedTitle": "Завдання оновлено",
+    "toastUpdatedDescription": "Ваші зміни збережено.",
+    "title": "Назва",
+    "titlePlaceholder": "Оновіть назву завдання",
+    "notesOptional": "Нотатки (необов'язково)",
+    "notesPlaceholder": "Оновіть деталі, контекст або посилання.",
+    "estimatedHours": "Орієнтовні години (необов'язково)",
+    "estimatedHoursPlaceholder": "напр. 2",
+    "dueDate": "Кінцевий термін",
+    "privateHint": "Лише приватне зобов'язання.",
+    "visibility": "Видимість",
+    "visibilityPublic": "Публічне (для парафії)",
+    "visibilityPrivate": "Приватне (лише для вас)",
+    "visibilityPublicHint": "Публічні завдання від учасників потребують схвалення перед показом.",
+    "volunteersNeeded": "Потрібно волонтерів",
+    "volunteersHint": "Встановіть більше 1, щоб дозволити кільком волонтерам приєднатися.",
+    "group": "Група",
+    "noGroup": "Без групи",
+    "leadOptional": "Лідер (необов'язково)",
+    "assigneeOptional": "Виконавець (необов'язково)",
+    "youSuffix": "(Ви)",
+    "saveChanges": "Зберегти зміни"
+  },
+  "taskCompletion": {
+    "dialogTitle": "Завершити завдання",
+    "logHoursTitle": "Записати години волонтерства",
+    "logHoursDescription": "Зафіксуйте витрачені години для цього завдання.",
+    "howToLog": "Як записати години",
+    "useEstimated": "Використати орієнтовний час",
+    "enterActual": "Вказати фактичні години",
+    "skipLogging": "Пропустити запис годин",
+    "estimatedInfo": "Орієнтовний час використає {label} та розподілить між учасниками.",
+    "noEstimate": "Оцінку не встановлено",
+    "hoursPerParticipant": "Годин на учасника",
+    "hoursPlaceholder": "напр. 1.5",
+    "skipInfo": "Запис годин для цього завершення не буде створено.",
+    "completeTask": "Завершити завдання"
+  },
+  "groupEdit": {
+    "dialogTitle": "Редагувати групу",
+    "dialogDescription": "Оновіть деталі, щоб учасники знали, як долучитися та допомогти.",
+    "toastUpdatedTitle": "Групу оновлено",
+    "toastUpdatedDescription": "Ваші зміни застосовано.",
+    "errorGeneric": "Не вдалося оновити групу. Спробуйте ще раз.",
+    "toastErrorTitle": "Не вдалося зберегти",
+    "toastErrorDescription": "Перевірте дані та спробуйте ще раз.",
+    "photoLabel": "Фото групи",
+    "groupName": "Назва групи",
+    "groupNamePlaceholder": "напр. Команда гостинності",
+    "descriptionOptional": "Опис (необов'язково)",
+    "descriptionPlaceholder": "Опишіть, чим відповідає ця група.",
+    "visibility": "Видимість",
+    "joinSettings": "Налаштування вступу",
+    "publicDesc": "Публічна · Будь-хто в парафії може бачити цю групу",
+    "privateDesc": "Приватна · Видима лише для учасників",
+    "inviteOnly": "Лише за запрошенням",
+    "openJoin": "Будь-хто може приєднатися одразу",
+    "requestToJoin": "Запит на схвалення для вступу",
+    "nameRequired": "Назва групи є обов'язковою.",
+    "nameTooLong": "Назва групи повинна бути не більше {max} символів.",
+    "descriptionTooLong": "Опис повинен бути не більше {max} символів.",
+    "saveChanges": "Зберегти зміни"
+  },
+  "adminStats": {
+    "pageTitle": "Статистика",
+    "subtitle": "Залученість парафії одним поглядом",
+    "range": "Період",
+    "range24h": "Останні 24 години",
+    "range3d": "Останні 3 дні",
+    "range7d": "Останні 7 днів",
+    "range30d": "Останні 30 днів",
+    "apply": "Застосувати",
+    "inPeriod": "за обраний період",
+    "membersTitle": "Учасники",
+    "membersDescription": "Огляд членства та активності парафії",
+    "totalMembers": "Усього учасників",
+    "activeMembers": "Активних учасників",
+    "pendingAccess": "Очікують доступу",
+    "tasksTitle": "Завдання та служіння",
+    "tasksDescription": "Прогрес дошки служіння та виконання завдань",
+    "openTasks": "Відкритих",
+    "inProgressTasks": "У процесі",
+    "completedTasks": "Завершених",
+    "volunteersActive": "Нових волонтерів",
+    "eventsTitle": "Події",
+    "eventsDescription": "Календарні події та відвідуваність",
+    "eventsInPeriod": "Створено подій",
+    "rsvpCount": "Підтверджень участі",
+    "upcoming": "Заплановано",
+    "chatTitle": "Чат",
+    "chatDescription": "Активність обміну повідомленнями у каналах",
+    "messages": "Повідомлень",
+    "activeChannels": "Активних каналів",
+    "requestsTitle": "Запити",
+    "requestsDescription": "Обробка пастирських та парафіяльних запитів",
+    "totalRequests": "Усього запитів",
+    "pendingRequests": "Очікують",
+    "completedRequests": "Завершених"
   }
 }

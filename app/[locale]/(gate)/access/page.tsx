@@ -9,6 +9,7 @@ import { joinParishByCodeAction } from "@/app/actions/access";
 import { requestEmailVerification } from "@/app/actions/verification";
 import { getAccessGateState } from "@/lib/queries/access";
 import { buildLocalePathname, getLocaleFromParam } from "@/lib/i18n/routing";
+import { getTranslations } from "@/lib/i18n/server";
 
 type AccessPageProps = {
   searchParams?: { verify?: string; join?: string };
@@ -17,6 +18,7 @@ type AccessPageProps = {
 
 export default async function AccessPage({ searchParams, params }: AccessPageProps) {
   const locale = getLocaleFromParam(params.locale);
+  const t = getTranslations(locale);
   const access = await getAccessGateState();
   const resolvedSearchParams = await Promise.resolve(searchParams);
   const verifySent = resolvedSearchParams?.verify === "sent";
@@ -33,58 +35,58 @@ export default async function AccessPage({ searchParams, params }: AccessPagePro
       <Card className="w-full max-w-xl space-y-6">
         <div className="space-y-3">
           <SectionTitle
-            title="Parish access"
-            subtitle="A calm onboarding step before you enter the workspace."
+            title={t("accessPage.title")}
+            subtitle={t("accessPage.subtitle")}
           />
-          <AccessGateContent status={access.status} parishName={access.parishName} />
+          <AccessGateContent status={access.status} parishName={access.parishName} locale={locale} />
         </div>
 
         {access.status === "unverified" ? (
           <form className="space-y-3" action={requestEmailVerification}>
             {verifySent ? (
               <p className="text-sm text-emerald-600">
-                Check your email for a verification link.
+                {t("accessPage.unverified.verifySent")}
               </p>
             ) : null}
             <Button className="w-full" type="submit">
-              Resend verification email
+              {t("accessPage.unverified.resendCta")}
             </Button>
           </form>
         ) : access.status === "none" ? (
           <form className="space-y-3" action={joinParishByCodeAction}>
             <label htmlFor="parish-code" className="text-sm font-medium text-ink-700">
-              Parish code
+              {t("accessPage.none.codeLabel")}
             </label>
             <input
               id="parish-code"
               name="code"
               required
               className="w-full rounded-input border border-mist-300 px-3 py-2 text-sm uppercase tracking-wide text-ink-900"
-              placeholder="Enter parish code"
+              placeholder={t("accessPage.none.codePlaceholder")}
               autoCapitalize="characters"
               autoCorrect="off"
             />
             <Button className="w-full" type="submit">
-              Join Parish
+              {t("accessPage.none.joinCta")}
             </Button>
-            {joinError ? <p className="text-xs text-red-600">Invalid parish code. Try again.</p> : null}
+            {joinError ? <p className="text-xs text-red-600">{t("accessPage.none.invalidCode")}</p> : null}
             {alreadyMember ? (
-              <p className="text-xs text-emerald-600">You are already a member of this parish.</p>
+              <p className="text-xs text-emerald-600">{t("accessPage.none.alreadyMember")}</p>
             ) : null}
           </form>
         ) : (
           <div className="space-y-3 rounded-card border border-mist-200 bg-mist-50 px-4 py-3">
             <div>
-              <p className="text-sm font-medium text-ink-700">We&apos;ll notify you by email.</p>
+              <p className="text-sm font-medium text-ink-700">{t("accessPage.pending.ctaLabel")}</p>
               <p className="text-xs text-ink-400">
-                You can safely close this tab and return once a leader approves access.
+                {t("accessPage.pending.whatNext")}
               </p>
             </div>
             <Link
               href={buildLocalePathname(locale, "/access")}
               className="inline-flex w-full items-center justify-center rounded-full border border-transparent px-4 py-2 text-sm font-medium text-ink-600 transition hover:bg-mist-100"
             >
-              Refresh status
+              {t("accessPage.pending.refreshCta")}
             </Link>
           </div>
         )}

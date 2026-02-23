@@ -2,6 +2,7 @@
 
 import React from "react";
 import { cn } from "@/lib/ui/cn";
+import { useTranslations } from "@/lib/i18n/provider";
 import { getDateKey } from "@/lib/date/calendar";
 import { formatRecurrenceSummary } from "@/lib/events/recurrence";
 import type { CalendarEvent } from "@/lib/queries/events";
@@ -16,8 +17,6 @@ type CalendarGridWeekProps = {
   onSelectEvent: (event: CalendarEvent) => void;
 };
 
-const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
 export default function CalendarGridWeek({
   days,
   eventsByDay,
@@ -25,11 +24,22 @@ export default function CalendarGridWeek({
   selectedEventId,
   onSelectEvent
 }: CalendarGridWeekProps) {
+  const t = useTranslations();
   const todayKey = getDateKey(today);
+
+  const weekdayLabels = [
+    t("eventForm.weekdayMon"),
+    t("eventForm.weekdayTue"),
+    t("eventForm.weekdayWed"),
+    t("eventForm.weekdayThu"),
+    t("eventForm.weekdayFri"),
+    t("eventForm.weekdaySat"),
+    t("eventForm.weekdaySun")
+  ];
 
   const dayEntries = days.map((day, index) => ({
     day,
-    label: dayNames[index] ?? day.toLocaleDateString("en-US", { weekday: "short" })
+    label: weekdayLabels[index] ?? day.toLocaleDateString(undefined, { weekday: "short" })
   }));
   const paddedEntries: Array<{ day: Date; label: string } | null> = [...dayEntries];
   while (paddedEntries.length % 4 !== 0) {
@@ -78,7 +88,7 @@ export default function CalendarGridWeek({
                 </div>
                 {isToday ? (
                   <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                    Today
+                    {t("calendar.today")}
                   </span>
                 ) : null}
               </div>

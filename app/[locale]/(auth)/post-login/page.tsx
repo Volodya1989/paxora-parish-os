@@ -18,6 +18,7 @@ export default async function PostLoginPage({
   const locale = getLocaleFromParam(localeParam);
 
   const session = await getServerSession(authOptions);
+  const accessRoute = buildLocalePathname(locale, "/access");
 
   if (!session?.user?.id) {
     redirect(buildLocalePathname(locale, "/sign-in"));
@@ -26,19 +27,19 @@ export default async function PostLoginPage({
   const access = await getAccessGateState();
 
   if (access.status !== "approved") {
-    redirect(buildLocalePathname(locale, "/access"));
+    redirect(accessRoute);
   }
 
   const parishId = access.parishId ?? session.user.activeParishId ?? null;
 
   if (!parishId) {
-    redirect(buildLocalePathname(locale, "/access"));
+    redirect(accessRoute);
   }
 
   const membership = await getParishMembership(parishId, session.user.id);
 
   if (!membership) {
-    redirect(buildLocalePathname(locale, "/access"));
+    redirect(accessRoute);
   }
 
   redirect(getPostLoginRedirect(membership.role, locale));

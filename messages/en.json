@@ -14,6 +14,7 @@
     "signOut": "Sign out",
     "reliability": "Reliability",
     "reports": "Reports",
+    "statistics": "Statistics",
     "community": "Community",
     "events": "Events"
   },
@@ -152,7 +153,8 @@
     "emptyScheduleDesc": "New services and events will show up here as they're added.",
     "calendarView": "Calendar",
     "scheduleView": "Schedule",
-    "viewToggleLabel": "Switch between calendar and schedule views"
+    "viewToggleLabel": "Switch between calendar and schedule views",
+    "today": "Today"
   },
   "parish": {
     "title": "Parish Hub",
@@ -436,7 +438,33 @@
       "membersTab": "Members ({count})",
       "pendingTab": "Pending ({count})",
       "emptyMembers": "Add parishioners to build a calm, coordinated team."
-    }
+    },
+    "noDescription": "No description provided.",
+    "requestedBy": "Requested by {name}",
+    "parishionerFallback": "Parishioner",
+    "updateFailedTitle": "Update failed",
+    "updateFailedDescription": "We couldn’t update that group. Please try again.",
+    "notEnoughAccessTitle": "Not enough access",
+    "groupArchivedTitle": "Group archived",
+    "groupArchivedDescription": "This group is tucked away but can be restored.",
+    "undo": "Undo",
+    "groupRestoredTitle": "Group restored",
+    "groupRestoredDescription": "This group is back in the active list.",
+    "groupDeletedTitle": "Group deleted",
+    "groupDeletedDescription": "The group and its memberships have been permanently removed.",
+    "tryAgain": "Please try again.",
+    "deleteDialogTitle": "Delete group permanently",
+    "deleteDialogQuestion": "Are you sure you want to permanently delete",
+    "deleteDialogDetails": "This will remove all memberships and chat history. Tasks, events, and volunteer hours will be preserved but unlinked from this group.",
+    "deleteDialogConfirm": "Delete permanently",
+    "discoverTitle": "Groups you can join",
+    "yourGroupsTitle": "Your groups",
+    "requestSent": "Request sent",
+    "archived": "Archived",
+    "pending": "Pending",
+    "notApproved": "Not approved",
+    "restore": "Restore",
+    "deletePermanently": "Delete permanently"
   },
   "chat": {
     "noChannelsTitle": "No channels available",
@@ -730,7 +758,32 @@
     "addComment": "Add a comment",
     "activity": "Activity",
     "activityHint": "Recent changes and updates.",
-    "noActivity": "No activity yet."
+    "noActivity": "No activity yet.",
+    "leadLabel": "Lead:",
+    "unassigned": "Unassigned",
+    "dueDateLabel": "Due date:",
+    "dueDateTbd": "TBD",
+    "leaveVolunteer": "Leave",
+    "volunteerAction": "Volunteer",
+    "volunteerClosed": "Closed",
+    "removeVolunteer": "Remove",
+    "mentionLabel": "Mention",
+    "refreshing": "Refreshing details…",
+    "toasts": {
+      "loadFailed": "Unable to load details",
+      "updateFailed": "Update failed",
+      "commentAdded": "Comment added",
+      "mentionTargetMissing": "Mention target no longer exists",
+      "idCopied": "Task ID copied",
+      "idCopyFailed": "Unable to copy Task ID",
+      "movedToInProgress": "Moved to in progress",
+      "markedComplete": "Marked complete",
+      "reopenedTask": "Reopened task",
+      "assignedToYou": "Assigned to you",
+      "leftVolunteerList": "Left volunteer list",
+      "addedToVolunteers": "Added to volunteers",
+      "volunteerRemoved": "Volunteer removed"
+    }
   },
   "emptyStates": {
     "noMatches": "No matches found",
@@ -854,7 +907,14 @@
     "groupVisibilityHint": "Group-only events appear for members of the selected ministry.",
     "group": "Group",
     "selectGroup": "Select a group",
-    "noGroups": "No groups available"
+    "noGroups": "No groups available",
+    "weekdayMon": "Mon",
+    "weekdayTue": "Tue",
+    "weekdayWed": "Wed",
+    "weekdayThu": "Thu",
+    "weekdayFri": "Fri",
+    "weekdaySat": "Sat",
+    "weekdaySun": "Sun"
   },
   "marketing": {
     "brandTagline": "People-serving, shepherd-anchored",
@@ -974,5 +1034,172 @@
     "reportUpdated": "Report updated",
     "reportUpdateFailed": "Update failed",
     "reportUpdateFailedDescription": "We couldn't update that report."
+  },
+  "accessPage": {
+    "title": "Parish access",
+    "subtitle": "A calm onboarding step before you enter the workspace.",
+    "unverified": {
+      "verifySent": "Check your email for a verification link.",
+      "resendCta": "Resend verification email"
+    },
+    "none": {
+      "codeLabel": "Parish code",
+      "codePlaceholder": "Enter parish code",
+      "joinCta": "Join parish",
+      "invalidCode": "Invalid parish code. Try again.",
+      "alreadyMember": "You are already a member of this parish."
+    },
+    "pending": {
+      "ctaLabel": "We’ll notify you by email.",
+      "whatNext": "You can safely close this tab and return once a leader approves access.",
+      "refreshCta": "Refresh status"
+    }
+  },
+  "accessGate": {
+    "parishLabelNamed": "at {parish}",
+    "parishLabelFallback": "for this parish",
+    "approved": {
+      "title": "Access granted",
+      "nextAction": "You’re all set to enter the workspace.",
+      "whatNext": "Next you’ll be redirected to your parish home."
+    },
+    "pending": {
+      "title": "Access pending",
+      "nextAction": "Wait for a parish leader to review your request.",
+      "whatNext": "You’ll receive an email as soon as your status changes."
+    },
+    "rejected": {
+      "title": "Access request declined",
+      "nextAction": "Your request to join this parish was not approved.",
+      "whatNext": "If you believe this was a mistake, contact the parish office directly or try joining with a parish code."
+    },
+    "unverified": {
+      "title": "Verify your email",
+      "nextAction": "Confirm your email address before requesting access {parishLabel}.",
+      "whatNext": "After verification, return here and continue onboarding."
+    },
+    "none": {
+      "title": "Enter parish code",
+      "nextAction": "Enter your parish code to join the correct workspace {parishLabel}.",
+      "whatNext": "Once accepted, your request will be reviewed by parish leadership."
+    }
+  },
+  "eventDelete": {
+    "toastTitle": "Event removed",
+    "toastDescription": "The event has been removed from the calendar."
+  },
+  "eventCreateDialog": {
+    "title": "New event",
+    "description": "Add a service or parish gathering to the shared schedule.",
+    "successTitle": "Event scheduled",
+    "successDescription": "The service is now on the calendar.",
+    "submitLabel": "Save event"
+  },
+  "eventEditForm": {
+    "successTitle": "Event updated",
+    "successDescription": "Your changes are saved to the calendar.",
+    "submitLabel": "Save changes"
+  },
+  "taskEdit": {
+    "dialogTitle": "Edit task",
+    "dialogDescription": "Make quick updates so your team stays aligned.",
+    "toastUpdatedTitle": "Task updated",
+    "toastUpdatedDescription": "Your changes are saved.",
+    "title": "Title",
+    "titlePlaceholder": "Update the task title",
+    "notesOptional": "Notes (optional)",
+    "notesPlaceholder": "Update details, context, or links.",
+    "estimatedHours": "Estimated hours (optional)",
+    "estimatedHoursPlaceholder": "e.g. 2",
+    "dueDate": "Due date",
+    "privateHint": "Private commitment only.",
+    "visibility": "Visibility",
+    "visibilityPublic": "Public (shared with the parish)",
+    "visibilityPrivate": "Private (just you)",
+    "visibilityPublicHint": "Public tasks created by members require approval before they appear for everyone.",
+    "volunteersNeeded": "Volunteers needed",
+    "volunteersHint": "Set this above 1 to allow multiple volunteers to join.",
+    "group": "Group",
+    "noGroup": "No group",
+    "leadOptional": "Lead (optional)",
+    "assigneeOptional": "Assignee (optional)",
+    "youSuffix": "(You)",
+    "saveChanges": "Save changes"
+  },
+  "taskCompletion": {
+    "dialogTitle": "Complete task",
+    "logHoursTitle": "Log volunteer hours",
+    "logHoursDescription": "Keep gratitude grounded with a quick hours entry for this task.",
+    "howToLog": "How to log hours",
+    "useEstimated": "Use estimated allocation",
+    "enterActual": "Enter actual hours",
+    "skipLogging": "Skip logging for now",
+    "estimatedInfo": "Estimated allocation will use {label} and distribute it across participants.",
+    "noEstimate": "No estimate set",
+    "hoursPerParticipant": "Hours per participant",
+    "hoursPlaceholder": "e.g. 1.5",
+    "skipInfo": "No hours entry will be created for this completion.",
+    "completeTask": "Complete task"
+  },
+  "groupEdit": {
+    "dialogTitle": "Edit group",
+    "dialogDescription": "Update details so members know how to connect and contribute.",
+    "toastUpdatedTitle": "Group updated",
+    "toastUpdatedDescription": "Your changes are live.",
+    "errorGeneric": "We couldn't update that group. Please try again.",
+    "toastErrorTitle": "Unable to save",
+    "toastErrorDescription": "Please check the details and try again.",
+    "photoLabel": "Group photo",
+    "groupName": "Group name",
+    "groupNamePlaceholder": "e.g. Hospitality Team",
+    "descriptionOptional": "Description (optional)",
+    "descriptionPlaceholder": "Share what this group is responsible for.",
+    "visibility": "Visibility",
+    "joinSettings": "Join settings",
+    "publicDesc": "Public · Anyone in the parish can see this group",
+    "privateDesc": "Private · Only members can see this group",
+    "inviteOnly": "Invite only",
+    "openJoin": "Anyone can join instantly",
+    "requestToJoin": "Request approval to join",
+    "nameRequired": "Group name is required.",
+    "nameTooLong": "Group name must be {max} characters or fewer.",
+    "descriptionTooLong": "Description must be {max} characters or fewer.",
+    "saveChanges": "Save changes"
+  },
+  "adminStats": {
+    "pageTitle": "Statistics",
+    "subtitle": "Parish engagement at a glance",
+    "range": "Range",
+    "range24h": "Last 24 hours",
+    "range3d": "Last 3 days",
+    "range7d": "Last 7 days",
+    "range30d": "Last 30 days",
+    "apply": "Apply",
+    "inPeriod": "in selected period",
+    "membersTitle": "Members",
+    "membersDescription": "Parish membership and activity overview",
+    "totalMembers": "Total members",
+    "activeMembers": "Active members",
+    "pendingAccess": "Pending access",
+    "tasksTitle": "Tasks & Serve",
+    "tasksDescription": "Serve board and task completion progress",
+    "openTasks": "Open",
+    "inProgressTasks": "In progress",
+    "completedTasks": "Completed",
+    "volunteersActive": "New volunteers",
+    "eventsTitle": "Events",
+    "eventsDescription": "Calendar events and attendance",
+    "eventsInPeriod": "Events created",
+    "rsvpCount": "RSVPs",
+    "upcoming": "Upcoming",
+    "chatTitle": "Chat",
+    "chatDescription": "Messaging activity across channels",
+    "messages": "Messages",
+    "activeChannels": "Active channels",
+    "requestsTitle": "Requests",
+    "requestsDescription": "Pastoral and parish request processing",
+    "totalRequests": "Total requests",
+    "pendingRequests": "Pending",
+    "completedRequests": "Completed"
   }
 }

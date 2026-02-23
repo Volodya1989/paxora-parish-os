@@ -12,18 +12,10 @@ import { useToast } from "@/components/ui/Toast";
 import { updateGroup } from "@/server/actions/groups";
 import AvatarUploadField from "@/components/shared/AvatarUploadField";
 import { useMediaQuery } from "@/lib/ui/useMediaQuery";
+import { useTranslations } from "@/lib/i18n/provider";
 
 const NAME_MAX_LENGTH = 80;
 const DESCRIPTION_MAX_LENGTH = 280;
-const visibilityOptions = [
-  { value: "PUBLIC", label: "Public · Anyone in the parish can see this group" },
-  { value: "PRIVATE", label: "Private · Only members can see this group" }
-];
-const joinPolicyOptions = [
-  { value: "INVITE_ONLY", label: "Invite only" },
-  { value: "OPEN", label: "Anyone can join instantly" },
-  { value: "REQUEST_TO_JOIN", label: "Request approval to join" }
-];
 
 type GroupEditDialogProps = {
   open: boolean;
@@ -49,6 +41,7 @@ export default function GroupEditDialog({
   group,
   onUpdated
 }: GroupEditDialogProps) {
+  const t = useTranslations();
   const { addToast } = useToast();
   const [name, setName] = useState(group.name);
   const [description, setDescription] = useState(group.description ?? "");
@@ -68,6 +61,16 @@ export default function GroupEditDialog({
   const drawerJoinPolicyId = useId();
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
+  const visibilityOptions = [
+    { value: "PUBLIC", label: t("groupEdit.publicDesc") },
+    { value: "PRIVATE", label: t("groupEdit.privateDesc") }
+  ];
+  const joinPolicyOptions = [
+    { value: "INVITE_ONLY", label: t("groupEdit.inviteOnly") },
+    { value: "OPEN", label: t("groupEdit.openJoin") },
+    { value: "REQUEST_TO_JOIN", label: t("groupEdit.requestToJoin") }
+  ];
+
   useEffect(() => {
     if (!open) {
       return;
@@ -85,17 +88,17 @@ export default function GroupEditDialog({
     const trimmedDescription = description.trim();
 
     if (!trimmedName) {
-      setError("Group name is required.");
+      setError(t("groupEdit.nameRequired"));
       return;
     }
 
     if (trimmedName.length > NAME_MAX_LENGTH) {
-      setError(`Group name must be ${NAME_MAX_LENGTH} characters or fewer.`);
+      setError(t("groupEdit.nameTooLong", { max: String(NAME_MAX_LENGTH) }));
       return;
     }
 
     if (trimmedDescription && trimmedDescription.length > DESCRIPTION_MAX_LENGTH) {
-      setError(`Description must be ${DESCRIPTION_MAX_LENGTH} characters or fewer.`);
+      setError(t("groupEdit.descriptionTooLong", { max: String(DESCRIPTION_MAX_LENGTH) }));
       return;
     }
 
@@ -113,17 +116,17 @@ export default function GroupEditDialog({
           joinPolicy
         });
         addToast({
-          title: "Group updated",
-          description: "Your changes are live.",
+          title: t("groupEdit.toastUpdatedTitle"),
+          description: t("groupEdit.toastUpdatedDescription"),
           status: "success"
         });
         onOpenChange(false);
         onUpdated?.();
       } catch (submitError) {
-        setError("We couldn't update that group. Please try again.");
+        setError(t("groupEdit.errorGeneric"));
         addToast({
-          title: "Unable to save",
-          description: "Please check the details and try again.",
+          title: t("groupEdit.toastErrorTitle"),
+          description: t("groupEdit.toastErrorDescription"),
           status: "error"
         });
       }
@@ -139,7 +142,7 @@ export default function GroupEditDialog({
   ) => (
     <form id={formId} className="space-y-4" onSubmit={handleSubmit}>
       <AvatarUploadField
-        label="Group photo"
+        label={t("groupEdit.photoLabel")}
         currentUrl={group.avatarUrl ?? null}
         fallbackText={group.name}
         uploadEndpoint={`/api/groups/${group.id}/avatar`}
@@ -148,32 +151,32 @@ export default function GroupEditDialog({
       />
 
       <div className="space-y-2">
-        <Label htmlFor={nameId}>Group name</Label>
+        <Label htmlFor={nameId}>{t("groupEdit.groupName")}</Label>
         <Input
           id={nameId}
           name="name"
           value={name}
           onChange={(event) => setName(event.currentTarget.value)}
-          placeholder="e.g. Hospitality Team"
+          placeholder={t("groupEdit.groupNamePlaceholder")}
           maxLength={NAME_MAX_LENGTH}
           aria-invalid={Boolean(error) || undefined}
           required
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor={descriptionId}>Description (optional)</Label>
+        <Label htmlFor={descriptionId}>{t("groupEdit.descriptionOptional")}</Label>
         <Textarea
           id={descriptionId}
           name="description"
           value={description}
           onChange={(event) => setDescription(event.currentTarget.value)}
-          placeholder="Share what this group is responsible for."
+          placeholder={t("groupEdit.descriptionPlaceholder")}
           maxLength={DESCRIPTION_MAX_LENGTH}
           rows={4}
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor={visibilityId}>Visibility</Label>
+        <Label htmlFor={visibilityId}>{t("groupEdit.visibility")}</Label>
         <SelectMenu
           id={visibilityId}
           name="visibility"
@@ -183,7 +186,7 @@ export default function GroupEditDialog({
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor={joinPolicyId}>Join settings</Label>
+        <Label htmlFor={joinPolicyId}>{t("groupEdit.joinSettings")}</Label>
         <SelectMenu
           id={joinPolicyId}
           name="joinPolicy"
@@ -206,10 +209,10 @@ export default function GroupEditDialog({
   const renderFooter = (formId: string) => (
     <>
       <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-        Cancel
+        {t("buttons.cancel")}
       </Button>
       <Button type="submit" form={formId} isLoading={isPending}>
-        Save changes
+        {t("groupEdit.saveChanges")}
       </Button>
     </>
   );
@@ -220,7 +223,7 @@ export default function GroupEditDialog({
 
   const formDescription = (
     <p className="mb-4 text-sm text-ink-500">
-      Update details so members know how to connect and contribute.
+      {t("groupEdit.dialogDescription")}
     </p>
   );
 
@@ -229,7 +232,7 @@ export default function GroupEditDialog({
       <Modal
         open={open}
         onClose={handleClose}
-        title="Edit group"
+        title={t("groupEdit.dialogTitle")}
         footer={renderFooter(modalFormId)}
       >
         {formDescription}
@@ -248,7 +251,7 @@ export default function GroupEditDialog({
     <Drawer
       open={open}
       onClose={handleClose}
-      title="Edit group"
+      title={t("groupEdit.dialogTitle")}
       footer={renderFooter(drawerFormId)}
     >
       {formDescription}

@@ -2,6 +2,7 @@
 
 import React from "react";
 import { cn } from "@/lib/ui/cn";
+import { useTranslations } from "@/lib/i18n/provider";
 import { getDateKey } from "@/lib/date/calendar";
 import { formatRecurrenceSummary } from "@/lib/events/recurrence";
 import type { CalendarEvent } from "@/lib/queries/events";
@@ -18,8 +19,6 @@ type CalendarGridMonthProps = {
   onSelectEvent: (event: CalendarEvent) => void;
 };
 
-const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
 export default function CalendarGridMonth({
   days,
   monthStart,
@@ -29,12 +28,22 @@ export default function CalendarGridMonth({
   selectedEventId,
   onSelectEvent
 }: CalendarGridMonthProps) {
+  const t = useTranslations();
   const todayKey = getDateKey(today);
+  const weekdayLabels = [
+    t("eventForm.weekdayMon"),
+    t("eventForm.weekdayTue"),
+    t("eventForm.weekdayWed"),
+    t("eventForm.weekdayThu"),
+    t("eventForm.weekdayFri"),
+    t("eventForm.weekdaySat"),
+    t("eventForm.weekdaySun")
+  ];
 
   return (
     <div data-testid="calendar-month-grid" className="space-y-4">
       <div className="grid grid-cols-7 gap-3 text-xs uppercase tracking-wide text-ink-400">
-        {dayNames.map((day) => (
+        {weekdayLabels.map((day) => (
           <div key={day} className="text-center">
             {day}
           </div>
@@ -68,7 +77,7 @@ export default function CalendarGridMonth({
                 </span>
                 {isToday ? (
                   <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
-                    Today
+                    {t("calendar.today")}
                   </span>
                 ) : null}
               </div>

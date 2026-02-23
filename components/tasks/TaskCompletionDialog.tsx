@@ -5,6 +5,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
+import { useTranslations } from "@/lib/i18n/provider";
 import type { TaskListItem } from "@/lib/queries/tasks";
 
 type TaskCompletionDialogProps = {
@@ -24,6 +25,7 @@ export default function TaskCompletionDialog({
   onOpenChange,
   onConfirm
 }: TaskCompletionDialogProps) {
+  const t = useTranslations();
   const [hoursMode, setHoursMode] = useState<"estimated" | "manual" | "skip">("estimated");
   const [manualHours, setManualHours] = useState("");
 
@@ -46,7 +48,7 @@ export default function TaskCompletionDialog({
   const estimatedLabel =
     task?.estimatedHours !== null && task?.estimatedHours !== undefined
       ? `${task.estimatedHours} hrs`
-      : "No estimate set";
+      : t("taskCompletion.noEstimate");
 
   const handleConfirm = async () => {
     if (!task) {
@@ -63,15 +65,15 @@ export default function TaskCompletionDialog({
     <div className="space-y-4">
       {/* Accent header banner */}
       <div className="rounded-xl border-l-4 border-l-emerald-400 bg-emerald-50/60 px-4 py-3">
-        <h3 className="text-sm font-semibold text-emerald-800">Log volunteer hours</h3>
+        <h3 className="text-sm font-semibold text-emerald-800">{t("taskCompletion.logHoursTitle")}</h3>
         <p className="mt-0.5 text-xs text-emerald-600">
-          Keep gratitude grounded with a quick hours entry for this task.
+          {t("taskCompletion.logHoursDescription")}
         </p>
       </div>
 
       <div className="space-y-3">
         <label className="block space-y-1.5 text-sm font-medium text-ink-700">
-          <span>How to log hours</span>
+          <span>{t("taskCompletion.howToLog")}</span>
           <select
             value={hoursMode}
             onChange={(event) =>
@@ -85,28 +87,28 @@ export default function TaskCompletionDialog({
             }
             className="mt-1 w-full rounded-xl border border-mist-200 bg-white px-3 py-2.5 text-sm text-ink-700 shadow-sm focus-ring"
           >
-            <option value="estimated">Use estimated allocation</option>
-            <option value="manual">Enter actual hours</option>
-            <option value="skip">Skip logging for now</option>
+            <option value="estimated">{t("taskCompletion.useEstimated")}</option>
+            <option value="manual">{t("taskCompletion.enterActual")}</option>
+            <option value="skip">{t("taskCompletion.skipLogging")}</option>
           </select>
         </label>
 
         {hoursMode === "estimated" ? (
           <p className="rounded-xl border border-sky-100 bg-sky-50/60 px-3 py-2.5 text-xs text-sky-700">
-            Estimated allocation will use {estimatedLabel} and distribute it across participants.
+            {t("taskCompletion.estimatedInfo", { label: estimatedLabel })}
           </p>
         ) : null}
 
         {hoursMode === "manual" ? (
           <label className="block space-y-1.5 text-sm font-medium text-ink-700">
-            <span>Hours per participant</span>
+            <span>{t("taskCompletion.hoursPerParticipant")}</span>
             <Input
               type="number"
               min="0"
               step="0.25"
               value={manualHours}
               onChange={(event) => setManualHours(event.target.value)}
-              placeholder="e.g. 1.5"
+              placeholder={t("taskCompletion.hoursPlaceholder")}
               aria-invalid={manualInvalid}
             />
           </label>
@@ -114,17 +116,17 @@ export default function TaskCompletionDialog({
 
         {hoursMode === "skip" ? (
           <p className="rounded-xl border border-amber-100 bg-amber-50/60 px-3 py-2.5 text-xs text-amber-700">
-            No hours entry will be created for this completion.
+            {t("taskCompletion.skipInfo")}
           </p>
         ) : null}
       </div>
 
       <div className="flex flex-wrap justify-end gap-2 pt-2">
         <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
-          Cancel
+          {t("buttons.cancel")}
         </Button>
         <Button type="button" onClick={handleConfirm} disabled={manualInvalid}>
-          Complete task
+          {t("taskCompletion.completeTask")}
         </Button>
       </div>
     </div>
@@ -132,10 +134,10 @@ export default function TaskCompletionDialog({
 
   return (
     <>
-      <Modal open={open} onClose={() => onOpenChange(false)} title="Complete task">
+      <Modal open={open} onClose={() => onOpenChange(false)} title={t("taskCompletion.dialogTitle")}>
         {content}
       </Modal>
-      <Drawer open={open} onClose={() => onOpenChange(false)} title="Complete task">
+      <Drawer open={open} onClose={() => onOpenChange(false)} title={t("taskCompletion.dialogTitle")}>
         {content}
       </Drawer>
     </>
