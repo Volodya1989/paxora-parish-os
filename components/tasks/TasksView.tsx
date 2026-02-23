@@ -208,7 +208,16 @@ export default function TasksView({
       return;
     }
     void listUserTags().then(setUserTags).catch(() => setUserTags([]));
-  }, [viewMode]);
+  }, [tasks, viewMode]);
+
+  useEffect(() => {
+    if (privateTagFilter === "all" || privateTagFilter === "untagged") {
+      return;
+    }
+    if (!userTags.some((tag) => tag.id === privateTagFilter)) {
+      setPrivateTagFilter("all");
+    }
+  }, [privateTagFilter, userTags]);
 
   const taggedTasks = useMemo(() => {
     if (privateTagFilter === "all") {

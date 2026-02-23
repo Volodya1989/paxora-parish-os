@@ -385,8 +385,14 @@
       "toasts": {
         "loadFailed": "Could not load tags",
         "updateFailed": "Could not update tags",
-        "createFailed": "Could not create tag"
-      }
+        "createFailed": "Could not create tag",
+        "renameFailed": "Could not rename tag",
+        "deleteFailed": "Could not delete tag"
+      },
+      "rename": "Rename",
+      "delete": "Delete",
+      "save": "Save",
+      "cancel": "Cancel"
     }
   },
   "groups": {

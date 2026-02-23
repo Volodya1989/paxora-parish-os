@@ -10,7 +10,9 @@ import { useTranslations } from "@/lib/i18n/provider";
 import type { TaskListItem } from "@/lib/queries/tasks";
 import {
   createUserTag,
+  deleteUserTag,
   listUserTags,
+  renameUserTag,
   updatePrivateTaskTags,
   type UserTagItem
 } from "@/server/actions/tasks";
@@ -31,6 +33,9 @@ export default function TaskTagPickerDialog({ open, onOpenChange, task, onApplie
   const [isBusy, setIsBusy] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [newTagName, setNewTagName] = useState("");
+  const [editingTagId, setEditingTagId] = useState<string | null>(null);
+  const [editingTagName, setEditingTagName] = useState("");
+
 
   useEffect(() => {
     if (!open) {
@@ -58,7 +63,7 @@ export default function TaskTagPickerDialog({ open, onOpenChange, task, onApplie
         removeTagIds: isSelected ? [tagId] : []
       });
       onApplied();
-    } catch (error) {
+    } catch {
       addToast({ title: t("tasks.tags.toasts.updateFailed"), status: "error" });
     } finally {
       setIsBusy(false);
@@ -77,8 +82,42 @@ export default function TaskTagPickerDialog({ open, onOpenChange, task, onApplie
       setNewTagName("");
       setIsAdding(false);
       onApplied();
-    } catch (error) {
+    } catch {
       addToast({ title: t("tasks.tags.toasts.createFailed"), status: "error" });
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const handleRename = async (tagId: string) => {
+    const nextName = editingTagName.trim();
+    if (!nextName) return;
+    setIsBusy(true);
+    try {
+      const updated = await renameUserTag({ id: tagId, name: nextName });
+      setTags((prev) => prev.map((tag) => (tag.id === tagId ? updated : tag)));
+      setEditingTagId(null);
+      setEditingTagName("");
+      onApplied();
+    } catch {
+      addToast({ title: t("tasks.tags.toasts.renameFailed"), status: "error" });
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const handleDelete = async (tagId: string) => {
+    setIsBusy(true);
+    try {
+      await deleteUserTag({ id: tagId });
+      setTags((prev) => prev.filter((tag) => tag.id !== tagId));
+      if (editingTagId === tagId) {
+        setEditingTagId(null);
+        setEditingTagName("");
+      }
+      onApplied();
+    } catch {
+      addToast({ title: t("tasks.tags.toasts.deleteFailed"), status: "error" });
     } finally {
       setIsBusy(false);
     }
@@ -114,25 +153,79 @@ export default function TaskTagPickerDialog({ open, onOpenChange, task, onApplie
           </button>
         )}
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="space-y-2">
         {isLoading ? <p className="text-xs text-ink-500">{t("tasks.tags.loading")}</p> : null}
         {!isLoading && tags.length === 0 ? <p className="text-xs text-ink-500">{t("tasks.tags.empty")}</p> : null}
         {tags.map((tag) => {
           const selected = selectedTagIds.has(tag.id);
+          const isEditing = editingTagId === tag.id;
+
           return (
-            <button
-              key={tag.id}
-              type="button"
-              disabled={isBusy}
-              onClick={() => void toggleTag(tag.id)}
-              className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
-                selected
-                  ? "border-primary-200 bg-primary-100 text-primary-800"
-                  : "border-mist-200 bg-white text-ink-600 hover:bg-mist-50"
-              }`}
-            >
-              {tag.name}
-            </button>
+            <div key={tag.id} className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={isBusy}
+                onClick={() => void toggleTag(tag.id)}
+                className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                  selected
+                    ? "border-primary-200 bg-primary-100 text-primary-800"
+                    : "border-mist-200 bg-white text-ink-600 hover:bg-mist-50"
+                }`}
+              >
+                {tag.name}
+              </button>
+
+              {isEditing ? (
+                <>
+                  <input
+                    value={editingTagName}
+                    onChange={(event) => setEditingTagName(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        void handleRename(tag.id);
+                      }
+                    }}
+                    className="h-8 flex-1 rounded-full border border-mist-200 px-3 text-xs"
+                  />
+                  <Button type="button" size="sm" onClick={() => void handleRename(tag.id)} isLoading={isBusy}>
+                    {t("tasks.tags.save")}
+                  </Button>
+                  <button
+                    type="button"
+                    className="text-xs text-ink-500"
+                    onClick={() => {
+                      setEditingTagId(null);
+                      setEditingTagName("");
+                    }}
+                  >
+                    {t("tasks.tags.cancel")}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    className="text-xs font-medium text-ink-500 hover:text-ink-700"
+                    onClick={() => {
+                      setEditingTagId(tag.id);
+                      setEditingTagName(tag.name);
+                    }}
+                  >
+                    {t("tasks.tags.rename")}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    className="text-xs font-medium text-rose-600 hover:text-rose-700"
+                    onClick={() => void handleDelete(tag.id)}
+                  >
+                    {t("tasks.tags.delete")}
+                  </button>
+                </>
+              )}
+            </div>
           );
         })}
       </div>
