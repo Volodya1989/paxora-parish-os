@@ -55,6 +55,7 @@ import {
 import { notifyMention } from "@/lib/push/notify";
 import { AUDIT_ACTIONS, AUDIT_TARGET_TYPES } from "@/lib/audit/actions";
 import { auditLog } from "@/lib/audit/log";
+import { normalizeUserTagName, updatePrivateTaskTagsForUser } from "@/server/actions/privateTaskTags";
 
 function assertSession(session: Session | null) {
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -68,6 +69,118 @@ function fd(formData: FormData, key: string) {
   if (v === null) return undefined; // null -> undefined (critical for zod optional)
   if (typeof v === "string" && v.trim() === "") return undefined; // "" -> undefined
   return v;
+}
+
+export type UserTagItem = {
+  id: string;
+  name: string;
+};
+
+export async function listUserTags(): Promise<UserTagItem[]> {
+  const session = await getServerSession(authOptions);
+  const { userId } = assertSession(session);
+
+  const tags = await prisma.userTag.findMany({
+    where: { userId },
+    orderBy: [{ name: "asc" }],
+    select: { id: true, name: true }
+  });
+
+  return tags;
+}
+
+export async function createUserTag({ name }: { name: string }): Promise<UserTagItem> {
+  const session = await getServerSession(authOptions);
+  const { userId } = assertSession(session);
+  const normalizedName = normalizeUserTagName(name);
+
+  if (!normalizedName) {
+    throw new Error("Tag name is required.");
+  }
+
+  const existing = await prisma.userTag.findFirst({
+    where: {
+      userId,
+      name: {
+        equals: normalizedName,
+        mode: "insensitive"
+      }
+    },
+    select: { id: true, name: true }
+  });
+
+  if (existing) {
+    return existing;
+  }
+
+  const tag = await prisma.userTag.create({
+    data: { userId, name: normalizedName },
+    select: { id: true, name: true }
+  });
+
+  revalidatePath("/tasks");
+  return tag;
+}
+
+export async function renameUserTag({ id, name }: { id: string; name: string }): Promise<UserTagItem> {
+  const session = await getServerSession(authOptions);
+  const { userId } = assertSession(session);
+  const normalizedName = normalizeUserTagName(name);
+
+  if (!normalizedName) {
+    throw new Error("Tag name is required.");
+  }
+
+  const existing = await prisma.userTag.findUnique({ where: { id }, select: { userId: true } });
+  if (!existing || existing.userId !== userId) {
+    throw new Error("Tag not found");
+  }
+
+  const tag = await prisma.userTag.update({
+    where: { id },
+    data: { name: normalizedName },
+    select: { id: true, name: true }
+  });
+
+  revalidatePath("/tasks");
+  return tag;
+}
+
+export async function deleteUserTag({ id }: { id: string }) {
+  const session = await getServerSession(authOptions);
+  const { userId } = assertSession(session);
+  const existing = await prisma.userTag.findUnique({ where: { id }, select: { userId: true } });
+
+  if (!existing || existing.userId !== userId) {
+    throw new Error("Tag not found");
+  }
+
+  await prisma.userTag.delete({ where: { id } });
+  revalidatePath("/tasks");
+}
+
+export async function updatePrivateTaskTags({
+  taskId,
+  addTagIds,
+  removeTagIds
+}: {
+  taskId: string;
+  addTagIds?: string[];
+  removeTagIds?: string[];
+}) {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  await updatePrivateTaskTagsForUser({
+    prisma,
+    taskId,
+    parishId,
+    userId,
+    addTagIds,
+    removeTagIds
+  });
+
+  revalidatePath("/tasks");
 }
 
 
