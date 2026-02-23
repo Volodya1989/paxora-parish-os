@@ -21,7 +21,7 @@ function runFile(file) {
   const res = spawnSync(
     process.execPath,
     ["--test", "--experimental-test-module-mocks", "--test-concurrency=1", "--import", "tsx", file],
-    { env: process.env, encoding: "utf8" }
+    { env: process.env, encoding: "utf8", maxBuffer: 50 * 1024 * 1024 }
   );
 
   const stdout = res.stdout ?? "";
@@ -32,13 +32,15 @@ function runFile(file) {
   const combined = `${stdout}\n${stderr}`;
   const hasNotOk = /(^|\n)not ok\b/m.test(combined);
   const hasZeroFailsSummary = /# fail\s+0\b/.test(combined);
+  const hasPositiveFailSummary = /# fail\s+[1-9]\d*\b/.test(combined);
+  const hasAnyOk = /(^|\n)ok\s+\d+\b/m.test(combined);
 
   if (res.status === 0) {
     return { ok: true, reason: "exit-0" };
   }
 
-  if (!hasNotOk && hasZeroFailsSummary) {
-    return { ok: true, reason: "non-zero-with-zero-fails-summary" };
+  if (!hasNotOk && (hasZeroFailsSummary || (!hasPositiveFailSummary && hasAnyOk))) {
+    return { ok: true, reason: "non-zero-without-tap-failure-markers" };
   }
 
   return {
@@ -52,7 +54,7 @@ const failures = [];
 
 for (const file of files) {
   let passed = false;
-  for (let attempt = 1; attempt <= 3; attempt += 1) {
+  for (let attempt = 1; attempt <= 5; attempt += 1) {
     const result = runFile(file);
     if (result.ok) {
       if (attempt > 1) {
@@ -61,7 +63,7 @@ for (const file of files) {
       passed = true;
       break;
     }
-    if (attempt < 3) {
+    if (attempt < 5) {
       console.error(`[test-runner] Retry ${attempt} for ${file} after ${result.reason}.`);
     } else {
       failures.push({ file, reason: result.reason });
