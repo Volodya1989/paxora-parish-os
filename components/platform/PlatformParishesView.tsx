@@ -9,6 +9,7 @@ import Textarea from "@/components/ui/Textarea";
 import Label from "@/components/ui/Label";
 import Select from "@/components/ui/Select";
 import Badge from "@/components/ui/Badge";
+import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@/components/ui/Dropdown";
 import { Drawer } from "@/components/ui/Drawer";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
@@ -65,6 +66,7 @@ export default function PlatformParishesView({
   const [isImpersonating, startImpersonationTransition] = useTransition();
   const [busyParishId, setBusyParishId] = useState<string | null>(null);
   const [confirmState, setConfirmState] = useState<ConfirmState>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
 
   const sortedParishes = useMemo(() => parishes, [parishes]);
 
@@ -163,18 +165,24 @@ export default function PlatformParishesView({
 
   // Open the appropriate confirmation dialog instead of using window.confirm.
   const handleDeactivate = (parishId: string, parishName: string) => {
+    setDeleteConfirmation("");
     setConfirmState({ action: "deactivate", parishId, parishName });
   };
 
   const handleReactivate = (parishId: string, parishName: string) => {
+    setDeleteConfirmation("");
     setConfirmState({ action: "reactivate", parishId, parishName });
   };
 
   const handleSafeDelete = (parishId: string, parishName: string) => {
+    setDeleteConfirmation("");
     setConfirmState({ action: "delete", parishId, parishName });
   };
 
-  const cancelConfirm = () => setConfirmState(null);
+  const cancelConfirm = () => {
+    setConfirmState(null);
+    setDeleteConfirmation("");
+  };
 
   const executeConfirm = () => {
     if (!confirmState) return;
@@ -205,7 +213,7 @@ export default function PlatformParishesView({
       ? `Deactivating "${confirmState.parishName}" will prevent parishioners from accessing it. You can safely delete it afterward once all data has been removed.`
       : confirmState?.action === "reactivate"
         ? `"${confirmState.parishName}" will be restored to active status. Parishioners will be able to access it again using the existing parish code.`
-        : `"${confirmState?.parishName}" will be permanently deleted. This only succeeds after deactivation and when no dependent data remains. This cannot be undone.`;
+      : `"${confirmState?.parishName}" will be permanently deleted. This permanently deletes the parish and removes members and parish data. This cannot be undone.`;
   const confirmButtonLabel =
     confirmState?.action === "deactivate"
       ? "Deactivate"
@@ -218,14 +226,32 @@ export default function PlatformParishesView({
       <Button type="button" variant="secondary" onClick={cancelConfirm}>
         Cancel
       </Button>
-      <Button type="button" onClick={executeConfirm} isLoading={isPending}>
+      <Button
+        type="button"
+        onClick={executeConfirm}
+        isLoading={isPending}
+        disabled={confirmState?.action === "delete" && deleteConfirmation !== "DELETE"}
+      >
         {confirmButtonLabel}
       </Button>
     </>
   );
 
   const confirmContent = (
-    <p className="text-sm text-ink-700">{confirmBodyText}</p>
+    <div className="space-y-3">
+      <p className="text-sm text-ink-700">{confirmBodyText}</p>
+      {confirmState?.action === "delete" ? (
+        <div className="space-y-2">
+          <Label htmlFor="parish-delete-confirmation">Type DELETE to confirm</Label>
+          <Input
+            id="parish-delete-confirmation"
+            value={deleteConfirmation}
+            onChange={(event) => setDeleteConfirmation(event.currentTarget.value)}
+            placeholder="Type DELETE to confirm"
+          />
+        </div>
+      ) : null}
+    </div>
   );
 
   const formContent = (
@@ -415,15 +441,6 @@ export default function PlatformParishesView({
                     )}
                     <Button
                       type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => handleSafeDelete(parish.id, parish.name)}
-                      disabled={isBusy || !isDeactivated}
-                    >
-                      Safe delete
-                    </Button>
-                    <Button
-                      type="button"
                       size="sm"
                       variant={isImpersonated ? "secondary" : "primary"}
                       onClick={() => handleImpersonate(parish.id, parish.name)}
@@ -431,6 +448,25 @@ export default function PlatformParishesView({
                     >
                       {isImpersonated ? "Impersonating" : "Impersonate"}
                     </Button>
+                    <Dropdown>
+                      <DropdownTrigger
+                        type="button"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-line bg-panel text-base font-semibold text-ink-700"
+                        aria-label={`More actions for ${parish.name}`}
+                        disabled={isBusy}
+                      >
+                        ⋯
+                      </DropdownTrigger>
+                      <DropdownMenu ariaLabel={`More actions for ${parish.name}`}>
+                        <DropdownItem
+                          onClick={() => handleSafeDelete(parish.id, parish.name)}
+                          disabled={!isDeactivated}
+                          className="text-rose-700"
+                        >
+                          Safe delete
+                        </DropdownItem>
+                      </DropdownMenu>
+                    </Dropdown>
                   </div>
                 </div>
               );

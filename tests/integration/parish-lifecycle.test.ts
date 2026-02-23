@@ -1,13 +1,46 @@
-import { after, before, test } from "node:test";
+import { after, before, mock, test } from "node:test";
 import assert from "node:assert/strict";
 import { prisma } from "@/server/db/prisma";
 import { applyMigrations } from "../_helpers/migrate";
 import { createParishInviteCode } from "@/lib/parish/inviteCode";
+import { loadModuleFromRoot } from "../_helpers/load-module";
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
 const dbTest = hasDatabase ? test : test.skip;
 
+const session = {
+  user: {
+    id: "",
+    activeParishId: ""
+  }
+};
+
+mock.module("next-auth", {
+  namedExports: {
+    getServerSession: async () => session
+  }
+});
+
+mock.module("next/cache", {
+  namedExports: {
+    revalidatePath: () => undefined
+  }
+});
+
+let parishActions: typeof import("@/app/actions/platformParishes");
+
 async function resetDatabase() {
+  await prisma.groupMembership.deleteMany();
+  await prisma.announcement.deleteMany();
+  await prisma.digest.deleteMany();
+  await prisma.eventRequest.deleteMany();
+  await prisma.request.deleteMany();
+  await prisma.hoursEntry.deleteMany();
+  await prisma.heroNomination.deleteMany();
+  await prisma.task.deleteMany();
+  await prisma.event.deleteMany();
+  await prisma.group.deleteMany();
+  await prisma.week.deleteMany();
   await prisma.membership.deleteMany();
   await prisma.parish.deleteMany();
   await prisma.user.deleteMany();
@@ -16,6 +49,7 @@ async function resetDatabase() {
 before(async () => {
   if (!hasDatabase) return;
   await applyMigrations();
+  parishActions = await loadModuleFromRoot("app/actions/platformParishes");
   await prisma.$connect();
   await resetDatabase();
 });
@@ -26,116 +60,141 @@ after(async () => {
   await prisma.$disconnect();
 });
 
-dbTest("deactivate sets deactivatedAt", async () => {
-  const code = await createParishInviteCode();
-  const parish = await prisma.parish.create({
+async function createSuperAdmin(email: string) {
+  return prisma.user.create({
     data: {
-      name: "St. Lifecycle",
-      slug: "st-lifecycle",
-      inviteCode: code,
-      inviteCodeCreatedAt: new Date()
+      email,
+      name: "Platform Admin",
+      passwordHash: "hashed",
+      platformRole: "SUPERADMIN"
     }
   });
+}
 
-  assert.equal(parish.deactivatedAt, null);
-
-  const updated = await prisma.parish.update({
-    where: { id: parish.id },
-    data: { deactivatedAt: new Date() },
-    select: { deactivatedAt: true }
-  });
-
-  assert.ok(updated.deactivatedAt instanceof Date);
-});
-
-dbTest("safe delete blocked when not deactivated", async () => {
+async function createDeactivatedParish(name: string, slug: string) {
   const code = await createParishInviteCode();
-  const parish = await prisma.parish.create({
+  return prisma.parish.create({
     data: {
-      name: "St. No-Deactivate",
-      slug: "st-no-deactivate",
-      inviteCode: code,
-      inviteCodeCreatedAt: new Date()
-    }
-  });
-
-  // Attempting to delete without deactivating should fail the precondition check.
-  // We verify the field is null — the action layer enforces the guard.
-  const fetched = await prisma.parish.findUnique({
-    where: { id: parish.id },
-    select: { deactivatedAt: true }
-  });
-
-  assert.equal(fetched?.deactivatedAt, null);
-
-  // Clean up
-  await prisma.parish.delete({ where: { id: parish.id } });
-});
-
-dbTest("safe delete succeeds when deactivated with no dependents", async () => {
-  const code = await createParishInviteCode();
-  const parish = await prisma.parish.create({
-    data: {
-      name: "St. SafeDelete",
-      slug: "st-safe-delete",
+      name,
+      slug,
       inviteCode: code,
       inviteCodeCreatedAt: new Date(),
       deactivatedAt: new Date()
     }
   });
+}
 
-  // Verify no dependents
-  const counts = await prisma.parish.findUnique({
-    where: { id: parish.id },
-    select: {
-      _count: {
-        select: {
-          memberships: true,
-          groups: true,
-          weeks: true,
-          tasks: true,
-          events: true,
-          requests: true
-        }
-      }
-    }
-  });
+dbTest("super admin safe delete removes parish with active members and dependent data", async () => {
+  const superAdmin = await createSuperAdmin("superadmin-delete@example.com");
+  const parish = await createDeactivatedParish("St. Cleanup", "st-cleanup");
 
-  const total = Object.values(counts!._count).reduce((acc, v) => acc + v, 0);
-  assert.equal(total, 0);
-
-  // Perform the delete directly (action-level guard already tested above)
-  await prisma.parish.delete({ where: { id: parish.id } });
-
-  const gone = await prisma.parish.findUnique({ where: { id: parish.id } });
-  assert.equal(gone, null);
-});
-
-dbTest("safe delete blocked when dependents exist", async () => {
-  const code = await createParishInviteCode();
-  const parish = await prisma.parish.create({
+  const member = await prisma.user.create({
     data: {
-      name: "St. HasDeps",
-      slug: "st-has-deps",
-      inviteCode: code,
-      inviteCodeCreatedAt: new Date(),
-      deactivatedAt: new Date()
+      email: "cleanup-member@example.com",
+      name: "Cleanup Member",
+      passwordHash: "hashed",
+      activeParishId: parish.id
     }
-  });
-
-  const user = await prisma.user.create({
-    data: { email: "dep-member@example.com", name: "Dep", passwordHash: "hashed" }
   });
 
   await prisma.membership.create({
-    data: { parishId: parish.id, userId: user.id, role: "MEMBER" }
+    data: { parishId: parish.id, userId: member.id, role: "MEMBER" }
   });
 
-  const count = await prisma.membership.count({ where: { parishId: parish.id } });
-  assert.equal(count, 1);
+  const week = await prisma.week.create({
+    data: {
+      parishId: parish.id,
+      startsOn: new Date("2026-01-05T00:00:00.000Z"),
+      endsOn: new Date("2026-01-11T23:59:59.999Z"),
+      label: "Jan 5 - Jan 11"
+    }
+  });
 
-  // Clean up
-  await prisma.membership.deleteMany({ where: { parishId: parish.id } });
-  await prisma.parish.delete({ where: { id: parish.id } });
-  await prisma.user.delete({ where: { id: user.id } });
+  const group = await prisma.group.create({
+    data: {
+      parishId: parish.id,
+      createdById: member.id,
+      name: "Cleanup Team"
+    }
+  });
+
+  await prisma.groupMembership.create({
+    data: {
+      groupId: group.id,
+      userId: member.id,
+      role: "PARISHIONER",
+      status: "ACTIVE"
+    }
+  });
+
+  await prisma.announcement.create({
+    data: {
+      parishId: parish.id,
+      title: "Cleanup notice",
+      createdById: member.id
+    }
+  });
+
+  session.user.id = superAdmin.id;
+  session.user.activeParishId = parish.id;
+
+  const result = await parishActions.safeDeletePlatformParish({ parishId: parish.id });
+
+  assert.equal(result.status, "success");
+
+  const deletedParish = await prisma.parish.findUnique({ where: { id: parish.id } });
+  assert.equal(deletedParish, null);
+
+  const membershipCount = await prisma.membership.count({ where: { parishId: parish.id } });
+  const weekCount = await prisma.week.count({ where: { parishId: parish.id } });
+  const groupCount = await prisma.group.count({ where: { parishId: parish.id } });
+  const announcementCount = await prisma.announcement.count({ where: { parishId: parish.id } });
+  assert.equal(membershipCount, 0);
+  assert.equal(weekCount, 0);
+  assert.equal(groupCount, 0);
+  assert.equal(announcementCount, 0);
+
+  const refreshedMember = await prisma.user.findUnique({
+    where: { id: member.id },
+    select: { activeParishId: true }
+  });
+  assert.equal(refreshedMember?.activeParishId, null);
+
+  assert.ok(week.id);
+});
+
+dbTest("regression: safe delete succeeds for deactivated parish with zero memberships", async () => {
+  const superAdmin = await createSuperAdmin("superadmin-regression@example.com");
+  const parish = await createDeactivatedParish("St. Regression", "st-regression");
+
+  session.user.id = superAdmin.id;
+  session.user.activeParishId = parish.id;
+
+  const result = await parishActions.safeDeletePlatformParish({ parishId: parish.id });
+  assert.equal(result.status, "success");
+
+  const deletedParish = await prisma.parish.findUnique({ where: { id: parish.id } });
+  assert.equal(deletedParish, null);
+});
+
+dbTest("non super admin cannot safe delete parish", async () => {
+  const regularUser = await prisma.user.create({
+    data: {
+      email: "regular-user@example.com",
+      name: "Regular User",
+      passwordHash: "hashed"
+    }
+  });
+  const parish = await createDeactivatedParish("St. Unauthorized", "st-unauthorized");
+
+  session.user.id = regularUser.id;
+  session.user.activeParishId = parish.id;
+
+  const result = await parishActions.safeDeletePlatformParish({ parishId: parish.id });
+
+  assert.equal(result.status, "error");
+  assert.equal(result.error, "NOT_AUTHORIZED");
+
+  const stillExists = await prisma.parish.findUnique({ where: { id: parish.id } });
+  assert.ok(stillExists);
 });
