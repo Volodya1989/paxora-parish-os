@@ -317,6 +317,33 @@
       "short": "Compromisos personales: visibles solo para ti.",
       "detail": "Usa Mis compromisos para tus tareas privadas de servicio. Para ofrecerte en necesidades parroquiales, cambia a Ayuda necesaria.",
       "infoLabel": "¿Qué es Mis compromisos?"
+    },
+    "tags": {
+      "title": "Etiquetas de tarea",
+      "description": "Organiza esta tarea privada con etiquetas personales.",
+      "new": "+ Nueva etiqueta",
+      "newPlaceholder": "Nombre de etiqueta",
+      "add": "Agregar",
+      "loading": "Cargando…",
+      "empty": "Aún no hay etiquetas.",
+      "edit": "Editar etiquetas",
+      "openPicker": "Abrir selector de etiquetas",
+      "filters": {
+        "all": "Todas",
+        "untagged": "Sin etiqueta",
+        "clear": "Limpiar"
+      },
+      "toasts": {
+        "loadFailed": "No se pudieron cargar las etiquetas",
+        "updateFailed": "No se pudieron actualizar las etiquetas",
+        "createFailed": "No se pudo crear la etiqueta",
+        "renameFailed": "No se pudo renombrar la etiqueta",
+        "deleteFailed": "No se pudo eliminar la etiqueta"
+      },
+      "manage": "Gestionar etiquetas",
+      "doneManaging": "Listo",
+      "save": "Guardar",
+      "delete": "Eliminar"
     }
   },
   "groups": {

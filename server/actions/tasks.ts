@@ -70,6 +70,185 @@ function fd(formData: FormData, key: string) {
   return v;
 }
 
+export type UserTagItem = {
+  id: string;
+  name: string;
+};
+
+function normalizeUserTagName(name: string) {
+  return name.trim().replace(/\s+/g, " ");
+}
+
+async function assertPrivateTaskOwner({
+  taskId,
+  parishId,
+  userId
+}: {
+  taskId: string;
+  parishId: string;
+  userId: string;
+}) {
+  const task = await prisma.task.findUnique({
+    where: { id: taskId },
+    select: {
+      id: true,
+      parishId: true,
+      visibility: true,
+      ownerId: true,
+      createdById: true
+    }
+  });
+
+  if (!task || task.parishId !== parishId) {
+    throw new Error("Task not found");
+  }
+
+  if (task.visibility !== "PRIVATE") {
+    throw new Error("Only private tasks support personal tags.");
+  }
+
+  if (task.ownerId !== userId) {
+    throw new Error("Forbidden");
+  }
+
+  return task;
+}
+
+export async function listUserTags(): Promise<UserTagItem[]> {
+  const session = await getServerSession(authOptions);
+  const { userId } = assertSession(session);
+
+  const tags = await prisma.userTag.findMany({
+    where: { userId },
+    orderBy: [{ name: "asc" }],
+    select: { id: true, name: true }
+  });
+
+  return tags;
+}
+
+export async function createUserTag({ name }: { name: string }): Promise<UserTagItem> {
+  const session = await getServerSession(authOptions);
+  const { userId } = assertSession(session);
+  const normalizedName = normalizeUserTagName(name);
+
+  if (!normalizedName) {
+    throw new Error("Tag name is required.");
+  }
+
+  const existing = await prisma.userTag.findFirst({
+    where: {
+      userId,
+      name: {
+        equals: normalizedName,
+        mode: "insensitive"
+      }
+    },
+    select: { id: true, name: true }
+  });
+
+  if (existing) {
+    return existing;
+  }
+
+  const tag = await prisma.userTag.create({
+    data: { userId, name: normalizedName },
+    select: { id: true, name: true }
+  });
+
+  revalidatePath("/tasks");
+  return tag;
+}
+
+export async function renameUserTag({ id, name }: { id: string; name: string }): Promise<UserTagItem> {
+  const session = await getServerSession(authOptions);
+  const { userId } = assertSession(session);
+  const normalizedName = normalizeUserTagName(name);
+
+  if (!normalizedName) {
+    throw new Error("Tag name is required.");
+  }
+
+  const existing = await prisma.userTag.findUnique({ where: { id }, select: { userId: true } });
+  if (!existing || existing.userId !== userId) {
+    throw new Error("Tag not found");
+  }
+
+  const tag = await prisma.userTag.update({
+    where: { id },
+    data: { name: normalizedName },
+    select: { id: true, name: true }
+  });
+
+  revalidatePath("/tasks");
+  return tag;
+}
+
+export async function deleteUserTag({ id }: { id: string }) {
+  const session = await getServerSession(authOptions);
+  const { userId } = assertSession(session);
+  const existing = await prisma.userTag.findUnique({ where: { id }, select: { userId: true } });
+
+  if (!existing || existing.userId !== userId) {
+    throw new Error("Tag not found");
+  }
+
+  await prisma.userTag.delete({ where: { id } });
+  revalidatePath("/tasks");
+}
+
+export async function updatePrivateTaskTags({
+  taskId,
+  addTagIds,
+  removeTagIds
+}: {
+  taskId: string;
+  addTagIds?: string[];
+  removeTagIds?: string[];
+}) {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  await assertPrivateTaskOwner({ taskId, parishId, userId });
+
+  const addIds = Array.from(new Set((addTagIds ?? []).filter(Boolean)));
+  const removeIds = Array.from(new Set((removeTagIds ?? []).filter(Boolean)));
+  const candidateIds = Array.from(new Set([...addIds, ...removeIds]));
+
+  if (candidateIds.length > 0) {
+    const ownedTags = await prisma.userTag.findMany({
+      where: {
+        id: { in: candidateIds },
+        userId
+      },
+      select: { id: true }
+    });
+    if (ownedTags.length !== candidateIds.length) {
+      throw new Error("Invalid tag selection.");
+    }
+  }
+
+  await prisma.$transaction(async (tx) => {
+    if (removeIds.length > 0) {
+      await tx.taskUserTag.deleteMany({
+        where: {
+          taskId,
+          userTagId: { in: removeIds }
+        }
+      });
+    }
+
+    if (addIds.length > 0) {
+      await tx.taskUserTag.createMany({
+        data: addIds.map((userTagId) => ({ taskId, userTagId })),
+        skipDuplicates: true
+      });
+    }
+  });
+
+  revalidatePath("/tasks");
+}
+
 
 export async function createTask(
   _: TaskActionState,
