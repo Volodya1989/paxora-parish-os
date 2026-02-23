@@ -146,7 +146,7 @@ export default function TaskTagPickerDialog({ open, onOpenChange, task, onApplie
                 }
               }}
               placeholder={t("tasks.tags.newPlaceholder")}
-              className="h-9 flex-1 rounded-full border border-mist-200 px-3 text-sm"
+              className="h-9 flex-1 rounded-full border border-mist-200 px-3 text-base md:text-sm"
             />
             <Button type="button" size="sm" onClick={() => void handleCreate()} isLoading={isBusy}>{t("tasks.tags.add")}</Button>
           </div>
@@ -193,7 +193,7 @@ export default function TaskTagPickerDialog({ open, onOpenChange, task, onApplie
                         void handleRename(tag.id);
                       }
                     }}
-                    className="h-8 flex-1 rounded-full border border-mist-200 px-3 text-xs"
+                    className="h-8 flex-1 rounded-full border border-mist-200 px-3 text-base md:text-xs"
                   />
                   <Button type="button" size="sm" onClick={() => void handleRename(tag.id)} isLoading={isBusy}>
                     {t("tasks.tags.save")}
