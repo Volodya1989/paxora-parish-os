@@ -56,6 +56,10 @@ export type TaskListItem = {
     id: string;
     name: string;
   } | null;
+  userTags: Array<{
+    id: string;
+    name: string;
+  }>;
   createdById: string;
   canManage: boolean;
   canDelete: boolean;
@@ -402,6 +406,21 @@ export async function listTasks({
             name: true,
             email: true
           }
+        },
+        taskUserTags: {
+          where: {
+            userTag: {
+              userId: actorUserId
+            }
+          },
+          select: {
+            userTag: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          }
         }
       }
     }),
@@ -543,6 +562,10 @@ export async function listTasks({
           }
         : null,
       group: task.group ? { id: task.group.id, name: task.group.name } : null,
+      userTags: task.taskUserTags.map((taskUserTag) => ({
+        id: taskUserTag.userTag.id,
+        name: taskUserTag.userTag.name
+      })),
       createdById: task.createdById,
       canManage,
       canDelete: isLeader || task.createdById === actorUserId,

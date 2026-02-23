@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "typecheck": "rm -rf .next && prisma generate && tsc --noEmit",
-    "test": "find tests -name \"*.test.ts\" -print0 | xargs -0 node --test --experimental-test-module-mocks --test-concurrency=1 --import tsx",
+    "test": "find tests -name \"*.test.ts\" -print0 | xargs -0 -n 1 node --test --experimental-test-module-mocks --test-concurrency=1 --import tsx",
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
