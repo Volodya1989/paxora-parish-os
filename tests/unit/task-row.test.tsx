@@ -36,6 +36,7 @@ const baseTask: TaskListItem = {
     id: "group-1",
     name: "Liturgy"
   },
+  userTags: [],
   createdById: "user-1",
   canManage: true,
   canDelete: true,
@@ -63,6 +64,7 @@ function renderTask(task: TaskListItem) {
         onArchive: () => undefined,
         onEdit: () => undefined,
         onDelete: () => undefined,
+        onEditTags: () => undefined,
         currentUserId: "user-1"
       })
     )
@@ -95,4 +97,10 @@ test("TaskRow shows private and group badges without expanding", () => {
   assert.match(markup, />Private</);
   assert.match(markup, /LongGroupN…/);
   assert.match(markup, /title="LongGroupNameExample"/);
+  assert.match(markup, />#</);
+});
+
+test("TaskRow hides tag action for public tasks", () => {
+  const markup = renderTask(baseTask);
+  assert.doesNotMatch(markup, />#</);
 });

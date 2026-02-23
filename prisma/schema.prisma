@@ -400,6 +400,7 @@ model User {
   auditLogs                AuditLog[]               @relation("AuditActor")
   submittedContentReports  ContentReport[]          @relation("ContentReportReporter")
   reviewedContentReports   ContentReport[]          @relation("ContentReportReviewer")
+  userTags                 UserTag[]
 
   @@index([deletedAt])
 }
@@ -904,6 +905,7 @@ model Task {
   comments     TaskComment[]
   activities   TaskActivity[]
   hoursEntries HoursEntry[]
+  taskUserTags TaskUserTag[]
 
   @@unique([parishId, displayId])
   @@index([weekId])
@@ -913,6 +915,34 @@ model Task {
   @@index([parishId, weekId])
   @@index([parishId, status])
   @@index([parishId, completedAt])
+}
+
+model UserTag {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskUserTags TaskUserTag[]
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model TaskUserTag {
+  id        String   @id @default(cuid())
+  taskId    String
+  userTagId String
+  createdAt DateTime @default(now())
+
+  task    Task    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userTag UserTag @relation(fields: [userTagId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, userTagId])
+  @@index([taskId])
+  @@index([userTagId])
 }
 
 model HoursEntry {

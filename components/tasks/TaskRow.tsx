@@ -24,6 +24,7 @@ type TaskRowProps = {
   onArchive: (taskId: string) => void;
   onEdit: (task: TaskListItem) => void;
   onDelete: (taskId: string) => void;
+  onEditTags: (task: TaskListItem) => void;
   currentUserId: string;
   isBusy?: boolean;
   isStatusUpdating?: boolean;
@@ -86,6 +87,7 @@ export default function TaskRow({
   onArchive,
   onEdit,
   onDelete,
+  onEditTags,
   currentUserId,
   isBusy = false,
   isStatusUpdating = false,
@@ -136,7 +138,7 @@ export default function TaskRow({
       task.createdByRole === null);
   const showVolunteerAction = isVolunteerTask && (task.canVolunteer || task.hasVolunteered);
   const showStatusAction = canManageStatus && !isArchived;
-  const hasTopRowActions = showVolunteerAction || showStatusAction;
+  const hasTopRowActions = showVolunteerAction || showStatusAction || isPrivate;
   const statusActionLabel = isDone ? "Reopen" : isInProgress ? "Complete task" : "Start serving";
   const statusActionHandler = isDone
     ? () => onMarkOpen(task.id)
@@ -266,6 +268,16 @@ export default function TaskRow({
                       Unassign
                     </DropdownItem>
                   ) : null}
+                  {isPrivate ? (
+                    <DropdownItem
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        onEditTags(task);
+                      }}
+                    >
+                      Edit tags
+                    </DropdownItem>
+                  ) : null}
                   <DropdownItem
                     onClick={(event) => {
                       event.stopPropagation();
@@ -308,6 +320,16 @@ export default function TaskRow({
           {detailsOpen && task.notes ? (
             <p className="text-xs text-ink-500 break-words">{task.notes}</p>
           ) : null}
+          {isPrivate && task.userTags.length > 0 ? (
+            <div className="flex flex-wrap gap-1">
+              {task.userTags.slice(0, 4).map((tag) => (
+                <span key={tag.id} className="rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-medium text-primary-700">
+                  {tag.name}
+                </span>
+              ))}
+            </div>
+          ) : null}
+
           <div className="flex items-start justify-between gap-2">
             <div className="flex flex-wrap items-center gap-2 text-xs text-ink-500">
               <Badge tone={isArchived ? "neutral" : isDone ? "success" : isInProgress ? "warning" : "neutral"}>
@@ -319,6 +341,19 @@ export default function TaskRow({
             </div>
             {hasTopRowActions ? (
               <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                {isPrivate ? (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onEditTags(task);
+                    }}
+                    className="inline-flex min-h-[34px] items-center rounded-full border border-mist-200 px-2 py-1 text-xs font-medium text-ink-600 transition hover:bg-mist-50"
+                  >
+                    #
+                  </button>
+                ) : null}
+
                 {showVolunteerAction ? (
                   <Button
                     type="button"
