@@ -32,6 +32,93 @@ async function requirePlatformSession() {
   return session.user.id;
 }
 
+async function safeDeleteParish(parishId: string) {
+  return prisma.$transaction(async (tx) => {
+    const parish = await tx.parish.findUnique({
+      where: { id: parishId },
+      select: {
+        id: true,
+        name: true,
+        deactivatedAt: true
+      }
+    });
+
+    if (!parish || !parish.deactivatedAt) {
+      return { result: "not_deactivated" as const };
+    }
+
+    const cleanupCounts = {
+      usersImpersonationCleared: 0,
+      usersActiveParishCleared: 0,
+      notificationsDeleted: 0,
+      mentionsDeleted: 0,
+      pushSubscriptionsDeleted: 0,
+      accessRequestsDeleted: 0,
+      parishInvitesDeleted: 0,
+      deliveryAttemptsDeleted: 0,
+      auditLogsDeleted: 0,
+      contentReportsDeleted: 0,
+      requestsDeleted: 0,
+      announcementsDeleted: 0,
+      digestsDeleted: 0,
+      eventRequestsDeleted: 0,
+      weeksDeleted: 0,
+      groupMembershipsDeleted: 0,
+      groupsDeleted: 0,
+      membershipsDeleted: 0
+    };
+
+    cleanupCounts.usersImpersonationCleared = (
+      await tx.user.updateMany({
+        where: { impersonatedParishId: parish.id },
+        data: { impersonatedParishId: null }
+      })
+    ).count;
+    cleanupCounts.usersActiveParishCleared = (
+      await tx.user.updateMany({
+        where: { activeParishId: parish.id },
+        data: { activeParishId: null }
+      })
+    ).count;
+    cleanupCounts.notificationsDeleted = (await tx.notification.deleteMany({ where: { parishId: parish.id } })).count;
+    cleanupCounts.mentionsDeleted = (await tx.mention.deleteMany({ where: { parishId: parish.id } })).count;
+    cleanupCounts.pushSubscriptionsDeleted = (
+      await tx.pushSubscription.deleteMany({ where: { parishId: parish.id } })
+    ).count;
+    cleanupCounts.accessRequestsDeleted = (await tx.accessRequest.deleteMany({ where: { parishId: parish.id } })).count;
+    cleanupCounts.parishInvitesDeleted = (await tx.parishInvite.deleteMany({ where: { parishId: parish.id } })).count;
+    cleanupCounts.deliveryAttemptsDeleted = (
+      await tx.deliveryAttempt.deleteMany({ where: { parishId: parish.id } })
+    ).count;
+    cleanupCounts.auditLogsDeleted = (await tx.auditLog.deleteMany({ where: { parishId: parish.id } })).count;
+    cleanupCounts.contentReportsDeleted = (await tx.contentReport.deleteMany({ where: { parishId: parish.id } })).count;
+    cleanupCounts.requestsDeleted = (await tx.request.deleteMany({ where: { parishId: parish.id } })).count;
+    cleanupCounts.announcementsDeleted = (await tx.announcement.deleteMany({ where: { parishId: parish.id } })).count;
+    cleanupCounts.digestsDeleted = (await tx.digest.deleteMany({ where: { parishId: parish.id } })).count;
+    cleanupCounts.eventRequestsDeleted = (await tx.eventRequest.deleteMany({ where: { parishId: parish.id } })).count;
+    cleanupCounts.weeksDeleted = (await tx.week.deleteMany({ where: { parishId: parish.id } })).count;
+    cleanupCounts.groupMembershipsDeleted = (
+      await tx.groupMembership.deleteMany({
+        where: {
+          group: {
+            parishId: parish.id
+          }
+        }
+      })
+    ).count;
+    cleanupCounts.groupsDeleted = (await tx.group.deleteMany({ where: { parishId: parish.id } })).count;
+    cleanupCounts.membershipsDeleted = (await tx.membership.deleteMany({ where: { parishId: parish.id } })).count;
+
+    await tx.parish.delete({ where: { id: parish.id } });
+
+    return {
+      result: "deleted" as const,
+      name: parish.name,
+      cleanupCounts
+    };
+  });
+}
+
 function slugify(value: string) {
   return value
     .toLowerCase()
@@ -263,7 +350,7 @@ export async function safeDeletePlatformParish(input: {
 
   const parishMeta = await prisma.parish.findUnique({
     where: { id: parsed.data.parishId },
-    select: { id: true, name: true, deactivatedAt: true }
+    select: { id: true, deactivatedAt: true }
   });
 
   if (!parishMeta) {
@@ -274,79 +361,17 @@ export async function safeDeletePlatformParish(input: {
     return buildError("Deactivate the parish before safe delete.", "INVALID_STATE");
   }
 
-  // Re-check counts inside an interactive transaction so there is no window
-  // between the precondition check and the delete.
-  const deleteResult = await prisma.$transaction(async (tx) => {
-    const parish = await tx.parish.findUnique({
-      where: { id: parishMeta.id },
-      select: {
-        id: true,
-        deactivatedAt: true,
-        _count: {
-          select: {
-            memberships: true,
-            accessRequests: true,
-            groups: true,
-            weeks: true,
-            tasks: true,
-            events: true,
-            eventRequests: true,
-            requests: true,
-            digests: true,
-            announcements: true,
-            chatChannels: true,
-            emailLogs: true,
-            notifications: true,
-            mentions: true,
-            hoursEntries: true,
-            heroNominations: true,
-            parishInvites: true,
-            deliveryAttempts: true,
-            auditLogs: true,
-            pushSubscriptions: true
-          }
-        }
-      }
-    });
+  const deleteResult = await safeDeleteParish(parishMeta.id);
 
-    if (!parish || !parish.deactivatedAt) {
-      return "not_deactivated" as const;
-    }
-
-    const dependentRecords = Object.values(parish._count).reduce((total, value) => total + value, 0);
-    const usersPointingToParish = await tx.user.count({
-      where: {
-        OR: [{ activeParishId: parish.id }, { impersonatedParishId: parish.id }]
-      }
-    });
-
-    if (dependentRecords > 0 || usersPointingToParish > 0) {
-      return "has_dependents" as const;
-    }
-
-    await tx.user.updateMany({
-      where: { impersonatedParishId: parish.id },
-      data: { impersonatedParishId: null }
-    });
-    await tx.user.updateMany({
-      where: { activeParishId: parish.id },
-      data: { activeParishId: null }
-    });
-    await tx.parish.delete({ where: { id: parish.id } });
-    return "deleted" as const;
-  });
-
-  if (deleteResult === "not_deactivated") {
+  if (deleteResult.result === "not_deactivated") {
     return buildError("Deactivate the parish before safe delete.", "INVALID_STATE");
   }
 
-  if (deleteResult === "has_dependents") {
-    return buildError(
-      "Parish cannot be safely deleted yet. Remove memberships and parish data first.",
-      "INVALID_STATE"
-    );
-  }
+  console.info("[platformParishes.safeDelete] Parish safe delete cleanup summary", {
+    parishId: parishMeta.id,
+    cleanupCounts: deleteResult.cleanupCounts
+  });
 
   revalidatePath("/platform/parishes");
-  return { status: "success", message: `${parishMeta.name} safely deleted.` };
+  return { status: "success", message: `${deleteResult.name} safely deleted.` };
 }
