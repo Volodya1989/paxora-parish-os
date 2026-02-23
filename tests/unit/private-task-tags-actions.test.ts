@@ -1,6 +1,7 @@
 import { mock, test } from "node:test";
 import assert from "node:assert/strict";
 import { loadModuleFromRoot } from "../_helpers/load-module";
+import { resolveFromRoot } from "../_helpers/resolve";
 
 const state = {
   task: {
@@ -19,13 +20,13 @@ mock.module("next-auth", {
   }
 });
 
-mock.module("@/server/auth/options", { namedExports: { authOptions: {} } });
+mock.module(resolveFromRoot("server/auth/options"), { namedExports: { authOptions: {} } });
 mock.module("next/cache", { namedExports: { revalidatePath: () => undefined } });
 
 const createManyCalls: Array<{ taskId: string; userTagId: string }[]> = [];
 const deleteManyCalls: Array<{ taskId: string; userTagId: { in: string[] } }> = [];
 
-mock.module("@/server/db/prisma", {
+mock.module(resolveFromRoot("server/db/prisma"), {
   namedExports: {
     prisma: {
       task: {
