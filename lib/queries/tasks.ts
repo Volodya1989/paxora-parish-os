@@ -3,6 +3,7 @@ import { canManageGroupMembership, isParishLeader } from "@/lib/permissions";
 import { getNow } from "@/lib/time/getNow";
 import { getOrCreateCurrentWeek } from "@/domain/week";
 import { prisma } from "@/server/db/prisma";
+import { getParishMembership } from "@/server/db/groups";
 
 export type TaskStatusFilter = "all" | "open" | "in-progress" | "done" | "archived";
 export type TaskOwnershipFilter = "mine" | "all";
@@ -209,15 +210,7 @@ export async function listTasks({
     dateTo: filters?.dateTo
   };
 
-  const parishMembership = await prisma.membership.findUnique({
-    where: {
-      parishId_userId: {
-        parishId,
-        userId: actorUserId
-      }
-    },
-    select: { role: true }
-  });
+  const parishMembership = await getParishMembership(parishId, actorUserId);
   const isLeader = parishMembership ? isParishLeader(parishMembership.role) : false;
   const groupMemberships = await prisma.groupMembership.findMany({
     where: {
@@ -580,15 +573,7 @@ export async function listPendingTaskApprovals({
   actorUserId: string;
   weekId?: string;
 }): Promise<PendingTaskApproval[]> {
-  const membership = await prisma.membership.findUnique({
-    where: {
-      parishId_userId: {
-        parishId,
-        userId: actorUserId
-      }
-    },
-    select: { role: true }
-  });
+  const membership = await getParishMembership(parishId, actorUserId);
 
   if (!membership || !isParishLeader(membership.role)) {
     return [];
@@ -785,15 +770,7 @@ export async function getTaskDetail({
     return null;
   }
 
-  const membership = await prisma.membership.findUnique({
-    where: {
-      parishId_userId: {
-        parishId: task.parishId,
-        userId: actorUserId
-      }
-    },
-    select: { id: true }
-  });
+  const membership = await getParishMembership(task.parishId, actorUserId);
 
   if (!membership) {
     return null;
