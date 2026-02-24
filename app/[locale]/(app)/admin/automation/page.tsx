@@ -1,13 +1,38 @@
+import { fromZonedTime } from "date-fns-tz";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/server/auth/options";
 import { requireAdminOrShepherd } from "@/server/auth/permissions";
 import { prisma } from "@/server/db/prisma";
+import { getParishLocalDateParts, parseLegacyUtcOffset } from "@/lib/email/greetingSchedule";
 import { isMissingColumnError } from "@/lib/prisma/errors";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
 import GreetingsConfig from "@/components/automation/GreetingsConfig";
 import { ZapIcon } from "@/components/icons/ParishIcons";
 import { getLocaleFromParam } from "@/lib/i18n/routing";
 import { getTranslations } from "@/lib/i18n/server";
+
+function getLocalDayWindowUtc(now: Date, timezone: string, dateKey: string) {
+  const legacyOffset = parseLegacyUtcOffset(timezone);
+
+  if (legacyOffset !== null) {
+    const [year, month, day] = dateKey.split("-").map(Number);
+    const localStartUtcMs = Date.UTC(year, month - 1, day, 0, 0, 0) - legacyOffset * 60_000;
+    const nextDayStartUtcMs = localStartUtcMs + 24 * 60 * 60 * 1000;
+    return {
+      startUtc: new Date(localStartUtcMs),
+      endUtc: new Date(nextDayStartUtcMs)
+    };
+  }
+
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const nextLocalDate = new Date(Date.UTC(year, month - 1, day + 1));
+  const nextDateKey = `${nextLocalDate.getUTCFullYear()}-${String(nextLocalDate.getUTCMonth() + 1).padStart(2, "0")}-${String(nextLocalDate.getUTCDate()).padStart(2, "0")}`;
+
+  return {
+    startUtc: fromZonedTime(`${dateKey} 00:00:00`, timezone),
+    endUtc: fromZonedTime(`${nextDateKey} 00:00:00`, timezone)
+  };
+}
 
 export default async function AutomationPage({
   params
@@ -123,6 +148,103 @@ export default async function AutomationPage({
 
   const sendTimeLocal = `${String(parish.greetingsSendHourLocal).padStart(2, "0")}:${String(parish.greetingsSendMinuteLocal).padStart(2, "0")}`;
 
+  const now = new Date();
+  const timezone = parish.timezone || "UTC";
+  const { month, day, dateKey } = getParishLocalDateParts(now, timezone);
+  const { startUtc, endUtc } = getLocalDayWindowUtc(now, timezone, dateKey);
+
+  let todaysCandidateMemberships: Array<{
+    user: {
+      birthdayMonth: number | null;
+      birthdayDay: number | null;
+      anniversaryMonth: number | null;
+      anniversaryDay: number | null;
+    };
+  }> = [];
+
+  try {
+    todaysCandidateMemberships = await prisma.membership.findMany({
+      where: {
+        parishId,
+        allowParishGreetings: true,
+        user: {
+          deletedAt: null,
+          OR: [
+            { birthdayMonth: month, birthdayDay: day },
+            { anniversaryMonth: month, anniversaryDay: day }
+          ]
+        }
+      },
+      select: {
+        user: {
+          select: {
+            birthdayMonth: true,
+            birthdayDay: true,
+            anniversaryMonth: true,
+            anniversaryDay: true
+          }
+        }
+      }
+    });
+  } catch (error) {
+    if (!isMissingColumnError(error, "Membership.allowParishGreetings")) {
+      throw error;
+    }
+
+    todaysCandidateMemberships = await prisma.membership.findMany({
+      where: {
+        parishId,
+        user: {
+          deletedAt: null,
+          greetingsOptIn: true,
+          OR: [
+            { birthdayMonth: month, birthdayDay: day },
+            { anniversaryMonth: month, anniversaryDay: day }
+          ]
+        }
+      },
+      select: {
+        user: {
+          select: {
+            birthdayMonth: true,
+            birthdayDay: true,
+            anniversaryMonth: true,
+            anniversaryDay: true
+          }
+        }
+      }
+    });
+  }
+
+  const emailsPlannedToday = todaysCandidateMemberships.reduce((total, row) => {
+    const birthday = row.user.birthdayMonth === month && row.user.birthdayDay === day ? 1 : 0;
+    const anniversary = row.user.anniversaryMonth === month && row.user.anniversaryDay === day ? 1 : 0;
+    return total + birthday + anniversary;
+  }, 0);
+
+  const emailsSentToday = await prisma.emailLog.count({
+    where: {
+      parishId,
+      template: { in: ["birthdayGreeting", "anniversaryGreeting"] },
+      status: "SENT",
+      sentAt: {
+        gte: startUtc,
+        lt: endUtc
+      }
+    }
+  });
+
+  const latestGreetingSend = await prisma.emailLog.findFirst({
+    where: {
+      parishId,
+      template: { in: ["birthdayGreeting", "anniversaryGreeting"] },
+      status: "SENT",
+      sentAt: { not: null }
+    },
+    select: { sentAt: true },
+    orderBy: { sentAt: "desc" }
+  });
+
   return (
     <ParishionerPageLayout
       pageTitle={t("automation.title")}
@@ -142,6 +264,9 @@ export default async function AutomationPage({
           birthdayGreetingTemplate={parish.birthdayGreetingTemplate}
           anniversaryGreetingTemplate={parish.anniversaryGreetingTemplate}
           greetingsSendTimeLocal={sendTimeLocal}
+          emailsPlannedToday={emailsPlannedToday}
+          emailsSentToday={emailsSentToday}
+          latestGreetingSentAt={latestGreetingSend?.sentAt?.toISOString() ?? null}
         />
       </div>
     </ParishionerPageLayout>

@@ -7,7 +7,11 @@ import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
 import { isParishLeader } from "@/lib/permissions";
 import { sanitizeGreetingHtml } from "@/lib/sanitize/html";
-import { parseGreetingLocalTime } from "@/lib/email/greetingSchedule";
+import {
+  isLegacyUtcOffsetTimezone,
+  isValidTimezone,
+  parseGreetingLocalTime
+} from "@/lib/email/greetingSchedule";
 import { isMissingColumnError } from "@/lib/prisma/errors";
 
 const greetingTemplateSchema = z.object({
@@ -96,7 +100,8 @@ const greetingConfigSchema = z.object({
   greetingsEnabled: z.boolean(),
   birthdayGreetingTemplate: z.string().max(5000).optional().default(""),
   anniversaryGreetingTemplate: z.string().max(5000).optional().default(""),
-  greetingsSendTimeLocal: z.string().optional().default("09:00")
+  greetingsSendTimeLocal: z.string().optional().default("09:00"),
+  parishTimezone: z.string().trim().min(1).optional().default("UTC")
 });
 
 export async function updateParishGreetingConfig(input: {
@@ -104,6 +109,7 @@ export async function updateParishGreetingConfig(input: {
   birthdayGreetingTemplate?: string;
   anniversaryGreetingTemplate?: string;
   greetingsSendTimeLocal?: string;
+  parishTimezone?: string;
 }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -134,7 +140,13 @@ export async function updateParishGreetingConfig(input: {
     throw new Error("Invalid local send time");
   }
 
+  const timezone = parsed.data.parishTimezone;
+  if (!isValidTimezone(timezone) && !isLegacyUtcOffsetTimezone(timezone)) {
+    throw new Error("Invalid parish timezone");
+  }
+
   const baseData = {
+    timezone,
     birthdayGreetingTemplate: parsed.data.birthdayGreetingTemplate
       ? sanitizeGreetingHtml(parsed.data.birthdayGreetingTemplate)
       : null,
