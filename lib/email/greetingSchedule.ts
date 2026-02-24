@@ -39,5 +39,22 @@ export function shouldRunGreetingForParishTime(input: {
   sendHourLocal: number;
   sendMinuteLocal: number;
 }) {
-  return input.nowHour === input.sendHourLocal && input.nowMinute === input.sendMinuteLocal;
+  const nowTotalMinutes = input.nowHour * 60 + input.nowMinute;
+  const sendTotalMinutes = input.sendHourLocal * 60 + input.sendMinuteLocal;
+  const diff = nowTotalMinutes - sendTotalMinutes;
+
+  // Match if current time is within [sendTime, sendTime + 14 minutes].
+  // A cron running every 15 minutes will hit each window exactly once.
+  // Idempotency via GreetingEmailLog prevents duplicate sends even if
+  // the cron fires twice inside the same window.
+  return diff >= 0 && diff < GREETING_MINUTE_INTERVAL;
+}
+
+export function isValidTimezone(tz: string): boolean {
+  try {
+    Intl.DateTimeFormat("en-US", { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
 }

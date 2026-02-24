@@ -10,12 +10,10 @@ import ProfileDates from "@/components/profile/ProfileDates";
 import ProfileSettings from "@/components/profile/ProfileSettings";
 import VolunteerHoursCard from "@/components/profile/VolunteerHoursCard";
 import DeleteAccountCard from "@/components/profile/DeleteAccountCard";
-import ParishGreetingSettings from "@/components/profile/ParishGreetingSettings";
 import { getParishMembership } from "@/server/db/groups";
 import { isParishLeader } from "@/lib/permissions";
 import { listParishHubItemsForAdmin, ensureParishHubDefaults } from "@/server/actions/parish-hub";
 import { prisma } from "@/server/db/prisma";
-import { isMissingColumnError } from "@/lib/prisma/errors";
 import ParishHubAdminPanel from "@/components/parish-hub/ParishHubAdminPanel";
 import type { ParishHubAdminItem } from "@/components/parish-hub/ParishHubReorderList";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
@@ -54,51 +52,10 @@ export default async function ProfilePage({
   const activeParishId = session.user.activeParishId;
 
   const parish = activeParishId
-    ? await (async () => {
-        try {
-          const row = await prisma.parish.findUnique({
-            where: { id: activeParishId },
-            select: {
-              name: true,
-              logoUrl: true,
-              birthdayGreetingTemplate: true,
-              anniversaryGreetingTemplate: true,
-              greetingsSendHourLocal: true,
-              greetingsSendMinuteLocal: true
-            }
-          });
-
-          return row
-            ? {
-                ...row,
-                greetingsSendTimeLocal: `${String(row.greetingsSendHourLocal).padStart(2, "0")}:${String(row.greetingsSendMinuteLocal).padStart(2, "0")}`
-              }
-            : null;
-        } catch (error) {
-          if (!isMissingColumnError(error, "Parish.greetingsSendHourLocal")) {
-            throw error;
-          }
-
-          const fallback = await prisma.parish.findUnique({
-            where: { id: activeParishId },
-            select: {
-              name: true,
-              logoUrl: true,
-              birthdayGreetingTemplate: true,
-              anniversaryGreetingTemplate: true
-            }
-          });
-
-          return fallback
-            ? {
-                ...fallback,
-                greetingsSendHourLocal: 9,
-                greetingsSendMinuteLocal: 0,
-                greetingsSendTimeLocal: "09:00"
-              }
-            : null;
-        }
-      })()
+    ? await prisma.parish.findUnique({
+        where: { id: activeParishId },
+        select: { name: true, logoUrl: true }
+      })
     : null;
 
   // Check if user is admin/shepherd for Parish Hub settings
@@ -216,15 +173,21 @@ export default async function ProfilePage({
         </div>
 
 
-        {isAdmin && session.user.activeParishId && parish ? (
-          <ParishGreetingSettings
-            parishId={session.user.activeParishId}
-            parishName={parish.name}
-            logoUrl={parish.logoUrl}
-            birthdayGreetingTemplate={parish.birthdayGreetingTemplate}
-            anniversaryGreetingTemplate={parish.anniversaryGreetingTemplate}
-            greetingsSendTimeLocal={parish.greetingsSendTimeLocal}
-          />
+        {isAdmin && session.user.activeParishId ? (
+          <Card>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-medium text-ink-900">{t("automation.title")}</p>
+                <p className="text-sm text-ink-500">{t("automation.profileLink")}</p>
+              </div>
+              <a
+                href="/admin/automation"
+                className="inline-flex min-h-[2.25rem] items-center justify-center rounded-button border border-mist-200 bg-white px-3 py-1.5 text-center text-xs font-medium leading-tight text-ink-900 transition hover:border-mist-300 hover:bg-mist-50 focus-ring whitespace-normal break-words sm:w-auto"
+              >
+                {t("automation.openSettings")}
+              </a>
+            </div>
+          </Card>
         ) : null}
 
         <DeleteAccountCard />

@@ -2,7 +2,7 @@ import { GreetingType } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { requireCronSecret } from "@/lib/cron/auth";
 import { sendGreetingEmailIfEligible } from "@/lib/email/greetings";
-import { shouldRunGreetingForParishTime } from "@/lib/email/greetingSchedule";
+import { shouldRunGreetingForParishTime, isValidTimezone } from "@/lib/email/greetingSchedule";
 import { isMissingColumnError } from "@/lib/prisma/errors";
 import { prisma } from "@/server/db/prisma";
 
@@ -40,6 +40,7 @@ export async function GET(request: Request) {
     name: string;
     timezone: string;
     logoUrl: string | null;
+    greetingsEnabled: boolean;
     birthdayGreetingTemplate: string | null;
     anniversaryGreetingTemplate: string | null;
     greetingsSendHourLocal: number;
@@ -54,6 +55,7 @@ export async function GET(request: Request) {
         name: true,
         timezone: true,
         logoUrl: true,
+        greetingsEnabled: true,
         birthdayGreetingTemplate: true,
         anniversaryGreetingTemplate: true,
         greetingsSendHourLocal: true,
@@ -61,27 +63,66 @@ export async function GET(request: Request) {
       }
     });
   } catch (error) {
-    if (!isMissingColumnError(error, "Parish.greetingsSendHourLocal")) {
+    if (isMissingColumnError(error, "Parish.greetingsEnabled")) {
+      // greetingsEnabled column not yet migrated — try without it
+      try {
+        const withoutEnabled = await prisma.parish.findMany({
+          where: { deactivatedAt: null },
+          select: {
+            id: true,
+            name: true,
+            timezone: true,
+            logoUrl: true,
+            birthdayGreetingTemplate: true,
+            anniversaryGreetingTemplate: true,
+            greetingsSendHourLocal: true,
+            greetingsSendMinuteLocal: true
+          }
+        });
+        parishes = withoutEnabled.map((p) => ({ ...p, greetingsEnabled: true }));
+      } catch (innerError) {
+        if (!isMissingColumnError(innerError, "Parish.greetingsSendHourLocal")) {
+          throw innerError;
+        }
+        const minimal = await prisma.parish.findMany({
+          where: { deactivatedAt: null },
+          select: {
+            id: true,
+            name: true,
+            timezone: true,
+            logoUrl: true,
+            birthdayGreetingTemplate: true,
+            anniversaryGreetingTemplate: true
+          }
+        });
+        parishes = minimal.map((p) => ({
+          ...p,
+          greetingsEnabled: true,
+          greetingsSendHourLocal: 9,
+          greetingsSendMinuteLocal: 0
+        }));
+      }
+    } else if (isMissingColumnError(error, "Parish.greetingsSendHourLocal")) {
+      const fallbackParishes = await prisma.parish.findMany({
+        where: { deactivatedAt: null },
+        select: {
+          id: true,
+          name: true,
+          timezone: true,
+          logoUrl: true,
+          birthdayGreetingTemplate: true,
+          anniversaryGreetingTemplate: true
+        }
+      });
+      parishes = fallbackParishes.map((parish) => ({
+        ...parish,
+        greetingsEnabled: true,
+        greetingsSendHourLocal: 9,
+        greetingsSendMinuteLocal: 0
+      }));
+    } else {
       throw error;
     }
-
-    const fallbackParishes = await prisma.parish.findMany({
-      where: { deactivatedAt: null },
-      select: {
-        id: true,
-        name: true,
-        timezone: true,
-        logoUrl: true,
-        birthdayGreetingTemplate: true,
-        anniversaryGreetingTemplate: true
-      }
-    });
-
-    parishes = fallbackParishes.map((parish) => ({
-      ...parish,
-      greetingsSendHourLocal: 9,
-      greetingsSendMinuteLocal: 0
-    }));
   }
 
   let sent = 0;
@@ -89,7 +130,20 @@ export async function GET(request: Request) {
   let failed = 0;
 
   for (const parish of parishes) {
-    const { month, day, hour, minute, dateKey } = getParishLocalDateParts(now, parish.timezone || "UTC");
+    if (!parish.greetingsEnabled) {
+      continue;
+    }
+
+    const tz = parish.timezone || "UTC";
+
+    if (!parish.timezone) {
+      console.warn(`[greetings-cron] Parish ${parish.id} has no timezone configured, defaulting to UTC`);
+    } else if (!isValidTimezone(parish.timezone)) {
+      console.error(`[greetings-cron] Parish ${parish.id} has invalid timezone: ${parish.timezone}, skipping`);
+      continue;
+    }
+
+    const { month, day, hour, minute, dateKey } = getParishLocalDateParts(now, tz);
 
     if (
       !shouldRunGreetingForParishTime({

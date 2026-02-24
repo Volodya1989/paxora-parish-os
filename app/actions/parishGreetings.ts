@@ -84,9 +84,115 @@ export async function updateParishGreetingTemplates(input: {
   }
 
   revalidatePath("/profile");
+  revalidatePath("/admin/automation");
 
   return {
     status: "success" as const,
     sendTimeSupported
+  };
+}
+
+const greetingConfigSchema = z.object({
+  greetingsEnabled: z.boolean(),
+  birthdayGreetingTemplate: z.string().max(5000).optional().default(""),
+  anniversaryGreetingTemplate: z.string().max(5000).optional().default(""),
+  greetingsSendTimeLocal: z.string().optional().default("09:00")
+});
+
+export async function updateParishGreetingConfig(input: {
+  greetingsEnabled: boolean;
+  birthdayGreetingTemplate?: string;
+  anniversaryGreetingTemplate?: string;
+  greetingsSendTimeLocal?: string;
+}) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id || !session.user.activeParishId) {
+    throw new Error("Unauthorized");
+  }
+
+  const membership = await prisma.membership.findUnique({
+    where: {
+      parishId_userId: {
+        parishId: session.user.activeParishId,
+        userId: session.user.id
+      }
+    },
+    select: { role: true }
+  });
+
+  if (!membership || !isParishLeader(membership.role)) {
+    throw new Error("Forbidden");
+  }
+
+  const parsed = greetingConfigSchema.safeParse(input);
+  if (!parsed.success) {
+    throw new Error("Invalid configuration");
+  }
+
+  const parsedSendTime = parseGreetingLocalTime(parsed.data.greetingsSendTimeLocal);
+  if (!parsedSendTime) {
+    throw new Error("Invalid local send time");
+  }
+
+  const baseData = {
+    birthdayGreetingTemplate: parsed.data.birthdayGreetingTemplate
+      ? sanitizeGreetingHtml(parsed.data.birthdayGreetingTemplate)
+      : null,
+    anniversaryGreetingTemplate: parsed.data.anniversaryGreetingTemplate
+      ? sanitizeGreetingHtml(parsed.data.anniversaryGreetingTemplate)
+      : null
+  };
+
+  let greetingsEnabledSupported = true;
+
+  try {
+    await prisma.parish.update({
+      where: { id: session.user.activeParishId },
+      data: {
+        ...baseData,
+        greetingsEnabled: parsed.data.greetingsEnabled,
+        greetingsSendHourLocal: parsedSendTime.hour,
+        greetingsSendMinuteLocal: parsedSendTime.minute
+      }
+    });
+  } catch (error) {
+    if (isMissingColumnError(error, "Parish.greetingsEnabled")) {
+      greetingsEnabledSupported = false;
+
+      try {
+        await prisma.parish.update({
+          where: { id: session.user.activeParishId },
+          data: {
+            ...baseData,
+            greetingsSendHourLocal: parsedSendTime.hour,
+            greetingsSendMinuteLocal: parsedSendTime.minute
+          }
+        });
+      } catch (innerError) {
+        if (!isMissingColumnError(innerError, "Parish.greetingsSendHourLocal")) {
+          throw innerError;
+        }
+
+        await prisma.parish.update({
+          where: { id: session.user.activeParishId },
+          data: baseData
+        });
+      }
+    } else if (isMissingColumnError(error, "Parish.greetingsSendHourLocal")) {
+      await prisma.parish.update({
+        where: { id: session.user.activeParishId },
+        data: baseData
+      });
+    } else {
+      throw error;
+    }
+  }
+
+  revalidatePath("/admin/automation");
+  revalidatePath("/profile");
+
+  return {
+    status: "success" as const,
+    greetingsEnabledSupported
   };
 }

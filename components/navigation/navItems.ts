@@ -53,6 +53,7 @@ export function getMoreNavItems(role?: NavRole, platformRole?: PlatformNavRole) 
       { labelKey: "nav.statistics", href: routes.adminStatistics, icon: "ST", testId: "statistics" },
       { labelKey: "nav.reliability", href: routes.adminReliability, icon: "RL", testId: "reliability" },
       { labelKey: "nav.reports", href: routes.adminReports, icon: "RP", testId: "reports" },
+      { labelKey: "nav.automation", href: routes.adminAutomation, icon: "AU", testId: "automation" },
       ...(platformItem ? [platformItem] : []),
       { labelKey: "nav.people", href: routes.adminPeople, icon: "PE", testId: "people" },
       baseMoreNavItems[1]
