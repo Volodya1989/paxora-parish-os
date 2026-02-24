@@ -2,27 +2,9 @@ import { GreetingType } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { requireCronSecret } from "@/lib/cron/auth";
 import { sendGreetingEmailIfEligible } from "@/lib/email/greetings";
-import { prisma } from "@/server/db/prisma";
+import { getParishLocalDateParts, shouldSendGreetingsThisHour } from "@/lib/email/greetingSchedule";
 import { isMissingColumnError } from "@/lib/prisma/errors";
-
-function getParishLocalDateParts(now: Date, timeZone: string) {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    year: "numeric",
-    month: "numeric",
-    day: "numeric"
-  }).formatToParts(now);
-
-  const get = (type: "year" | "month" | "day") =>
-    Number(parts.find((part) => part.type === type)?.value ?? "0");
-
-  const year = get("year");
-  const month = get("month");
-  const day = get("day");
-  const dateKey = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-
-  return { month, day, dateKey };
-}
+import { prisma } from "@/server/db/prisma";
 
 export async function GET(request: Request) {
   const unauthorized = requireCronSecret(request);
@@ -37,7 +19,8 @@ export async function GET(request: Request) {
       timezone: true,
       logoUrl: true,
       birthdayGreetingTemplate: true,
-      anniversaryGreetingTemplate: true
+      anniversaryGreetingTemplate: true,
+      greetingsSendHourLocal: true
     }
   });
 
@@ -46,7 +29,11 @@ export async function GET(request: Request) {
   let failed = 0;
 
   for (const parish of parishes) {
-    const { month, day, dateKey } = getParishLocalDateParts(now, parish.timezone || "UTC");
+    const { month, day, hour, dateKey } = getParishLocalDateParts(now, parish.timezone || "UTC");
+
+    if (!shouldSendGreetingsThisHour(hour, parish.greetingsSendHourLocal)) {
+      continue;
+    }
 
     let memberships: Array<{
       userId: string;

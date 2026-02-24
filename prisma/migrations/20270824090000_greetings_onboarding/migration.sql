@@ -42,3 +42,7 @@ ALTER TABLE "Membership"
   ADD COLUMN "greetingsOptInAt" TIMESTAMP(3),
   ADD COLUMN "greetingsLastPromptedAt" TIMESTAMP(3),
   ADD COLUMN "greetingsDoNotAskAgain" BOOLEAN NOT NULL DEFAULT false;
+
+
+ALTER TABLE "Parish"
+  ADD COLUMN "greetingsSendHourLocal" INTEGER NOT NULL DEFAULT 9;

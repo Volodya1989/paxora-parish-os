@@ -7,15 +7,18 @@ import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
 import { isParishLeader } from "@/lib/permissions";
 import { sanitizeGreetingHtml } from "@/lib/sanitize/html";
+import { isMissingColumnError } from "@/lib/prisma/errors";
 
 const greetingTemplateSchema = z.object({
   birthdayGreetingTemplate: z.string().max(5000).optional().default(""),
-  anniversaryGreetingTemplate: z.string().max(5000).optional().default("")
+  anniversaryGreetingTemplate: z.string().max(5000).optional().default(""),
+  greetingsSendHourLocal: z.number().int().min(0).max(23).optional().default(9)
 });
 
 export async function updateParishGreetingTemplates(input: {
   birthdayGreetingTemplate?: string;
   anniversaryGreetingTemplate?: string;
+  greetingsSendHourLocal?: number;
 }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -41,17 +44,36 @@ export async function updateParishGreetingTemplates(input: {
     throw new Error("Invalid template");
   }
 
-  await prisma.parish.update({
-    where: { id: session.user.activeParishId },
-    data: {
-      birthdayGreetingTemplate: parsed.data.birthdayGreetingTemplate
-        ? sanitizeGreetingHtml(parsed.data.birthdayGreetingTemplate)
-        : null,
-      anniversaryGreetingTemplate: parsed.data.anniversaryGreetingTemplate
-        ? sanitizeGreetingHtml(parsed.data.anniversaryGreetingTemplate)
-        : null
+  try {
+    await prisma.parish.update({
+      where: { id: session.user.activeParishId },
+      data: {
+        birthdayGreetingTemplate: parsed.data.birthdayGreetingTemplate
+          ? sanitizeGreetingHtml(parsed.data.birthdayGreetingTemplate)
+          : null,
+        anniversaryGreetingTemplate: parsed.data.anniversaryGreetingTemplate
+          ? sanitizeGreetingHtml(parsed.data.anniversaryGreetingTemplate)
+          : null,
+        greetingsSendHourLocal: parsed.data.greetingsSendHourLocal
+      }
+    });
+  } catch (error) {
+    if (!isMissingColumnError(error, "Parish.greetingsSendHourLocal")) {
+      throw error;
     }
-  });
+
+    await prisma.parish.update({
+      where: { id: session.user.activeParishId },
+      data: {
+        birthdayGreetingTemplate: parsed.data.birthdayGreetingTemplate
+          ? sanitizeGreetingHtml(parsed.data.birthdayGreetingTemplate)
+          : null,
+        anniversaryGreetingTemplate: parsed.data.anniversaryGreetingTemplate
+          ? sanitizeGreetingHtml(parsed.data.anniversaryGreetingTemplate)
+          : null
+      }
+    });
+  }
 
   revalidatePath("/profile");
 }

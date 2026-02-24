@@ -244,6 +244,7 @@ model Parish {
   logoUrl                   String?
   birthdayGreetingTemplate  String?
   anniversaryGreetingTemplate String?
+  greetingsSendHourLocal     Int                     @default(9)
   defaultLocale             String                  @default("en")
   inviteCode                String?                 @unique
   inviteCodeCreatedAt       DateTime?

@@ -15,6 +15,7 @@ import { getParishMembership } from "@/server/db/groups";
 import { isParishLeader } from "@/lib/permissions";
 import { listParishHubItemsForAdmin, ensureParishHubDefaults } from "@/server/actions/parish-hub";
 import { prisma } from "@/server/db/prisma";
+import { isMissingColumnError } from "@/lib/prisma/errors";
 import ParishHubAdminPanel from "@/components/parish-hub/ParishHubAdminPanel";
 import type { ParishHubAdminItem } from "@/components/parish-hub/ParishHubReorderList";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
@@ -50,12 +51,49 @@ export default async function ProfilePage({
   });
   const currentProfile = await getCurrentUserProfile();
   const pendingRequests = await getPendingAccessRequests();
-  const parish = session.user.activeParishId
-    ? await prisma.parish.findUnique({
+  let parish: {
+    name: string;
+    logoUrl: string | null;
+    birthdayGreetingTemplate: string | null;
+    anniversaryGreetingTemplate: string | null;
+    greetingsSendHourLocal: number;
+  } | null = null;
+
+  if (session.user.activeParishId) {
+    try {
+      parish = await prisma.parish.findUnique({
         where: { id: session.user.activeParishId },
-        select: { name: true, logoUrl: true, birthdayGreetingTemplate: true, anniversaryGreetingTemplate: true }
-      })
-    : null;
+        select: {
+          name: true,
+          logoUrl: true,
+          birthdayGreetingTemplate: true,
+          anniversaryGreetingTemplate: true,
+          greetingsSendHourLocal: true
+        }
+      });
+    } catch (error) {
+      if (!isMissingColumnError(error, "Parish.greetingsSendHourLocal")) {
+        throw error;
+      }
+
+      const legacyParish = await prisma.parish.findUnique({
+        where: { id: session.user.activeParishId },
+        select: {
+          name: true,
+          logoUrl: true,
+          birthdayGreetingTemplate: true,
+          anniversaryGreetingTemplate: true
+        }
+      });
+
+      parish = legacyParish
+        ? {
+            ...legacyParish,
+            greetingsSendHourLocal: 9
+          }
+        : null;
+    }
+  }
 
   // Check if user is admin/shepherd for Parish Hub settings
   const membership = session.user.activeParishId
@@ -179,6 +217,7 @@ export default async function ProfilePage({
             logoUrl={parish.logoUrl}
             birthdayGreetingTemplate={parish.birthdayGreetingTemplate}
             anniversaryGreetingTemplate={parish.anniversaryGreetingTemplate}
+            greetingsSendHourLocal={parish.greetingsSendHourLocal}
           />
         ) : null}
 

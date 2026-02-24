@@ -13,6 +13,7 @@ type ParishGreetingSettingsProps = {
   logoUrl: string | null;
   birthdayGreetingTemplate: string | null;
   anniversaryGreetingTemplate: string | null;
+  greetingsSendHourLocal: number;
 };
 
 export default function ParishGreetingSettings({
@@ -20,7 +21,8 @@ export default function ParishGreetingSettings({
   parishName,
   logoUrl,
   birthdayGreetingTemplate,
-  anniversaryGreetingTemplate
+  anniversaryGreetingTemplate,
+  greetingsSendHourLocal
 }: ParishGreetingSettingsProps) {
   const { addToast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -29,6 +31,8 @@ export default function ParishGreetingSettings({
   const [savedAnniversaryTemplate, setSavedAnniversaryTemplate] = useState(anniversaryGreetingTemplate ?? "");
   const [birthdayTemplate, setBirthdayTemplate] = useState(savedBirthdayTemplate);
   const [anniversaryTemplate, setAnniversaryTemplate] = useState(savedAnniversaryTemplate);
+  const [savedSendHourLocal, setSavedSendHourLocal] = useState(greetingsSendHourLocal);
+  const [sendHourLocal, setSendHourLocal] = useState(greetingsSendHourLocal);
 
   return (
     <Card>
@@ -85,6 +89,25 @@ export default function ParishGreetingSettings({
           />
         </label>
 
+
+
+        <label className="block space-y-1 text-sm text-ink-700">
+          <span className="font-medium">Send greeting emails at local hour</span>
+          <select
+            value={String(sendHourLocal)}
+            disabled={!isEditing}
+            onChange={(event) => setSendHourLocal(Number(event.target.value))}
+            className="w-full rounded-card border border-mist-200 bg-white px-3 py-2 focus-ring disabled:cursor-not-allowed disabled:bg-mist-50"
+          >
+            {Array.from({ length: 24 }, (_, hour) => (
+              <option key={hour} value={hour}>
+                {String(hour).padStart(2, "0")}:00
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-ink-500">Based on each parish timezone.</p>
+        </label>
+
         {isEditing ? (
           <div className="flex flex-wrap items-center gap-3">
             <Button
@@ -95,10 +118,12 @@ export default function ParishGreetingSettings({
                   try {
                     await updateParishGreetingTemplates({
                       birthdayGreetingTemplate: birthdayTemplate,
-                      anniversaryGreetingTemplate: anniversaryTemplate
+                      anniversaryGreetingTemplate: anniversaryTemplate,
+                      greetingsSendHourLocal: sendHourLocal
                     });
                     setSavedBirthdayTemplate(birthdayTemplate);
                     setSavedAnniversaryTemplate(anniversaryTemplate);
+                    setSavedSendHourLocal(sendHourLocal);
                     setIsEditing(false);
                     addToast({ title: "Templates saved", status: "success" });
                   } catch (error) {
@@ -119,6 +144,7 @@ export default function ParishGreetingSettings({
               onClick={() => {
                 setBirthdayTemplate(savedBirthdayTemplate);
                 setAnniversaryTemplate(savedAnniversaryTemplate);
+                setSendHourLocal(savedSendHourLocal);
                 setIsEditing(false);
               }}
               disabled={isPending}
