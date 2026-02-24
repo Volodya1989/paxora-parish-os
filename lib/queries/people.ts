@@ -50,12 +50,40 @@ export async function getPeopleList(parishId: string): Promise<ParishMemberRecor
 
 export async function getPeopleListForAdmin(
   viewerUserId: string,
-  parishId: string
+  parishId: string,
+  query?: string | null
 ): Promise<ParishMemberRecord[]> {
   await requireAdminOrShepherd(viewerUserId, parishId);
 
+  const normalizedQuery = query?.trim() ?? "";
+  const hasQuery = normalizedQuery.length > 0;
+
   const memberships = await prisma.membership.findMany({
-    where: { parishId },
+    where: {
+      parishId,
+      ...(hasQuery
+        ? {
+            OR: [
+              {
+                user: {
+                  name: {
+                    contains: normalizedQuery,
+                    mode: "insensitive"
+                  }
+                }
+              },
+              {
+                user: {
+                  email: {
+                    contains: normalizedQuery,
+                    mode: "insensitive"
+                  }
+                }
+              }
+            ]
+          }
+        : {})
+    },
     orderBy: [
       { user: { lastLoginAt: "desc" } },
       { user: { name: "asc" } },
