@@ -7,6 +7,9 @@ import { ensureParishBootstrap } from "@/server/auth/bootstrap";
 import { normalizeEmail } from "@/lib/validation/auth";
 import { consumeSignInRateLimit } from "@/lib/security/authPublicRateLimit";
 
+/** How often (ms) the JWT callback re-checks the database for version changes. */
+const SESSION_CHECK_TTL_MS = 60_000;
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   session: {
@@ -81,6 +84,7 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
     async jwt({ token, user, trigger }) {
+      // Seed token from the user object on initial sign-in.
       if (user && "activeParishId" in user) {
         token.activeParishId = (user as { activeParishId?: string | null }).activeParishId ?? null;
       }
@@ -97,6 +101,21 @@ export const authOptions: NextAuthOptions = {
       }
 
       if (token.sub) {
+        // Skip the DB lookup if we checked recently and the session is not
+        // already revoked.  A trigger === "update" (explicit session refresh)
+        // always forces a fresh check so the calling tab picks up the new
+        // version immediately.
+        const now = Date.now();
+        const lastCheck = typeof token.lastVersionCheckAt === "number"
+          ? token.lastVersionCheckAt
+          : 0;
+        const forceCheck = trigger === "update";
+        const ttlExpired = now - lastCheck >= SESSION_CHECK_TTL_MS;
+
+        if (!forceCheck && !ttlExpired && !token.isSessionRevoked) {
+          return token;
+        }
+
         const dbUser = await prisma.user.findUnique({
           where: { id: token.sub },
           select: {
@@ -104,26 +123,34 @@ export const authOptions: NextAuthOptions = {
             platformRole: true,
             impersonatedParishId: true,
             authSessionVersion: true,
+            authSessionKeepJti: true,
             deletedAt: true
           }
         });
 
-        const tokenSessionVersion = typeof token.authSessionVersion === "number"
-          ? token.authSessionVersion
-          : 0;
-        const dbSessionVersion = dbUser?.authSessionVersion ?? 0;
-        const isSessionRefresh = trigger === "update";
-
+        token.lastVersionCheckAt = now;
         token.isDeleted = Boolean(dbUser?.deletedAt);
         token.activeParishId = dbUser?.activeParishId ?? null;
         token.platformRole = dbUser?.platformRole ?? null;
         token.impersonatedParishId = dbUser?.impersonatedParishId ?? null;
 
-        if (isSessionRefresh) {
-          token.authSessionVersion = dbSessionVersion;
-          token.isSessionRevoked = false;
+        const tokenSessionVersion = typeof token.authSessionVersion === "number"
+          ? token.authSessionVersion
+          : 0;
+        const dbSessionVersion = dbUser?.authSessionVersion ?? 0;
+
+        if (tokenSessionVersion < dbSessionVersion) {
+          // This token is behind the current version. Only allow it to
+          // survive if its JTI matches the keep-jti stored during the
+          // logout-all call (i.e. this is the session that triggered it).
+          if (token.jti && token.jti === dbUser?.authSessionKeepJti) {
+            token.authSessionVersion = dbSessionVersion;
+            token.isSessionRevoked = false;
+          } else {
+            token.isSessionRevoked = true;
+          }
         } else {
-          token.isSessionRevoked = tokenSessionVersion < dbSessionVersion;
+          token.isSessionRevoked = false;
         }
       }
 
