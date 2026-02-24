@@ -12,6 +12,10 @@ import {
 import { isMissingColumnError } from "@/lib/prisma/errors";
 import { prisma } from "@/server/db/prisma";
 
+// Vercel Hobby allows up to 60 s; the default is 10 s which is too short
+// for iterating parishes + Resend API calls.
+export const maxDuration = 60;
+
 function parseCronPart(value: string | undefined, fallback: number, max: number) {
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed < 0 || parsed > max) {
@@ -21,10 +25,15 @@ function parseCronPart(value: string | undefined, fallback: number, max: number)
   return parsed;
 }
 
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export async function GET(request: Request) {
   const unauthorized = requireCronSecret(request);
   if (unauthorized) return unauthorized;
 
+  const jobRunId = crypto.randomUUID().slice(0, 8);
   const nowUtc = new Date();
   const cronUtcHour = parseCronPart(process.env.GREETINGS_CRON_UTC_HOUR, 14, 23);
   const cronUtcMinute = parseCronPart(process.env.GREETINGS_CRON_UTC_MINUTE, 0, 59);
@@ -122,6 +131,7 @@ export async function GET(request: Request) {
   let skipped = 0;
   let failed = 0;
   let matchedParishes = 0;
+  let parishErrors = 0;
   const reasonCounts = {
     disabled: 0,
     missingTimezone: 0,
@@ -134,6 +144,7 @@ export async function GET(request: Request) {
   let emailsAttempted = 0;
 
   console.info("[greetings-cron] start", {
+    jobRunId,
     nowUtc: nowUtc.toISOString(),
     parishCount: parishes.length,
     cronScheduleUtc: `${String(cronUtcHour).padStart(2, "0")}:${String(cronUtcMinute).padStart(2, "0")}`
@@ -150,166 +161,190 @@ export async function GET(request: Request) {
 
     if (!parish.timezone) {
       reasonCounts.missingTimezone += 1;
-      console.warn("[greetings-cron] parish missing timezone; defaulting to UTC", { parishId: parish.id });
+      console.warn("[greetings-cron] parish missing timezone; defaulting to UTC", { jobRunId, parishId: parish.id });
     } else if (!isLegacyOffset && !isValidTimezone(parish.timezone)) {
       reasonCounts.invalidTimezone += 1;
       console.error("[greetings-cron] parish has invalid timezone; skipping", {
+        jobRunId,
         parishId: parish.id,
         timezone: parish.timezone
       });
       continue;
     }
 
-    const { month, day, hour, minute, dateKey, localNowLabel, mode } = getParishLocalDateParts(nowUtc, tz);
+    // --- Per-parish try/catch: one broken parish must not abort the rest ---
+    try {
+      const { month, day, dateKey, localNowLabel, mode } = getParishLocalDateParts(nowUtc, tz);
 
-    const configuredSendTime = `${String(parish.greetingsSendHourLocal).padStart(2, "0")}:${String(parish.greetingsSendMinuteLocal).padStart(2, "0")}`;
+      const configuredSendTime = `${String(parish.greetingsSendHourLocal).padStart(2, "0")}:${String(parish.greetingsSendMinuteLocal).padStart(2, "0")}`;
 
-    const scheduleStatus = getDailyGreetingScheduleStatus({
-      nowUtc,
-      timezone: tz,
-      sendHourLocal: parish.greetingsSendHourLocal,
-      sendMinuteLocal: parish.greetingsSendMinuteLocal,
-      sentToday: false
-    });
+      const scheduleStatus = getDailyGreetingScheduleStatus({
+        nowUtc,
+        timezone: tz,
+        sendHourLocal: parish.greetingsSendHourLocal,
+        sendMinuteLocal: parish.greetingsSendMinuteLocal,
+        sentToday: false
+      });
 
-    console.info("[greetings-cron] parish evaluation", {
-      parishId: parish.id,
-      timezone: tz,
-      timezoneMode: mode,
-      nowUtc: nowUtc.toISOString(),
-      localNow: localNowLabel,
-      localHHmm: `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`,
-      configuredSendTime,
-      preferredTimeLabel: scheduleStatus.preferredTimeLabel,
-      isPastPreferredTime: scheduleStatus.isPastPreferredTime
-    });
-
-    matchedParishes += 1;
-
-    console.info("[greetings-cron] parish matched send window", {
-      parishId: parish.id,
-      timezone: tz,
-      timezoneMode: mode,
-      localNow: localNowLabel,
-      localDate: dateKey,
-      sendTime: configuredSendTime
-    });
-
-    const { candidates, summary } = await getGreetingCandidatesForParish({
-      prisma,
-      parishId: parish.id,
-      month,
-      day,
-      dateKey
-    });
-
-    if (summary.dateMatchedMemberships === 0) {
-      reasonCounts.noCandidates += 1;
-      console.info("[greetings-cron] no greeting candidates", {
+      console.info("[greetings-cron] parish evaluation", {
+        jobRunId,
         parishId: parish.id,
         timezone: tz,
-        localDate: dateKey
+        timezoneMode: mode,
+        localNow: localNowLabel,
+        localDate: dateKey,
+        configuredSendTime,
+        preferredTimeLabel: scheduleStatus.preferredTimeLabel,
+        isPastPreferredTime: scheduleStatus.isPastPreferredTime
       });
-      continue;
-    }
 
-    console.info("[greetings-cron] candidates resolved", {
-      parishId: parish.id,
-      localDate: dateKey,
-      optedInCount: summary.optedInMemberships,
-      dateMatchedCount: summary.dateMatchedMemberships,
-      missingEmailCount: summary.missingEmailMemberships,
-      alreadySentCount: summary.alreadySentToday,
-      sendableCount: summary.sendableToday
-    });
+      matchedParishes += 1;
 
-    for (const row of candidates) {
-      const shouldSendBirthday = row.sendBirthday && !row.alreadySentBirthday;
-      const shouldSendAnniversary = row.sendAnniversary && !row.alreadySentAnniversary;
+      const { candidates, summary } = await getGreetingCandidatesForParish({
+        prisma,
+        parishId: parish.id,
+        month,
+        day,
+        dateKey
+      });
 
-      if (shouldSendBirthday) {
-        console.info("[greetings-cron] sending birthday greeting", {
+      if (summary.dateMatchedMemberships === 0) {
+        reasonCounts.noCandidates += 1;
+        console.info("[greetings-cron] no greeting candidates", {
+          jobRunId,
           parishId: parish.id,
-          userId: row.userId,
+          timezone: tz,
           localDate: dateKey
         });
-        const result = await sendGreetingEmailIfEligible({
-          parishId: parish.id,
-          parishName: parish.name,
-          parishLogoUrl: parish.logoUrl,
-          userId: row.userId,
-          userEmail: row.email,
-          userFirstName: row.firstName,
-          greetingType: GreetingType.BIRTHDAY,
-          templateHtml: parish.birthdayGreetingTemplate,
-          dateKey
-        });
-        emailsAttempted += 1;
-        if (result.status === "SENT") sent += 1;
-        else if (result.status === "FAILED") failed += 1;
-        else {
-          skipped += 1;
-          reasonCounts.alreadySent += 1;
-        }
-        console.info("[greetings-cron] birthday greeting result", {
-          parishId: parish.id,
-          userId: row.userId,
-          localDate: dateKey,
-          status: result.status
-        });
+        continue;
       }
 
-      if (shouldSendAnniversary) {
-        console.info("[greetings-cron] sending anniversary greeting", {
-          parishId: parish.id,
-          userId: row.userId,
-          localDate: dateKey
-        });
-        const result = await sendGreetingEmailIfEligible({
-          parishId: parish.id,
-          parishName: parish.name,
-          parishLogoUrl: parish.logoUrl,
-          userId: row.userId,
-          userEmail: row.email,
-          userFirstName: row.firstName,
-          greetingType: GreetingType.ANNIVERSARY,
-          templateHtml: parish.anniversaryGreetingTemplate,
-          dateKey
-        });
-        emailsAttempted += 1;
-        if (result.status === "SENT") sent += 1;
-        else if (result.status === "FAILED") failed += 1;
-        else {
-          skipped += 1;
-          reasonCounts.alreadySent += 1;
+      console.info("[greetings-cron] candidates resolved", {
+        jobRunId,
+        parishId: parish.id,
+        localDate: dateKey,
+        optedInCount: summary.optedInMemberships,
+        dateMatchedCount: summary.dateMatchedMemberships,
+        missingEmailCount: summary.missingEmailMemberships,
+        alreadySentCount: summary.alreadySentToday,
+        sendableCount: summary.sendableToday
+      });
+
+      for (const row of candidates) {
+        const shouldSendBirthday = row.sendBirthday && !row.alreadySentBirthday;
+        const shouldSendAnniversary = row.sendAnniversary && !row.alreadySentAnniversary;
+
+        if (shouldSendBirthday) {
+          try {
+            const result = await sendGreetingEmailIfEligible({
+              parishId: parish.id,
+              parishName: parish.name,
+              parishLogoUrl: parish.logoUrl,
+              userId: row.userId,
+              userEmail: row.email,
+              userFirstName: row.firstName,
+              greetingType: GreetingType.BIRTHDAY,
+              templateHtml: parish.birthdayGreetingTemplate,
+              dateKey
+            });
+            emailsAttempted += 1;
+            if (result.status === "SENT") sent += 1;
+            else if (result.status === "FAILED") failed += 1;
+            else {
+              skipped += 1;
+              reasonCounts.alreadySent += 1;
+            }
+            console.info("[greetings-cron] birthday greeting result", {
+              jobRunId,
+              parishId: parish.id,
+              userId: row.userId,
+              localDate: dateKey,
+              status: result.status
+            });
+          } catch (emailError) {
+            failed += 1;
+            emailsAttempted += 1;
+            console.error("[greetings-cron] birthday greeting threw", {
+              jobRunId,
+              parishId: parish.id,
+              userId: row.userId,
+              localDate: dateKey,
+              error: errorMessage(emailError)
+            });
+          }
         }
-        console.info("[greetings-cron] anniversary greeting result", {
-          parishId: parish.id,
-          userId: row.userId,
-          localDate: dateKey,
-          status: result.status
-        });
+
+        if (shouldSendAnniversary) {
+          try {
+            const result = await sendGreetingEmailIfEligible({
+              parishId: parish.id,
+              parishName: parish.name,
+              parishLogoUrl: parish.logoUrl,
+              userId: row.userId,
+              userEmail: row.email,
+              userFirstName: row.firstName,
+              greetingType: GreetingType.ANNIVERSARY,
+              templateHtml: parish.anniversaryGreetingTemplate,
+              dateKey
+            });
+            emailsAttempted += 1;
+            if (result.status === "SENT") sent += 1;
+            else if (result.status === "FAILED") failed += 1;
+            else {
+              skipped += 1;
+              reasonCounts.alreadySent += 1;
+            }
+            console.info("[greetings-cron] anniversary greeting result", {
+              jobRunId,
+              parishId: parish.id,
+              userId: row.userId,
+              localDate: dateKey,
+              status: result.status
+            });
+          } catch (emailError) {
+            failed += 1;
+            emailsAttempted += 1;
+            console.error("[greetings-cron] anniversary greeting threw", {
+              jobRunId,
+              parishId: parish.id,
+              userId: row.userId,
+              localDate: dateKey,
+              error: errorMessage(emailError)
+            });
+          }
+        }
       }
+    } catch (parishError) {
+      parishErrors += 1;
+      console.error("[greetings-cron] parish processing failed", {
+        jobRunId,
+        parishId: parish.id,
+        error: errorMessage(parishError)
+      });
     }
   }
 
   console.info("[greetings-cron] complete", {
+    jobRunId,
     nowUtc: nowUtc.toISOString(),
     sent,
     skipped,
     failed,
     emailsAttempted,
     matchedParishes,
+    parishErrors,
     reasonCounts,
     cronScheduleUtc: `${String(cronUtcHour).padStart(2, "0")}:${String(cronUtcMinute).padStart(2, "0")}`
   });
 
   return NextResponse.json({
+    jobRunId,
     sent,
     skipped,
     failed,
     emailsAttempted,
     matchedParishes,
+    parishErrors,
     reasonCounts,
     cronScheduleUtc: `${String(cronUtcHour).padStart(2, "0")}:${String(cronUtcMinute).padStart(2, "0")}`
   });

@@ -149,7 +149,8 @@ export function getParishLocalDateParts(nowUtc: Date, timezone: string) {
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-    hour12: false
+    hour12: false,
+    hourCycle: "h23"
   }).formatToParts(nowUtc);
 
   const get = (type: "year" | "month" | "day" | "hour" | "minute") =>
