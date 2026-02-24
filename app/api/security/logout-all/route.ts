@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { getToken } from "next-auth/jwt";
 import { authOptions } from "@/server/auth/options";
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const token = await getToken({ req: request });
+  const token = await getToken({ req: request as NextRequest });
   if (!token?.jti) {
     return NextResponse.json(
       { error: "Session token unavailable. Please sign in again." },
@@ -51,12 +52,14 @@ export async function POST(request: Request) {
     );
   }
 
+  const keepJti = token.jti;
+
   await prisma.$transaction(async (tx) => {
     await tx.user.update({
       where: { id: session.user.id },
       data: {
         authSessionVersion: { increment: 1 },
-        authSessionKeepJti: token.jti
+        authSessionKeepJti: keepJti
       }
     });
 
