@@ -176,10 +176,21 @@ export async function updateProfileDates(
       birthdayMonth: true,
       birthdayDay: true,
       anniversaryMonth: true,
-      anniversaryDay: true,
-      greetingsOptIn: true
+      anniversaryDay: true
     }
   });
+
+  if (session.user.activeParishId) {
+    await prisma.membership.update({
+      where: {
+        parishId_userId: {
+          parishId: session.user.activeParishId,
+          userId: session.user.id
+        }
+      },
+      data: { greetingsLastPromptedAt: new Date() }
+    }).catch(() => null);
+  }
 
   revalidatePath("/profile");
 
@@ -187,4 +198,84 @@ export async function updateProfileDates(
     status: "success",
     data: updatedUser
   };
+}
+
+export async function markGreetingsPromptNotNow() {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  if (!session.user.activeParishId) {
+    throw new Error("Missing active parish");
+  }
+
+  await prisma.membership.update({
+    where: {
+      parishId_userId: {
+        parishId: session.user.activeParishId,
+        userId: session.user.id
+      }
+    },
+    data: { greetingsLastPromptedAt: new Date() }
+  });
+  revalidatePath("/profile");
+}
+
+export async function markGreetingsPromptDoNotAskAgain() {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  if (!session.user.activeParishId) {
+    throw new Error("Missing active parish");
+  }
+
+  await prisma.membership.update({
+    where: {
+      parishId_userId: {
+        parishId: session.user.activeParishId,
+        userId: session.user.id
+      }
+    },
+    data: {
+      greetingsDoNotAskAgain: true,
+      greetingsLastPromptedAt: new Date()
+    }
+  });
+  revalidatePath("/profile");
+}
+
+export async function updateAllowParishGreetings(allowParishGreetings: boolean) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  if (typeof allowParishGreetings !== "boolean") {
+    throw new Error("Invalid value");
+  }
+
+  if (!session.user.activeParishId) {
+    throw new Error("Missing active parish");
+  }
+
+  await prisma.membership.update({
+    where: {
+      parishId_userId: {
+        parishId: session.user.activeParishId,
+        userId: session.user.id
+      }
+    },
+    data: {
+      allowParishGreetings,
+      greetingsOptInAt: allowParishGreetings ? new Date() : null,
+      greetingsLastPromptedAt: new Date()
+    }
+  });
+  revalidatePath("/profile");
 }

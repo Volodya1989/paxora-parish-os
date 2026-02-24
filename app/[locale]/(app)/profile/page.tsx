@@ -10,6 +10,7 @@ import ProfileDates from "@/components/profile/ProfileDates";
 import ProfileSettings from "@/components/profile/ProfileSettings";
 import VolunteerHoursCard from "@/components/profile/VolunteerHoursCard";
 import DeleteAccountCard from "@/components/profile/DeleteAccountCard";
+import ParishGreetingSettings from "@/components/profile/ParishGreetingSettings";
 import { getParishMembership } from "@/server/db/groups";
 import { isParishLeader } from "@/lib/permissions";
 import { listParishHubItemsForAdmin, ensureParishHubDefaults } from "@/server/actions/parish-hub";
@@ -52,7 +53,7 @@ export default async function ProfilePage({
   const parish = session.user.activeParishId
     ? await prisma.parish.findUnique({
         where: { id: session.user.activeParishId },
-        select: { name: true, logoUrl: true }
+        select: { name: true, logoUrl: true, birthdayGreetingTemplate: true, anniversaryGreetingTemplate: true }
       })
     : null;
 
@@ -163,10 +164,23 @@ export default async function ProfilePage({
               birthdayDay: currentProfile.birthdayDay,
               anniversaryMonth: currentProfile.anniversaryMonth,
               anniversaryDay: currentProfile.anniversaryDay,
-              greetingsOptIn: currentProfile.greetingsOptIn
+              greetingsOptIn: currentProfile.greetingsOptIn,
+              greetingsLastPromptedAt: currentProfile.greetingsLastPromptedAt,
+              greetingsDoNotAskAgain: currentProfile.greetingsDoNotAskAgain
             }}
           />
         </div>
+
+
+        {isAdmin && session.user.activeParishId && parish ? (
+          <ParishGreetingSettings
+            parishId={session.user.activeParishId}
+            parishName={parish.name}
+            logoUrl={parish.logoUrl}
+            birthdayGreetingTemplate={parish.birthdayGreetingTemplate}
+            anniversaryGreetingTemplate={parish.anniversaryGreetingTemplate}
+          />
+        ) : null}
 
         <DeleteAccountCard />
 

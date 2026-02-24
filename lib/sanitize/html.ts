@@ -50,3 +50,8 @@ export function stripHtmlToText(html: string): string {
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
+
+
+export function sanitizeGreetingHtml(html: string): string {
+  return sanitizeAnnouncementHtml(html);
+}

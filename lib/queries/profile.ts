@@ -14,6 +14,9 @@ export type CurrentUserProfile = {
   anniversaryMonth: number | null;
   anniversaryDay: number | null;
   greetingsOptIn: boolean;
+  greetingsOptInAt: Date | null;
+  greetingsLastPromptedAt: Date | null;
+  greetingsDoNotAskAgain: boolean;
 };
 
 export type ProfileSettings = {
@@ -156,8 +159,7 @@ export async function getCurrentUserProfile(): Promise<CurrentUserProfile> {
       birthdayMonth: true,
       birthdayDay: true,
       anniversaryMonth: true,
-      anniversaryDay: true,
-      greetingsOptIn: true
+      anniversaryDay: true
     }
   });
 
@@ -165,5 +167,28 @@ export async function getCurrentUserProfile(): Promise<CurrentUserProfile> {
     throw new Error("User not found");
   }
 
-  return user;
+  const membership = session.user.activeParishId
+    ? await prisma.membership.findUnique({
+        where: {
+          parishId_userId: {
+            parishId: session.user.activeParishId,
+            userId: session.user.id
+          }
+        },
+        select: {
+          allowParishGreetings: true,
+          greetingsOptInAt: true,
+          greetingsLastPromptedAt: true,
+          greetingsDoNotAskAgain: true
+        }
+      })
+    : null;
+
+  return {
+    ...user,
+    greetingsOptIn: membership?.allowParishGreetings ?? false,
+    greetingsOptInAt: membership?.greetingsOptInAt ?? null,
+    greetingsLastPromptedAt: membership?.greetingsLastPromptedAt ?? null,
+    greetingsDoNotAskAgain: membership?.greetingsDoNotAskAgain ?? false
+  };
 }
