@@ -18,5 +18,8 @@ declare module "next-auth/jwt" {
     impersonatedParishId?: string | null;
     platformRole?: PlatformRole | null;
     isDeleted?: boolean;
+    authSessionVersion?: number;
+    isSessionRevoked?: boolean;
+    lastVersionCheckAt?: number;
   }
 }

@@ -346,6 +346,8 @@ model User {
   anniversaryMonth        Int?
   anniversaryDay          Int?
   greetingsOptIn          Boolean       @default(false)
+  authSessionVersion      Int           @default(0)
+  authSessionKeepJti      String?
   lastLoginAt             DateTime?
   deletedAt               DateTime?
   lastSeenAnnouncementsAt DateTime?

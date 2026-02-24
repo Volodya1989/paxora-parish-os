@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import type { ParishRole } from "@prisma/client";
 import Button from "@/components/ui/Button";
 import Card, { CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -81,12 +82,16 @@ export default function PeopleView({
   viewerPlatformRole
 }: PeopleViewProps) {
   const { addToast } = useToast();
+  const session = useSession();
+  const updateSession = session?.update;
   const router = useRouter();
   const [pendingMemberId, setPendingMemberId] = useState<string | null>(null);
   const [pendingInviteId, setPendingInviteId] = useState<string | null>(null);
   const [removeTarget, setRemoveTarget] = useState<ParishMemberRecord | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ParishMemberRecord | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const [isLoggingOutDevices, setIsLoggingOutDevices] = useState(false);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<ParishRole>("MEMBER");
   const [isPendingInvite, startInviteTransition] = useTransition();
@@ -127,6 +132,61 @@ export default function PeopleView({
 
   const handleRemove = (member: ParishMemberRecord) => {
     setRemoveTarget(member);
+  };
+
+  const handleLogoutAllDevices = () => {
+    if (isLoggingOutDevices) {
+      return;
+    }
+
+    setIsLoggingOutDevices(true);
+    void (async () => {
+      try {
+        const response = await fetch("/api/security/logout-all", {
+          method: "POST"
+        });
+
+        if (!response.ok) {
+          let description = "Please try again.";
+          try {
+            const payload = await response.json() as { error?: string };
+            if (payload.error) {
+              description = payload.error;
+            }
+          } catch {
+            // ignore parse failures and keep fallback copy
+          }
+
+          addToast({
+            title: "Update failed",
+            description,
+            status: "error"
+          });
+          return;
+        }
+
+        if (typeof updateSession === "function") {
+          await updateSession();
+        } else {
+          refresh();
+        }
+
+        addToast({
+          title: "Signed out on other devices",
+          description: "Other browser and device sessions were revoked.",
+          status: "success"
+        });
+      } catch {
+        addToast({
+          title: "Update failed",
+          description: "Please try again.",
+          status: "error"
+        });
+      } finally {
+        setIsLoggingOutDevices(false);
+        setLogoutConfirmOpen(false);
+      }
+    })();
   };
 
   const handleRemoveConfirm = () => {
@@ -314,15 +374,56 @@ export default function PeopleView({
             <div>
               <p className="text-sm font-medium text-ink-900">Log out of all devices</p>
               <p className="text-sm text-ink-500">
-                Requires session management support to revoke all active sessions.
+                This will sign out this account on other browsers and devices.
               </p>
             </div>
-            <Button type="button" variant="secondary" disabled>
+            <Button type="button" variant="secondary" onClick={() => setLogoutConfirmOpen(true)}>
               Log out all devices
             </Button>
           </div>
         </div>
       </Card>
+
+
+      <Modal
+        open={logoutConfirmOpen}
+        onClose={() => setLogoutConfirmOpen(false)}
+        title="Log out of all devices?"
+        footer={
+          <>
+            <Button type="button" variant="ghost" onClick={() => setLogoutConfirmOpen(false)} disabled={isLoggingOutDevices}>
+              Cancel
+            </Button>
+            <Button type="button" variant="danger" onClick={handleLogoutAllDevices} isLoading={isLoggingOutDevices}>
+              Log out
+            </Button>
+          </>
+        }
+      >
+        <p>
+          This will sign you out from other devices and browsers.
+        </p>
+      </Modal>
+
+      <Drawer
+        open={logoutConfirmOpen}
+        onClose={() => setLogoutConfirmOpen(false)}
+        title="Log out of all devices?"
+        footer={
+          <>
+            <Button type="button" variant="ghost" onClick={() => setLogoutConfirmOpen(false)} disabled={isLoggingOutDevices}>
+              Cancel
+            </Button>
+            <Button type="button" variant="danger" onClick={handleLogoutAllDevices} isLoading={isLoggingOutDevices}>
+              Log out
+            </Button>
+          </>
+        }
+      >
+        <p>
+          This will sign you out from other devices and browsers.
+        </p>
+      </Drawer>
 
       <Modal
         open={Boolean(removeTarget)}
