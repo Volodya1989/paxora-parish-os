@@ -7,8 +7,7 @@ test("profileDatesSchema allows Feb 29", () => {
     birthdayMonth: 2,
     birthdayDay: 29,
     anniversaryMonth: null,
-    anniversaryDay: null,
-    greetingsOptIn: false
+    anniversaryDay: null
   });
 
   assert.equal(result.success, true);
@@ -19,8 +18,7 @@ test("profileDatesSchema rejects missing day when month is set", () => {
     birthdayMonth: 3,
     birthdayDay: null,
     anniversaryMonth: null,
-    anniversaryDay: null,
-    greetingsOptIn: false
+    anniversaryDay: null
   });
 
   assert.equal(result.success, false);
@@ -32,8 +30,7 @@ test("profileDatesSchema rejects missing month when day is set", () => {
     birthdayMonth: null,
     birthdayDay: 12,
     anniversaryMonth: null,
-    anniversaryDay: null,
-    greetingsOptIn: false
+    anniversaryDay: null
   });
 
   assert.equal(result.success, false);
@@ -45,8 +42,7 @@ test("profileDatesSchema rejects invalid day for month", () => {
     birthdayMonth: 4,
     birthdayDay: 31,
     anniversaryMonth: null,
-    anniversaryDay: null,
-    greetingsOptIn: false
+    anniversaryDay: null
   });
 
   assert.equal(result.success, false);

@@ -171,18 +171,26 @@ export async function updateProfileDates(
 
   const updatedUser = await prisma.user.update({
     where: { id: session.user.id },
-    data: {
-      ...parsed.data,
-      greetingsLastPromptedAt: new Date()
-    },
+    data: parsed.data,
     select: {
       birthdayMonth: true,
       birthdayDay: true,
       anniversaryMonth: true,
-      anniversaryDay: true,
-      greetingsOptIn: true
+      anniversaryDay: true
     }
   });
+
+  if (session.user.activeParishId) {
+    await prisma.membership.update({
+      where: {
+        parishId_userId: {
+          parishId: session.user.activeParishId,
+          userId: session.user.id
+        }
+      },
+      data: { greetingsLastPromptedAt: new Date() }
+    }).catch(() => null);
+  }
 
   revalidatePath("/profile");
 
@@ -199,8 +207,17 @@ export async function markGreetingsPromptNotNow() {
     throw new Error("Unauthorized");
   }
 
-  await prisma.user.update({
-    where: { id: session.user.id },
+  if (!session.user.activeParishId) {
+    throw new Error("Missing active parish");
+  }
+
+  await prisma.membership.update({
+    where: {
+      parishId_userId: {
+        parishId: session.user.activeParishId,
+        userId: session.user.id
+      }
+    },
     data: { greetingsLastPromptedAt: new Date() }
   });
   revalidatePath("/profile");
@@ -213,8 +230,17 @@ export async function markGreetingsPromptDoNotAskAgain() {
     throw new Error("Unauthorized");
   }
 
-  await prisma.user.update({
-    where: { id: session.user.id },
+  if (!session.user.activeParishId) {
+    throw new Error("Missing active parish");
+  }
+
+  await prisma.membership.update({
+    where: {
+      parishId_userId: {
+        parishId: session.user.activeParishId,
+        userId: session.user.id
+      }
+    },
     data: {
       greetingsDoNotAskAgain: true,
       greetingsLastPromptedAt: new Date()
@@ -234,10 +260,19 @@ export async function updateAllowParishGreetings(allowParishGreetings: boolean) 
     throw new Error("Invalid value");
   }
 
-  await prisma.user.update({
-    where: { id: session.user.id },
+  if (!session.user.activeParishId) {
+    throw new Error("Missing active parish");
+  }
+
+  await prisma.membership.update({
+    where: {
+      parishId_userId: {
+        parishId: session.user.activeParishId,
+        userId: session.user.id
+      }
+    },
     data: {
-      greetingsOptIn: allowParishGreetings,
+      allowParishGreetings,
       greetingsOptInAt: allowParishGreetings ? new Date() : null,
       greetingsLastPromptedAt: new Date()
     }

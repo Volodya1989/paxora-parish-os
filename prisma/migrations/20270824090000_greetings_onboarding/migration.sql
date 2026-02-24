@@ -35,3 +35,10 @@ ALTER TABLE "GreetingEmailLog"
 ALTER TABLE "GreetingEmailLog"
   ADD CONSTRAINT "GreetingEmailLog_parishId_fkey"
   FOREIGN KEY ("parishId") REFERENCES "Parish"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- Parish-scoped greeting prompt/consent flags
+ALTER TABLE "Membership"
+  ADD COLUMN "allowParishGreetings" BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN "greetingsOptInAt" TIMESTAMP(3),
+  ADD COLUMN "greetingsLastPromptedAt" TIMESTAMP(3),
+  ADD COLUMN "greetingsDoNotAskAgain" BOOLEAN NOT NULL DEFAULT false;

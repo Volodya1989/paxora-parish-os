@@ -4,11 +4,6 @@ import { getAppUrl } from "@/lib/email/utils";
 import { renderGreetingEmail } from "@/emails/templates/greetings";
 import { prisma } from "@/server/db/prisma";
 
-function todayDateKey(now: Date) {
-  return now.toISOString().slice(0, 10);
-}
-
-
 export function isGreetingEmailDuplicateError(error: unknown) {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
 }
@@ -22,9 +17,9 @@ export async function sendGreetingEmailIfEligible(input: {
   userFirstName: string;
   greetingType: GreetingType;
   templateHtml: string | null;
-  now: Date;
+  dateKey: string;
 }) {
-  const dateKey = todayDateKey(input.now);
+  const dateKey = input.dateKey;
 
   try {
     await prisma.greetingEmailLog.create({

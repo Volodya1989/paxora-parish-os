@@ -494,13 +494,17 @@ model AuditLog {
 }
 
 model Membership {
-  id                  String     @id @default(cuid())
-  parishId            String
-  userId              String
-  role                ParishRole @default(MEMBER)
-  notifyEmailEnabled  Boolean    @default(true)
-  weeklyDigestEnabled Boolean    @default(true)
-  createdAt           DateTime   @default(now())
+  id                        String     @id @default(cuid())
+  parishId                  String
+  userId                    String
+  role                      ParishRole @default(MEMBER)
+  notifyEmailEnabled        Boolean    @default(true)
+  weeklyDigestEnabled       Boolean    @default(true)
+  allowParishGreetings      Boolean    @default(false)
+  greetingsOptInAt          DateTime?
+  greetingsLastPromptedAt   DateTime?
+  greetingsDoNotAskAgain    Boolean    @default(false)
+  createdAt                 DateTime   @default(now())
 
   parish Parish @relation(fields: [parishId], references: [id])
   user   User   @relation(fields: [userId], references: [id])

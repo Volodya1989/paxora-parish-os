@@ -42,8 +42,7 @@ export const profileDatesSchema = z
     birthdayMonth: optionalMonth,
     birthdayDay: optionalDay,
     anniversaryMonth: optionalMonth,
-    anniversaryDay: optionalDay,
-    greetingsOptIn: z.boolean()
+    anniversaryDay: optionalDay
   })
   .superRefine((data, ctx) => {
     validateMonthDayPair("birthday", data.birthdayMonth, data.birthdayDay, ctx);

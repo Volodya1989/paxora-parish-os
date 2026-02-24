@@ -28,10 +28,7 @@ type ProfileDatesProps = {
 };
 
 type ProfileDateErrors = Partial<
-  Record<
-    "birthdayMonth" | "birthdayDay" | "anniversaryMonth" | "anniversaryDay" | "greetingsOptIn",
-    string
-  >
+  Record<"birthdayMonth" | "birthdayDay" | "anniversaryMonth" | "anniversaryDay", string>
 >;
 
 const buildDayOptions = (month: number | null) => {
@@ -122,8 +119,7 @@ export default function ProfileDates({ initialDates }: ProfileDatesProps) {
           birthdayMonth: formState.birthdayMonth ? Number(formState.birthdayMonth) : null,
           birthdayDay: formState.birthdayDay ? Number(formState.birthdayDay) : null,
           anniversaryMonth: formState.anniversaryMonth ? Number(formState.anniversaryMonth) : null,
-          anniversaryDay: formState.anniversaryDay ? Number(formState.anniversaryDay) : null,
-          greetingsOptIn: formState.greetingsOptIn
+          anniversaryDay: formState.anniversaryDay ? Number(formState.anniversaryDay) : null
         });
 
         if (result.status === "error") {
@@ -138,7 +134,7 @@ export default function ProfileDates({ initialDates }: ProfileDatesProps) {
           birthdayDay: result.data.birthdayDay ? String(result.data.birthdayDay) : "",
           anniversaryMonth: result.data.anniversaryMonth ? String(result.data.anniversaryMonth) : "",
           anniversaryDay: result.data.anniversaryDay ? String(result.data.anniversaryDay) : "",
-          greetingsOptIn: result.data.greetingsOptIn
+          greetingsOptIn: formState.greetingsOptIn
         };
         setSavedState(nextState);
         setFormState(nextState);
