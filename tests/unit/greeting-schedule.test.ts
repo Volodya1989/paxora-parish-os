@@ -4,7 +4,8 @@ import {
   buildQuarterHourTimeOptions,
   parseGreetingLocalTime,
   shouldRunGreetingForParishTime,
-  isValidTimezone
+  isValidTimezone,
+  getParishLocalDateParts
 } from "@/lib/email/greetingSchedule";
 
 test("quarter-hour options include 15-minute increments", () => {
@@ -151,4 +152,14 @@ test("isValidTimezone rejects invalid timezone", () => {
   assert.equal(isValidTimezone("Fake/Zone"), false);
   assert.equal(isValidTimezone("Not_A_Timezone"), false);
   assert.equal(isValidTimezone(""), false);
+});
+
+test("getParishLocalDateParts supports legacy UTC offset timezones", () => {
+  const now = new Date("2025-01-15T15:45:00.000Z");
+  const local = getParishLocalDateParts(now, "UTC-5");
+
+  assert.equal(local.dateKey, "2025-01-15");
+  assert.equal(local.hour, 10);
+  assert.equal(local.minute, 45);
+  assert.equal(local.mode, "legacy-offset");
 });

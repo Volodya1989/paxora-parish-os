@@ -1,13 +1,63 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import Card, { CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import AvatarUploadField from "@/components/shared/AvatarUploadField";
 import { useToast } from "@/components/ui/Toast";
 import { updateParishGreetingConfig } from "@/app/actions/parishGreetings";
-import { buildQuarterHourTimeOptions } from "@/lib/email/greetingSchedule";
+import { buildQuarterHourTimeOptions, isValidTimezone } from "@/lib/email/greetingSchedule";
 import { cn } from "@/lib/ui/cn";
+import {
+  buildParishTimezoneOptions,
+  formatCurrentTimeInTimezone,
+  isLegacyUtcOffsetTimezone
+} from "@/lib/time/parishTimezones";
+
+function getNextRunPreview(timezone: string, sendTime: string, now = new Date()) {
+  const parsed = /^(\d{2}):(\d{2})$/.exec(sendTime);
+  if (!parsed) return null;
+
+  const targetHour = Number(parsed[1]);
+  const targetMinute = Number(parsed[2]);
+
+  try {
+    const localNowParts = new Intl.DateTimeFormat("en-US", {
+      timeZone: timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false
+    }).formatToParts(now);
+
+    const get = (type: Intl.DateTimeFormatPartTypes) =>
+      Number(localNowParts.find((part) => part.type === type)?.value ?? "0");
+
+    const year = get("year");
+    const month = get("month");
+    const day = get("day");
+    const hour = get("hour");
+    const minute = get("minute");
+
+    const nowTotal = hour * 60 + minute;
+    const sendTotal = targetHour * 60 + targetMinute;
+    const dayOffset = nowTotal <= sendTotal ? 0 : 1;
+
+    const todayOrTomorrow = new Date(Date.UTC(year, month - 1, day + dayOffset, targetHour, targetMinute));
+    const label = new Intl.DateTimeFormat("en-US", {
+      timeZone: timezone,
+      hour: "numeric",
+      minute: "2-digit"
+    }).format(todayOrTomorrow);
+
+    return `${dayOffset === 0 ? "Today" : "Tomorrow"} at ${label}`;
+  } catch {
+    return null;
+  }
+}
 
 type GreetingsConfigProps = {
   parishId: string;
@@ -38,11 +88,31 @@ export default function GreetingsConfig({
     greetingsEnabled: initialEnabled,
     birthdayTemplate: birthdayGreetingTemplate ?? "",
     anniversaryTemplate: anniversaryGreetingTemplate ?? "",
-    sendTime: greetingsSendTimeLocal
+    sendTime: greetingsSendTimeLocal,
+    timezone: parishTimezone || "UTC"
   });
   const [formState, setFormState] = useState(savedState);
 
   const timeOptions = useMemo(() => buildQuarterHourTimeOptions(), []);
+  const timezoneOptions = useMemo(() => buildParishTimezoneOptions(), []);
+
+  useEffect(() => {
+    if (!savedState.timezone || savedState.timezone === "UTC") {
+      const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (browserTimezone && isValidTimezone(browserTimezone)) {
+        setSavedState((current) => ({ ...current, timezone: browserTimezone }));
+        setFormState((current) => ({ ...current, timezone: browserTimezone }));
+      }
+    }
+  }, [savedState.timezone]);
+
+  const currentParishTime = useMemo(() => {
+    return formatCurrentTimeInTimezone(formState.timezone);
+  }, [formState.timezone]);
+
+  const nextRunPreview = useMemo(() => {
+    return getNextRunPreview(formState.timezone, formState.sendTime);
+  }, [formState.timezone, formState.sendTime]);
 
   const handleSave = () => {
     startTransition(async () => {
@@ -51,7 +121,8 @@ export default function GreetingsConfig({
           greetingsEnabled: formState.greetingsEnabled,
           birthdayGreetingTemplate: formState.birthdayTemplate,
           anniversaryGreetingTemplate: formState.anniversaryTemplate,
-          greetingsSendTimeLocal: formState.sendTime
+          greetingsSendTimeLocal: formState.sendTime,
+          parishTimezone: formState.timezone
         });
         setSavedState(formState);
         setIsEditing(false);
@@ -145,14 +216,34 @@ export default function GreetingsConfig({
                   </option>
                 ))}
               </select>
+              <p className="text-xs text-ink-500">Emails are sent at this time in parish local time.</p>
             </label>
 
-            <div className="space-y-1 text-sm text-ink-700">
+            <label className="block space-y-1 text-sm text-ink-700">
               <span className="font-medium">Parish timezone</span>
-              <p className="rounded-button border border-mist-200 bg-mist-50 px-3 py-2 text-sm text-ink-500">
-                {parishTimezone || "UTC (not configured)"}
-              </p>
-            </div>
+              <input
+                list="parish-timezone-options"
+                value={formState.timezone}
+                onChange={(event) => setFormState((s) => ({ ...s, timezone: event.target.value.trim() }))}
+                disabled={!isEditing}
+                placeholder="America/New_York"
+                className="w-full rounded-button border border-mist-200 bg-white px-3 py-2 text-sm text-ink-700 shadow-card transition focus-ring disabled:cursor-not-allowed disabled:bg-mist-50"
+              />
+              <datalist id="parish-timezone-options">
+                {timezoneOptions.map((option) => (
+                  <option key={option.value} value={option.value} label={option.label} />
+                ))}
+              </datalist>
+              {currentParishTime ? <p className="text-xs text-ink-500">Current parish time: {currentParishTime}</p> : null}
+              {nextRunPreview ? <p className="text-xs text-ink-500">Next run: {nextRunPreview} (parish time)</p> : null}
+              <p className="text-xs text-ink-500">Daylight saving is handled automatically for IANA timezones.</p>
+              {isLegacyUtcOffsetTimezone(formState.timezone) ? (
+                <p className="text-xs text-amber-700">
+                  Legacy fixed UTC offset detected. Please choose an IANA timezone (for example, America/New_York) to
+                  keep scheduling correct during daylight saving transitions.
+                </p>
+              ) : null}
+            </label>
           </div>
         </div>
       </Card>

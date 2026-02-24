@@ -2,39 +2,20 @@ import { GreetingType } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { requireCronSecret } from "@/lib/cron/auth";
 import { sendGreetingEmailIfEligible } from "@/lib/email/greetings";
-import { shouldRunGreetingForParishTime, isValidTimezone } from "@/lib/email/greetingSchedule";
+import {
+  getParishLocalDateParts,
+  isLegacyUtcOffsetTimezone,
+  isValidTimezone,
+  shouldRunGreetingForParishTime
+} from "@/lib/email/greetingSchedule";
 import { isMissingColumnError } from "@/lib/prisma/errors";
 import { prisma } from "@/server/db/prisma";
-
-function getParishLocalDateParts(now: Date, timeZone: string) {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    year: "numeric",
-    month: "numeric",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false
-  }).formatToParts(now);
-
-  const get = (type: "year" | "month" | "day" | "hour" | "minute") =>
-    Number(parts.find((part) => part.type === type)?.value ?? "0");
-
-  const year = get("year");
-  const month = get("month");
-  const day = get("day");
-  const hour = get("hour");
-  const minute = get("minute");
-  const dateKey = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-
-  return { month, day, hour, minute, dateKey };
-}
 
 export async function GET(request: Request) {
   const unauthorized = requireCronSecret(request);
   if (unauthorized) return unauthorized;
 
-  const now = new Date();
+  const nowUtc = new Date();
   let parishes: Array<{
     id: string;
     name: string;
@@ -128,22 +109,45 @@ export async function GET(request: Request) {
   let sent = 0;
   let skipped = 0;
   let failed = 0;
+  let matchedParishes = 0;
+  const reasonCounts = {
+    disabled: 0,
+    missingTimezone: 0,
+    invalidTimezone: 0,
+    notSendWindow: 0,
+    noCandidates: 0,
+    alreadySent: 0
+  };
+
+  let emailsAttempted = 0;
+
+  console.info("[greetings-cron] start", {
+    nowUtc: nowUtc.toISOString(),
+    parishCount: parishes.length
+  });
 
   for (const parish of parishes) {
     if (!parish.greetingsEnabled) {
+      reasonCounts.disabled += 1;
       continue;
     }
 
     const tz = parish.timezone || "UTC";
+    const isLegacyOffset = isLegacyUtcOffsetTimezone(tz);
 
     if (!parish.timezone) {
-      console.warn(`[greetings-cron] Parish ${parish.id} has no timezone configured, defaulting to UTC`);
-    } else if (!isValidTimezone(parish.timezone)) {
-      console.error(`[greetings-cron] Parish ${parish.id} has invalid timezone: ${parish.timezone}, skipping`);
+      reasonCounts.missingTimezone += 1;
+      console.warn("[greetings-cron] parish missing timezone; defaulting to UTC", { parishId: parish.id });
+    } else if (!isLegacyOffset && !isValidTimezone(parish.timezone)) {
+      reasonCounts.invalidTimezone += 1;
+      console.error("[greetings-cron] parish has invalid timezone; skipping", {
+        parishId: parish.id,
+        timezone: parish.timezone
+      });
       continue;
     }
 
-    const { month, day, hour, minute, dateKey } = getParishLocalDateParts(now, tz);
+    const { month, day, hour, minute, dateKey, localNowLabel, mode } = getParishLocalDateParts(nowUtc, tz);
 
     if (
       !shouldRunGreetingForParishTime({
@@ -153,8 +157,20 @@ export async function GET(request: Request) {
         sendMinuteLocal: parish.greetingsSendMinuteLocal
       })
     ) {
+      reasonCounts.notSendWindow += 1;
       continue;
     }
+
+    matchedParishes += 1;
+
+    console.info("[greetings-cron] parish matched send window", {
+      parishId: parish.id,
+      timezone: tz,
+      timezoneMode: mode,
+      localNow: localNowLabel,
+      localDate: dateKey,
+      sendTime: `${String(parish.greetingsSendHourLocal).padStart(2, "0")}:${String(parish.greetingsSendMinuteLocal).padStart(2, "0")}`
+    });
 
     let memberships: Array<{
       userId: string;
@@ -228,6 +244,22 @@ export async function GET(request: Request) {
       });
     }
 
+    if (memberships.length === 0) {
+      reasonCounts.noCandidates += 1;
+      console.info("[greetings-cron] no greeting candidates", {
+        parishId: parish.id,
+        timezone: tz,
+        localDate: dateKey
+      });
+      continue;
+    }
+
+    console.info("[greetings-cron] candidates resolved", {
+      parishId: parish.id,
+      candidates: memberships.length,
+      localDate: dateKey
+    });
+
     for (const row of memberships) {
       const firstName = row.user.name?.trim().split(" ")[0] || "Friend";
       const email = row.user.email;
@@ -246,9 +278,13 @@ export async function GET(request: Request) {
           templateHtml: parish.birthdayGreetingTemplate,
           dateKey
         });
+        emailsAttempted += 1;
         if (result.status === "SENT") sent += 1;
         else if (result.status === "FAILED") failed += 1;
-        else skipped += 1;
+        else {
+          skipped += 1;
+          reasonCounts.alreadySent += 1;
+        }
       }
 
       if (shouldSendAnniversary) {
@@ -263,12 +299,26 @@ export async function GET(request: Request) {
           templateHtml: parish.anniversaryGreetingTemplate,
           dateKey
         });
+        emailsAttempted += 1;
         if (result.status === "SENT") sent += 1;
         else if (result.status === "FAILED") failed += 1;
-        else skipped += 1;
+        else {
+          skipped += 1;
+          reasonCounts.alreadySent += 1;
+        }
       }
     }
   }
 
-  return NextResponse.json({ sent, skipped, failed });
+  console.info("[greetings-cron] complete", {
+    nowUtc: nowUtc.toISOString(),
+    sent,
+    skipped,
+    failed,
+    emailsAttempted,
+    matchedParishes,
+    reasonCounts
+  });
+
+  return NextResponse.json({ sent, skipped, failed, emailsAttempted, matchedParishes, reasonCounts });
 }
