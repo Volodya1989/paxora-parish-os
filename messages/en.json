@@ -16,7 +16,8 @@
     "reports": "Reports",
     "statistics": "Statistics",
     "community": "Community",
-    "events": "Events"
+    "events": "Events",
+    "automation": "Automation"
   },
   "landing": {
     "welcome": "Welcome",
@@ -1229,5 +1230,11 @@
     "totalRequests": "Total requests",
     "pendingRequests": "Pending",
     "completedRequests": "Completed"
+  },
+  "automation": {
+    "title": "Automation",
+    "subtitle": "Manage automated greeting emails and scheduling",
+    "profileLink": "Manage greeting email templates, send time, and automation settings.",
+    "openSettings": "Open automation"
   }
 }

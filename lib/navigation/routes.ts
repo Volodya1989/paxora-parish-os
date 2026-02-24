@@ -12,6 +12,7 @@ export const routes = {
   adminPeople: "/admin/people",
   adminReliability: "/admin/reliability",
   adminReports: "/admin/reports",
+  adminAutomation: "/admin/automation",
   adminStatistics: "/admin/statistics",
   platformParishes: "/platform/parishes"
 } as const;
