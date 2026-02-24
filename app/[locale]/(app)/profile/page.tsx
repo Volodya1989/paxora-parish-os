@@ -10,10 +10,12 @@ import ProfileDates from "@/components/profile/ProfileDates";
 import ProfileSettings from "@/components/profile/ProfileSettings";
 import VolunteerHoursCard from "@/components/profile/VolunteerHoursCard";
 import DeleteAccountCard from "@/components/profile/DeleteAccountCard";
+import ParishGreetingSettings from "@/components/profile/ParishGreetingSettings";
 import { getParishMembership } from "@/server/db/groups";
 import { isParishLeader } from "@/lib/permissions";
 import { listParishHubItemsForAdmin, ensureParishHubDefaults } from "@/server/actions/parish-hub";
 import { prisma } from "@/server/db/prisma";
+import { isMissingColumnError } from "@/lib/prisma/errors";
 import ParishHubAdminPanel from "@/components/parish-hub/ParishHubAdminPanel";
 import type { ParishHubAdminItem } from "@/components/parish-hub/ParishHubReorderList";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
@@ -49,11 +51,54 @@ export default async function ProfilePage({
   });
   const currentProfile = await getCurrentUserProfile();
   const pendingRequests = await getPendingAccessRequests();
-  const parish = session.user.activeParishId
-    ? await prisma.parish.findUnique({
-        where: { id: session.user.activeParishId },
-        select: { name: true, logoUrl: true }
-      })
+  const activeParishId = session.user.activeParishId;
+
+  const parish = activeParishId
+    ? await (async () => {
+        try {
+          const row = await prisma.parish.findUnique({
+            where: { id: activeParishId },
+            select: {
+              name: true,
+              logoUrl: true,
+              birthdayGreetingTemplate: true,
+              anniversaryGreetingTemplate: true,
+              greetingsSendHourLocal: true,
+              greetingsSendMinuteLocal: true
+            }
+          });
+
+          return row
+            ? {
+                ...row,
+                greetingsSendTimeLocal: `${String(row.greetingsSendHourLocal).padStart(2, "0")}:${String(row.greetingsSendMinuteLocal).padStart(2, "0")}`
+              }
+            : null;
+        } catch (error) {
+          if (!isMissingColumnError(error, "Parish.greetingsSendHourLocal")) {
+            throw error;
+          }
+
+          const fallback = await prisma.parish.findUnique({
+            where: { id: activeParishId },
+            select: {
+              name: true,
+              logoUrl: true,
+              birthdayGreetingTemplate: true,
+              anniversaryGreetingTemplate: true
+            }
+          });
+
+          return fallback
+            ? {
+                ...fallback,
+                greetingsSendHourLocal: 9,
+                greetingsSendMinuteLocal: 0,
+                greetingsSendTimeLocal: "09:00"
+              }
+            : null;
+        }
+      })()
     : null;
 
   // Check if user is admin/shepherd for Parish Hub settings
@@ -72,7 +117,7 @@ export default async function ProfilePage({
     const [items, parishSettings] = await Promise.all([
       listParishHubItemsForAdmin(),
       prisma.parish.findUnique({
-        where: { id: session.user.activeParishId },
+        where: { id: activeParishId! },
         select: { hubGridEnabled: true, hubGridPublicEnabled: true }
       })
     ]);
@@ -163,10 +208,24 @@ export default async function ProfilePage({
               birthdayDay: currentProfile.birthdayDay,
               anniversaryMonth: currentProfile.anniversaryMonth,
               anniversaryDay: currentProfile.anniversaryDay,
-              greetingsOptIn: currentProfile.greetingsOptIn
+              greetingsOptIn: currentProfile.greetingsOptIn,
+              greetingsLastPromptedAt: currentProfile.greetingsLastPromptedAt,
+              greetingsDoNotAskAgain: currentProfile.greetingsDoNotAskAgain
             }}
           />
         </div>
+
+
+        {isAdmin && session.user.activeParishId && parish ? (
+          <ParishGreetingSettings
+            parishId={session.user.activeParishId}
+            parishName={parish.name}
+            logoUrl={parish.logoUrl}
+            birthdayGreetingTemplate={parish.birthdayGreetingTemplate}
+            anniversaryGreetingTemplate={parish.anniversaryGreetingTemplate}
+            greetingsSendTimeLocal={parish.greetingsSendTimeLocal}
+          />
+        ) : null}
 
         <DeleteAccountCard />
 

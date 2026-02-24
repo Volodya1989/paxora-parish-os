@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
 import { profileDatesSchema, type ProfileDatesInput } from "@/lib/validation/profile";
+import { isMissingColumnError } from "@/lib/prisma/errors";
 
 type UpdateProfileSettingsInput = {
   notificationsEnabled: boolean;
@@ -176,10 +177,21 @@ export async function updateProfileDates(
       birthdayMonth: true,
       birthdayDay: true,
       anniversaryMonth: true,
-      anniversaryDay: true,
-      greetingsOptIn: true
+      anniversaryDay: true
     }
   });
+
+  if (session.user.activeParishId) {
+    await prisma.membership.update({
+      where: {
+        parishId_userId: {
+          parishId: session.user.activeParishId,
+          userId: session.user.id
+        }
+      },
+      data: { greetingsLastPromptedAt: new Date() }
+    }).catch(() => null);
+  }
 
   revalidatePath("/profile");
 
@@ -187,4 +199,130 @@ export async function updateProfileDates(
     status: "success",
     data: updatedUser
   };
+}
+
+export async function markGreetingsPromptNotNow() {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  if (!session.user.activeParishId) {
+    throw new Error("Missing active parish");
+  }
+
+  try {
+    await prisma.membership.update({
+      where: {
+        parishId_userId: {
+          parishId: session.user.activeParishId,
+          userId: session.user.id
+        }
+      },
+      data: { greetingsLastPromptedAt: new Date() }
+    });
+  } catch (error) {
+    if (!isMissingColumnError(error, "Membership.greetingsLastPromptedAt")) {
+      throw error;
+    }
+
+    await prisma.user
+      .update({
+        where: { id: session.user.id },
+        data: { greetingsLastPromptedAt: new Date() }
+      })
+      .catch(() => null);
+  }
+  revalidatePath("/profile");
+}
+
+export async function markGreetingsPromptDoNotAskAgain() {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  if (!session.user.activeParishId) {
+    throw new Error("Missing active parish");
+  }
+
+  try {
+    await prisma.membership.update({
+      where: {
+        parishId_userId: {
+          parishId: session.user.activeParishId,
+          userId: session.user.id
+        }
+      },
+      data: {
+        greetingsDoNotAskAgain: true,
+        greetingsLastPromptedAt: new Date()
+      }
+    });
+  } catch (error) {
+    if (!isMissingColumnError(error, "Membership.greetingsDoNotAskAgain")) {
+      throw error;
+    }
+
+    await prisma.user
+      .update({
+        where: { id: session.user.id },
+        data: {
+          greetingsDoNotAskAgain: true,
+          greetingsLastPromptedAt: new Date()
+        }
+      })
+      .catch(() => null);
+  }
+  revalidatePath("/profile");
+}
+
+export async function updateAllowParishGreetings(allowParishGreetings: boolean) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  if (typeof allowParishGreetings !== "boolean") {
+    throw new Error("Invalid value");
+  }
+
+  if (!session.user.activeParishId) {
+    throw new Error("Missing active parish");
+  }
+
+  try {
+    await prisma.membership.update({
+      where: {
+        parishId_userId: {
+          parishId: session.user.activeParishId,
+          userId: session.user.id
+        }
+      },
+      data: {
+        allowParishGreetings,
+        greetingsOptInAt: allowParishGreetings ? new Date() : null,
+        greetingsLastPromptedAt: new Date()
+      }
+    });
+  } catch (error) {
+    if (!isMissingColumnError(error, "Membership.allowParishGreetings")) {
+      throw error;
+    }
+
+    await prisma.user
+      .update({
+        where: { id: session.user.id },
+        data: {
+          greetingsOptIn: allowParishGreetings,
+          greetingsOptInAt: allowParishGreetings ? new Date() : null,
+          greetingsLastPromptedAt: new Date()
+        }
+      })
+      .catch(() => null);
+  }
+  revalidatePath("/profile");
 }

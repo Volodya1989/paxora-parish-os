@@ -2,7 +2,8 @@ import { prisma } from "@/server/db/prisma";
 
 export async function ensureParishBootstrap(userId: string) {
   const existingMembership = await prisma.membership.findFirst({
-    where: { userId }
+    where: { userId },
+    select: { parishId: true }
   });
 
   if (!existingMembership) {

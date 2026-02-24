@@ -1,6 +1,7 @@
 import { type ParishRole } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/server/db/prisma";
+import { isMissingColumnError } from "@/lib/prisma/errors";
 import { getUserYtdHours } from "@/lib/queries/hours";
 import { getMilestoneTier, type MilestoneTier } from "@/lib/hours/milestones";
 import { authOptions } from "@/server/auth/options";
@@ -14,6 +15,9 @@ export type CurrentUserProfile = {
   anniversaryMonth: number | null;
   anniversaryDay: number | null;
   greetingsOptIn: boolean;
+  greetingsOptInAt: Date | null;
+  greetingsLastPromptedAt: Date | null;
+  greetingsDoNotAskAgain: boolean;
 };
 
 export type ProfileSettings = {
@@ -157,7 +161,10 @@ export async function getCurrentUserProfile(): Promise<CurrentUserProfile> {
       birthdayDay: true,
       anniversaryMonth: true,
       anniversaryDay: true,
-      greetingsOptIn: true
+      greetingsOptIn: true,
+      greetingsOptInAt: true,
+      greetingsLastPromptedAt: true,
+      greetingsDoNotAskAgain: true
     }
   });
 
@@ -165,5 +172,41 @@ export async function getCurrentUserProfile(): Promise<CurrentUserProfile> {
     throw new Error("User not found");
   }
 
-  return user;
+  let membership: {
+    allowParishGreetings: boolean;
+    greetingsOptInAt: Date | null;
+    greetingsLastPromptedAt: Date | null;
+    greetingsDoNotAskAgain: boolean;
+  } | null = null;
+
+  if (session.user.activeParishId) {
+    try {
+      membership = await prisma.membership.findUnique({
+        where: {
+          parishId_userId: {
+            parishId: session.user.activeParishId,
+            userId: session.user.id
+          }
+        },
+        select: {
+          allowParishGreetings: true,
+          greetingsOptInAt: true,
+          greetingsLastPromptedAt: true,
+          greetingsDoNotAskAgain: true
+        }
+      });
+    } catch (error) {
+      if (!isMissingColumnError(error, "Membership.allowParishGreetings")) {
+        throw error;
+      }
+    }
+  }
+
+  return {
+    ...user,
+    greetingsOptIn: membership?.allowParishGreetings ?? user.greetingsOptIn,
+    greetingsOptInAt: membership?.greetingsOptInAt ?? user.greetingsOptInAt,
+    greetingsLastPromptedAt: membership?.greetingsLastPromptedAt ?? user.greetingsLastPromptedAt,
+    greetingsDoNotAskAgain: membership?.greetingsDoNotAskAgain ?? user.greetingsDoNotAskAgain
+  };
 }
