@@ -6,12 +6,11 @@ import Button from "@/components/ui/Button";
 import AvatarUploadField from "@/components/shared/AvatarUploadField";
 import { useToast } from "@/components/ui/Toast";
 import { updateParishGreetingConfig } from "@/app/actions/parishGreetings";
-import { buildQuarterHourTimeOptions, isValidTimezone } from "@/lib/email/greetingSchedule";
+import { buildQuarterHourTimeOptions, getDailyGreetingScheduleStatus, isValidTimezone } from "@/lib/email/greetingSchedule";
 import { cn } from "@/lib/ui/cn";
 import {
   buildParishTimezoneOptions,
   formatCurrentTimeInTimezone,
-  getNextRunPreview,
   isLegacyUtcOffsetTimezone
 } from "@/lib/time/parishTimezones";
 
@@ -72,9 +71,20 @@ export default function GreetingsConfig({
     return formatCurrentTimeInTimezone(formState.timezone);
   }, [formState.timezone]);
 
-  const nextRunPreview = useMemo(() => {
-    return getNextRunPreview(formState.timezone, formState.sendTime);
-  }, [formState.timezone, formState.sendTime]);
+  const scheduleStatus = useMemo(() => {
+    const [hour, minute] = formState.sendTime.split(":").map(Number);
+    if (!Number.isInteger(hour) || !Number.isInteger(minute)) {
+      return null;
+    }
+
+    return getDailyGreetingScheduleStatus({
+      nowUtc: new Date(),
+      timezone: formState.timezone,
+      sendHourLocal: hour,
+      sendMinuteLocal: minute,
+      sentToday: emailsSentToday > 0
+    });
+  }, [emailsSentToday, formState.timezone, formState.sendTime]);
 
   const latestGreetingSentLabel = useMemo(() => {
     if (!latestGreetingSentAt) {
@@ -196,7 +206,7 @@ export default function GreetingsConfig({
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-ink-500">Emails are sent at this time in parish local time.</p>
+              <p className="text-xs text-ink-500">Preferred send time in parish local time.</p>
             </label>
 
             <label className="block space-y-1 text-sm text-ink-700">
@@ -215,7 +225,7 @@ export default function GreetingsConfig({
                 ))}
               </datalist>
               {currentParishTime ? <p className="text-xs text-ink-500">Current parish time: {currentParishTime}</p> : null}
-              {nextRunPreview ? <p className="text-xs text-ink-500">Next run: {nextRunPreview} (parish time)</p> : null}
+              {scheduleStatus ? <p className="text-xs text-ink-500">Next scheduled run: {scheduleStatus.nextRunLabel}</p> : null}
               <p className="text-xs text-ink-500">Daylight saving is handled automatically for IANA timezones.</p>
               <div className="rounded-button border border-mist-200 bg-mist-50 px-3 py-2 text-xs text-ink-600">
                 <p>
@@ -233,6 +243,7 @@ export default function GreetingsConfig({
                   </p>
                 ) : null}
               </div>
+              <p className="text-xs text-ink-500">Hobby plan runs automation once per day. Preferred send time is best-effort.</p>
               {isLegacyUtcOffsetTimezone(formState.timezone) ? (
                 <p className="text-xs text-amber-700">
                   Legacy fixed UTC offset detected. Please choose an IANA timezone (for example, America/New_York) to

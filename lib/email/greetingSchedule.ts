@@ -52,6 +52,45 @@ export function shouldRunGreetingForParishTime(input: {
   return diff >= 0 && diff < GREETING_MINUTE_INTERVAL;
 }
 
+
+function formatHourMinute12h(hour: number, minute: number) {
+  const meridiem = hour >= 12 ? "PM" : "AM";
+  const hour12 = hour % 12 || 12;
+  return `${hour12}:${String(minute).padStart(2, "0")} ${meridiem}`;
+}
+
+export function getDailyGreetingScheduleStatus(input: {
+  nowUtc: Date;
+  timezone: string;
+  sendHourLocal: number;
+  sendMinuteLocal: number;
+  sentToday: boolean;
+}) {
+  const local = getParishLocalDateParts(input.nowUtc, input.timezone);
+  const nowTotal = local.hour * 60 + local.minute;
+  const sendTotal = input.sendHourLocal * 60 + input.sendMinuteLocal;
+  const preferredTimeLabel = formatHourMinute12h(input.sendHourLocal, input.sendMinuteLocal);
+  const isPastPreferredTime = nowTotal >= sendTotal;
+
+  if (input.sentToday) {
+    return {
+      ...local,
+      preferredTimeLabel,
+      isPastPreferredTime,
+      nextRunLabel: `Tomorrow at ${preferredTimeLabel} (best-effort, daily job)`
+    };
+  }
+
+  return {
+    ...local,
+    preferredTimeLabel,
+    isPastPreferredTime,
+    nextRunLabel: isPastPreferredTime
+      ? "Today (best-effort during daily job)"
+      : "Today (best-effort during daily job)"
+  };
+}
+
 export function isValidTimezone(tz: string): boolean {
   try {
     Intl.DateTimeFormat("en-US", { timeZone: tz });

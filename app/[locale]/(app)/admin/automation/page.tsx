@@ -1,39 +1,15 @@
-import { fromZonedTime } from "date-fns-tz";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/server/auth/options";
 import { requireAdminOrShepherd } from "@/server/auth/permissions";
 import { prisma } from "@/server/db/prisma";
 import { getGreetingCandidatesForParish } from "@/lib/email/greetingCandidates";
-import { getParishLocalDateParts, parseLegacyUtcOffset } from "@/lib/email/greetingSchedule";
+import { getParishLocalDateParts } from "@/lib/email/greetingSchedule";
 import { isMissingColumnError } from "@/lib/prisma/errors";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
 import GreetingsConfig from "@/components/automation/GreetingsConfig";
 import { ZapIcon } from "@/components/icons/ParishIcons";
 import { getLocaleFromParam } from "@/lib/i18n/routing";
 import { getTranslations } from "@/lib/i18n/server";
-
-function getLocalDayWindowUtc(now: Date, timezone: string, dateKey: string) {
-  const legacyOffset = parseLegacyUtcOffset(timezone);
-
-  if (legacyOffset !== null) {
-    const [year, month, day] = dateKey.split("-").map(Number);
-    const localStartUtcMs = Date.UTC(year, month - 1, day, 0, 0, 0) - legacyOffset * 60_000;
-    const nextDayStartUtcMs = localStartUtcMs + 24 * 60 * 60 * 1000;
-    return {
-      startUtc: new Date(localStartUtcMs),
-      endUtc: new Date(nextDayStartUtcMs)
-    };
-  }
-
-  const [year, month, day] = dateKey.split("-").map(Number);
-  const nextLocalDate = new Date(Date.UTC(year, month - 1, day + 1));
-  const nextDateKey = `${nextLocalDate.getUTCFullYear()}-${String(nextLocalDate.getUTCMonth() + 1).padStart(2, "0")}-${String(nextLocalDate.getUTCDate()).padStart(2, "0")}`;
-
-  return {
-    startUtc: fromZonedTime(`${dateKey} 00:00:00`, timezone),
-    endUtc: fromZonedTime(`${nextDateKey} 00:00:00`, timezone)
-  };
-}
 
 export default async function AutomationPage({
   params
@@ -152,7 +128,6 @@ export default async function AutomationPage({
   const now = new Date();
   const timezone = parish.timezone || "UTC";
   const { month, day, dateKey } = getParishLocalDateParts(now, timezone);
-  const { startUtc, endUtc } = getLocalDayWindowUtc(now, timezone, dateKey);
 
   const { summary } = await getGreetingCandidatesForParish({
     prisma,
@@ -164,15 +139,10 @@ export default async function AutomationPage({
 
   const emailsPlannedToday = summary.dateMatchedMemberships;
 
-  const emailsSentToday = await prisma.emailLog.count({
+  const emailsSentToday = await prisma.greetingEmailLog.count({
     where: {
       parishId,
-      template: { in: ["birthdayGreeting", "anniversaryGreeting"] },
-      status: "SENT",
-      sentAt: {
-        gte: startUtc,
-        lt: endUtc
-      }
+      dateKey
     }
   });
 
