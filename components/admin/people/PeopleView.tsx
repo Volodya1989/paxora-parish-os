@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import type { ParishRole } from "@prisma/client";
 import Button from "@/components/ui/Button";
@@ -72,6 +72,7 @@ type PeopleViewProps = {
   viewerId: string;
   parishId: string;
   viewerPlatformRole: "SUPERADMIN" | null;
+  initialSearchQuery: string;
 };
 
 export default function PeopleView({
@@ -79,7 +80,8 @@ export default function PeopleView({
   invites,
   viewerId,
   parishId,
-  viewerPlatformRole
+  viewerPlatformRole,
+  initialSearchQuery
 }: PeopleViewProps) {
   const { addToast } = useToast();
   const session = useSession();
@@ -96,6 +98,87 @@ export default function PeopleView({
   const [inviteRole, setInviteRole] = useState<ParishRole>("MEMBER");
   const [isPendingInvite, startInviteTransition] = useTransition();
   const [, startTransition] = useTransition();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [searchInput, setSearchInput] = useState(initialSearchQuery);
+  const [debouncedSearch, setDebouncedSearch] = useState(initialSearchQuery.trim());
+  const [displayedMembers, setDisplayedMembers] = useState(members);
+  const [isSearching, setIsSearching] = useState(false);
+  const activeSearchRequest = useRef(0);
+
+  useEffect(() => {
+    setDisplayedMembers(members);
+  }, [members]);
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setDebouncedSearch(searchInput.trim());
+    }, 300);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [searchInput]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (debouncedSearch) {
+      params.set("q", debouncedSearch);
+    } else {
+      params.delete("q");
+    }
+
+    const nextQuery = params.toString();
+    const currentQuery = searchParams.toString();
+    if (nextQuery !== currentQuery) {
+      router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
+    }
+
+    if (debouncedSearch.length < 2) {
+      setDisplayedMembers(members);
+      setIsSearching(false);
+      return;
+    }
+
+    const requestId = activeSearchRequest.current + 1;
+    activeSearchRequest.current = requestId;
+    setIsSearching(true);
+
+    const controller = new AbortController();
+    void (async () => {
+      try {
+        const response = await fetch(
+          `/api/parishes/${parishId}/members?query=${encodeURIComponent(debouncedSearch)}`,
+          { signal: controller.signal }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to search members.");
+        }
+
+        const payload = (await response.json()) as { members?: ParishMemberRecord[] };
+        if (activeSearchRequest.current === requestId) {
+          setDisplayedMembers(payload.members ?? []);
+        }
+      } catch {
+        if (!controller.signal.aborted) {
+          addToast({
+            title: "Search failed",
+            description: "Please try again.",
+            status: "error"
+          });
+        }
+      } finally {
+        if (activeSearchRequest.current === requestId) {
+          setIsSearching(false);
+        }
+      }
+    })();
+
+    return () => {
+      controller.abort();
+    };
+  }, [addToast, debouncedSearch, members, parishId, pathname, router, searchParams]);
 
   const refresh = () => {
     startTransition(() => {
@@ -253,7 +336,7 @@ export default function PeopleView({
     );
   });
 
-  const memberRows = members.map((member) => {
+  const memberRows = displayedMembers.map((member) => {
     const displayName = member.name ?? member.email;
     const isBusy = pendingMemberId === member.id;
     return (
@@ -334,7 +417,43 @@ export default function PeopleView({
               }
             />
           ) : (
-            <div className="space-y-3">{memberRows}</div>
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="people-search">Search</Label>
+                <div className="relative">
+                  <Input
+                    id="people-search"
+                    value={searchInput}
+                    onChange={(event) => setSearchInput(event.target.value)}
+                    placeholder="Search by name or email..."
+                    className="pr-10"
+                  />
+                  {searchInput.trim().length > 0 ? (
+                    <button
+                      type="button"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full px-2 py-1 text-xs text-ink-500 hover:text-ink-700"
+                      onClick={() => setSearchInput("")}
+                      aria-label="Clear search"
+                    >
+                      ✕
+                    </button>
+                  ) : null}
+                </div>
+              </div>
+
+              {isSearching ? (
+                <p className="text-sm text-ink-500">Searching members…</p>
+              ) : null}
+
+              {displayedMembers.length === 0 ? (
+                <EmptyState
+                  title="No members found."
+                  description="Try another name or email."
+                />
+              ) : (
+                <div className="space-y-3">{memberRows}</div>
+              )}
+            </div>
           )}
         </div>
       </Card>
