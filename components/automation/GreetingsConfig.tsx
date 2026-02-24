@@ -24,6 +24,9 @@ type GreetingsConfigProps = {
   birthdayGreetingTemplate: string | null;
   anniversaryGreetingTemplate: string | null;
   greetingsSendTimeLocal: string;
+  emailsPlannedToday: number;
+  emailsSentToday: number;
+  latestGreetingSentAt: string | null;
 };
 
 export default function GreetingsConfig({
@@ -34,7 +37,10 @@ export default function GreetingsConfig({
   greetingsEnabled: initialEnabled,
   birthdayGreetingTemplate,
   anniversaryGreetingTemplate,
-  greetingsSendTimeLocal
+  greetingsSendTimeLocal,
+  emailsPlannedToday,
+  emailsSentToday,
+  latestGreetingSentAt
 }: GreetingsConfigProps) {
   const { addToast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -69,6 +75,24 @@ export default function GreetingsConfig({
   const nextRunPreview = useMemo(() => {
     return getNextRunPreview(formState.timezone, formState.sendTime);
   }, [formState.timezone, formState.sendTime]);
+
+  const latestGreetingSentLabel = useMemo(() => {
+    if (!latestGreetingSentAt) {
+      return null;
+    }
+
+    try {
+      return new Intl.DateTimeFormat("en-US", {
+        timeZone: formState.timezone,
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+      }).format(new Date(latestGreetingSentAt));
+    } catch {
+      return null;
+    }
+  }, [latestGreetingSentAt, formState.timezone]);
 
   const handleSave = () => {
     startTransition(async () => {
@@ -193,6 +217,22 @@ export default function GreetingsConfig({
               {currentParishTime ? <p className="text-xs text-ink-500">Current parish time: {currentParishTime}</p> : null}
               {nextRunPreview ? <p className="text-xs text-ink-500">Next run: {nextRunPreview} (parish time)</p> : null}
               <p className="text-xs text-ink-500">Daylight saving is handled automatically for IANA timezones.</p>
+              <div className="rounded-button border border-mist-200 bg-mist-50 px-3 py-2 text-xs text-ink-600">
+                <p>
+                  <span className="font-medium text-ink-800">Planned for today:</span> {emailsPlannedToday} greeting
+                  {emailsPlannedToday === 1 ? "" : "s"}
+                </p>
+                <p>
+                  <span className="font-medium text-ink-800">Confirmed sent today:</span> {emailsSentToday} greeting
+                  {emailsSentToday === 1 ? "" : "s"}
+                </p>
+                {latestGreetingSentLabel ? (
+                  <p>
+                    <span className="font-medium text-ink-800">Last confirmed send:</span> {latestGreetingSentLabel} (parish
+                    time)
+                  </p>
+                ) : null}
+              </div>
               {isLegacyUtcOffsetTimezone(formState.timezone) ? (
                 <p className="text-xs text-amber-700">
                   Legacy fixed UTC offset detected. Please choose an IANA timezone (for example, America/New_York) to
