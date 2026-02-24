@@ -1,9 +1,18 @@
-import { GreetingType } from "@prisma/client";
+import { GreetingType, Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { requireCronSecret } from "@/lib/cron/auth";
 import { sendGreetingEmailIfEligible } from "@/lib/email/greetings";
 import { prisma } from "@/server/db/prisma";
 
+
+function isMissingMembershipGreetingColumns(error: unknown) {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2022") {
+    return false;
+  }
+
+  const column = String((error.meta as { column?: unknown } | undefined)?.column ?? "");
+  return column.startsWith("Membership.allowParishGreetings");
+}
 function getParishLocalDateParts(now: Date, timeZone: string) {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone,
@@ -47,32 +56,78 @@ export async function GET(request: Request) {
   for (const parish of parishes) {
     const { month, day, dateKey } = getParishLocalDateParts(now, parish.timezone || "UTC");
 
-    const memberships = await prisma.membership.findMany({
-      where: {
-        parishId: parish.id,
-        allowParishGreetings: true,
-        user: {
-          deletedAt: null,
-          OR: [
-            { birthdayMonth: month, birthdayDay: day },
-            { anniversaryMonth: month, anniversaryDay: day }
-          ]
-        }
-      },
-      select: {
-        userId: true,
-        user: {
-          select: {
-            email: true,
-            name: true,
-            birthdayMonth: true,
-            birthdayDay: true,
-            anniversaryMonth: true,
-            anniversaryDay: true
+    let memberships: Array<{
+      userId: string;
+      user: {
+        email: string;
+        name: string | null;
+        birthdayMonth: number | null;
+        birthdayDay: number | null;
+        anniversaryMonth: number | null;
+        anniversaryDay: number | null;
+      };
+    }> = [];
+
+    try {
+      memberships = await prisma.membership.findMany({
+        where: {
+          parishId: parish.id,
+          allowParishGreetings: true,
+          user: {
+            deletedAt: null,
+            OR: [
+              { birthdayMonth: month, birthdayDay: day },
+              { anniversaryMonth: month, anniversaryDay: day }
+            ]
+          }
+        },
+        select: {
+          userId: true,
+          user: {
+            select: {
+              email: true,
+              name: true,
+              birthdayMonth: true,
+              birthdayDay: true,
+              anniversaryMonth: true,
+              anniversaryDay: true
+            }
           }
         }
+      });
+    } catch (error) {
+      if (!isMissingMembershipGreetingColumns(error)) {
+        throw error;
       }
-    });
+
+      const legacyUsers = await prisma.membership.findMany({
+        where: {
+          parishId: parish.id,
+          user: {
+            deletedAt: null,
+            greetingsOptIn: true,
+            OR: [
+              { birthdayMonth: month, birthdayDay: day },
+              { anniversaryMonth: month, anniversaryDay: day }
+            ]
+          }
+        },
+        select: {
+          userId: true,
+          user: {
+            select: {
+              email: true,
+              name: true,
+              birthdayMonth: true,
+              birthdayDay: true,
+              anniversaryMonth: true,
+              anniversaryDay: true
+            }
+          }
+        }
+      });
+      memberships = legacyUsers;
+    }
 
     for (const row of memberships) {
       const firstName = row.user.name?.trim().split(" ")[0] || "Friend";

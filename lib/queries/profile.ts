@@ -1,4 +1,4 @@
-import { type ParishRole } from "@prisma/client";
+import { Prisma, type ParishRole } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/server/db/prisma";
 import { getUserYtdHours } from "@/lib/queries/hours";
@@ -6,6 +6,18 @@ import { getMilestoneTier, type MilestoneTier } from "@/lib/hours/milestones";
 import { authOptions } from "@/server/auth/options";
 import { buildAvatarImagePath } from "@/lib/storage/avatar";
 
+
+function isMissingMembershipGreetingColumns(error: unknown) {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2022") {
+    return false;
+  }
+
+  const column = String((error.meta as { column?: unknown } | undefined)?.column ?? "");
+  return column.startsWith("Membership.allowParishGreetings") ||
+    column.startsWith("Membership.greetingsOptInAt") ||
+    column.startsWith("Membership.greetingsLastPromptedAt") ||
+    column.startsWith("Membership.greetingsDoNotAskAgain");
+}
 export type CurrentUserProfile = {
   name: string | null;
   email: string;
@@ -159,7 +171,11 @@ export async function getCurrentUserProfile(): Promise<CurrentUserProfile> {
       birthdayMonth: true,
       birthdayDay: true,
       anniversaryMonth: true,
-      anniversaryDay: true
+      anniversaryDay: true,
+      greetingsOptIn: true,
+      greetingsOptInAt: true,
+      greetingsLastPromptedAt: true,
+      greetingsDoNotAskAgain: true
     }
   });
 
@@ -167,8 +183,16 @@ export async function getCurrentUserProfile(): Promise<CurrentUserProfile> {
     throw new Error("User not found");
   }
 
-  const membership = session.user.activeParishId
-    ? await prisma.membership.findUnique({
+  let membership: {
+    allowParishGreetings: boolean;
+    greetingsOptInAt: Date | null;
+    greetingsLastPromptedAt: Date | null;
+    greetingsDoNotAskAgain: boolean;
+  } | null = null;
+
+  if (session.user.activeParishId) {
+    try {
+      membership = await prisma.membership.findUnique({
         where: {
           parishId_userId: {
             parishId: session.user.activeParishId,
@@ -181,14 +205,20 @@ export async function getCurrentUserProfile(): Promise<CurrentUserProfile> {
           greetingsLastPromptedAt: true,
           greetingsDoNotAskAgain: true
         }
-      })
-    : null;
+      });
+    } catch (error) {
+      if (!isMissingMembershipGreetingColumns(error)) {
+        throw error;
+      }
+      membership = null;
+    }
+  }
 
   return {
     ...user,
-    greetingsOptIn: membership?.allowParishGreetings ?? false,
-    greetingsOptInAt: membership?.greetingsOptInAt ?? null,
-    greetingsLastPromptedAt: membership?.greetingsLastPromptedAt ?? null,
-    greetingsDoNotAskAgain: membership?.greetingsDoNotAskAgain ?? false
+    greetingsOptIn: membership?.allowParishGreetings ?? user.greetingsOptIn ?? false,
+    greetingsOptInAt: membership?.greetingsOptInAt ?? user.greetingsOptInAt ?? null,
+    greetingsLastPromptedAt: membership?.greetingsLastPromptedAt ?? user.greetingsLastPromptedAt ?? null,
+    greetingsDoNotAskAgain: membership?.greetingsDoNotAskAgain ?? user.greetingsDoNotAskAgain ?? false
   };
 }

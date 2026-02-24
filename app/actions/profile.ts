@@ -4,8 +4,59 @@ import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
 import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
+import { Prisma } from "@prisma/client";
 import { profileDatesSchema, type ProfileDatesInput } from "@/lib/validation/profile";
 
+
+function isMissingMembershipGreetingColumns(error: unknown) {
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2022") {
+    return false;
+  }
+
+  const column = String((error.meta as { column?: unknown } | undefined)?.column ?? "");
+  return column.startsWith("Membership.allowParishGreetings") ||
+    column.startsWith("Membership.greetingsOptInAt") ||
+    column.startsWith("Membership.greetingsLastPromptedAt") ||
+    column.startsWith("Membership.greetingsDoNotAskAgain");
+}
+
+async function updateGreetingPromptOnMembershipOrUser(input: {
+  userId: string;
+  parishId: string;
+  membershipData: {
+    allowParishGreetings?: boolean;
+    greetingsOptInAt?: Date | null;
+    greetingsLastPromptedAt?: Date;
+    greetingsDoNotAskAgain?: boolean;
+  };
+  userFallbackData: {
+    greetingsOptIn?: boolean;
+    greetingsOptInAt?: Date | null;
+    greetingsLastPromptedAt?: Date;
+    greetingsDoNotAskAgain?: boolean;
+  };
+}) {
+  try {
+    await prisma.membership.update({
+      where: {
+        parishId_userId: {
+          parishId: input.parishId,
+          userId: input.userId
+        }
+      },
+      data: input.membershipData
+    });
+  } catch (error) {
+    if (!isMissingMembershipGreetingColumns(error)) {
+      throw error;
+    }
+
+    await prisma.user.update({
+      where: { id: input.userId },
+      data: input.userFallbackData
+    });
+  }
+}
 type UpdateProfileSettingsInput = {
   notificationsEnabled: boolean;
   weeklyDigestEnabled: boolean;
@@ -181,14 +232,11 @@ export async function updateProfileDates(
   });
 
   if (session.user.activeParishId) {
-    await prisma.membership.update({
-      where: {
-        parishId_userId: {
-          parishId: session.user.activeParishId,
-          userId: session.user.id
-        }
-      },
-      data: { greetingsLastPromptedAt: new Date() }
+    await updateGreetingPromptOnMembershipOrUser({
+      userId: session.user.id,
+      parishId: session.user.activeParishId,
+      membershipData: { greetingsLastPromptedAt: new Date() },
+      userFallbackData: { greetingsLastPromptedAt: new Date() }
     }).catch(() => null);
   }
 
@@ -211,14 +259,11 @@ export async function markGreetingsPromptNotNow() {
     throw new Error("Missing active parish");
   }
 
-  await prisma.membership.update({
-    where: {
-      parishId_userId: {
-        parishId: session.user.activeParishId,
-        userId: session.user.id
-      }
-    },
-    data: { greetingsLastPromptedAt: new Date() }
+  await updateGreetingPromptOnMembershipOrUser({
+    userId: session.user.id,
+    parishId: session.user.activeParishId,
+    membershipData: { greetingsLastPromptedAt: new Date() },
+    userFallbackData: { greetingsLastPromptedAt: new Date() }
   });
   revalidatePath("/profile");
 }
@@ -234,14 +279,14 @@ export async function markGreetingsPromptDoNotAskAgain() {
     throw new Error("Missing active parish");
   }
 
-  await prisma.membership.update({
-    where: {
-      parishId_userId: {
-        parishId: session.user.activeParishId,
-        userId: session.user.id
-      }
+  await updateGreetingPromptOnMembershipOrUser({
+    userId: session.user.id,
+    parishId: session.user.activeParishId,
+    membershipData: {
+      greetingsDoNotAskAgain: true,
+      greetingsLastPromptedAt: new Date()
     },
-    data: {
+    userFallbackData: {
       greetingsDoNotAskAgain: true,
       greetingsLastPromptedAt: new Date()
     }
@@ -264,15 +309,16 @@ export async function updateAllowParishGreetings(allowParishGreetings: boolean) 
     throw new Error("Missing active parish");
   }
 
-  await prisma.membership.update({
-    where: {
-      parishId_userId: {
-        parishId: session.user.activeParishId,
-        userId: session.user.id
-      }
-    },
-    data: {
+  await updateGreetingPromptOnMembershipOrUser({
+    userId: session.user.id,
+    parishId: session.user.activeParishId,
+    membershipData: {
       allowParishGreetings,
+      greetingsOptInAt: allowParishGreetings ? new Date() : null,
+      greetingsLastPromptedAt: new Date()
+    },
+    userFallbackData: {
+      greetingsOptIn: allowParishGreetings,
       greetingsOptInAt: allowParishGreetings ? new Date() : null,
       greetingsLastPromptedAt: new Date()
     }
