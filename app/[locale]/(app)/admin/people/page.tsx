@@ -24,7 +24,7 @@ export default async function AdminPeoplePage({
   const initialSearchQuery = typeof query.q === "string" ? query.q : "";
 
   const [members, invites, parish] = await Promise.all([
-    getPeopleListForAdmin(session.user.id, session.user.activeParishId, initialSearchQuery),
+    getPeopleListForAdmin(session.user.id, session.user.activeParishId),
     getParishInvites(session.user.activeParishId),
     prisma.parish.findUnique({
       where: { id: session.user.activeParishId },
