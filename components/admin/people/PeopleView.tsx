@@ -100,7 +100,9 @@ export default function PeopleView({
   const [, startTransition] = useTransition();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const searchParamsString = searchParams.toString();
   const [searchInput, setSearchInput] = useState(initialSearchQuery);
+  const hasMembers = members.length > 0;
   const [debouncedSearch, setDebouncedSearch] = useState(initialSearchQuery.trim());
   const [displayedMembers, setDisplayedMembers] = useState(members);
   const [isSearching, setIsSearching] = useState(false);
@@ -121,7 +123,7 @@ export default function PeopleView({
   }, [searchInput]);
 
   useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParamsString);
     if (debouncedSearch) {
       params.set("q", debouncedSearch);
     } else {
@@ -129,7 +131,7 @@ export default function PeopleView({
     }
 
     const nextQuery = params.toString();
-    const currentQuery = searchParams.toString();
+    const currentQuery = searchParamsString;
     if (nextQuery !== currentQuery) {
       router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
     }
@@ -178,7 +180,7 @@ export default function PeopleView({
     return () => {
       controller.abort();
     };
-  }, [addToast, debouncedSearch, members, parishId, pathname, router, searchParams]);
+  }, [addToast, debouncedSearch, members, parishId, pathname, router, searchParamsString]);
 
   const refresh = () => {
     startTransition(() => {
@@ -406,7 +408,7 @@ export default function PeopleView({
               Review active parish members, their role assignments, and recent sign-in activity.
             </CardDescription>
           </CardHeader>
-          {members.length === 0 ? (
+          {!hasMembers ? (
             <EmptyState
               title="No members yet"
               description="Invite parishioners to start coordinating people and roles."

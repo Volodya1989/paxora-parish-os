@@ -7,7 +7,7 @@ test("people page wires q param and search UI", async () => {
   const viewSource = await readFile("components/admin/people/PeopleView.tsx", "utf8");
 
   assert.match(pageSource, /initialSearchQuery/);
-  assert.match(pageSource, /getPeopleListForAdmin\(session\.user\.id, session\.user\.activeParishId, initialSearchQuery\)/);
+  assert.match(pageSource, /getPeopleListForAdmin\(session\.user\.id, session\.user\.activeParishId\)/);
 
   assert.match(viewSource, /placeholder="Search by name or email\.\.\."|placeholder="Search by name or email…"/);
   assert.match(viewSource, /aria-label="Clear search"/);
