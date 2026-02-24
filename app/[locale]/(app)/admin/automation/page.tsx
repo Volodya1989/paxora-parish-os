@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/server/auth/options";
 import { requireAdminOrShepherd } from "@/server/auth/permissions";
 import { prisma } from "@/server/db/prisma";
+import { getGreetingCandidatesForParish } from "@/lib/email/greetingCandidates";
 import { getParishLocalDateParts, parseLegacyUtcOffset } from "@/lib/email/greetingSchedule";
 import { isMissingColumnError } from "@/lib/prisma/errors";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
@@ -153,74 +154,15 @@ export default async function AutomationPage({
   const { month, day, dateKey } = getParishLocalDateParts(now, timezone);
   const { startUtc, endUtc } = getLocalDayWindowUtc(now, timezone, dateKey);
 
-  let todaysCandidateMemberships: Array<{
-    user: {
-      birthdayMonth: number | null;
-      birthdayDay: number | null;
-      anniversaryMonth: number | null;
-      anniversaryDay: number | null;
-    };
-  }> = [];
+  const { summary } = await getGreetingCandidatesForParish({
+    prisma,
+    parishId,
+    month,
+    day,
+    dateKey
+  });
 
-  try {
-    todaysCandidateMemberships = await prisma.membership.findMany({
-      where: {
-        parishId,
-        allowParishGreetings: true,
-        user: {
-          deletedAt: null,
-          OR: [
-            { birthdayMonth: month, birthdayDay: day },
-            { anniversaryMonth: month, anniversaryDay: day }
-          ]
-        }
-      },
-      select: {
-        user: {
-          select: {
-            birthdayMonth: true,
-            birthdayDay: true,
-            anniversaryMonth: true,
-            anniversaryDay: true
-          }
-        }
-      }
-    });
-  } catch (error) {
-    if (!isMissingColumnError(error, "Membership.allowParishGreetings")) {
-      throw error;
-    }
-
-    todaysCandidateMemberships = await prisma.membership.findMany({
-      where: {
-        parishId,
-        user: {
-          deletedAt: null,
-          greetingsOptIn: true,
-          OR: [
-            { birthdayMonth: month, birthdayDay: day },
-            { anniversaryMonth: month, anniversaryDay: day }
-          ]
-        }
-      },
-      select: {
-        user: {
-          select: {
-            birthdayMonth: true,
-            birthdayDay: true,
-            anniversaryMonth: true,
-            anniversaryDay: true
-          }
-        }
-      }
-    });
-  }
-
-  const emailsPlannedToday = todaysCandidateMemberships.reduce((total, row) => {
-    const birthday = row.user.birthdayMonth === month && row.user.birthdayDay === day ? 1 : 0;
-    const anniversary = row.user.anniversaryMonth === month && row.user.anniversaryDay === day ? 1 : 0;
-    return total + birthday + anniversary;
-  }, 0);
+  const emailsPlannedToday = summary.dateMatchedMemberships;
 
   const emailsSentToday = await prisma.emailLog.count({
     where: {

@@ -2,6 +2,7 @@ import { GreetingType } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { requireCronSecret } from "@/lib/cron/auth";
 import { sendGreetingEmailIfEligible } from "@/lib/email/greetings";
+import { getGreetingCandidatesForParish } from "@/lib/email/greetingCandidates";
 import {
   getParishLocalDateParts,
   isLegacyUtcOffsetTimezone,
@@ -149,14 +150,26 @@ export async function GET(request: Request) {
 
     const { month, day, hour, minute, dateKey, localNowLabel, mode } = getParishLocalDateParts(nowUtc, tz);
 
-    if (
-      !shouldRunGreetingForParishTime({
-        nowHour: hour,
-        nowMinute: minute,
-        sendHourLocal: parish.greetingsSendHourLocal,
-        sendMinuteLocal: parish.greetingsSendMinuteLocal
-      })
-    ) {
+    const configuredSendTime = `${String(parish.greetingsSendHourLocal).padStart(2, "0")}:${String(parish.greetingsSendMinuteLocal).padStart(2, "0")}`;
+    const shouldRunNow = shouldRunGreetingForParishTime({
+      nowHour: hour,
+      nowMinute: minute,
+      sendHourLocal: parish.greetingsSendHourLocal,
+      sendMinuteLocal: parish.greetingsSendMinuteLocal
+    });
+
+    console.info("[greetings-cron] parish evaluation", {
+      parishId: parish.id,
+      timezone: tz,
+      timezoneMode: mode,
+      nowUtc: nowUtc.toISOString(),
+      localNow: localNowLabel,
+      localHHmm: `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`,
+      configuredSendTime,
+      shouldRunNow
+    });
+
+    if (!shouldRunNow) {
       reasonCounts.notSendWindow += 1;
       continue;
     }
@@ -169,82 +182,18 @@ export async function GET(request: Request) {
       timezoneMode: mode,
       localNow: localNowLabel,
       localDate: dateKey,
-      sendTime: `${String(parish.greetingsSendHourLocal).padStart(2, "0")}:${String(parish.greetingsSendMinuteLocal).padStart(2, "0")}`
+      sendTime: configuredSendTime
     });
 
-    let memberships: Array<{
-      userId: string;
-      user: {
-        email: string;
-        name: string | null;
-        birthdayMonth: number | null;
-        birthdayDay: number | null;
-        anniversaryMonth: number | null;
-        anniversaryDay: number | null;
-      };
-    }> = [];
+    const { candidates, summary } = await getGreetingCandidatesForParish({
+      prisma,
+      parishId: parish.id,
+      month,
+      day,
+      dateKey
+    });
 
-    try {
-      memberships = await prisma.membership.findMany({
-        where: {
-          parishId: parish.id,
-          allowParishGreetings: true,
-          user: {
-            deletedAt: null,
-            OR: [
-              { birthdayMonth: month, birthdayDay: day },
-              { anniversaryMonth: month, anniversaryDay: day }
-            ]
-          }
-        },
-        select: {
-          userId: true,
-          user: {
-            select: {
-              email: true,
-              name: true,
-              birthdayMonth: true,
-              birthdayDay: true,
-              anniversaryMonth: true,
-              anniversaryDay: true
-            }
-          }
-        }
-      });
-    } catch (error) {
-      if (!isMissingColumnError(error, "Membership.allowParishGreetings")) {
-        throw error;
-      }
-
-      memberships = await prisma.membership.findMany({
-        where: {
-          parishId: parish.id,
-          user: {
-            deletedAt: null,
-            greetingsOptIn: true,
-            OR: [
-              { birthdayMonth: month, birthdayDay: day },
-              { anniversaryMonth: month, anniversaryDay: day }
-            ]
-          }
-        },
-        select: {
-          userId: true,
-          user: {
-            select: {
-              email: true,
-              name: true,
-              birthdayMonth: true,
-              birthdayDay: true,
-              anniversaryMonth: true,
-              anniversaryDay: true
-            }
-          }
-        }
-      });
-    }
-
-    if (memberships.length === 0) {
+    if (summary.dateMatchedMemberships === 0) {
       reasonCounts.noCandidates += 1;
       console.info("[greetings-cron] no greeting candidates", {
         parishId: parish.id,
@@ -256,24 +205,31 @@ export async function GET(request: Request) {
 
     console.info("[greetings-cron] candidates resolved", {
       parishId: parish.id,
-      candidates: memberships.length,
-      localDate: dateKey
+      localDate: dateKey,
+      optedInCount: summary.optedInMemberships,
+      dateMatchedCount: summary.dateMatchedMemberships,
+      missingEmailCount: summary.missingEmailMemberships,
+      alreadySentCount: summary.alreadySentToday,
+      sendableCount: summary.sendableToday
     });
 
-    for (const row of memberships) {
-      const firstName = row.user.name?.trim().split(" ")[0] || "Friend";
-      const email = row.user.email;
-      const shouldSendBirthday = row.user.birthdayMonth === month && row.user.birthdayDay === day;
-      const shouldSendAnniversary = row.user.anniversaryMonth === month && row.user.anniversaryDay === day;
+    for (const row of candidates) {
+      const shouldSendBirthday = row.sendBirthday && !row.alreadySentBirthday;
+      const shouldSendAnniversary = row.sendAnniversary && !row.alreadySentAnniversary;
 
       if (shouldSendBirthday) {
+        console.info("[greetings-cron] sending birthday greeting", {
+          parishId: parish.id,
+          userId: row.userId,
+          localDate: dateKey
+        });
         const result = await sendGreetingEmailIfEligible({
           parishId: parish.id,
           parishName: parish.name,
           parishLogoUrl: parish.logoUrl,
           userId: row.userId,
-          userEmail: email,
-          userFirstName: firstName,
+          userEmail: row.email,
+          userFirstName: row.firstName,
           greetingType: GreetingType.BIRTHDAY,
           templateHtml: parish.birthdayGreetingTemplate,
           dateKey
@@ -285,16 +241,27 @@ export async function GET(request: Request) {
           skipped += 1;
           reasonCounts.alreadySent += 1;
         }
+        console.info("[greetings-cron] birthday greeting result", {
+          parishId: parish.id,
+          userId: row.userId,
+          localDate: dateKey,
+          status: result.status
+        });
       }
 
       if (shouldSendAnniversary) {
+        console.info("[greetings-cron] sending anniversary greeting", {
+          parishId: parish.id,
+          userId: row.userId,
+          localDate: dateKey
+        });
         const result = await sendGreetingEmailIfEligible({
           parishId: parish.id,
           parishName: parish.name,
           parishLogoUrl: parish.logoUrl,
           userId: row.userId,
-          userEmail: email,
-          userFirstName: firstName,
+          userEmail: row.email,
+          userFirstName: row.firstName,
           greetingType: GreetingType.ANNIVERSARY,
           templateHtml: parish.anniversaryGreetingTemplate,
           dateKey
@@ -306,6 +273,12 @@ export async function GET(request: Request) {
           skipped += 1;
           reasonCounts.alreadySent += 1;
         }
+        console.info("[greetings-cron] anniversary greeting result", {
+          parishId: parish.id,
+          userId: row.userId,
+          localDate: dateKey,
+          status: result.status
+        });
       }
     }
   }
