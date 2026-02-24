@@ -11,53 +11,9 @@ import { cn } from "@/lib/ui/cn";
 import {
   buildParishTimezoneOptions,
   formatCurrentTimeInTimezone,
+  getNextRunPreview,
   isLegacyUtcOffsetTimezone
 } from "@/lib/time/parishTimezones";
-
-function getNextRunPreview(timezone: string, sendTime: string, now = new Date()) {
-  const parsed = /^(\d{2}):(\d{2})$/.exec(sendTime);
-  if (!parsed) return null;
-
-  const targetHour = Number(parsed[1]);
-  const targetMinute = Number(parsed[2]);
-
-  try {
-    const localNowParts = new Intl.DateTimeFormat("en-US", {
-      timeZone: timezone,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false
-    }).formatToParts(now);
-
-    const get = (type: Intl.DateTimeFormatPartTypes) =>
-      Number(localNowParts.find((part) => part.type === type)?.value ?? "0");
-
-    const year = get("year");
-    const month = get("month");
-    const day = get("day");
-    const hour = get("hour");
-    const minute = get("minute");
-
-    const nowTotal = hour * 60 + minute;
-    const sendTotal = targetHour * 60 + targetMinute;
-    const dayOffset = nowTotal <= sendTotal ? 0 : 1;
-
-    const todayOrTomorrow = new Date(Date.UTC(year, month - 1, day + dayOffset, targetHour, targetMinute));
-    const label = new Intl.DateTimeFormat("en-US", {
-      timeZone: timezone,
-      hour: "numeric",
-      minute: "2-digit"
-    }).format(todayOrTomorrow);
-
-    return `${dayOffset === 0 ? "Today" : "Tomorrow"} at ${label}`;
-  } catch {
-    return null;
-  }
-}
 
 type GreetingsConfigProps = {
   parishId: string;
