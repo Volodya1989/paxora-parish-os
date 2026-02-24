@@ -46,6 +46,7 @@ export const authOptions: NextAuthOptions = {
             activeParishId: true,
             platformRole: true,
             impersonatedParishId: true,
+            authSessionVersion: true,
             deletedAt: true
           }
         });
@@ -79,7 +80,7 @@ export const authOptions: NextAuthOptions = {
       }
       return true;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user && "activeParishId" in user) {
         token.activeParishId = (user as { activeParishId?: string | null }).activeParishId ?? null;
       }
@@ -90,6 +91,10 @@ export const authOptions: NextAuthOptions = {
       if (user && "impersonatedParishId" in user) {
         token.impersonatedParishId = (user as { impersonatedParishId?: string | null }).impersonatedParishId ?? null;
       }
+      if (user && "authSessionVersion" in user) {
+        token.authSessionVersion =
+          (user as { authSessionVersion?: number | null }).authSessionVersion ?? 0;
+      }
 
       if (token.sub) {
         const dbUser = await prisma.user.findUnique({
@@ -98,20 +103,35 @@ export const authOptions: NextAuthOptions = {
             activeParishId: true,
             platformRole: true,
             impersonatedParishId: true,
+            authSessionVersion: true,
             deletedAt: true
           }
         });
+
+        const tokenSessionVersion = typeof token.authSessionVersion === "number"
+          ? token.authSessionVersion
+          : 0;
+        const dbSessionVersion = dbUser?.authSessionVersion ?? 0;
+        const isSessionRefresh = trigger === "update";
+
         token.isDeleted = Boolean(dbUser?.deletedAt);
         token.activeParishId = dbUser?.activeParishId ?? null;
         token.platformRole = dbUser?.platformRole ?? null;
         token.impersonatedParishId = dbUser?.impersonatedParishId ?? null;
+
+        if (isSessionRefresh) {
+          token.authSessionVersion = dbSessionVersion;
+          token.isSessionRevoked = false;
+        } else {
+          token.isSessionRevoked = tokenSessionVersion < dbSessionVersion;
+        }
       }
 
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        if (token.isDeleted) {
+        if (token.isDeleted || token.isSessionRevoked) {
           session.user.id = "";
           session.user.activeParishId = null;
           session.user.impersonatedParishId = null;
