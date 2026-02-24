@@ -7,7 +7,11 @@ import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayou
 import { UsersIcon } from "@/components/icons/ParishIcons";
 import { prisma } from "@/server/db/prisma";
 
-export default async function AdminPeoplePage() {
+export default async function AdminPeoplePage({
+  searchParams
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -16,8 +20,11 @@ export default async function AdminPeoplePage() {
 
   await requireAdminOrShepherd(session.user.id, session.user.activeParishId);
 
+  const query = await searchParams;
+  const initialSearchQuery = typeof query.q === "string" ? query.q : "";
+
   const [members, invites, parish] = await Promise.all([
-    getPeopleListForAdmin(session.user.id, session.user.activeParishId),
+    getPeopleListForAdmin(session.user.id, session.user.activeParishId, initialSearchQuery),
     getParishInvites(session.user.activeParishId),
     prisma.parish.findUnique({
       where: { id: session.user.activeParishId },
@@ -40,6 +47,7 @@ export default async function AdminPeoplePage() {
         viewerId={session.user.id}
         parishId={session.user.activeParishId}
         viewerPlatformRole={session.user.platformRole ?? null}
+        initialSearchQuery={initialSearchQuery}
       />
     </ParishionerPageLayout>
   );
