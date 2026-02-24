@@ -79,7 +79,11 @@ export const authOptions: NextAuthOptions = {
           console.error("[auth] failed to update lastLoginAt", error);
         }
 
-        await ensureParishBootstrap(user.id);
+        try {
+          await ensureParishBootstrap(user.id);
+        } catch (error) {
+          console.error("[auth] parish bootstrap failed", error);
+        }
       }
       return true;
     },
