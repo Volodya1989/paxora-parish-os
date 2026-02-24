@@ -82,7 +82,8 @@ export default function PeopleView({
   viewerPlatformRole
 }: PeopleViewProps) {
   const { addToast } = useToast();
-  const { update } = useSession();
+  const session = useSession();
+  const updateSession = session?.update;
   const router = useRouter();
   const [pendingMemberId, setPendingMemberId] = useState<string | null>(null);
   const [pendingInviteId, setPendingInviteId] = useState<string | null>(null);
@@ -164,7 +165,11 @@ export default function PeopleView({
           return;
         }
 
-        await update();
+        if (typeof updateSession === "function") {
+          await updateSession();
+        } else {
+          refresh();
+        }
 
         addToast({
           title: "Signed out on other devices",
