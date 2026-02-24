@@ -242,6 +242,8 @@ model Parish {
   address                   String?
   timezone                  String                  @default("UTC")
   logoUrl                   String?
+  birthdayGreetingTemplate  String?
+  anniversaryGreetingTemplate String?
   defaultLocale             String                  @default("en")
   inviteCode                String?                 @unique
   inviteCodeCreatedAt       DateTime?
@@ -283,6 +285,7 @@ model Parish {
   impersonatedUsers User[]             @relation("ImpersonatedParish")
   auditLogs         AuditLog[]         @relation("ParishAuditLogs")
   contentReports    ContentReport[]
+  greetingEmailLogs GreetingEmailLog[]
 
   @@index([deactivatedAt])
 }
@@ -346,6 +349,9 @@ model User {
   anniversaryMonth        Int?
   anniversaryDay          Int?
   greetingsOptIn          Boolean       @default(false)
+  greetingsOptInAt        DateTime?
+  greetingsLastPromptedAt DateTime?
+  greetingsDoNotAskAgain  Boolean       @default(false)
   authSessionVersion      Int           @default(0)
   authSessionKeepJti      String?
   lastLoginAt             DateTime?
@@ -403,8 +409,29 @@ model User {
   submittedContentReports  ContentReport[]          @relation("ContentReportReporter")
   reviewedContentReports   ContentReport[]          @relation("ContentReportReviewer")
   userTags                 UserTag[]
+  greetingEmailLogs        GreetingEmailLog[]
 
   @@index([deletedAt])
+}
+
+model GreetingEmailLog {
+  id       String @id @default(cuid())
+  userId   String
+  parishId String
+  type     GreetingType
+  dateKey  String
+  sentAt   DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parish Parish @relation(fields: [parishId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, parishId, type, dateKey])
+  @@index([parishId, type, dateKey])
+}
+
+enum GreetingType {
+  BIRTHDAY
+  ANNIVERSARY
 }
 
 model Notification {

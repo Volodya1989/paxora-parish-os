@@ -5,9 +5,15 @@ import Card, { CardDescription, CardHeader, CardTitle } from "@/components/ui/Ca
 import Button from "@/components/ui/Button";
 import SelectMenu from "@/components/ui/SelectMenu";
 import { useToast } from "@/components/ui/Toast";
-import { updateProfileDates } from "@/app/actions/profile";
+import {
+  markGreetingsPromptDoNotAskAgain,
+  markGreetingsPromptNotNow,
+  updateAllowParishGreetings,
+  updateProfileDates
+} from "@/app/actions/profile";
 import { cn } from "@/lib/ui/cn";
 import { getMaxDayForMonth, monthOptions } from "@/lib/profile/dates";
+import { hasAnyImportantDate, shouldShowGreetingsPrompt } from "@/lib/profile/greetingsPrompt";
 
 type ProfileDatesProps = {
   initialDates: {
@@ -16,6 +22,8 @@ type ProfileDatesProps = {
     anniversaryMonth: number | null;
     anniversaryDay: number | null;
     greetingsOptIn: boolean;
+    greetingsLastPromptedAt: Date | null;
+    greetingsDoNotAskAgain: boolean;
   };
 };
 
@@ -39,6 +47,9 @@ export default function ProfileDates({ initialDates }: ProfileDatesProps) {
   const { addToast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [isEditing, setIsEditing] = useState(false);
+  const [showAnniversaryFields, setShowAnniversaryFields] = useState(
+    Boolean(initialDates.anniversaryMonth || initialDates.anniversaryDay)
+  );
   const [savedState, setSavedState] = useState({
     birthdayMonth: initialDates.birthdayMonth ? String(initialDates.birthdayMonth) : "",
     birthdayDay: initialDates.birthdayDay ? String(initialDates.birthdayDay) : "",
@@ -48,22 +59,14 @@ export default function ProfileDates({ initialDates }: ProfileDatesProps) {
   });
   const [formState, setFormState] = useState(savedState);
   const [errors, setErrors] = useState<ProfileDateErrors>({});
+  const [promptLastPromptedAt, setPromptLastPromptedAt] = useState(initialDates.greetingsLastPromptedAt);
+  const [promptDoNotAskAgain, setPromptDoNotAskAgain] = useState(initialDates.greetingsDoNotAskAgain);
 
-  const birthdayMonthValue = formState.birthdayMonth
-    ? Number(formState.birthdayMonth)
-    : null;
-  const anniversaryMonthValue = formState.anniversaryMonth
-    ? Number(formState.anniversaryMonth)
-    : null;
+  const birthdayMonthValue = formState.birthdayMonth ? Number(formState.birthdayMonth) : null;
+  const anniversaryMonthValue = formState.anniversaryMonth ? Number(formState.anniversaryMonth) : null;
 
-  const birthdayDayOptions = useMemo(
-    () => buildDayOptions(birthdayMonthValue),
-    [birthdayMonthValue]
-  );
-  const anniversaryDayOptions = useMemo(
-    () => buildDayOptions(anniversaryMonthValue),
-    [anniversaryMonthValue]
-  );
+  const birthdayDayOptions = useMemo(() => buildDayOptions(birthdayMonthValue), [birthdayMonthValue]);
+  const anniversaryDayOptions = useMemo(() => buildDayOptions(anniversaryMonthValue), [anniversaryMonthValue]);
 
   const monthSelectOptions = useMemo(
     () =>
@@ -73,6 +76,21 @@ export default function ProfileDates({ initialDates }: ProfileDatesProps) {
       })),
     []
   );
+
+  const anyDateSaved = hasAnyImportantDate({
+    birthdayMonth: formState.birthdayMonth ? Number(formState.birthdayMonth) : null,
+    birthdayDay: formState.birthdayDay ? Number(formState.birthdayDay) : null,
+    anniversaryMonth: formState.anniversaryMonth ? Number(formState.anniversaryMonth) : null,
+    anniversaryDay: formState.anniversaryDay ? Number(formState.anniversaryDay) : null
+  });
+
+  const showGentlePrompt = shouldShowGreetingsPrompt({
+    hasAnyImportantDate: anyDateSaved,
+    greetingsDoNotAskAgain: promptDoNotAskAgain,
+    greetingsLastPromptedAt: promptLastPromptedAt
+  });
+
+  const showConsentFollowUp = anyDateSaved && !formState.greetingsOptIn;
 
   const updateMonth = (field: "birthdayMonth" | "anniversaryMonth", value: string) => {
     const nextMonth = value ? Number(value) : null;
@@ -125,6 +143,7 @@ export default function ProfileDates({ initialDates }: ProfileDatesProps) {
         setSavedState(nextState);
         setFormState(nextState);
         setIsEditing(false);
+        setPromptLastPromptedAt(new Date());
         addToast({
           title: "Profile updated",
           description: "Your important dates were saved.",
@@ -146,23 +165,51 @@ export default function ProfileDates({ initialDates }: ProfileDatesProps) {
         <CardHeader>
           <CardTitle>Important dates</CardTitle>
           <CardDescription>
-            Share birthday and anniversary dates so your parish can celebrate with you.
+            Birthdays are optional and help your parish celebrate with you.
           </CardDescription>
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="secondary"
-              onClick={() => setIsEditing(true)}
-              disabled={isEditing}
-            >
+            <Button type="button" size="sm" variant="secondary" onClick={() => setIsEditing(true)} disabled={isEditing}>
               Edit dates
             </Button>
-            {!isEditing ? (
-              <span className="text-xs text-ink-400">Saved profiles are read-only.</span>
-            ) : null}
+            {!isEditing ? <span className="text-xs text-ink-400">Saved profiles are read-only.</span> : null}
           </div>
         </CardHeader>
+
+        {showGentlePrompt ? (
+          <div className="rounded-card border border-primary-200 bg-primary-50/70 p-4">
+            <p className="text-sm font-medium text-ink-900">Optional: Add your birthday to receive parish greetings.</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button type="button" size="sm" onClick={() => setIsEditing(true)}>
+                Add dates
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() =>
+                  startTransition(async () => {
+                    await markGreetingsPromptNotNow();
+                    setPromptLastPromptedAt(new Date());
+                  })
+                }
+              >
+                Not now
+              </Button>
+              <button
+                type="button"
+                className="text-xs font-medium text-ink-500 underline-offset-2 hover:text-ink-700 hover:underline"
+                onClick={() =>
+                  startTransition(async () => {
+                    await markGreetingsPromptDoNotAskAgain();
+                    setPromptDoNotAskAgain(true);
+                  })
+                }
+              >
+                Don&apos;t ask again
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="space-y-2">
@@ -176,11 +223,7 @@ export default function ProfileDates({ initialDates }: ProfileDatesProps) {
                   disabled={!isEditing}
                   onValueChange={(value) => updateMonth("birthdayMonth", value)}
                 />
-                {errors.birthdayMonth ? (
-                  <p role="alert" className="text-xs text-rose-600">
-                    {errors.birthdayMonth}
-                  </p>
-                ) : null}
+                {errors.birthdayMonth ? <p role="alert" className="text-xs text-rose-600">{errors.birthdayMonth}</p> : null}
               </div>
               <div className="space-y-1">
                 <SelectMenu
@@ -190,56 +233,61 @@ export default function ProfileDates({ initialDates }: ProfileDatesProps) {
                   disabled={!isEditing || !formState.birthdayMonth}
                   onValueChange={(value) => updateDay("birthdayDay", value)}
                 />
-                {errors.birthdayDay ? (
-                  <p role="alert" className="text-xs text-rose-600">
-                    {errors.birthdayDay}
-                  </p>
-                ) : null}
+                {errors.birthdayDay ? <p role="alert" className="text-xs text-rose-600">{errors.birthdayDay}</p> : null}
               </div>
             </div>
           </div>
 
           <div className="space-y-2">
-            <p className="text-xs font-semibold text-ink-700">Marriage anniversary</p>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <div className="space-y-1">
-                <SelectMenu
-                  value={formState.anniversaryMonth}
-                  placeholder="Not set"
-                  options={monthSelectOptions}
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-ink-700">Marriage anniversary</p>
+              {!showAnniversaryFields ? (
+                <button
+                  type="button"
+                  className="text-xs font-medium text-ink-500 underline-offset-2 hover:text-ink-700 hover:underline"
+                  onClick={() => setShowAnniversaryFields(true)}
                   disabled={!isEditing}
-                  onValueChange={(value) => updateMonth("anniversaryMonth", value)}
-                />
-                {errors.anniversaryMonth ? (
-                  <p role="alert" className="text-xs text-rose-600">
-                    {errors.anniversaryMonth}
-                  </p>
-                ) : null}
-              </div>
-              <div className="space-y-1">
-                <SelectMenu
-                  value={formState.anniversaryDay}
-                  placeholder="Not set"
-                  options={anniversaryDayOptions}
-                  disabled={!isEditing || !formState.anniversaryMonth}
-                  onValueChange={(value) => updateDay("anniversaryDay", value)}
-                />
-                {errors.anniversaryDay ? (
-                  <p role="alert" className="text-xs text-rose-600">
-                    {errors.anniversaryDay}
-                  </p>
-                ) : null}
-              </div>
+                >
+                  Add anniversary (optional)
+                </button>
+              ) : null}
             </div>
+            {showAnniversaryFields ? (
+              <>
+                <p className="text-xs text-ink-500">Optional</p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <SelectMenu
+                      value={formState.anniversaryMonth}
+                      placeholder="Not set"
+                      options={monthSelectOptions}
+                      disabled={!isEditing}
+                      onValueChange={(value) => updateMonth("anniversaryMonth", value)}
+                    />
+                    {errors.anniversaryMonth ? <p role="alert" className="text-xs text-rose-600">{errors.anniversaryMonth}</p> : null}
+                  </div>
+                  <div className="space-y-1">
+                    <SelectMenu
+                      value={formState.anniversaryDay}
+                      placeholder="Not set"
+                      options={anniversaryDayOptions}
+                      disabled={!isEditing || !formState.anniversaryMonth}
+                      onValueChange={(value) => updateDay("anniversaryDay", value)}
+                    />
+                    {errors.anniversaryDay ? <p role="alert" className="text-xs text-rose-600">{errors.anniversaryDay}</p> : null}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="text-xs text-ink-500">Optional.</p>
+            )}
           </div>
         </div>
 
         <div className="flex flex-col gap-4 rounded-card border border-mist-200 bg-mist-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-medium text-ink-900">Allow parish greetings</p>
-            <p className="text-sm text-ink-500">
-              Opt in to receive greetings around your important dates.
-            </p>
+            <p className="text-sm text-ink-500">You can change this anytime.</p>
           </div>
           <button
             type="button"
@@ -248,20 +296,13 @@ export default function ProfileDates({ initialDates }: ProfileDatesProps) {
             aria-label="Allow parish greetings"
             onClick={() =>
               setFormState((current) =>
-                isEditing
-                  ? {
-                      ...current,
-                      greetingsOptIn: !current.greetingsOptIn
-                    }
-                  : current
+                isEditing ? { ...current, greetingsOptIn: !current.greetingsOptIn } : current
               )
             }
             disabled={isPending || !isEditing}
             className={cn(
               "relative inline-flex h-6 w-11 shrink-0 items-center self-start rounded-full border transition focus-ring sm:self-center",
-              formState.greetingsOptIn
-                ? "border-primary-500 bg-primary-500"
-                : "border-mist-200 bg-mist-200",
+              formState.greetingsOptIn ? "border-primary-500 bg-primary-500" : "border-mist-200 bg-mist-200",
               isPending ? "opacity-60" : "hover:border-primary-400"
             )}
           >
@@ -274,10 +315,40 @@ export default function ProfileDates({ initialDates }: ProfileDatesProps) {
             />
           </button>
         </div>
-        {errors.greetingsOptIn ? (
-          <p role="alert" className="text-xs text-rose-600">
-            {errors.greetingsOptIn}
-          </p>
+
+        {showConsentFollowUp ? (
+          <div className="rounded-card border border-mist-200 bg-white p-4">
+            <p className="text-sm font-medium text-ink-900">Would you like to receive email greetings around your important dates?</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                onClick={() =>
+                  startTransition(async () => {
+                    await updateAllowParishGreetings(true);
+                    setFormState((current) => ({ ...current, greetingsOptIn: true }));
+                    setSavedState((current) => ({ ...current, greetingsOptIn: true }));
+                    addToast({ title: "Greetings enabled", status: "success" });
+                  })
+                }
+              >
+                Enable
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() =>
+                  startTransition(async () => {
+                    await markGreetingsPromptNotNow();
+                    setPromptLastPromptedAt(new Date());
+                  })
+                }
+              >
+                Not now
+              </Button>
+            </div>
+          </div>
         ) : null}
 
         {isEditing ? (
@@ -299,9 +370,7 @@ export default function ProfileDates({ initialDates }: ProfileDatesProps) {
             </Button>
           </div>
         ) : null}
-        <p className="text-xs text-ink-400">
-          Dates are stored without a year and can be updated anytime.
-        </p>
+        <p className="text-xs text-ink-400">Dates are stored without a year and can be updated anytime.</p>
       </div>
     </Card>
   );

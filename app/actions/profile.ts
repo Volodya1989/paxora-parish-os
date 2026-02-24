@@ -171,7 +171,10 @@ export async function updateProfileDates(
 
   const updatedUser = await prisma.user.update({
     where: { id: session.user.id },
-    data: parsed.data,
+    data: {
+      ...parsed.data,
+      greetingsLastPromptedAt: new Date()
+    },
     select: {
       birthdayMonth: true,
       birthdayDay: true,
@@ -187,4 +190,57 @@ export async function updateProfileDates(
     status: "success",
     data: updatedUser
   };
+}
+
+export async function markGreetingsPromptNotNow() {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: { greetingsLastPromptedAt: new Date() }
+  });
+  revalidatePath("/profile");
+}
+
+export async function markGreetingsPromptDoNotAskAgain() {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: {
+      greetingsDoNotAskAgain: true,
+      greetingsLastPromptedAt: new Date()
+    }
+  });
+  revalidatePath("/profile");
+}
+
+export async function updateAllowParishGreetings(allowParishGreetings: boolean) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  if (typeof allowParishGreetings !== "boolean") {
+    throw new Error("Invalid value");
+  }
+
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: {
+      greetingsOptIn: allowParishGreetings,
+      greetingsOptInAt: allowParishGreetings ? new Date() : null,
+      greetingsLastPromptedAt: new Date()
+    }
+  });
+  revalidatePath("/profile");
 }

@@ -14,6 +14,9 @@ export type CurrentUserProfile = {
   anniversaryMonth: number | null;
   anniversaryDay: number | null;
   greetingsOptIn: boolean;
+  greetingsOptInAt: Date | null;
+  greetingsLastPromptedAt: Date | null;
+  greetingsDoNotAskAgain: boolean;
 };
 
 export type ProfileSettings = {
@@ -157,7 +160,10 @@ export async function getCurrentUserProfile(): Promise<CurrentUserProfile> {
       birthdayDay: true,
       anniversaryMonth: true,
       anniversaryDay: true,
-      greetingsOptIn: true
+      greetingsOptIn: true,
+      greetingsOptInAt: true,
+      greetingsLastPromptedAt: true,
+      greetingsDoNotAskAgain: true
     }
   });
 
