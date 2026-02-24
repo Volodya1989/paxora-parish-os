@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
 import { profileDatesSchema, type ProfileDatesInput } from "@/lib/validation/profile";
+import { isMissingColumnError } from "@/lib/prisma/errors";
 
 type UpdateProfileSettingsInput = {
   notificationsEnabled: boolean;
@@ -211,15 +212,28 @@ export async function markGreetingsPromptNotNow() {
     throw new Error("Missing active parish");
   }
 
-  await prisma.membership.update({
-    where: {
-      parishId_userId: {
-        parishId: session.user.activeParishId,
-        userId: session.user.id
-      }
-    },
-    data: { greetingsLastPromptedAt: new Date() }
-  });
+  try {
+    await prisma.membership.update({
+      where: {
+        parishId_userId: {
+          parishId: session.user.activeParishId,
+          userId: session.user.id
+        }
+      },
+      data: { greetingsLastPromptedAt: new Date() }
+    });
+  } catch (error) {
+    if (!isMissingColumnError(error, "Membership.greetingsLastPromptedAt")) {
+      throw error;
+    }
+
+    await prisma.user
+      .update({
+        where: { id: session.user.id },
+        data: { greetingsLastPromptedAt: new Date() }
+      })
+      .catch(() => null);
+  }
   revalidatePath("/profile");
 }
 
@@ -234,18 +248,34 @@ export async function markGreetingsPromptDoNotAskAgain() {
     throw new Error("Missing active parish");
   }
 
-  await prisma.membership.update({
-    where: {
-      parishId_userId: {
-        parishId: session.user.activeParishId,
-        userId: session.user.id
+  try {
+    await prisma.membership.update({
+      where: {
+        parishId_userId: {
+          parishId: session.user.activeParishId,
+          userId: session.user.id
+        }
+      },
+      data: {
+        greetingsDoNotAskAgain: true,
+        greetingsLastPromptedAt: new Date()
       }
-    },
-    data: {
-      greetingsDoNotAskAgain: true,
-      greetingsLastPromptedAt: new Date()
+    });
+  } catch (error) {
+    if (!isMissingColumnError(error, "Membership.greetingsDoNotAskAgain")) {
+      throw error;
     }
-  });
+
+    await prisma.user
+      .update({
+        where: { id: session.user.id },
+        data: {
+          greetingsDoNotAskAgain: true,
+          greetingsLastPromptedAt: new Date()
+        }
+      })
+      .catch(() => null);
+  }
   revalidatePath("/profile");
 }
 
@@ -264,18 +294,35 @@ export async function updateAllowParishGreetings(allowParishGreetings: boolean) 
     throw new Error("Missing active parish");
   }
 
-  await prisma.membership.update({
-    where: {
-      parishId_userId: {
-        parishId: session.user.activeParishId,
-        userId: session.user.id
+  try {
+    await prisma.membership.update({
+      where: {
+        parishId_userId: {
+          parishId: session.user.activeParishId,
+          userId: session.user.id
+        }
+      },
+      data: {
+        allowParishGreetings,
+        greetingsOptInAt: allowParishGreetings ? new Date() : null,
+        greetingsLastPromptedAt: new Date()
       }
-    },
-    data: {
-      allowParishGreetings,
-      greetingsOptInAt: allowParishGreetings ? new Date() : null,
-      greetingsLastPromptedAt: new Date()
+    });
+  } catch (error) {
+    if (!isMissingColumnError(error, "Membership.allowParishGreetings")) {
+      throw error;
     }
-  });
+
+    await prisma.user
+      .update({
+        where: { id: session.user.id },
+        data: {
+          greetingsOptIn: allowParishGreetings,
+          greetingsOptInAt: allowParishGreetings ? new Date() : null,
+          greetingsLastPromptedAt: new Date()
+        }
+      })
+      .catch(() => null);
+  }
   revalidatePath("/profile");
 }
