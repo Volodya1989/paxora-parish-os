@@ -116,54 +116,58 @@ export const authOptions: NextAuthOptions = {
           return token;
         }
 
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.sub },
-          select: {
-            activeParishId: true,
-            platformRole: true,
-            impersonatedParishId: true,
-            authSessionVersion: true,
-            deletedAt: true
-          }
-        });
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.sub },
+            select: {
+              activeParishId: true,
+              platformRole: true,
+              impersonatedParishId: true,
+              authSessionVersion: true,
+              deletedAt: true
+            }
+          });
 
-        token.lastVersionCheckAt = now;
-        token.isDeleted = Boolean(dbUser?.deletedAt);
-        token.activeParishId = dbUser?.activeParishId ?? null;
-        token.platformRole = dbUser?.platformRole ?? null;
-        token.impersonatedParishId = dbUser?.impersonatedParishId ?? null;
+          token.lastVersionCheckAt = now;
+          token.isDeleted = Boolean(dbUser?.deletedAt);
+          token.activeParishId = dbUser?.activeParishId ?? null;
+          token.platformRole = dbUser?.platformRole ?? null;
+          token.impersonatedParishId = dbUser?.impersonatedParishId ?? null;
 
-        const tokenSessionVersion = typeof token.authSessionVersion === "number"
-          ? token.authSessionVersion
-          : 0;
-        const dbSessionVersion = dbUser?.authSessionVersion ?? 0;
+          const tokenSessionVersion = typeof token.authSessionVersion === "number"
+            ? token.authSessionVersion
+            : 0;
+          const dbSessionVersion = dbUser?.authSessionVersion ?? 0;
 
-        if (tokenSessionVersion < dbSessionVersion) {
-          // This token is behind the current version. Only allow it to
-          // survive if its JTI matches the keep-jti stored during the
-          // logout-all call (i.e. this is the session that triggered it).
-          // Fetch authSessionKeepJti separately — only needed on version
-          // mismatch and avoids breaking the hot-path query when the
-          // migration has not been applied yet.
-          let keepJti: string | null = null;
-          try {
-            const keepRow = await prisma.user.findUnique({
-              where: { id: token.sub },
-              select: { authSessionKeepJti: true }
-            });
-            keepJti = keepRow?.authSessionKeepJti ?? null;
-          } catch {
-            // Column may not exist yet if migration is pending.
-          }
+          if (tokenSessionVersion < dbSessionVersion) {
+            // This token is behind the current version. Only allow it to
+            // survive if its JTI matches the keep-jti stored during the
+            // logout-all call (i.e. this is the session that triggered it).
+            let keepJti: string | null = null;
+            try {
+              const keepRow = await prisma.user.findUnique({
+                where: { id: token.sub },
+                select: { authSessionKeepJti: true }
+              });
+              keepJti = keepRow?.authSessionKeepJti ?? null;
+            } catch {
+              // Column may not exist yet if migration is pending.
+            }
 
-          if (token.jti && token.jti === keepJti) {
-            token.authSessionVersion = dbSessionVersion;
-            token.isSessionRevoked = false;
+            if (token.jti && token.jti === keepJti) {
+              token.authSessionVersion = dbSessionVersion;
+              token.isSessionRevoked = false;
+            } else {
+              token.isSessionRevoked = true;
+            }
           } else {
-            token.isSessionRevoked = true;
+            token.isSessionRevoked = false;
           }
-        } else {
-          token.isSessionRevoked = false;
+        } catch (error) {
+          // Graceful degradation: if the DB query fails (e.g. pending
+          // migrations, transient connection issue), keep the token values
+          // from the last successful check or initial sign-in.
+          console.error("[auth] jwt version check failed", error);
         }
       }
 
