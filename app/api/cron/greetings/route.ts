@@ -4,19 +4,30 @@ import { requireCronSecret } from "@/lib/cron/auth";
 import { sendGreetingEmailIfEligible } from "@/lib/email/greetings";
 import { getGreetingCandidatesForParish } from "@/lib/email/greetingCandidates";
 import {
+  getDailyGreetingScheduleStatus,
   getParishLocalDateParts,
   isLegacyUtcOffsetTimezone,
-  isValidTimezone,
-  shouldRunGreetingForParishTime
+  isValidTimezone
 } from "@/lib/email/greetingSchedule";
 import { isMissingColumnError } from "@/lib/prisma/errors";
 import { prisma } from "@/server/db/prisma";
+
+function parseCronPart(value: string | undefined, fallback: number, max: number) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 0 || parsed > max) {
+    return fallback;
+  }
+
+  return parsed;
+}
 
 export async function GET(request: Request) {
   const unauthorized = requireCronSecret(request);
   if (unauthorized) return unauthorized;
 
   const nowUtc = new Date();
+  const cronUtcHour = parseCronPart(process.env.GREETINGS_CRON_UTC_HOUR, 14, 23);
+  const cronUtcMinute = parseCronPart(process.env.GREETINGS_CRON_UTC_MINUTE, 0, 59);
   let parishes: Array<{
     id: string;
     name: string;
@@ -124,7 +135,8 @@ export async function GET(request: Request) {
 
   console.info("[greetings-cron] start", {
     nowUtc: nowUtc.toISOString(),
-    parishCount: parishes.length
+    parishCount: parishes.length,
+    cronScheduleUtc: `${String(cronUtcHour).padStart(2, "0")}:${String(cronUtcMinute).padStart(2, "0")}`
   });
 
   for (const parish of parishes) {
@@ -151,11 +163,13 @@ export async function GET(request: Request) {
     const { month, day, hour, minute, dateKey, localNowLabel, mode } = getParishLocalDateParts(nowUtc, tz);
 
     const configuredSendTime = `${String(parish.greetingsSendHourLocal).padStart(2, "0")}:${String(parish.greetingsSendMinuteLocal).padStart(2, "0")}`;
-    const shouldRunNow = shouldRunGreetingForParishTime({
-      nowHour: hour,
-      nowMinute: minute,
+
+    const scheduleStatus = getDailyGreetingScheduleStatus({
+      nowUtc,
+      timezone: tz,
       sendHourLocal: parish.greetingsSendHourLocal,
-      sendMinuteLocal: parish.greetingsSendMinuteLocal
+      sendMinuteLocal: parish.greetingsSendMinuteLocal,
+      sentToday: false
     });
 
     console.info("[greetings-cron] parish evaluation", {
@@ -166,13 +180,9 @@ export async function GET(request: Request) {
       localNow: localNowLabel,
       localHHmm: `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`,
       configuredSendTime,
-      shouldRunNow
+      preferredTimeLabel: scheduleStatus.preferredTimeLabel,
+      isPastPreferredTime: scheduleStatus.isPastPreferredTime
     });
-
-    if (!shouldRunNow) {
-      reasonCounts.notSendWindow += 1;
-      continue;
-    }
 
     matchedParishes += 1;
 
@@ -290,8 +300,17 @@ export async function GET(request: Request) {
     failed,
     emailsAttempted,
     matchedParishes,
-    reasonCounts
+    reasonCounts,
+    cronScheduleUtc: `${String(cronUtcHour).padStart(2, "0")}:${String(cronUtcMinute).padStart(2, "0")}`
   });
 
-  return NextResponse.json({ sent, skipped, failed, emailsAttempted, matchedParishes, reasonCounts });
+  return NextResponse.json({
+    sent,
+    skipped,
+    failed,
+    emailsAttempted,
+    matchedParishes,
+    reasonCounts,
+    cronScheduleUtc: `${String(cronUtcHour).padStart(2, "0")}:${String(cronUtcMinute).padStart(2, "0")}`
+  });
 }
