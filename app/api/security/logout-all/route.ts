@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
+import { getToken } from "next-auth/jwt";
 import { authOptions } from "@/server/auth/options";
 import { requireAdminOrShepherd } from "@/server/auth/permissions";
 import { prisma } from "@/server/db/prisma";
@@ -42,23 +44,38 @@ export async function POST(request: Request) {
     );
   }
 
-  await prisma.user.update({
-    where: { id: session.user.id },
-    data: { authSessionVersion: { increment: 1 } }
+  const token = await getToken({ req: request as NextRequest });
+  if (!token?.jti) {
+    return NextResponse.json(
+      { error: "Session token unavailable. Please sign in again." },
+      { status: 400 }
+    );
+  }
+
+  const keepJti = token.jti;
+
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: session.user.id },
+      data: {
+        authSessionVersion: { increment: 1 },
+        authSessionKeepJti: keepJti
+      }
+    });
+
+    await auditLog(tx, {
+      parishId: session.user.activeParishId!,
+      actorUserId: session.user.id,
+      action: AUDIT_ACTIONS.SECURITY_LOGOUT_ALL_DEVICES,
+      targetType: AUDIT_TARGET_TYPES.USER,
+      targetId: session.user.id,
+      metadata: {
+        ip: resolveRequestClientAddress(request),
+        userAgent: request.headers.get("user-agent") ?? "unknown",
+        keepCurrentSession: true
+      }
+    });
   });
 
-  await auditLog(prisma, {
-    parishId: session.user.activeParishId,
-    actorUserId: session.user.id,
-    action: AUDIT_ACTIONS.SECURITY_LOGOUT_ALL_DEVICES,
-    targetType: AUDIT_TARGET_TYPES.USER,
-    targetId: session.user.id,
-    metadata: {
-      ip: resolveRequestClientAddress(request),
-      userAgent: request.headers.get("user-agent") ?? "unknown",
-      keepCurrentSession: true
-    }
-  });
-
-  return NextResponse.json({ success: true, keepCurrentSession: true });
+  return NextResponse.json({ success: true });
 }

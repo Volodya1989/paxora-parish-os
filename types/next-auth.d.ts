@@ -20,5 +20,6 @@ declare module "next-auth/jwt" {
     isDeleted?: boolean;
     authSessionVersion?: number;
     isSessionRevoked?: boolean;
+    lastVersionCheckAt?: number;
   }
 }

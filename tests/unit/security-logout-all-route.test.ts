@@ -5,6 +5,7 @@ import { resolveFromRoot } from "../_helpers/resolve";
 
 const state = {
   session: null as { user?: { id?: string; activeParishId?: string | null } } | null,
+  token: null as { jti?: string } | null,
   allowRole: true,
   rateAllowed: true,
   retryAfterSeconds: 0,
@@ -15,6 +16,12 @@ const state = {
 mock.module("next-auth", {
   namedExports: {
     getServerSession: async () => state.session
+  }
+});
+
+mock.module("next-auth/jwt", {
+  namedExports: {
+    getToken: async () => state.token
   }
 });
 
@@ -34,16 +41,30 @@ mock.module(resolveFromRoot("server/auth/permissions"), {
   }
 });
 
+const makePrismaMock = () => {
+  const client = {
+    user: {
+      update: async (payload: unknown) => {
+        state.updates.push(payload);
+        return { id: "user-1" };
+      }
+    },
+    auditLog: {
+      create: async (payload: unknown) => {
+        state.audits.push(payload);
+        return { id: "audit-1" };
+      }
+    },
+    $transaction: async (fn: (tx: unknown) => Promise<void>) => {
+      await fn(client);
+    }
+  };
+  return client;
+};
+
 mock.module(resolveFromRoot("server/db/prisma"), {
   namedExports: {
-    prisma: {
-      user: {
-        update: async (payload: unknown) => {
-          state.updates.push(payload);
-          return { id: "user-1" };
-        }
-      }
-    }
+    prisma: makePrismaMock()
   }
 });
 
@@ -68,6 +89,7 @@ mock.module(resolveFromRoot("lib/security/authSessionRateLimit"), {
 
 beforeEach(() => {
   state.session = null;
+  state.token = null;
   state.allowRole = true;
   state.rateAllowed = true;
   state.retryAfterSeconds = 0;
@@ -116,8 +138,23 @@ test("POST /api/security/logout-all enforces rate limiting", async () => {
   assert.equal(state.updates.length, 0);
 });
 
-test("POST /api/security/logout-all increments auth session version and audits", async () => {
+test("POST /api/security/logout-all returns 400 when JTI is unavailable", async () => {
   state.session = { user: { id: "user-1", activeParishId: "parish-1" } };
+  state.token = {};
+
+  const route = await loadModuleFromRoot<typeof import("@/app/api/security/logout-all/route")>(
+    "app/api/security/logout-all/route"
+  );
+
+  const response = await route.POST(new Request("http://localhost/api/security/logout-all", { method: "POST" }));
+
+  assert.equal(response.status, 400);
+  assert.equal(state.updates.length, 0);
+});
+
+test("POST /api/security/logout-all increments version, stores keepJti, and audits", async () => {
+  state.session = { user: { id: "user-1", activeParishId: "parish-1" } };
+  state.token = { jti: "tok_abc123" };
 
   const route = await loadModuleFromRoot<typeof import("@/app/api/security/logout-all/route")>(
     "app/api/security/logout-all/route"
@@ -133,10 +170,16 @@ test("POST /api/security/logout-all increments auth session version and audits",
   );
 
   assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.deepEqual(body, { success: true });
+
   assert.equal(state.updates.length, 1);
   assert.deepEqual(state.updates[0], {
     where: { id: "user-1" },
-    data: { authSessionVersion: { increment: 1 } }
+    data: {
+      authSessionVersion: { increment: 1 },
+      authSessionKeepJti: "tok_abc123"
+    }
   });
 
   assert.equal(state.audits.length, 1);

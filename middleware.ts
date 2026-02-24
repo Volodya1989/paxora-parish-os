@@ -42,7 +42,11 @@ const authMiddleware = withAuth(
   },
   {
     callbacks: {
-      authorized: ({ token, req }) => Boolean(token) || isPublicPath(req.nextUrl.pathname)
+      authorized: ({ token, req }) => {
+        if (isPublicPath(req.nextUrl.pathname)) return true;
+        if (!token) return false;
+        return !token.isSessionRevoked && !token.isDeleted;
+      }
     },
     pages: {
       signIn: "/sign-in"
