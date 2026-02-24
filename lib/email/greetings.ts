@@ -8,33 +8,40 @@ export function isGreetingEmailDuplicateError(error: unknown) {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
 }
 
-export async function sendGreetingEmailIfEligible(input: {
-  parishId: string;
-  parishName: string;
-  parishLogoUrl: string | null;
-  userId: string;
-  userEmail: string;
-  userFirstName: string;
-  greetingType: GreetingType;
-  templateHtml: string | null;
-  dateKey: string;
-}) {
-  const dateKey = input.dateKey;
+export async function sendGreetingEmailIfEligible(
+  input: {
+    parishId: string;
+    parishName: string;
+    parishLogoUrl: string | null;
+    userId: string;
+    userEmail: string;
+    userFirstName: string;
+    greetingType: GreetingType;
+    templateHtml: string | null;
+    dateKey: string;
+  },
+  deps: {
+    db?: typeof prisma;
+    sendEmailFn?: typeof sendEmail;
+  } = {}
+) {
+  const db = deps.db ?? prisma;
+  const sendEmailFn = deps.sendEmailFn ?? sendEmail;
 
-  try {
-    await prisma.greetingEmailLog.create({
-      data: {
+  const existingLog = await db.greetingEmailLog.findUnique({
+    where: {
+      userId_parishId_type_dateKey: {
         userId: input.userId,
         parishId: input.parishId,
         type: input.greetingType,
-        dateKey
+        dateKey: input.dateKey
       }
-    });
-  } catch (error) {
-    if (isGreetingEmailDuplicateError(error)) {
-      return { status: "SKIPPED" as const };
-    }
-    throw error;
+    },
+    select: { id: true }
+  });
+
+  if (existingLog) {
+    return { status: "SKIPPED" as const };
   }
 
   const content = renderGreetingEmail({
@@ -46,7 +53,7 @@ export async function sendGreetingEmailIfEligible(input: {
     profileUrl: `${getAppUrl()}/profile`
   });
 
-  const result = await sendEmail({
+  const result = await sendEmailFn({
     type: EmailType.NOTIFICATION,
     template: input.greetingType === "BIRTHDAY" ? "birthdayGreeting" : "anniversaryGreeting",
     toEmail: input.userEmail,
@@ -56,6 +63,23 @@ export async function sendGreetingEmailIfEligible(input: {
     parishId: input.parishId,
     userId: input.userId
   });
+
+  if (result.status === "SENT") {
+    try {
+      await db.greetingEmailLog.create({
+        data: {
+          userId: input.userId,
+          parishId: input.parishId,
+          type: input.greetingType,
+          dateKey: input.dateKey
+        }
+      });
+    } catch (error) {
+      if (!isGreetingEmailDuplicateError(error)) {
+        throw error;
+      }
+    }
+  }
 
   return result;
 }
