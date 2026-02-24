@@ -123,7 +123,6 @@ export const authOptions: NextAuthOptions = {
             platformRole: true,
             impersonatedParishId: true,
             authSessionVersion: true,
-            authSessionKeepJti: true,
             deletedAt: true
           }
         });
@@ -143,7 +142,21 @@ export const authOptions: NextAuthOptions = {
           // This token is behind the current version. Only allow it to
           // survive if its JTI matches the keep-jti stored during the
           // logout-all call (i.e. this is the session that triggered it).
-          if (token.jti && token.jti === dbUser?.authSessionKeepJti) {
+          // Fetch authSessionKeepJti separately — only needed on version
+          // mismatch and avoids breaking the hot-path query when the
+          // migration has not been applied yet.
+          let keepJti: string | null = null;
+          try {
+            const keepRow = await prisma.user.findUnique({
+              where: { id: token.sub },
+              select: { authSessionKeepJti: true }
+            });
+            keepJti = keepRow?.authSessionKeepJti ?? null;
+          } catch {
+            // Column may not exist yet if migration is pending.
+          }
+
+          if (token.jti && token.jti === keepJti) {
             token.authSessionVersion = dbSessionVersion;
             token.isSessionRevoked = false;
           } else {
