@@ -146,6 +146,15 @@ export default async function AutomationPage({
     }
   });
 
+  const emailsFailedToday = await prisma.emailLog.count({
+    where: {
+      parishId,
+      template: { in: ["birthdayGreeting", "anniversaryGreeting"] },
+      status: "FAILED",
+      createdAt: { gte: new Date(dateKey + "T00:00:00Z") }
+    }
+  });
+
   const latestGreetingSend = await prisma.emailLog.findFirst({
     where: {
       parishId,
@@ -178,6 +187,7 @@ export default async function AutomationPage({
           greetingsSendTimeLocal={sendTimeLocal}
           emailsPlannedToday={emailsPlannedToday}
           emailsSentToday={emailsSentToday}
+          emailsFailedToday={emailsFailedToday}
           latestGreetingSentAt={latestGreetingSend?.sentAt?.toISOString() ?? null}
         />
       </div>

@@ -5,7 +5,8 @@ import Card, { CardDescription, CardHeader, CardTitle } from "@/components/ui/Ca
 import Button from "@/components/ui/Button";
 import AvatarUploadField from "@/components/shared/AvatarUploadField";
 import { useToast } from "@/components/ui/Toast";
-import { updateParishGreetingConfig } from "@/app/actions/parishGreetings";
+import { sendGreetingsNow, updateParishGreetingConfig } from "@/app/actions/parishGreetings";
+import type { SendGreetingsNowResult } from "@/app/actions/parishGreetings";
 import { buildQuarterHourTimeOptions, getDailyGreetingScheduleStatus, isValidTimezone } from "@/lib/email/greetingSchedule";
 import { cn } from "@/lib/ui/cn";
 import {
@@ -25,6 +26,7 @@ type GreetingsConfigProps = {
   greetingsSendTimeLocal: string;
   emailsPlannedToday: number;
   emailsSentToday: number;
+  emailsFailedToday: number;
   latestGreetingSentAt: string | null;
 };
 
@@ -39,11 +41,14 @@ export default function GreetingsConfig({
   greetingsSendTimeLocal,
   emailsPlannedToday,
   emailsSentToday,
+  emailsFailedToday,
   latestGreetingSentAt
 }: GreetingsConfigProps) {
   const { addToast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const [isSending, startSendTransition] = useTransition();
   const [isEditing, setIsEditing] = useState(false);
+  const [sendResult, setSendResult] = useState<SendGreetingsNowResult | null>(null);
 
   const [savedState, setSavedState] = useState({
     greetingsEnabled: initialEnabled,
@@ -134,6 +139,53 @@ export default function GreetingsConfig({
   const handleCancel = () => {
     setFormState(savedState);
     setIsEditing(false);
+  };
+
+  const handleSendNow = () => {
+    setSendResult(null);
+    startSendTransition(async () => {
+      try {
+        const result = await sendGreetingsNow();
+        setSendResult(result);
+        if (result.status === "success" && result.sent > 0) {
+          addToast({
+            title: "Greetings sent",
+            description: `${result.sent} greeting${result.sent === 1 ? "" : "s"} sent successfully.${result.failed > 0 ? ` ${result.failed} failed.` : ""}`,
+            status: "success"
+          });
+        } else if (result.status === "success" && result.sent === 0 && result.failed > 0) {
+          addToast({
+            title: "Greetings failed to send",
+            description: `${result.failed} greeting${result.failed === 1 ? "" : "s"} failed. Check email configuration (EMAIL_FROM, RESEND_API_KEY).`,
+            status: "error"
+          });
+        } else if (result.status === "success" && result.candidatesFound === 0) {
+          addToast({
+            title: "No greetings to send",
+            description: "No eligible greetings found for today.",
+            status: "info"
+          });
+        } else if (result.status === "error") {
+          addToast({
+            title: "Unable to send greetings",
+            description: result.error ?? "An unknown error occurred.",
+            status: "error"
+          });
+        } else {
+          addToast({
+            title: "Greetings processed",
+            description: `Sent: ${result.sent}, Skipped: ${result.skipped}, Failed: ${result.failed}`,
+            status: "info"
+          });
+        }
+      } catch (error) {
+        addToast({
+          title: "Unable to send greetings",
+          description: error instanceof Error ? error.message : "Please try again.",
+          status: "error"
+        });
+      }
+    });
   };
 
   return (
@@ -236,13 +288,37 @@ export default function GreetingsConfig({
                   <span className="font-medium text-ink-800">Confirmed sent today:</span> {emailsSentToday} greeting
                   {emailsSentToday === 1 ? "" : "s"}
                 </p>
+                {emailsFailedToday > 0 ? (
+                  <p className="text-red-600">
+                    <span className="font-medium">Failed today:</span> {emailsFailedToday} greeting
+                    {emailsFailedToday === 1 ? "" : "s"} — check EMAIL_FROM and RESEND_API_KEY configuration
+                  </p>
+                ) : null}
                 {latestGreetingSentLabel ? (
                   <p>
                     <span className="font-medium text-ink-800">Last confirmed send:</span> {latestGreetingSentLabel} (parish
                     time)
                   </p>
                 ) : null}
+                {sendResult?.status === "success" ? (
+                  <p className={sendResult.failed > 0 ? "text-red-600" : "text-green-700"}>
+                    <span className="font-medium">Last manual send:</span> {sendResult.sent} sent, {sendResult.skipped} skipped
+                    {sendResult.failed > 0 ? `, ${sendResult.failed} failed` : ""}
+                  </p>
+                ) : null}
               </div>
+              {emailsPlannedToday > emailsSentToday ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={handleSendNow}
+                  disabled={isSending || isEditing}
+                  isLoading={isSending}
+                >
+                  {isSending ? "Sending..." : "Send greetings now"}
+                </Button>
+              ) : null}
               <p className="text-xs text-ink-500">Hobby plan runs automation once per day. Preferred send time is best-effort.</p>
               {isLegacyUtcOffsetTimezone(formState.timezone) ? (
                 <p className="text-xs text-amber-700">
