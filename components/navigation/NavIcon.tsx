@@ -21,6 +21,7 @@ const iconByCode: Record<string, (className?: string) => ReactNode> = {
   AN: (className) => <MegaphoneIcon className={className} />,
   PR: (className) => <ContactIcon className={className} />,
   RQ: (className) => <ListChecksIcon className={className} />,
+  IN: (className) => <LayoutGridIcon className={className} />,
   RL: (className) => <CheckCircleIcon className={className} />,
   PE: (className) => <UsersIcon className={className} />,
   PF: (className) => <GlobeIcon className={className} />

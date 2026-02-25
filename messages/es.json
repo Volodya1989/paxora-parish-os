@@ -15,7 +15,8 @@
     "reliability": "Confiabilidad",
     "reports": "Reportes",
     "community": "Community",
-    "events": "Events"
+    "events": "Events",
+    "insights": "Información"
   },
   "landing": {
     "welcome": "Welcome",
@@ -505,5 +506,29 @@
     "reportUpdated": "Reporte actualizado",
     "reportUpdateFailed": "No se pudo actualizar",
     "reportUpdateFailedDescription": "No pudimos actualizar ese reporte."
+  },
+  "insights": {
+    "pageTitle": "Información",
+    "subtitle": "Informes, estadísticas y confiabilidad del sistema en un solo lugar.",
+    "open": "Abrir página",
+    "badges": {
+      "statistics": "Últimos 7 días",
+      "reports": "Cola lista",
+      "reliability": "Verificaciones"
+    },
+    "cards": {
+      "statistics": {
+        "title": "Estadísticas",
+        "description": "Tendencias de uso y actividad de tu parroquia."
+      },
+      "reports": {
+        "title": "Informes",
+        "description": "Exporta y revisa resúmenes estructurados."
+      },
+      "reliability": {
+        "title": "Confiabilidad",
+        "description": "Estado del sistema, trabajos y automatizaciones."
+      }
+    }
   }
 }

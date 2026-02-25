@@ -17,7 +17,8 @@
     "statistics": "Statistics",
     "community": "Community",
     "events": "Events",
-    "automation": "Automation"
+    "automation": "Automation",
+    "insights": "Insights"
   },
   "landing": {
     "welcome": "Welcome",
@@ -1236,5 +1237,29 @@
     "subtitle": "Manage automated greeting emails and scheduling",
     "profileLink": "Manage greeting email templates, send time, and automation settings.",
     "openSettings": "Open automation"
+  },
+  "insights": {
+    "pageTitle": "Insights",
+    "subtitle": "Reports, statistics, and system reliability in one place.",
+    "open": "Open page",
+    "badges": {
+      "statistics": "Last 7 days",
+      "reports": "Queue ready",
+      "reliability": "System checks"
+    },
+    "cards": {
+      "statistics": {
+        "title": "Statistics",
+        "description": "Usage and activity trends for your parish."
+      },
+      "reports": {
+        "title": "Reports",
+        "description": "Export and review structured summaries."
+      },
+      "reliability": {
+        "title": "Reliability",
+        "description": "System health, jobs, and automation status."
+      }
+    }
   }
 }
