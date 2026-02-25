@@ -49,9 +49,11 @@ export default async function ProfilePage({
   });
   const currentProfile = await getCurrentUserProfile();
   const pendingRequests = await getPendingAccessRequests();
-  const parish = session.user.activeParishId
+  const activeParishId = session.user.activeParishId;
+
+  const parish = activeParishId
     ? await prisma.parish.findUnique({
-        where: { id: session.user.activeParishId },
+        where: { id: activeParishId },
         select: { name: true, logoUrl: true }
       })
     : null;
@@ -72,7 +74,7 @@ export default async function ProfilePage({
     const [items, parishSettings] = await Promise.all([
       listParishHubItemsForAdmin(),
       prisma.parish.findUnique({
-        where: { id: session.user.activeParishId },
+        where: { id: activeParishId! },
         select: { hubGridEnabled: true, hubGridPublicEnabled: true }
       })
     ]);
@@ -163,10 +165,30 @@ export default async function ProfilePage({
               birthdayDay: currentProfile.birthdayDay,
               anniversaryMonth: currentProfile.anniversaryMonth,
               anniversaryDay: currentProfile.anniversaryDay,
-              greetingsOptIn: currentProfile.greetingsOptIn
+              greetingsOptIn: currentProfile.greetingsOptIn,
+              greetingsLastPromptedAt: currentProfile.greetingsLastPromptedAt,
+              greetingsDoNotAskAgain: currentProfile.greetingsDoNotAskAgain
             }}
           />
         </div>
+
+
+        {isAdmin && session.user.activeParishId ? (
+          <Card>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-medium text-ink-900">{t("automation.title")}</p>
+                <p className="text-sm text-ink-500">{t("automation.profileLink")}</p>
+              </div>
+              <a
+                href="/admin/automation"
+                className="inline-flex min-h-[2.25rem] items-center justify-center rounded-button border border-mist-200 bg-white px-3 py-1.5 text-center text-xs font-medium leading-tight text-ink-900 transition hover:border-mist-300 hover:bg-mist-50 focus-ring whitespace-normal break-words sm:w-auto"
+              >
+                {t("automation.openSettings")}
+              </a>
+            </div>
+          </Card>
+        ) : null}
 
         <DeleteAccountCard />
 

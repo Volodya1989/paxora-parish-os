@@ -11,6 +11,7 @@ type AvatarUploadFieldProps = {
   uploadEndpoint: string;
   deleteEndpoint: string;
   onUpdated?: (nextUrl: string | null) => void;
+  disabled?: boolean;
 };
 
 export default function AvatarUploadField({
@@ -19,7 +20,8 @@ export default function AvatarUploadField({
   fallbackText,
   uploadEndpoint,
   deleteEndpoint,
-  onUpdated
+  onUpdated,
+  disabled = false
 }: AvatarUploadFieldProps) {
   const { addToast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -27,9 +29,10 @@ export default function AvatarUploadField({
   const [isBusy, setIsBusy] = useState(false);
 
   const handleFileChange = async (file: File | null) => {
-    if (!file) {
+    if (disabled || !file) {
       return;
     }
+
 
     setIsBusy(true);
 
@@ -106,13 +109,14 @@ export default function AvatarUploadField({
             type="file"
             accept="image/jpeg,image/png,image/webp"
             className="hidden"
+            disabled={disabled}
             onChange={(event) => void handleFileChange(event.currentTarget.files?.[0] ?? null)}
           />
-          <Button type="button" size="sm" variant="secondary" isLoading={isBusy} onClick={() => inputRef.current?.click()}>
+          <Button type="button" size="sm" variant="secondary" isLoading={isBusy} onClick={() => inputRef.current?.click()} disabled={disabled}>
             Upload photo
           </Button>
           {previewUrl ? (
-            <Button type="button" size="sm" variant="ghost" isLoading={isBusy} onClick={() => void handleRemove()}>
+            <Button type="button" size="sm" variant="ghost" isLoading={isBusy} onClick={() => void handleRemove()} disabled={disabled}>
               Remove
             </Button>
           ) : null}

@@ -1,0 +1,3 @@
+ALTER TABLE "Parish"
+  ADD COLUMN "greetingsSendHourLocal" INTEGER NOT NULL DEFAULT 9,
+  ADD COLUMN "greetingsSendMinuteLocal" INTEGER NOT NULL DEFAULT 0;
