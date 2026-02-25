@@ -1,4 +1,5 @@
-import { EmailType, GreetingType, Prisma } from "@prisma/client";
+import { EmailType, Prisma } from "@prisma/client";
+import type { GreetingType } from "@prisma/client";
 import { sendEmail } from "@/lib/email/emailService";
 import { getAppUrl } from "@/lib/email/utils";
 import { renderGreetingEmail } from "@/emails/templates/greetings";
