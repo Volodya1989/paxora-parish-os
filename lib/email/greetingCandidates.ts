@@ -1,5 +1,3 @@
-import type { PrismaClient } from "@prisma/client";
-
 type RawGreetingMembership = {
   userId: string;
   user: {
@@ -9,6 +7,17 @@ type RawGreetingMembership = {
     birthdayDay: number | null;
     anniversaryMonth: number | null;
     anniversaryDay: number | null;
+  };
+};
+
+type GreetingLogType = "BIRTHDAY" | "ANNIVERSARY";
+
+type GreetingCandidatesDb = {
+  membership: {
+    findMany: (args: Record<string, unknown>) => Promise<RawGreetingMembership[]>;
+  };
+  greetingEmailLog: {
+    findMany: (args: Record<string, unknown>) => Promise<Array<{ userId: string; type: GreetingLogType }>>;
   };
 };
 
@@ -37,7 +46,7 @@ export function buildGreetingCandidateSnapshot({
   day
 }: {
   memberships: RawGreetingMembership[];
-  sentLogs: Array<{ userId: string; type: "BIRTHDAY" | "ANNIVERSARY" }>;
+  sentLogs: Array<{ userId: string; type: GreetingLogType }>;
   month: number;
   day: number;
 }) {
@@ -99,7 +108,7 @@ export async function getGreetingCandidatesForParish({
   day,
   dateKey
 }: {
-  prisma: PrismaClient;
+  prisma: GreetingCandidatesDb;
   parishId: string;
   month: number;
   day: number;
