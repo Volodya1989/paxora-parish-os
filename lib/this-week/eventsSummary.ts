@@ -18,7 +18,7 @@ function getParishDateKey(date: Date) {
 }
 
 function formatWeekday(date: Date, locale: Locale) {
-  const localeTag = locale === "uk" ? "uk-UA" : "en-US";
+  const localeTag = locale === "uk" ? "uk-UA" : locale === "es" ? "es-ES" : "en-US";
   return date.toLocaleDateString(localeTag, {
     weekday: "long",
     timeZone: PARISH_TIMEZONE

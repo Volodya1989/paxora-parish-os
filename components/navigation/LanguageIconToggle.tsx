@@ -9,7 +9,8 @@ import { buildLocaleSwitchPath } from "@/lib/i18n/routing";
 
 const localeData: Array<{ code: Locale; label: string; name: string }> = [
   { code: "en", label: "EN", name: "English" },
-  { code: "uk", label: "УК", name: "Українська" }
+  { code: "uk", label: "УК", name: "Українська" },
+  { code: "es", label: "ES", name: "Español" }
 ];
 
 /**

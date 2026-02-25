@@ -14,8 +14,10 @@
     "signOut": "Sign out",
     "reliability": "Confiabilidad",
     "reports": "Reportes",
+    "statistics": "Statistics",
     "community": "Community",
     "events": "Events",
+    "automation": "Automation",
     "insights": "Información"
   },
   "landing": {
@@ -38,6 +40,7 @@
     "thisWeek": "This week",
     "nextWeek": "Next week",
     "addButton": "+ Add",
+    "filters": "Filters",
     "give": "Dar"
   },
   "menu": {
@@ -83,6 +86,10 @@
     "done": "Done",
     "loading": "Loading",
     "error": "Error",
+    "back": "Back",
+    "cancel": "Cancel",
+    "tryAgain": "Please try again.",
+    "myParish": "My Parish",
     "reportContent": "Reportar contenido"
   },
   "notifications": {
@@ -108,6 +115,7 @@
     "quickActionsDesc": "Jump to your most-used profile controls.",
     "notificationSettings": "Notification settings",
     "importantDates": "Important dates",
+    "accountDeletion": "Account deletion",
     "parishHub": "Parish Hub",
     "parishHubDesc": "Configure the parish hub grid for quick access to resources.",
     "accessRequests": "Access requests",
@@ -148,7 +156,11 @@
     "emptyMonth": "Nothing on the calendar this month",
     "emptyMonthDesc": "Events and services will appear here once they're scheduled.",
     "emptySchedule": "Nothing scheduled yet",
-    "emptyScheduleDesc": "New services and events will show up here as they're added."
+    "emptyScheduleDesc": "New services and events will show up here as they're added.",
+    "calendarView": "Calendar",
+    "scheduleView": "Schedule",
+    "viewToggleLabel": "Switch between calendar and schedule views",
+    "today": "Today"
   },
   "parish": {
     "title": "Parish Hub",
@@ -179,6 +191,13 @@
     "showQuote": "Mostrar cita",
     "hideQuote": "Ocultar cita",
     "parishionerView": "Parishioner view",
+    "allRead": "All read",
+    "nextPrefix": "Next:",
+    "groupsJoinedOne": "group joined",
+    "groupsJoinedFew": "groups joined",
+    "groupsJoinedMany": "groups joined",
+    "adminView": "Admin view",
+    "latestPrefix": "Latest:",
     "gratitudeCard": {
       "title": "Lista de gratitud de esta semana",
       "description": "Agrega o actualiza nominaciones y celebra a los feligreses que sirvieron con amor.",
@@ -190,7 +209,39 @@
     "noOpportunitiesHint": "Vuelve pronto para nuevas formas de servir.",
     "addPrivateTask": "Agregar tarea privada",
     "requestPublicTask": "Solicitar tarea pública",
-    "addTaskAria": "Agregar tarea"
+    "addTaskAria": "Agregar tarea",
+    "startGuide": {
+      "memberDescription": "Follow these quick steps to get connected in your first week.",
+      "leaderDescription": "Use these quick actions to lead your parish week with confidence.",
+      "member": {
+        "announcements": "Read announcements",
+        "events": "Check upcoming events",
+        "groups": "Join a parish group",
+        "tasks": "Find a way to serve",
+        "requests": "Submit a request"
+      },
+      "leader": {
+        "announcement": "Publish an announcement",
+        "event": "Create an event",
+        "requests": "Triage requests"
+      },
+      "title": "Start this week",
+      "dismiss": "Dismiss",
+      "markAsDone": "Mark as done"
+    },
+    "todayAt": "Today at {time}",
+    "nextEventAt": "Next Event at {time} • {day}",
+    "noUpcomingEvents": "No upcoming events",
+    "gratitudeSpotlight": {
+      "title": "Gratitude Spotlight",
+      "subtitle": "This week's gratitude highlights",
+      "viewBoard": "View board",
+      "parishioner": "Parishioner",
+      "moreHighlights": "+{count} more highlights",
+      "addNominee": "Add nominee",
+      "adminTitle": "Gratitude Spotlight (Admin)",
+      "noPublished": "No published spotlight nominations yet."
+    }
   },
   "announcements": {
     "title": "Announcements",
@@ -402,7 +453,52 @@
       "requestMessage": "Have an idea for a group? Request one and start connecting with fellow parishioners.",
       "noArchived": "No archived groups",
       "noArchivedDesc": "No archived groups — all groups are active and welcoming."
-    }
+    },
+    "membersPage": {
+      "headerTitle": "Group Members",
+      "adminDescription": "Coordinate ministries with clarity and care.",
+      "parishionerDescription": "See who’s in this group.",
+      "addMember": "Add member",
+      "joinInstantly": "Join instantly",
+      "requestApproval": "Request approval",
+      "requestSent": "Request sent",
+      "opportunitiesToHelp": "Opportunities to help",
+      "invitedTitle": "You’re invited",
+      "invitedDescription": "Accept to join this ministry group, or decline if it’s not the right fit.",
+      "acceptInvite": "Accept invite",
+      "teamDirectory": "Team directory",
+      "directoryDescription": "Search members and review pending requests in one place.",
+      "searchMembers": "Search members",
+      "membersTab": "Members ({count})",
+      "pendingTab": "Pending ({count})",
+      "emptyMembers": "Add parishioners to build a calm, coordinated team."
+    },
+    "noDescription": "No description provided.",
+    "requestedBy": "Requested by {name}",
+    "parishionerFallback": "Parishioner",
+    "updateFailedTitle": "Update failed",
+    "updateFailedDescription": "We couldn’t update that group. Please try again.",
+    "notEnoughAccessTitle": "Not enough access",
+    "groupArchivedTitle": "Group archived",
+    "groupArchivedDescription": "This group is tucked away but can be restored.",
+    "undo": "Undo",
+    "groupRestoredTitle": "Group restored",
+    "groupRestoredDescription": "This group is back in the active list.",
+    "groupDeletedTitle": "Group deleted",
+    "groupDeletedDescription": "The group and its memberships have been permanently removed.",
+    "tryAgain": "Please try again.",
+    "deleteDialogTitle": "Delete group permanently",
+    "deleteDialogQuestion": "Are you sure you want to permanently delete",
+    "deleteDialogDetails": "This will remove all memberships and chat history. Tasks, events, and volunteer hours will be preserved but unlinked from this group.",
+    "deleteDialogConfirm": "Delete permanently",
+    "discoverTitle": "Groups you can join",
+    "yourGroupsTitle": "Your groups",
+    "requestSent": "Request sent",
+    "archived": "Archived",
+    "pending": "Pending",
+    "notApproved": "Not approved",
+    "restore": "Restore",
+    "deletePermanently": "Delete permanently"
   },
   "chat": {
     "noChannelsTitle": "No channels available",
@@ -431,9 +527,148 @@
     "save": "Save",
     "send": "Send",
     "charactersRemaining": "{count} characters remaining",
-    "noMessagesYet": "No messages yet. Start the conversation."
+    "noMessagesYet": "No messages yet. Start the conversation.",
+    "uploadError": "Unable to upload images.",
+    "editingAttachmentsUnsupportedTitle": "Attachments not supported while editing",
+    "editingAttachmentsUnsupportedDescription": "Remove attachments to save your edit.",
+    "sendMessageErrorTitle": "Unable to send message",
+    "sendReplyErrorTitle": "Unable to send reply",
+    "messageUnavailable": "Message unavailable",
+    "sidebar": {
+      "parish": "Parish",
+      "groups": "Groups",
+      "announcements": "Announcements",
+      "noGroupRooms": "No group rooms yet.",
+      "channelLocked": "Channel locked"
+    },
+    "header": {
+      "searchPlaceholder": "Search channels...",
+      "noChannelsFound": "No channels found."
+    },
+    "pinned": {
+      "label": "Pinned",
+      "by": "Pinned by {name} · {date}",
+      "unpin": "Unpin"
+    },
+    "poll": {
+      "title": "Create a poll",
+      "questionPlaceholder": "Ask a question...",
+      "option": "Option {index}",
+      "addOption": "+ Add option",
+      "creating": "Creating...",
+      "create": "Create poll"
+    },
+    "fontSize": {
+      "groupLabel": "Message font size controls",
+      "increase": "Increase message font size",
+      "decrease": "Decrease message font size",
+      "open": "Open message font size controls"
+    }
   },
   "requests": {
+    "page": {
+      "subtitle": "Track updates and follow-ups",
+      "makeRequest": "Make a Request",
+      "title": "My Requests"
+    },
+    "new": {
+      "subtitle": "Share a need or ask for support"
+    },
+    "admin": {
+      "subtitle": "Manage and follow up on parish requests"
+    },
+    "errors": {
+      "generic": "Something went wrong. Please try again."
+    },
+    "status": {
+      "SUBMITTED": "Submitted",
+      "ACKNOWLEDGED": "Acknowledged",
+      "SCHEDULED": "Scheduled",
+      "COMPLETED": "Completed",
+      "CANCELED": "Canceled"
+    },
+    "type": {
+      "CONFESSION": {
+        "label": "Confession",
+        "description": "Schedule a time for confession (no details needed).",
+        "defaultSummary": "Confession request"
+      },
+      "TALK_TO_PRIEST": {
+        "label": "Talk to a priest",
+        "description": "Request a conversation or pastoral meeting.",
+        "defaultSummary": "Request to talk with a priest"
+      },
+      "PRAYER": {
+        "label": "Prayer request",
+        "description": "Ask for prayer for an intention or need.",
+        "defaultSummary": "Prayer request"
+      },
+      "GENERIC": {
+        "label": "General request",
+        "description": "Blessing, meeting, or any other parish need.",
+        "defaultSummary": "General request"
+      },
+      "LITURGICAL": {
+        "label": "Liturgical"
+      }
+    },
+    "list": {
+      "emptyTitle": "No requests yet",
+      "emptyDescription": "When you submit a request, updates will show up here.",
+      "submittedAt": "Submitted {time}",
+      "updatedAt": "Updated {time}",
+      "assignedTo": "Assigned to {name}"
+    },
+    "detail": {
+      "pageTitle": "Request details",
+      "subtitle": "Track the latest updates",
+      "backToList": "Back to My Requests",
+      "preferredTime": "Preferred time window:",
+      "noDetails": "No additional details provided.",
+      "timeline": "Timeline",
+      "timelineEmpty": "Updates from clergy and admins will appear here as your request is processed.",
+      "updated": "Request updated.",
+      "updateError": "Unable to update request.",
+      "canceled": "Request canceled.",
+      "cancelError": "Unable to cancel request.",
+      "scheduledConfirmed": "Scheduled time confirmed.",
+      "scheduledRejected": "You declined the proposed time.",
+      "proposedTime": "Proposed time:",
+      "schedulingPending": "Scheduling details are being finalized. Please check back soon.",
+      "acceptTime": "Accept time",
+      "rejectTime": "Reject time",
+      "cancelRequest": "Cancel request"
+    },
+    "create": {
+      "receivedTitle": "Your request has been received.",
+      "receivedDescription": "We'll follow up soon. You can check updates anytime in My Requests.",
+      "viewMyRequests": "View My Requests",
+      "makeAnother": "Make another request",
+      "chooseType": "Choose a request type",
+      "chooseTypeDescription": "Pick the option that best fits your need.",
+      "step2": "Step 2",
+      "yourName": "Your name",
+      "fullNamePlaceholder": "Full name",
+      "email": "Email",
+      "emailPlaceholder": "you@example.com",
+      "emailHelper": "We'll use this to follow up on your request.",
+      "phoneOptional": "Phone (optional)",
+      "phonePlaceholder": "(555) 555-1234",
+      "summary": "Summary",
+      "summaryPlaceholder": "Short summary",
+      "preferredTimeOptional": "Preferred time window (optional)",
+      "preferredTimePlaceholder": "e.g., Weekday evenings or Saturday morning",
+      "preferredTimeHelper": "Please keep details minimal. A preferred time window is enough.",
+      "details": "Details",
+      "detailsPlaceholder": "Please share at least 15 characters",
+      "submit": "Submit request",
+      "notesHelper": {
+        "CONFESSION": "Keep it brief and avoid sensitive confessional details.",
+        "TALK_TO_PRIEST": "Share a brief overview so we can prepare (avoid sensitive confessional details).",
+        "GENERIC": "Briefly describe your need — e.g., home blessing, car blessing, meeting.",
+        "PRAYER": "Share any helpful context (avoid sensitive confessional details)."
+      }
+    },
     "createContent": {
       "modalTitle": "Solicitud de creación",
       "modalDescription": "Envía lo que deseas crear para revisión parroquial.",
@@ -457,11 +692,131 @@
       "defaultTitleServe": "Solicitud para crear tarea pública de servicio",
       "defaultTitleGroup": "Solicitud para crear nuevo grupo",
       "addAria": "Agregar solicitud de creación"
+    }
+  },
+  "groupCreate": {
+    "groupName": "Group name",
+    "groupNamePlaceholder": "e.g. Hospitality Team",
+    "descriptionOptional": "Description (optional)",
+    "descriptionPlaceholder": "Share what this group is responsible for.",
+    "photoOptional": "Group photo (optional)",
+    "changePhoto": "Change photo",
+    "uploadPhoto": "Upload photo",
+    "discoverability": "Discoverability",
+    "joinSettings": "Join settings",
+    "inviteMembers": "Invite members",
+    "addMembers": "Add members",
+    "addMembersCount": "Add members ({count})",
+    "done": "Done",
+    "searchMembers": "Search by name or email",
+    "add": "Add",
+    "noMatchingMembers": "No matching parish members.",
+    "sendRequest": "Send request",
+    "createGroup": "Create group",
+    "requestNewGroup": "Request a new group",
+    "newGroup": "New group",
+    "requestDescription": "Tell us about the group you want to start. A parish leader will review it.",
+    "createDescription": "Gather the right people around a mission, ministry, or project.",
+    "publicDesc": "Visible to all · Listed in parish groups",
+    "privateDesc": "Hidden · Invite-only visibility",
+    "inviteOnly": "Invite only",
+    "openJoin": "Anyone can join instantly",
+    "requestToJoin": "Request approval to join",
+    "pendingApproval": "Your request is pending approval from parish leadership.",
+    "removeInviteeAria": "Remove {name}",
+    "errors": {
+      "nameRequired": "Group name is required.",
+      "nameTooLong": "Group name must be {max} characters or fewer.",
+      "descriptionTooLong": "Description must be {max} characters or fewer.",
+      "unableToSubmitRequest": "Unable to submit group request.",
+      "unableToCreateGroup": "Unable to create group.",
+      "photoUploadFailed": "Group created, but photo upload failed.",
+      "submitRequestFailed": "We couldn't submit that request. Please try again.",
+      "createGroupFailed": "We couldn't create that group. Please try again."
     },
-    "page": {
-      "title": "My Requests",
-      "subtitle": "Track updates and follow-ups",
-      "makeRequest": "Make a Request"
+    "toasts": {
+      "unableToSubmitRequest": "Unable to submit request",
+      "unableToCreateGroup": "Unable to create group",
+      "requestSubmitted": "Request submitted",
+      "groupCreated": "Group created",
+      "requestSubmittedDesc": "Your request is pending approval from parish leadership.",
+      "groupCreatedDesc": "Your new group is ready for members and opportunities to help."
+    }
+  },
+  "inviteDrawer": {
+    "title": "Add a parishioner",
+    "description": "Add a parishioner directly to this ministry group.",
+    "selectParishioner": "Select parishioner",
+    "searchPlaceholder": "Search by name or email",
+    "noMatching": "No matching parish members.",
+    "selected": "Selected",
+    "select": "Select",
+    "role": "Role",
+    "roleParishioner": "Parishioner",
+    "roleCoordinator": "Coordinator",
+    "addMember": "Add member",
+    "toasts": {
+      "memberRequired": "Member required",
+      "memberRequiredDesc": "Select a parishioner from the list.",
+      "couldNotAdd": "Could not add member",
+      "memberAdded": "Member added",
+      "memberAddedDesc": "They now belong to this group."
+    }
+  },
+  "eventDetail": {
+    "title": "Event details",
+    "location": "Location",
+    "locationTBA": "Location TBA",
+    "group": "Group",
+    "notes": "Notes",
+    "rsvp": "RSVP",
+    "totalRsvps": "Total RSVPs: {count}",
+    "viewDetails": "View details",
+    "service": "Service",
+    "event": "Event"
+  },
+  "taskDetail": {
+    "title": "Task details",
+    "copyId": "Copy ID",
+    "startServing": "Start serving",
+    "completeTask": "Complete task",
+    "reopenTask": "Reopen task",
+    "assignToMe": "Assign to me",
+    "volunteers": "Volunteers",
+    "volunteersCount": "Volunteers: {current} of {needed}",
+    "noVolunteers": "No volunteers yet.",
+    "comments": "Comments",
+    "commentsHint": "Share quick updates or notes.",
+    "noComments": "No comments yet.",
+    "postComment": "Post comment",
+    "addComment": "Add a comment",
+    "activity": "Activity",
+    "activityHint": "Recent changes and updates.",
+    "noActivity": "No activity yet.",
+    "leadLabel": "Lead:",
+    "unassigned": "Unassigned",
+    "dueDateLabel": "Due date:",
+    "dueDateTbd": "TBD",
+    "leaveVolunteer": "Leave",
+    "volunteerAction": "Volunteer",
+    "volunteerClosed": "Closed",
+    "removeVolunteer": "Remove",
+    "mentionLabel": "Mention",
+    "refreshing": "Refreshing details…",
+    "toasts": {
+      "loadFailed": "Unable to load details",
+      "updateFailed": "Update failed",
+      "commentAdded": "Comment added",
+      "mentionTargetMissing": "Mention target no longer exists",
+      "idCopied": "Task ID copied",
+      "idCopyFailed": "Unable to copy Task ID",
+      "movedToInProgress": "Moved to in progress",
+      "markedComplete": "Marked complete",
+      "reopenedTask": "Reopened task",
+      "assignedToYou": "Assigned to you",
+      "leftVolunteerList": "Left volunteer list",
+      "addedToVolunteers": "Added to volunteers",
+      "volunteerRemoved": "Volunteer removed"
     }
   },
   "emptyStates": {
@@ -478,7 +833,210 @@
     "cannotUndo": "This action cannot be undone.",
     "deleteGroup": "Are you sure you want to permanently delete this group?",
     "deleteEvent": "Are you sure you want to delete this event?",
-    "deleteTask": "Are you sure you want to delete this task?"
+    "deleteTask": "Are you sure you want to delete this task?",
+    "deleteButton": "Delete",
+    "deleteTaskTitle": "Delete task",
+    "deleteEventTitle": "Delete event",
+    "deleteEventBody": "This cannot be undone. Parishioners will no longer see this event on the schedule."
+  },
+  "pwa": {
+    "addToHomeScreen": {
+      "title": "Add Paxora to your Home Screen",
+      "description": "Install Paxora for a faster, app-like experience and more reliable notifications.",
+      "followUp": "You’ll get a smoother experience and the ability to turn on notifications once installed.",
+      "iosHint": "On iPhone or iPad, installation happens from the Share menu in Safari.",
+      "otherHint": "On Android and desktop Chrome, install from the browser menu.",
+      "iosSteps": {
+        "openSafari": "Open Paxora in Safari.",
+        "tapShare": "Tap the Share icon.",
+        "selectAdd": "Select “Add to Home Screen”.",
+        "launch": "Launch Paxora from your home screen."
+      },
+      "otherSteps": {
+        "openMenu": "Open the browser menu (⋮ or ⋯).",
+        "selectInstall": "Select “Install app” or “Add to Home screen”.",
+        "confirm": "Confirm to add Paxora."
+      }
+    },
+    "notifications": {
+      "title": "Enable notifications",
+      "description": "Want alerts for announcements, schedule changes, and requests?",
+      "body": "You can manage push notifications anytime in Settings.",
+      "enable": "Enable notifications",
+      "enabling": "Enabling...",
+      "neverAsk": "Don’t ask again"
+    },
+    "install": "Install",
+    "installing": "Installing...",
+    "gotIt": "Got it",
+    "howToAdd": "How to add",
+    "notNow": "Not now"
+  },
+  "taskCreate": {
+    "toastSavedTitle": "Task saved",
+    "toastSavedDescription": "Your task is ready for the team.",
+    "requestBanner": "Share details for the serve task you want to add. Parish leadership will review your request.",
+    "createBanner": "Capture what needs attention this week and assign it to the right owner.",
+    "title": "Title",
+    "titlePlaceholder": "Add a clear task title",
+    "notesOptional": "Notes (optional)",
+    "notesPlaceholder": "Include links, dependencies, or context for the team.",
+    "estimatedHours": "Estimated hours",
+    "estimatedHoursPlaceholder": "e.g. 2",
+    "dueDate": "Due date",
+    "privateHint": "Private commitment — stays in your personal view.",
+    "publicRequestHint": "Public serve-task request. Leaders will approve before it appears to everyone.",
+    "visibility": "Visibility",
+    "visibilityPrivate": "Private (just you)",
+    "visibilityPublic": "Public (shared with the parish)",
+    "visibilityPublicHint": "Public tasks require approval before they appear for everyone.",
+    "visibilityPrivateHint": "Private tasks stay assigned to you by default.",
+    "volunteersNeeded": "Volunteers needed",
+    "group": "Group",
+    "noGroup": "No group",
+    "leadOptional": "Lead (optional)",
+    "assigneeOptional": "Assignee (optional)",
+    "youSuffix": "(You)",
+    "sendRequest": "Send request",
+    "createTask": "Create task",
+    "requestTask": "Request a serve task",
+    "newTask": "New task",
+    "pendingApproval": "Your request is pending approval from parish leadership."
+  },
+  "serveEventForm": {
+    "title": "Title",
+    "startsAt": "Starts at",
+    "endsAt": "Ends at",
+    "location": "Location (optional)",
+    "contextNote": "Events are context-only and stay within this week's schedule.",
+    "createEvent": "Create event"
+  },
+  "eventForm": {
+    "title": "Title",
+    "titlePlaceholder": "e.g. Divine Liturgy",
+    "type": "Type",
+    "typeService": "Service / Liturgy",
+    "typeEvent": "Event / Gathering",
+    "date": "Date",
+    "start": "Start",
+    "end": "End",
+    "repeats": "Repeats",
+    "repeatOn": "Repeat on",
+    "repeatNone": "Does not repeat",
+    "repeatDaily": "Daily",
+    "repeatWeekly": "Weekly",
+    "repeatCustom": "Custom weekdays",
+    "ends": "Ends",
+    "endsNever": "Never",
+    "endsOnDate": "On date",
+    "endDate": "End date",
+    "location": "Location",
+    "locationPlaceholder": "Sanctuary, parish hall, livestream",
+    "summary": "Summary",
+    "summaryPlaceholder": "Add a short description for the schedule view.",
+    "visibility": "Visibility",
+    "visibilityPublic": "Public (visible to the whole parish)",
+    "visibilityGroup": "Group (visible only to a specific group)",
+    "visibilityPrivate": "Private (leaders only)",
+    "groupVisibilityHint": "Group-only events appear for members of the selected ministry.",
+    "group": "Group",
+    "selectGroup": "Select a group",
+    "noGroups": "No groups available",
+    "weekdayMon": "Mon",
+    "weekdayTue": "Tue",
+    "weekdayWed": "Wed",
+    "weekdayThu": "Thu",
+    "weekdayFri": "Fri",
+    "weekdaySat": "Sat",
+    "weekdaySun": "Sun"
+  },
+  "marketing": {
+    "brandTagline": "People-serving, shepherd-anchored",
+    "pilotBanner": "Pilot program is open for early parish partners.",
+    "cta": {
+      "requestPilot": "Request Pilot Access",
+      "scheduleDemo": "Schedule a Demo",
+      "contactUs": "Contact us",
+      "contactUsForDemo": "Contact us for a demo"
+    },
+    "nav": {
+      "features": "Features",
+      "pricing": "Pricing",
+      "about": "About",
+      "demo": "Demo",
+      "contact": "Contact",
+      "privacy": "Privacy",
+      "terms": "Terms"
+    },
+    "hero": {
+      "eyebrow": "Built for pilot parishes",
+      "title": "Calm weekly coordination for parish life",
+      "description": "Parish management app built for modern parish life. Paxora helps clergy, staff, and volunteers align on This Week, service tasks, events, and requests without admin overload.",
+      "visualPlaceholder": "Product screenshot placeholder — replace with real in-app capture."
+    },
+    "features": {
+      "thisWeek": {
+        "title": "This Week",
+        "description": "A shared weekly home with commitments, updates, and priorities."
+      },
+      "serveTasks": {
+        "title": "Serve / Tasks",
+        "description": "Clear ownership for ministry tasks and volunteer opportunities."
+      },
+      "groupsChat": {
+        "title": "Groups / Chat",
+        "description": "Ministry groups with focused chat, updates, and member coordination."
+      },
+      "calendarEvents": {
+        "title": "Calendar / Events",
+        "description": "Weekly calendar context for services and parish events."
+      },
+      "requests": {
+        "title": "Requests",
+        "description": "Simple pathways for pastoral and practical parish requests."
+      },
+      "parishHub": {
+        "title": "Parish Hub",
+        "description": "Central hub for links, bulletin access, and key parish resources."
+      }
+    },
+    "featuresPage": {
+      "title": "Everything your parish needs each week",
+      "description": "These modules work together so your team can serve people, not chase logistics."
+    },
+    "pricing": {
+      "title": "Pilot pricing",
+      "pilotBanner": "Currently in pilot: onboarding a limited number of partner parishes.",
+      "tiers": {
+        "pilot": {
+          "title": "Pilot Partner",
+          "description": "Guided onboarding, feedback loop, and priority support during pilot."
+        },
+        "pro": {
+          "title": "Future Pro Tier",
+          "description": "Planned for post-pilot with expanded administration and support options."
+        }
+      }
+    },
+    "about": {
+      "title": "About Paxora Parish Center App",
+      "missionTitle": "Mission",
+      "mission": "We build a parish management app that restores shared responsibility and calm rhythm in parish life.",
+      "storyTitle": "Our story",
+      "story": "Paxora started from real parish coordination pain: too many WhatsApp threads, spreadsheets, and last-minute calls. We are building practical tools for Ukrainian and English-speaking parish communities."
+    },
+    "demo": {
+      "title": "Book a guided demo",
+      "description": "See how This Week, tasks, requests, and communication come together for your leadership team.",
+      "placeholder": "Demo screenshot or walkthrough placeholder"
+    },
+    "contact": {
+      "title": "Contact us",
+      "description": "Tell us about your parish and we will reach out to plan pilot onboarding."
+    },
+    "footer": {
+      "copy": "© Paxora Parish Center App. Pilot program in progress."
+    }
   },
   "moderation": {
     "reportSubmitted": "Reporte enviado",
@@ -511,6 +1069,181 @@
     "reportUpdateFailed": "No se pudo actualizar",
     "reportUpdateFailedDescription": "No pudimos actualizar ese reporte."
   },
+  "accessPage": {
+    "title": "Parish access",
+    "subtitle": "A calm onboarding step before you enter the workspace.",
+    "unverified": {
+      "verifySent": "Check your email for a verification link.",
+      "resendCta": "Resend verification email"
+    },
+    "none": {
+      "codeLabel": "Parish code",
+      "codePlaceholder": "Enter parish code",
+      "joinCta": "Join parish",
+      "invalidCode": "Invalid parish code. Try again.",
+      "alreadyMember": "You are already a member of this parish.",
+      "alreadyPending": "Tu solicitud ya está pendiente."
+    },
+    "pending": {
+      "ctaLabel": "We’ll notify you by email.",
+      "whatNext": "You can safely close this tab and return once a leader approves access.",
+      "refreshCta": "Refresh status",
+      "requestSubmitted": "Tu solicitud fue enviada a la administración parroquial para su aprobación."
+    }
+  },
+  "accessGate": {
+    "parishLabelNamed": "at {parish}",
+    "parishLabelFallback": "for this parish",
+    "approved": {
+      "title": "Access granted",
+      "nextAction": "You’re all set to enter the workspace.",
+      "whatNext": "Next you’ll be redirected to your parish home."
+    },
+    "pending": {
+      "title": "Access pending",
+      "nextAction": "Wait for a parish leader to review your request.",
+      "whatNext": "You’ll receive an email as soon as your status changes."
+    },
+    "rejected": {
+      "title": "Access request declined",
+      "nextAction": "Your request to join this parish was not approved.",
+      "whatNext": "If you believe this was a mistake, contact the parish office directly or try joining with a parish code."
+    },
+    "unverified": {
+      "title": "Verify your email",
+      "nextAction": "Confirm your email address before requesting access {parishLabel}.",
+      "whatNext": "After verification, return here and continue onboarding."
+    },
+    "none": {
+      "title": "Enter parish code",
+      "nextAction": "Enter your parish code to join the correct workspace {parishLabel}.",
+      "whatNext": "Once accepted, your request will be reviewed by parish leadership."
+    }
+  },
+  "eventDelete": {
+    "toastTitle": "Event removed",
+    "toastDescription": "The event has been removed from the calendar."
+  },
+  "eventCreateDialog": {
+    "title": "New event",
+    "description": "Add a service or parish gathering to the shared schedule.",
+    "successTitle": "Event scheduled",
+    "successDescription": "The service is now on the calendar.",
+    "submitLabel": "Save event"
+  },
+  "eventEditForm": {
+    "successTitle": "Event updated",
+    "successDescription": "Your changes are saved to the calendar.",
+    "submitLabel": "Save changes"
+  },
+  "taskEdit": {
+    "dialogTitle": "Edit task",
+    "dialogDescription": "Make quick updates so your team stays aligned.",
+    "toastUpdatedTitle": "Task updated",
+    "toastUpdatedDescription": "Your changes are saved.",
+    "title": "Title",
+    "titlePlaceholder": "Update the task title",
+    "notesOptional": "Notes (optional)",
+    "notesPlaceholder": "Update details, context, or links.",
+    "estimatedHours": "Estimated hours (optional)",
+    "estimatedHoursPlaceholder": "e.g. 2",
+    "dueDate": "Due date",
+    "privateHint": "Private commitment only.",
+    "visibility": "Visibility",
+    "visibilityPublic": "Public (shared with the parish)",
+    "visibilityPrivate": "Private (just you)",
+    "visibilityPublicHint": "Public tasks created by members require approval before they appear for everyone.",
+    "volunteersNeeded": "Volunteers needed",
+    "volunteersHint": "Set this above 1 to allow multiple volunteers to join.",
+    "group": "Group",
+    "noGroup": "No group",
+    "leadOptional": "Lead (optional)",
+    "assigneeOptional": "Assignee (optional)",
+    "youSuffix": "(You)",
+    "saveChanges": "Save changes"
+  },
+  "taskCompletion": {
+    "dialogTitle": "Complete task",
+    "logHoursTitle": "Log volunteer hours",
+    "logHoursDescription": "Keep gratitude grounded with a quick hours entry for this task.",
+    "howToLog": "How to log hours",
+    "useEstimated": "Use estimated allocation",
+    "enterActual": "Enter actual hours",
+    "skipLogging": "Skip logging for now",
+    "estimatedInfo": "Estimated allocation will use {label} and distribute it across participants.",
+    "noEstimate": "No estimate set",
+    "hoursPerParticipant": "Hours per participant",
+    "hoursPlaceholder": "e.g. 1.5",
+    "skipInfo": "No hours entry will be created for this completion.",
+    "completeTask": "Complete task"
+  },
+  "groupEdit": {
+    "dialogTitle": "Edit group",
+    "dialogDescription": "Update details so members know how to connect and contribute.",
+    "toastUpdatedTitle": "Group updated",
+    "toastUpdatedDescription": "Your changes are live.",
+    "errorGeneric": "We couldn't update that group. Please try again.",
+    "toastErrorTitle": "Unable to save",
+    "toastErrorDescription": "Please check the details and try again.",
+    "photoLabel": "Group photo",
+    "groupName": "Group name",
+    "groupNamePlaceholder": "e.g. Hospitality Team",
+    "descriptionOptional": "Description (optional)",
+    "descriptionPlaceholder": "Share what this group is responsible for.",
+    "visibility": "Visibility",
+    "joinSettings": "Join settings",
+    "publicDesc": "Public · Anyone in the parish can see this group",
+    "privateDesc": "Private · Only members can see this group",
+    "inviteOnly": "Invite only",
+    "openJoin": "Anyone can join instantly",
+    "requestToJoin": "Request approval to join",
+    "nameRequired": "Group name is required.",
+    "nameTooLong": "Group name must be {max} characters or fewer.",
+    "descriptionTooLong": "Description must be {max} characters or fewer.",
+    "saveChanges": "Save changes"
+  },
+  "adminStats": {
+    "pageTitle": "Statistics",
+    "subtitle": "Parish engagement at a glance",
+    "range": "Range",
+    "range24h": "Last 24 hours",
+    "range3d": "Last 3 days",
+    "range7d": "Last 7 days",
+    "range30d": "Last 30 days",
+    "apply": "Apply",
+    "inPeriod": "in selected period",
+    "membersTitle": "Members",
+    "membersDescription": "Parish membership and activity overview",
+    "totalMembers": "Total members",
+    "activeMembers": "Active members",
+    "pendingAccess": "Pending access",
+    "tasksTitle": "Tasks & Serve",
+    "tasksDescription": "Serve board and task completion progress",
+    "openTasks": "Open",
+    "inProgressTasks": "In progress",
+    "completedTasks": "Completed",
+    "volunteersActive": "New volunteers",
+    "eventsTitle": "Events",
+    "eventsDescription": "Calendar events and attendance",
+    "eventsInPeriod": "Events created",
+    "rsvpCount": "RSVPs",
+    "upcoming": "Upcoming",
+    "chatTitle": "Chat",
+    "chatDescription": "Messaging activity across channels",
+    "messages": "Messages",
+    "activeChannels": "Active channels",
+    "requestsTitle": "Requests",
+    "requestsDescription": "Pastoral and parish request processing",
+    "totalRequests": "Total requests",
+    "pendingRequests": "Pending",
+    "completedRequests": "Completed"
+  },
+  "automation": {
+    "title": "Automation",
+    "subtitle": "Manage automated greeting emails and scheduling",
+    "profileLink": "Manage greeting email templates, send time, and automation settings.",
+    "openSettings": "Open automation"
+  },
   "insights": {
     "pageTitle": "Información",
     "subtitle": "Informes, estadísticas y confiabilidad del sistema en un solo lugar.",
@@ -533,28 +1266,6 @@
         "title": "Confiabilidad",
         "description": "Estado del sistema, trabajos y automatizaciones."
       }
-    }
-  },
-  "accessPage": {
-    "title": "Parish access",
-    "subtitle": "A calm onboarding step before you enter the workspace.",
-    "unverified": {
-      "verifySent": "Check your email for a verification link.",
-      "resendCta": "Resend verification email"
-    },
-    "none": {
-      "codeLabel": "Parish code",
-      "codePlaceholder": "Enter parish code",
-      "joinCta": "Join parish",
-      "invalidCode": "Invalid parish code. Try again.",
-      "alreadyMember": "You are already a member of this parish.",
-      "alreadyPending": "Tu solicitud ya está pendiente."
-    },
-    "pending": {
-      "ctaLabel": "We’ll notify you by email.",
-      "whatNext": "You can safely close this tab and return once a leader approves access.",
-      "refreshCta": "Refresh status",
-      "requestSubmitted": "Tu solicitud fue enviada a la administración parroquial para su aprobación."
     }
   }
 }

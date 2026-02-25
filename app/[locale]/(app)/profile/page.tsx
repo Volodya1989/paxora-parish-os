@@ -261,7 +261,7 @@ export default async function ProfilePage({
                     <div className="text-xs text-ink-500">{request.userEmail}</div>
                   </div>
                   <div className="text-xs text-ink-400 sm:text-right">
-                    {t("profile.requested")} {request.requestedAt.toLocaleDateString(locale === "uk" ? "uk-UA" : undefined)}
+                    {t("profile.requested")} {request.requestedAt.toLocaleDateString(locale === "uk" ? "uk-UA" : locale === "es" ? "es-ES" : undefined)}
                   </div>
                   <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
                     <form className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center" action={approveParishAccess}>
