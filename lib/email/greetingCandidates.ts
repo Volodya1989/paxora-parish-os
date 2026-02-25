@@ -1,5 +1,4 @@
 import type { PrismaClient } from "@prisma/client";
-import { isMissingColumnError } from "@/lib/prisma/errors";
 
 type RawGreetingMembership = {
   userId: string;
@@ -136,7 +135,25 @@ export async function getGreetingCandidatesForParish({
       }
     });
   } catch (error) {
-    if (!isMissingColumnError(error, "Membership.allowParishGreetings")) {
+    const column =
+      error &&
+      typeof error === "object" &&
+      "meta" in error &&
+      error.meta &&
+      typeof error.meta === "object" &&
+      "column" in error.meta &&
+      typeof error.meta.column === "string"
+        ? error.meta.column
+        : "";
+
+    const isMissingAllowParishGreetingsColumn =
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "P2022" &&
+      column.includes("Membership.allowParishGreetings");
+
+    if (!isMissingAllowParishGreetingsColumn) {
       throw error;
     }
 
