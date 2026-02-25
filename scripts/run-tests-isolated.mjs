@@ -30,16 +30,30 @@ function runFile(file) {
   if (stderr) process.stderr.write(stderr);
 
   const combined = `${stdout}\n${stderr}`;
-  const hasNotOk = /(^|\n)not ok\b/m.test(combined);
-  const hasZeroFailsSummary = /# fail\s+0\b/.test(combined);
-  const hasPositiveFailSummary = /# fail\s+[1-9]\d*\b/.test(combined);
-  const hasAnyOk = /(^|\n)ok\s+\d+\b/m.test(combined);
+  const hasTapNotOk = /(^|\n)not ok\s+\d+\b/m.test(combined);
+  const hasTapZeroFailsSummary = /# fail\s+0\b/.test(combined);
+  const hasTapPositiveFailSummary = /# fail\s+[1-9]\d*\b/.test(combined);
+  const hasTapOk = /(^|\n)ok\s+\d+\b/m.test(combined);
+
+  // Some CI environments set NODE_TEST_REPORTER=spec, which does not emit TAP
+  // markers like "ok 1" / "# fail 0". In that mode we can still detect a clean
+  // run from the unicode summary lines.
+  const hasSpecZeroFailsSummary = /(^|\n)ℹ fail\s+0\b/m.test(combined);
+  const hasSpecPositiveFailSummary = /(^|\n)ℹ fail\s+[1-9]\d*\b/m.test(combined);
+  const hasSpecPassMarker = /(^|\n)✔\s+/m.test(combined);
 
   if (res.status === 0) {
     return { ok: true, reason: "exit-0" };
   }
 
-  if (!hasNotOk && (hasZeroFailsSummary || (!hasPositiveFailSummary && hasAnyOk))) {
+  const hasFailureMarkers = hasTapNotOk || hasTapPositiveFailSummary || hasSpecPositiveFailSummary;
+  const hasPassMarkers =
+    hasTapZeroFailsSummary ||
+    hasSpecZeroFailsSummary ||
+    (!hasTapPositiveFailSummary && hasTapOk) ||
+    (!hasSpecPositiveFailSummary && hasSpecPassMarker);
+
+  if (!hasFailureMarkers && hasPassMarkers) {
     return { ok: true, reason: "non-zero-without-tap-failure-markers" };
   }
 
