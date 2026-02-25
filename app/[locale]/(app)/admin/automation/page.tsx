@@ -157,6 +157,21 @@ export default async function AutomationPage({
     orderBy: { sentAt: "desc" }
   });
 
+  const latestGreetingCronRun = await prisma.greetingCronRunLog.findFirst({
+    orderBy: { startedAt: "desc" },
+    select: {
+      status: true,
+      startedAt: true,
+      finishedAt: true,
+      sentCount: true,
+      failedCount: true,
+      skippedCount: true,
+      plannedCount: true,
+      errorSummary: true,
+      missingEnv: true
+    }
+  });
+
   return (
     <ParishionerPageLayout
       pageTitle={t("automation.title")}
@@ -179,6 +194,19 @@ export default async function AutomationPage({
           emailsPlannedToday={emailsPlannedToday}
           emailsSentToday={emailsSentToday}
           latestGreetingSentAt={latestGreetingSend?.sentAt?.toISOString() ?? null}
+          latestCronRun={latestGreetingCronRun
+            ? {
+                status: latestGreetingCronRun.status,
+                startedAt: latestGreetingCronRun.startedAt.toISOString(),
+                finishedAt: latestGreetingCronRun.finishedAt?.toISOString() ?? null,
+                sentCount: latestGreetingCronRun.sentCount,
+                failedCount: latestGreetingCronRun.failedCount,
+                skippedCount: latestGreetingCronRun.skippedCount,
+                plannedCount: latestGreetingCronRun.plannedCount,
+                errorSummary: latestGreetingCronRun.errorSummary,
+                missingEnv: latestGreetingCronRun.missingEnv
+              }
+            : null}
         />
       </div>
     </ParishionerPageLayout>

@@ -67,7 +67,13 @@ async function upsertEmailLog({
   data
 }: {
   existing: EmailLog | null;
-  data: EmailMetadata & { status: EmailStatus; error?: string | null; sentAt?: Date | null };
+  data: EmailMetadata & {
+    status: EmailStatus;
+    error?: string | null;
+    providerMessageId?: string | null;
+    providerError?: string | null;
+    sentAt?: Date | null;
+  };
 }) {
   if (existing) {
     return prisma.emailLog.update({
@@ -75,6 +81,8 @@ async function upsertEmailLog({
       data: {
         status: data.status,
         error: data.error ?? null,
+        providerMessageId: data.providerMessageId ?? null,
+        providerError: data.providerError ?? null,
         sentAt: data.sentAt ?? null
       }
     });
@@ -105,7 +113,8 @@ export async function sendEmail(input: EmailSendInput): Promise<EmailSendResult>
         announcementId: input.announcementId ?? null,
         status: "FAILED",
         sentAt: null,
-        error: getDefaultSenderError()
+        error: getDefaultSenderError(),
+        providerError: getDefaultSenderError()
       }
     });
     await recordDeliveryAttempt({
@@ -122,7 +131,7 @@ export async function sendEmail(input: EmailSendInput): Promise<EmailSendResult>
   }
 
   try {
-    await sendResendEmail({
+    const providerMessageId = await sendResendEmail({
       from: sender.from,
       to: input.toEmail,
       subject: input.subject,
@@ -144,7 +153,9 @@ export async function sendEmail(input: EmailSendInput): Promise<EmailSendResult>
         announcementId: input.announcementId ?? null,
         status: "SENT",
         sentAt: new Date(),
-        error: null
+        error: null,
+        providerMessageId,
+        providerError: null
       }
     });
 
@@ -155,7 +166,8 @@ export async function sendEmail(input: EmailSendInput): Promise<EmailSendResult>
       userId: input.userId ?? null,
       target: toDeliveryTarget("EMAIL", input.toEmail),
       template: input.template,
-      context: { type: input.type }
+      context: { type: input.type },
+      providerMessageId
     });
 
     return { status: "SENT", log };
@@ -174,7 +186,8 @@ export async function sendEmail(input: EmailSendInput): Promise<EmailSendResult>
         announcementId: input.announcementId ?? null,
         status: "FAILED",
         sentAt: null,
-        error: message
+        error: message,
+        providerError: message
       }
     });
 
