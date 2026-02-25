@@ -53,5 +53,6 @@ if (hasDatabaseUrl && !skipMigrations) {
 }
 
 run("npx", ["prisma", "generate"]);
+run("node", ["scripts/check-prisma-schema-sync.mjs"]);
 console.log("[build] Running next build...");
 run("npx", ["next", "build"]);

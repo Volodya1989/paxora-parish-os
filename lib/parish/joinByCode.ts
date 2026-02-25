@@ -1,5 +1,6 @@
 import { prisma } from "@/server/db/prisma";
 import { normalizeParishInviteCode } from "@/lib/parish/inviteCode";
+import { createMembershipMemberWithFallback } from "@/lib/prisma/membershipFallback";
 
 export type JoinByCodeResult =
   | { status: "joined"; parishId: string }
@@ -83,21 +84,18 @@ export async function joinParishByCode(userId: string, codeInput: string): Promi
     return { status: "request_created", parishId: parish.id };
   }
 
-  await prisma.$transaction([
-    prisma.membership.create({
-      data: {
-        parishId: parish.id,
-        userId,
-        role: "MEMBER"
-      },
-      select: { id: true }
-    }),
-    prisma.user.update({
+  await prisma.$transaction(async (tx) => {
+    await createMembershipMemberWithFallback(tx, {
+      parishId: parish.id,
+      userId
+    });
+
+    await tx.user.update({
       where: { id: userId },
       data: { activeParishId: parish.id },
       select: { id: true }
-    })
-  ]);
+    });
+  });
 
   return { status: "joined", parishId: parish.id };
 }

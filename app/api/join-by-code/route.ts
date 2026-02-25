@@ -33,7 +33,10 @@ export async function POST(request: Request) {
   const result = await joinParishByCode(session.user.id, parsed.data.code);
 
   if (result.status === "invalid_code") {
-    return NextResponse.json({ error: "Invalid parish code" }, { status: 404 });
+    return NextResponse.json(
+      { error: "Invalid parish code. Please contact your parish for a valid code." },
+      { status: 404 }
+    );
   }
 
   if (result.status === "request_created") {
@@ -129,5 +132,12 @@ export async function POST(request: Request) {
     }
   }
 
-  return NextResponse.json({ status: result.status, parishId: result.parishId }, { status: 200 });
+  return NextResponse.json(
+    {
+      status: result.status,
+      parishId: result.parishId,
+      alreadyPending: result.status === "request_pending"
+    },
+    { status: 200 }
+  );
 }
