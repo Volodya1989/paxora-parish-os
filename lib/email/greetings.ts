@@ -1,18 +1,13 @@
-import { EmailType } from "@prisma/client";
-import type { GreetingType } from "@prisma/client";
+import type { GreetingType, PrismaClient } from "@prisma/client";
 import { sendEmail } from "@/lib/email/emailService";
 import { getAppUrl } from "@/lib/email/utils";
 import { renderGreetingEmail } from "@/emails/templates/greetings";
-import { prisma } from "@/server/db/prisma";
 
 export function isGreetingEmailDuplicateError(error: unknown) {
-  return (
-    error &&
-    typeof error === "object" &&
-    "code" in error &&
-    error.code === "P2002"
-  );
+  return Boolean(error && typeof error === "object" && "code" in error && error.code === "P2002");
 }
+
+type GreetingDb = Pick<PrismaClient, "greetingEmailLog">;
 
 export async function sendGreetingEmailIfEligible(
   input: {
@@ -27,11 +22,11 @@ export async function sendGreetingEmailIfEligible(
     dateKey: string;
   },
   deps: {
-    db?: typeof prisma;
+    db?: GreetingDb;
     sendEmailFn?: typeof sendEmail;
   } = {}
 ) {
-  const db = deps.db ?? prisma;
+  const db = deps.db ?? (await import("@/server/db/prisma")).prisma;
   const sendEmailFn = deps.sendEmailFn ?? sendEmail;
 
   const existingLog = await db.greetingEmailLog.findUnique({
@@ -60,7 +55,7 @@ export async function sendGreetingEmailIfEligible(
   });
 
   const result = await sendEmailFn({
-    type: EmailType.NOTIFICATION,
+    type: "NOTIFICATION",
     template: input.greetingType === "BIRTHDAY" ? "birthdayGreeting" : "anniversaryGreeting",
     toEmail: input.userEmail,
     subject: content.subject,
