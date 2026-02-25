@@ -72,8 +72,7 @@ export function Sidebar({
     ...(parishRole === "ADMIN" || parishRole === "SHEPHERD"
       ? [
           { labelKey: "nav.requests", href: routes.adminRequests, icon: "RQ", testId: "requests" },
-          { labelKey: "nav.reliability", href: routes.adminReliability, icon: "RL", testId: "reliability" },
-          { labelKey: "nav.reports", href: routes.adminReports, icon: "RP", testId: "reports" },
+          { labelKey: "nav.insights", href: routes.adminInsights, icon: "IN", testId: "insights" },
           { labelKey: "nav.automation", href: routes.adminAutomation, icon: "AU", testId: "automation" },
           { labelKey: "nav.people", href: routes.adminPeople, icon: "PE", testId: "people" }
         ]
