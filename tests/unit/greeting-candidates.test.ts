@@ -1,9 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { GreetingType } from "@prisma/client";
-import { buildGreetingCandidateSnapshot } from "@/lib/email/greetingCandidates";
 
-test("buildGreetingCandidateSnapshot tracks sendable and already-sent reasons", () => {
+const BIRTHDAY = "BIRTHDAY" as const;
+
+test("buildGreetingCandidateSnapshot tracks sendable and already-sent reasons", async () => {
+  const { buildGreetingCandidateSnapshot } = await import("@/lib/email/greetingCandidates");
   const result = buildGreetingCandidateSnapshot({
     month: 2,
     day: 14,
@@ -42,7 +43,7 @@ test("buildGreetingCandidateSnapshot tracks sendable and already-sent reasons", 
         }
       }
     ],
-    sentLogs: [{ userId: "u2", type: GreetingType.BIRTHDAY }]
+    sentLogs: [{ userId: "u2", type: BIRTHDAY }]
   });
 
   assert.equal(result.summary.optedInMemberships, 3);

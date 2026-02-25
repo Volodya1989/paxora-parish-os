@@ -1,8 +1,21 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { getParishLocalDateParts } from "@/lib/email/greetingSchedule";
-import { buildGreetingCandidateSnapshot } from "@/lib/email/greetingCandidates";
-import { GreetingType } from "@prisma/client";
+
+// Use string literals instead of importing GreetingType from @prisma/client,
+// which requires a generated Prisma client that may not exist in CI.
+const BIRTHDAY = "BIRTHDAY" as const;
+
+// greetingCandidates.ts and greetings.ts transitively import @prisma/client,
+// so we use dynamic imports to avoid crashing the whole file when the
+// generated client is missing (e.g. in CI before prisma generate).
+async function importCandidates() {
+  return import("@/lib/email/greetingCandidates");
+}
+
+async function importGreetings() {
+  return import("@/lib/email/greetings");
+}
 
 // ---------------------------------------------------------------------------
 // 1. Timezone localDateKey + birthday match
@@ -66,7 +79,8 @@ test("getParishLocalDateParts legacy UTC offset for birthday match", () => {
 //    not already sent
 // ---------------------------------------------------------------------------
 
-test("buildGreetingCandidateSnapshot marks already-sent birthday as not sendable", () => {
+test("buildGreetingCandidateSnapshot marks already-sent birthday as not sendable", async () => {
+  const { buildGreetingCandidateSnapshot } = await importCandidates();
   const { candidates, summary } = buildGreetingCandidateSnapshot({
     month: 2,
     day: 24,
@@ -83,7 +97,7 @@ test("buildGreetingCandidateSnapshot marks already-sent birthday as not sendable
         }
       }
     ],
-    sentLogs: [{ userId: "u1", type: GreetingType.BIRTHDAY }]
+    sentLogs: [{ userId: "u1", type: BIRTHDAY }]
   });
 
   assert.equal(summary.sendableToday, 0);
@@ -93,7 +107,8 @@ test("buildGreetingCandidateSnapshot marks already-sent birthday as not sendable
   assert.equal(candidates[0]?.sendBirthday, true);
 });
 
-test("buildGreetingCandidateSnapshot allows send when no prior log exists", () => {
+test("buildGreetingCandidateSnapshot allows send when no prior log exists", async () => {
+  const { buildGreetingCandidateSnapshot } = await importCandidates();
   const { candidates, summary } = buildGreetingCandidateSnapshot({
     month: 2,
     day: 24,
@@ -119,7 +134,8 @@ test("buildGreetingCandidateSnapshot allows send when no prior log exists", () =
   assert.equal(candidates[0]?.sendBirthday, true);
 });
 
-test("buildGreetingCandidateSnapshot excludes candidates without email from sendable count", () => {
+test("buildGreetingCandidateSnapshot excludes candidates without email from sendable count", async () => {
+  const { buildGreetingCandidateSnapshot } = await importCandidates();
   const { candidates, summary } = buildGreetingCandidateSnapshot({
     month: 2,
     day: 24,
@@ -160,7 +176,7 @@ test("buildGreetingCandidateSnapshot excludes candidates without email from send
 // ---------------------------------------------------------------------------
 
 test("sendGreetingEmailIfEligible creates log only after SENT, not after FAILED", async () => {
-  const { sendGreetingEmailIfEligible } = await import("@/lib/email/greetings");
+  const { sendGreetingEmailIfEligible } = await importGreetings();
 
   const calls: string[] = [];
 
@@ -183,7 +199,7 @@ test("sendGreetingEmailIfEligible creates log only after SENT, not after FAILED"
       userId: "u1",
       userEmail: "u1@example.com",
       userFirstName: "User",
-      greetingType: GreetingType.BIRTHDAY,
+      greetingType: BIRTHDAY,
       templateHtml: null,
       dateKey: "2026-02-24"
     },
@@ -211,7 +227,7 @@ test("sendGreetingEmailIfEligible creates log only after SENT, not after FAILED"
       userId: "u1",
       userEmail: "u1@example.com",
       userFirstName: "User",
-      greetingType: GreetingType.BIRTHDAY,
+      greetingType: BIRTHDAY,
       templateHtml: null,
       dateKey: "2026-02-24"
     },
@@ -229,7 +245,7 @@ test("sendGreetingEmailIfEligible creates log only after SENT, not after FAILED"
 });
 
 test("sendGreetingEmailIfEligible skips when log already exists", async () => {
-  const { sendGreetingEmailIfEligible } = await import("@/lib/email/greetings");
+  const { sendGreetingEmailIfEligible } = await importGreetings();
 
   const fakeDb = {
     greetingEmailLog: {
@@ -248,7 +264,7 @@ test("sendGreetingEmailIfEligible skips when log already exists", async () => {
       userId: "u1",
       userEmail: "u1@example.com",
       userFirstName: "User",
-      greetingType: GreetingType.BIRTHDAY,
+      greetingType: BIRTHDAY,
       templateHtml: null,
       dateKey: "2026-02-24"
     },

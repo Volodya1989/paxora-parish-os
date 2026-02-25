@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { GreetingType } from "@prisma/client";
-import { sendGreetingEmailIfEligible } from "@/lib/email/greetings";
+
+const BIRTHDAY = "BIRTHDAY" as const;
 
 const baseInput = {
   parishId: "p1",
@@ -10,12 +10,13 @@ const baseInput = {
   userId: "u1",
   userEmail: "u1@example.com",
   userFirstName: "U1",
-  greetingType: GreetingType.BIRTHDAY,
+  greetingType: BIRTHDAY,
   templateHtml: null,
   dateKey: "2026-02-24"
 };
 
 test("sendGreetingEmailIfEligible writes greeting log only after successful send", async () => {
+  const { sendGreetingEmailIfEligible } = await import("@/lib/email/greetings");
   const calls: string[] = [];
 
   const fakeDb = {
@@ -41,6 +42,7 @@ test("sendGreetingEmailIfEligible writes greeting log only after successful send
 });
 
 test("sendGreetingEmailIfEligible does not write greeting log when send fails", async () => {
+  const { sendGreetingEmailIfEligible } = await import("@/lib/email/greetings");
   const calls: string[] = [];
 
   const fakeDb = {
