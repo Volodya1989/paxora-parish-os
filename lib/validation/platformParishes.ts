@@ -8,7 +8,8 @@ export const platformParishSchema = z.object({
   logoUrl: z.string().trim().url("Logo must be a valid URL.").optional().or(z.literal("")),
   defaultLocale: z.enum(locales, {
     errorMap: () => ({ message: "Select a valid locale." })
-  })
+  }),
+  requireJoinApproval: z.boolean().default(false)
 });
 
 export const updatePlatformParishSchema = platformParishSchema.extend({

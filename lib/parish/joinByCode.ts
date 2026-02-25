@@ -89,11 +89,13 @@ export async function joinParishByCode(userId: string, codeInput: string): Promi
         parishId: parish.id,
         userId,
         role: "MEMBER"
-      }
+      },
+      select: { id: true }
     }),
     prisma.user.update({
       where: { id: userId },
-      data: { activeParishId: parish.id }
+      data: { activeParishId: parish.id },
+      select: { id: true }
     })
   ]);
 

@@ -11,6 +11,7 @@ export type PlatformParishRecord = {
   inviteCode: string | null;
   deactivatedAt: Date | null;
   createdAt: Date;
+  requireJoinApproval: boolean;
 };
 
 export async function listPlatformParishes(): Promise<PlatformParishRecord[]> {
@@ -26,7 +27,8 @@ export async function listPlatformParishes(): Promise<PlatformParishRecord[]> {
       defaultLocale: true,
       inviteCode: true,
       deactivatedAt: true,
-      createdAt: true
+      createdAt: true,
+      requireJoinApproval: true
     }
   });
 }

@@ -326,7 +326,8 @@ export async function approveParishAccess(input: FormData | ApproveAccessInput) 
         parishId,
         userId,
         role
-      }
+      },
+      select: { id: true }
     });
 
     await tx.accessRequest.updateMany({
@@ -341,7 +342,8 @@ export async function approveParishAccess(input: FormData | ApproveAccessInput) 
 
     await tx.user.update({
       where: { id: userId },
-      data: { activeParishId: parishId }
+      data: { activeParishId: parishId },
+      select: { id: true }
     });
   });
 
