@@ -4,7 +4,7 @@ import Card, { CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { authOptions } from "@/server/auth/options";
 import { getCurrentUserProfile, getProfileSettings } from "@/lib/queries/profile";
 import { getPendingAccessRequests } from "@/lib/queries/access";
-import { approveParishAccess, rejectParishAccess } from "@/app/actions/access";
+import { approveParishAccess, rejectParishAccess, updateParishJoinApprovalSetting } from "@/app/actions/access";
 import ProfileCard from "@/components/profile/ProfileCard";
 import ProfileDates from "@/components/profile/ProfileDates";
 import ProfileSettings from "@/components/profile/ProfileSettings";
@@ -54,7 +54,7 @@ export default async function ProfilePage({
   const parish = activeParishId
     ? await prisma.parish.findUnique({
         where: { id: activeParishId },
-        select: { name: true, logoUrl: true }
+        select: { name: true, logoUrl: true, requireJoinApproval: true }
       })
     : null;
 
@@ -172,6 +172,34 @@ export default async function ProfilePage({
           />
         </div>
 
+
+
+        {isAdmin && session.user.activeParishId ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("profile.memberJoinSettings")}</CardTitle>
+              <p className="text-sm text-ink-500">{t("profile.memberJoinSettingsDesc")}</p>
+            </CardHeader>
+            <CardContent>
+              <form action={updateParishJoinApprovalSetting} className="space-y-3">
+                <input type="hidden" name="parishId" value={session.user.activeParishId} />
+                <label className="flex items-start gap-3 rounded-card border border-mist-200 bg-mist-50 px-3 py-3 text-sm text-ink-700">
+                  <input
+                    type="checkbox"
+                    name="requireJoinApproval"
+                    defaultChecked={parish?.requireJoinApproval ?? false}
+                    className="mt-0.5 h-4 w-4 rounded border-mist-300 text-primary-600"
+                  />
+                  <span>
+                    <span className="block font-medium text-ink-900">{t("profile.requireJoinApproval")}</span>
+                    <span className="block text-xs text-ink-500">{t("profile.requireJoinApprovalHelp")}</span>
+                  </span>
+                </label>
+                <Button type="submit" size="sm">{t("buttons.save")}</Button>
+              </form>
+            </CardContent>
+          </Card>
+        ) : null}
 
         {isAdmin && session.user.activeParishId ? (
           <Card>

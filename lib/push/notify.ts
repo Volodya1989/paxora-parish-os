@@ -3,6 +3,53 @@ import { sendPushToUsers, type PushPayload } from "./sendPush";
 import { resolveChatAudience } from "@/lib/notifications/audience";
 import { getChatNotificationCopy } from "@/lib/notifications/chat-membership";
 
+
+export async function notifyParishJoinRequest(opts: {
+  parishId: string;
+  requesterId: string;
+  requesterName: string | null;
+  adminUserIds: string[];
+}) {
+  const recipients = Array.from(new Set(opts.adminUserIds.filter((id) => id && id !== opts.requesterId)));
+  if (recipients.length === 0) return;
+
+  const payload: PushPayload = {
+    title: "New join request",
+    body: opts.requesterName ? `${opts.requesterName} requested to join your parish.` : "A user requested to join your parish.",
+    url: "/profile",
+    tag: `join-request-${opts.parishId}`,
+    category: "request"
+  };
+
+  await sendPushToUsers(recipients, opts.parishId, payload);
+}
+
+export async function notifyParishJoinDecision(opts: {
+  parishId: string;
+  parishName: string;
+  userId: string;
+  decision: "APPROVED" | "REJECTED";
+}) {
+  const payload: PushPayload =
+    opts.decision === "APPROVED"
+      ? {
+          title: "Join request approved",
+          body: `You've been approved to join ${opts.parishName}.`,
+          url: "/access",
+          tag: `join-request-approved-${opts.parishId}`,
+          category: "request"
+        }
+      : {
+          title: "Join request update",
+          body: "Your join request was not approved. Please contact the church office if this seems incorrect.",
+          url: "/access",
+          tag: `join-request-rejected-${opts.parishId}`,
+          category: "request"
+        };
+
+  await sendPushToUsers([opts.userId], opts.parishId, payload);
+}
+
 /**
  * Notify chat channel members when a new message is posted.
  * Excludes the message author.

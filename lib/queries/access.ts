@@ -183,7 +183,7 @@ export async function getPendingAccessRequests(): Promise<PendingAccessRequest[]
       parishId: { in: parishIds },
       status: "PENDING"
     },
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: "desc" },
     include: {
       parish: {
         select: {
