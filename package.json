@@ -15,13 +15,14 @@
     "prisma:studio": "prisma studio",
     "prisma:seed": "prisma db seed",
     "prisma:migrate:deploy": "prisma migrate deploy",
-    "prisma:check-sync": "node scripts/check-prisma-schema-sync.mjs",
+    "prisma:check-sync": "PRISMA_SCHEMA_SYNC_STRICT=true node scripts/check-prisma-schema-sync.mjs",
     "mobile:ios:identity": "bash scripts/mobile/configure-ios-identity.sh",
     "mobile:web:build": "npm run build",
     "mobile:ios:sync": "bash scripts/mobile/bootstrap-capacitor-ios.sh",
     "mobile:ios:pipeline": "npm run mobile:web:build && npm run mobile:ios:sync",
     "mobile:ios:assets": "bash scripts/mobile/configure-ios-assets.sh",
-    "mobile:ios:c4:evidence": "bash scripts/mobile/generate-ios-c4-evidence-template.sh"
+    "mobile:ios:c4:evidence": "bash scripts/mobile/generate-ios-c4-evidence-template.sh",
+    "prisma:check-sync:warn": "node scripts/check-prisma-schema-sync.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
