@@ -1,6 +1,5 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { GreetingType } from "@prisma/client";
 import { sendGreetingEmailIfEligible } from "@/lib/email/greetings";
 
 const baseInput = {
@@ -10,7 +9,7 @@ const baseInput = {
   userId: "u1",
   userEmail: "u1@example.com",
   userFirstName: "U1",
-  greetingType: GreetingType.BIRTHDAY,
+  greetingType: "BIRTHDAY",
   templateHtml: null,
   dateKey: "2026-02-24"
 };

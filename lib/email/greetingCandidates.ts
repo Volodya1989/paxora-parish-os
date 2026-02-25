@@ -1,4 +1,4 @@
-import { GreetingType, PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { isMissingColumnError } from "@/lib/prisma/errors";
 
 type RawGreetingMembership = {
@@ -38,15 +38,15 @@ export function buildGreetingCandidateSnapshot({
   day
 }: {
   memberships: RawGreetingMembership[];
-  sentLogs: Array<{ userId: string; type: GreetingType }>;
+  sentLogs: Array<{ userId: string; type: "BIRTHDAY" | "ANNIVERSARY" }>;
   month: number;
   day: number;
 }) {
   const sentMap = new Map<string, { birthday: boolean; anniversary: boolean }>();
   for (const log of sentLogs) {
     const current = sentMap.get(log.userId) ?? { birthday: false, anniversary: false };
-    if (log.type === GreetingType.BIRTHDAY) current.birthday = true;
-    if (log.type === GreetingType.ANNIVERSARY) current.anniversary = true;
+    if (log.type === "BIRTHDAY") current.birthday = true;
+    if (log.type === "ANNIVERSARY") current.anniversary = true;
     sentMap.set(log.userId, current);
   }
 

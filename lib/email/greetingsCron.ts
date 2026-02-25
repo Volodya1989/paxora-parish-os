@@ -1,4 +1,4 @@
-import { GreetingType, type PrismaClient } from "@prisma/client";
+import { type PrismaClient } from "@prisma/client";
 import { sendGreetingEmailIfEligible } from "@/lib/email/greetings";
 import { getGreetingCandidatesForParish } from "@/lib/email/greetingCandidates";
 import {
@@ -278,7 +278,7 @@ export async function runGreetingsCronJob({
           const shouldSendBirthday = row.sendBirthday && !row.alreadySentBirthday;
           const shouldSendAnniversary = row.sendAnniversary && !row.alreadySentAnniversary;
 
-          const sendGreeting = async (greetingType: GreetingType, templateHtml: string | null) => {
+          const sendGreeting = async (greetingType: "BIRTHDAY" | "ANNIVERSARY", templateHtml: string | null) => {
             const result = await sendGreetingFn({
               parishId: parish.id,
               parishName: parish.name,
@@ -313,11 +313,11 @@ export async function runGreetingsCronJob({
           };
 
           if (shouldSendBirthday) {
-            await sendGreeting(GreetingType.BIRTHDAY, parish.birthdayGreetingTemplate);
+            await sendGreeting("BIRTHDAY", parish.birthdayGreetingTemplate);
           }
 
           if (shouldSendAnniversary) {
-            await sendGreeting(GreetingType.ANNIVERSARY, parish.anniversaryGreetingTemplate);
+            await sendGreeting("ANNIVERSARY", parish.anniversaryGreetingTemplate);
           }
         }
       } catch (parishError) {

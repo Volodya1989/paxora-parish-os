@@ -57,10 +57,15 @@ describe("Admin Statistics page — Item 10 analytics UI", () => {
     assert.match(source, /adminStatistics:\s*"\/admin\/statistics"/);
   });
 
-  test("navItems.ts includes statistics link for admin/shepherd", () => {
+  test("navItems.ts includes insights hub link for admin/shepherd", () => {
     const source = fs.readFileSync(navItemsPath, "utf8");
-    assert.match(source, /nav\.statistics/);
-    assert.match(source, /routes\.adminStatistics/);
+    assert.match(source, /nav\.insights/);
+    assert.match(source, /routes\.adminInsights/);
+  });
+
+  test("routes.ts includes adminInsights route", () => {
+    const source = fs.readFileSync(routesPath, "utf8");
+    assert.match(source, /adminInsights:\s*"\/admin\/insights"/);
   });
 
   test("en.json has all adminStats keys", () => {
@@ -92,10 +97,10 @@ describe("Admin Statistics page — Item 10 analytics UI", () => {
     assert.deepStrictEqual(enKeys, ukKeys, "adminStats keys must match between en and uk");
   });
 
-  test("nav.statistics key exists in both en.json and uk.json", () => {
+  test("nav.insights key exists in both en.json and uk.json", () => {
     const en = JSON.parse(fs.readFileSync(enPath, "utf8"));
     const uk = JSON.parse(fs.readFileSync(ukPath, "utf8"));
-    assert.ok(en.nav?.statistics, "en.json must have nav.statistics");
-    assert.ok(uk.nav?.statistics, "uk.json must have nav.statistics");
+    assert.ok(en.nav?.insights, "en.json must have nav.insights");
+    assert.ok(uk.nav?.insights, "uk.json must have nav.insights");
   });
 });

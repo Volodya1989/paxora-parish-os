@@ -1,4 +1,4 @@
-import { EmailType, GreetingType, Prisma } from "@prisma/client";
+import { EmailType, Prisma } from "@prisma/client";
 import { sendEmail } from "@/lib/email/emailService";
 import { getAppUrl } from "@/lib/email/utils";
 import { renderGreetingEmail } from "@/emails/templates/greetings";
@@ -16,7 +16,7 @@ export async function sendGreetingEmailIfEligible(
     userId: string;
     userEmail: string;
     userFirstName: string;
-    greetingType: GreetingType;
+    greetingType: "BIRTHDAY" | "ANNIVERSARY";
     templateHtml: string | null;
     dateKey: string;
   },
