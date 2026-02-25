@@ -26,6 +26,17 @@ type GreetingsConfigProps = {
   emailsPlannedToday: number;
   emailsSentToday: number;
   latestGreetingSentAt: string | null;
+  latestCronRun: {
+    status: "RUNNING" | "SUCCESS" | "FAILED";
+    startedAt: string;
+    finishedAt: string | null;
+    plannedCount: number;
+    sentCount: number;
+    failedCount: number;
+    skippedCount: number;
+    errorSummary: string | null;
+    missingEnv: string[];
+  } | null;
 };
 
 export default function GreetingsConfig({
@@ -39,7 +50,8 @@ export default function GreetingsConfig({
   greetingsSendTimeLocal,
   emailsPlannedToday,
   emailsSentToday,
-  latestGreetingSentAt
+  latestGreetingSentAt,
+  latestCronRun
 }: GreetingsConfigProps) {
   const { addToast } = useToast();
   const [isPending, startTransition] = useTransition();
@@ -103,6 +115,25 @@ export default function GreetingsConfig({
       return null;
     }
   }, [latestGreetingSentAt, formState.timezone]);
+
+  const latestCronRunLabel = useMemo(() => {
+    if (!latestCronRun) {
+      return null;
+    }
+
+    try {
+      const date = latestCronRun.finishedAt ?? latestCronRun.startedAt;
+      return new Intl.DateTimeFormat("en-US", {
+        timeZone: formState.timezone,
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+      }).format(new Date(date));
+    } catch {
+      return null;
+    }
+  }, [latestCronRun, formState.timezone]);
 
   const handleSave = () => {
     startTransition(async () => {
@@ -244,6 +275,28 @@ export default function GreetingsConfig({
                 ) : null}
               </div>
               <p className="text-xs text-ink-500">Hobby plan runs automation once per day. Preferred send time is best-effort.</p>
+              <div className="rounded-button border border-mist-200 bg-white px-3 py-2 text-xs text-ink-600">
+                <p>
+                  <span className="font-medium text-ink-800">Last cron run:</span>{" "}
+                  {latestCronRun
+                    ? `${latestCronRun.status}${latestCronRunLabel ? ` • ${latestCronRunLabel} (parish time)` : ""}`
+                    : "No runs recorded yet"}
+                </p>
+                {latestCronRun ? (
+                  <p>
+                    <span className="font-medium text-ink-800">Run counts:</span> planned {latestCronRun.plannedCount}, sent{" "}
+                    {latestCronRun.sentCount}, failed {latestCronRun.failedCount}, skipped {latestCronRun.skippedCount}
+                  </p>
+                ) : null}
+                {latestCronRun?.missingEnv?.length ? (
+                  <p className="text-amber-700">
+                    Missing email env in last run: {latestCronRun.missingEnv.join(", ")}
+                  </p>
+                ) : null}
+                {latestCronRun?.errorSummary ? (
+                  <p className="text-rose-700">Error: {latestCronRun.errorSummary}</p>
+                ) : null}
+              </div>
               {isLegacyUtcOffsetTimezone(formState.timezone) ? (
                 <p className="text-xs text-amber-700">
                   Legacy fixed UTC offset detected. Please choose an IANA timezone (for example, America/New_York) to

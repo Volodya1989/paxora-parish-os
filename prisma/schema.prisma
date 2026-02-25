@@ -180,6 +180,12 @@ enum EmailStatus {
   SKIPPED
 }
 
+enum CronRunStatus {
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
 enum DeliveryChannel {
   EMAIL
   PUSH
@@ -432,6 +438,24 @@ model GreetingEmailLog {
   @@index([parishId, type, dateKey])
 }
 
+model GreetingCronRunLog {
+  id           String        @id @default(cuid())
+  requestId    String        @unique
+  status       CronRunStatus
+  startedAt    DateTime
+  finishedAt   DateTime?
+  plannedCount Int           @default(0)
+  sentCount    Int           @default(0)
+  failedCount  Int           @default(0)
+  skippedCount Int           @default(0)
+  missingEnv   String[]      @default([])
+  errorSummary String?
+  createdAt    DateTime      @default(now())
+
+  @@index([createdAt])
+  @@index([status, createdAt])
+}
+
 enum GreetingType {
   BIRTHDAY
   ANNIVERSARY
@@ -597,10 +621,12 @@ model EmailLog {
   weekId         String?
   joinRequestId  String?
   announcementId String?
-  status         EmailStatus
-  error          String?
-  sentAt         DateTime?
-  createdAt      DateTime    @default(now())
+  status            EmailStatus
+  error             String?
+  providerMessageId String?
+  providerError     String?
+  sentAt            DateTime?
+  createdAt         DateTime    @default(now())
 
   user         User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
   parish       Parish?        @relation(fields: [parishId], references: [id], onDelete: SetNull)
