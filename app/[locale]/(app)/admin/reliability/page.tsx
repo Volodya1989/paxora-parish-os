@@ -5,6 +5,7 @@ import { listFailedDeliveryAttempts } from "@/lib/queries/reliability";
 import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayout";
 import { prisma } from "@/server/db/prisma";
 import type { DeliveryChannel } from "@prisma/client";
+import { routes } from "@/lib/navigation/routes";
 
 const allowedHours = [24, 72, 168] as const;
 const allowedChannels: Array<DeliveryChannel | "ALL"> = ["ALL", "EMAIL", "PUSH"];
@@ -46,6 +47,7 @@ export default async function AdminReliabilityPage({
       parishName={parish?.name ?? "My Parish"}
       parishLogoUrl={parish?.logoUrl ?? null}
       subtitle="Recent failed email and push deliveries"
+      backHref={routes.adminInsights}
     >
       <div className="space-y-4">
         <form className="flex flex-wrap gap-3 text-sm">

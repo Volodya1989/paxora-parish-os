@@ -6,6 +6,7 @@ import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayou
 import { prisma } from "@/server/db/prisma";
 import { getTranslations } from "@/lib/i18n/server";
 import type { Locale } from "@/lib/i18n/config";
+import { routes } from "@/lib/navigation/routes";
 
 const allowedRanges = [24, 72, 168, 720] as const;
 
@@ -75,6 +76,7 @@ export default async function AdminStatisticsPage({
       parishName={parish?.name ?? t("common.myParish")}
       parishLogoUrl={parish?.logoUrl ?? null}
       subtitle={t("adminStats.subtitle")}
+      backHref={routes.adminInsights}
     >
       <div className="space-y-6">
         <form className="flex flex-wrap gap-3 text-sm">

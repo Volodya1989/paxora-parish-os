@@ -7,6 +7,7 @@ import ParishionerPageLayout from "@/components/parishioner/ParishionerPageLayou
 import ContentReportsQueue from "@/components/admin/ContentReportsQueue";
 import { getLocaleFromParam } from "@/lib/i18n/routing";
 import { getTranslations } from "@/lib/i18n/server";
+import { routes } from "@/lib/navigation/routes";
 
 export default async function AdminReportsPage({
   params
@@ -38,6 +39,7 @@ export default async function AdminReportsPage({
       parishName={parish?.name ?? t("common.myParish")}
       parishLogoUrl={parish?.logoUrl ?? null}
       subtitle={t("moderation.queueSubtitle")}
+      backHref={routes.adminInsights}
     >
       <div className="section-gap">
         <ContentReportsQueue reports={reports} />
