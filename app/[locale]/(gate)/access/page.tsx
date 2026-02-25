@@ -26,6 +26,7 @@ export default async function AccessPage({ searchParams, params }: AccessPagePro
   const alreadyMember = resolvedSearchParams?.join === "already";
   const requestSubmitted = resolvedSearchParams?.join === "requested";
   const requestPending = resolvedSearchParams?.join === "pending";
+  const showPendingState = access.status === "pending" || requestSubmitted || requestPending;
 
   if (access.status === "approved") {
     // Approved members land on Home (/).
@@ -54,7 +55,7 @@ export default async function AccessPage({ searchParams, params }: AccessPagePro
               {t("accessPage.unverified.resendCta")}
             </Button>
           </form>
-        ) : access.status === "none" ? (
+        ) : access.status === "none" && !showPendingState ? (
           <form className="space-y-3" action={joinParishByCodeAction}>
             <label htmlFor="parish-code" className="text-sm font-medium text-ink-700">
               {t("accessPage.none.codeLabel")}

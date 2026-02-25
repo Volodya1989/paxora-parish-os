@@ -18,6 +18,7 @@ import {
 import { joinParishByCode } from "@/lib/parish/joinByCode";
 import { notifyParishJoinDecisionInApp, notifyParishJoinRequestInApp } from "@/lib/notifications/notify";
 import { notifyParishJoinDecision, notifyParishJoinRequest } from "@/lib/push/notify";
+import { upsertMembershipRoleWithFallback } from "@/lib/prisma/membershipFallback";
 
 function assertSession() {
   return getServerSession(authOptions).then((session) => {
@@ -314,21 +315,7 @@ export async function approveParishAccess(input: FormData | ApproveAccessInput) 
   }
 
   await prisma.$transaction(async (tx) => {
-    await tx.membership.upsert({
-      where: {
-        parishId_userId: {
-          parishId,
-          userId
-        }
-      },
-      update: { role },
-      create: {
-        parishId,
-        userId,
-        role
-      },
-      select: { id: true }
-    });
+    await upsertMembershipRoleWithFallback(tx, { parishId, userId, role });
 
     await tx.accessRequest.updateMany({
       where: {
