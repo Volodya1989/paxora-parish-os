@@ -10,6 +10,7 @@ export const routes = {
   requests: "/requests",
   adminRequests: "/admin/requests",
   adminPeople: "/admin/people",
+  adminInsights: "/admin/insights",
   adminReliability: "/admin/reliability",
   adminReports: "/admin/reports",
   adminAutomation: "/admin/automation",
