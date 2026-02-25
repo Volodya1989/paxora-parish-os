@@ -1,8 +1,7 @@
-export const locales = ["en", "uk"] as const;
+export const locales = ["en", "uk", "es"] as const;
 export const localeStorageKey = "paxora_locale";
 
-// Placeholder list for future locale onboarding (e.g., adding Spanish to `locales`).
-export const localeCatalog = ["en", "uk", "es"] as const;
+export const localeCatalog = locales;
 
 export type Locale = (typeof locales)[number];
 

@@ -7,7 +7,8 @@ import { useLocale, useTranslations } from "@/lib/i18n/provider";
 
 export const localeOptions: Array<{ value: Locale; label: string }> = [
   { value: "en", label: "EN" },
-  { value: "uk", label: "УК" }
+  { value: "uk", label: "УК" },
+  { value: "es", label: "ES" }
 ];
 
 type LanguageSwitcherSelectProps = {

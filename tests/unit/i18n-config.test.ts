@@ -2,11 +2,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { localeCatalog, locales, localeStorageKey } from "@/lib/i18n/config";
 
-test("active locales remain stable and include English/Ukrainian", () => {
-  assert.deepEqual(locales, ["en", "uk"]);
+test("active locales include English, Ukrainian, and Spanish", () => {
+  assert.deepEqual(locales, ["en", "uk", "es"]);
 });
 
-test("locale catalog includes staged Spanish locale", () => {
+test("locale catalog includes Spanish locale", () => {
   assert.ok(localeCatalog.includes("es"));
 });
 

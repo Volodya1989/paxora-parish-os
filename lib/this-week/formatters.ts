@@ -1,7 +1,7 @@
 import { PARISH_TIMEZONE } from "@/lib/time/parish";
 
 function toDateLocale(locale?: string) {
-  return locale === "uk" ? "uk-UA" : "en-US";
+  return locale === "uk" ? "uk-UA" : locale === "es" ? "es-ES" : "en-US";
 }
 
 export function formatDateRange(startsOn: Date, endsOn: Date, locale?: string) {

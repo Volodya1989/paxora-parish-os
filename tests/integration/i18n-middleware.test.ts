@@ -31,15 +31,15 @@ test("middleware allows prefixed locale paths", () => {
 
 
 test("middleware rejects invalid locale prefixes", () => {
-  const request = createRequest("http://localhost/es/announcements");
+  const request = createRequest("http://localhost/fr/announcements");
   const response = handleLocaleRouting(request);
 
   assert.equal(response.headers.get("x-middleware-rewrite"), "http://localhost/404");
 });
 
-test("middleware falls back to default for unsupported Accept-Language", () => {
+test("middleware uses Accept-Language when supported", () => {
   const request = createRequest("http://localhost/", { "accept-language": "es-MX,es;q=0.9" });
   const response = handleLocaleRouting(request);
 
-  assert.equal(response.headers.get("location"), "http://localhost/en");
+  assert.equal(response.headers.get("location"), "http://localhost/es");
 });
