@@ -35,6 +35,22 @@ async function resolveAccessParishId(userId: string, activeParishId?: string | n
     if (activeMembership?.parishId) {
       return activeMembership.parishId;
     }
+
+    // Preserve active parish context for users who are awaiting approval.
+    // Without this, users who have a pending/rejected access request but no
+    // membership are treated as having no parish context at all.
+    const activeRequest = await prisma.accessRequest.findFirst({
+      where: {
+        parishId: activeParishId,
+        userId,
+        status: { in: ["PENDING", "REJECTED"] }
+      },
+      select: { parishId: true }
+    });
+
+    if (activeRequest?.parishId) {
+      return activeRequest.parishId;
+    }
   }
 
   const fallbackMembership = await prisma.membership.findFirst({
