@@ -57,10 +57,15 @@ describe("Admin Statistics page — Item 10 analytics UI", () => {
     assert.match(source, /adminStatistics:\s*"\/admin\/statistics"/);
   });
 
-  test("navItems.ts includes statistics link for admin/shepherd", () => {
+  test("navItems.ts includes insights hub link for admin/shepherd", () => {
     const source = fs.readFileSync(navItemsPath, "utf8");
-    assert.match(source, /nav\.statistics/);
-    assert.match(source, /routes\.adminStatistics/);
+    assert.match(source, /nav\.insights/);
+    assert.match(source, /routes\.adminInsights/);
+  });
+
+  test("routes.ts includes adminInsights route", () => {
+    const source = fs.readFileSync(routesPath, "utf8");
+    assert.match(source, /adminInsights:\s*"\/admin\/insights"/);
   });
 
   test("en.json has all adminStats keys", () => {
