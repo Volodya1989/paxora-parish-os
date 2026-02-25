@@ -37,6 +37,7 @@ type ParishFormState = {
   timezone: string;
   logoUrl: string;
   defaultLocale: string;
+  requireJoinApproval: boolean;
 };
 
 type ConfirmState =
@@ -50,7 +51,8 @@ const emptyForm: ParishFormState = {
   address: "",
   timezone: "UTC",
   logoUrl: "",
-  defaultLocale: locales[0]
+  defaultLocale: locales[0],
+  requireJoinApproval: false
 };
 
 export default function PlatformParishesView({
@@ -82,7 +84,8 @@ export default function PlatformParishesView({
       address: parish.address ?? "",
       timezone: parish.timezone,
       logoUrl: parish.logoUrl ?? "",
-      defaultLocale: parish.defaultLocale
+      defaultLocale: parish.defaultLocale,
+      requireJoinApproval: parish.requireJoinApproval
     });
     setCreateOpen(false);
     setEditingParish(parish);
@@ -307,6 +310,23 @@ export default function PlatformParishesView({
           ))}
         </Select>
       </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="parish-require-approval">Member join approval</Label>
+        <label className="flex items-start gap-3 rounded-card border border-mist-200 bg-mist-50 px-3 py-3 text-sm text-ink-700">
+          <input
+            id="parish-require-approval"
+            type="checkbox"
+            checked={formState.requireJoinApproval}
+            onChange={(event) => setFormState((prev) => ({ ...prev, requireJoinApproval: event.currentTarget.checked }))}
+            className="mt-0.5 h-4 w-4 rounded border-mist-300 text-primary-600"
+          />
+          <span>
+            <span className="block font-medium text-ink-900">Require admin approval for new members</span>
+            <span className="block text-xs text-ink-500">When enabled, users who enter the parish code must be approved before joining.</span>
+          </span>
+        </label>
+      </div>
     </div>
   );
 
@@ -388,6 +408,7 @@ export default function PlatformParishesView({
                       <Badge tone="neutral">{parish.defaultLocale.toUpperCase()}</Badge>
                       <Badge tone="neutral">{parish.timezone}</Badge>
                       {isDeactivated ? <Badge tone="warning">Deactivated</Badge> : null}
+                      {parish.requireJoinApproval ? <Badge tone="neutral">Approval required</Badge> : null}
                       {isImpersonated ? <Badge tone="warning">Impersonating</Badge> : null}
                     </div>
                   </div>

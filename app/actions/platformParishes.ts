@@ -153,6 +153,7 @@ export async function createPlatformParish(input: {
   timezone: string;
   logoUrl?: string;
   defaultLocale: string;
+  requireJoinApproval?: boolean;
 }): Promise<PlatformParishActionState> {
   try {
     await requirePlatformSession();
@@ -181,7 +182,8 @@ export async function createPlatformParish(input: {
         address: normalizeOptional(parsed.data.address),
         timezone: parsed.data.timezone.trim(),
         logoUrl: normalizeOptional(parsed.data.logoUrl),
-        defaultLocale: parsed.data.defaultLocale
+        defaultLocale: parsed.data.defaultLocale,
+        requireJoinApproval: parsed.data.requireJoinApproval
       }
     });
     createdInviteCode = parish.inviteCode ?? undefined;
@@ -200,7 +202,8 @@ export async function createPlatformParish(input: {
           address: normalizeOptional(parsed.data.address),
           timezone: parsed.data.timezone.trim(),
           logoUrl: normalizeOptional(parsed.data.logoUrl),
-          defaultLocale: parsed.data.defaultLocale
+          defaultLocale: parsed.data.defaultLocale,
+          requireJoinApproval: parsed.data.requireJoinApproval
         }
       });
       createdInviteCode = parish.inviteCode ?? undefined;
@@ -224,6 +227,7 @@ export async function updatePlatformParish(input: {
   timezone: string;
   logoUrl?: string;
   defaultLocale: string;
+  requireJoinApproval?: boolean;
 }): Promise<PlatformParishActionState> {
   try {
     await requirePlatformSession();
@@ -253,7 +257,8 @@ export async function updatePlatformParish(input: {
       address: normalizeOptional(parsed.data.address),
       timezone: parsed.data.timezone.trim(),
       logoUrl: normalizeOptional(parsed.data.logoUrl),
-      defaultLocale: parsed.data.defaultLocale
+      defaultLocale: parsed.data.defaultLocale,
+      requireJoinApproval: parsed.data.requireJoinApproval
     }
   });
 

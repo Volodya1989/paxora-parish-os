@@ -103,7 +103,7 @@ export function renderJoinRequestDecisionEmail({
   const title = isApproved ? "Access approved" : "Access update";
   const body = isApproved
     ? `Good news — your request to join ${parish.name} has been approved. You can now sign in and start participating.`
-    : `Thanks for your interest in ${parish.name}. Your request wasn’t approved at this time. If you have questions, please contact your parish office.`;
+    : `Thanks for your interest in ${parish.name}. Your request wasn’t approved at this time. If this is a mistake, please contact the church office.`;
   const buttonLabel = isApproved ? "Sign in to Paxora" : "Visit Paxora";
   const buttonLink = isApproved ? `${appUrl}/sign-in` : `${appUrl}/access`;
 

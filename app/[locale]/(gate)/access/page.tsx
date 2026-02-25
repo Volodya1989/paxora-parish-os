@@ -24,6 +24,9 @@ export default async function AccessPage({ searchParams, params }: AccessPagePro
   const verifySent = resolvedSearchParams?.verify === "sent";
   const joinError = resolvedSearchParams?.join === "invalid";
   const alreadyMember = resolvedSearchParams?.join === "already";
+  const requestSubmitted = resolvedSearchParams?.join === "requested";
+  const requestPending = resolvedSearchParams?.join === "pending";
+  const showPendingState = access.status === "pending" || requestSubmitted || requestPending;
 
   if (access.status === "approved") {
     // Approved members land on Home (/).
@@ -52,7 +55,7 @@ export default async function AccessPage({ searchParams, params }: AccessPagePro
               {t("accessPage.unverified.resendCta")}
             </Button>
           </form>
-        ) : access.status === "none" ? (
+        ) : access.status === "none" && !showPendingState ? (
           <form className="space-y-3" action={joinParishByCodeAction}>
             <label htmlFor="parish-code" className="text-sm font-medium text-ink-700">
               {t("accessPage.none.codeLabel")}
@@ -73,6 +76,9 @@ export default async function AccessPage({ searchParams, params }: AccessPagePro
             {alreadyMember ? (
               <p className="text-xs text-emerald-600">{t("accessPage.none.alreadyMember")}</p>
             ) : null}
+            {requestPending ? (
+              <p className="text-xs text-ink-600">{t("accessPage.none.alreadyPending")}</p>
+            ) : null}
           </form>
         ) : (
           <div className="space-y-3 rounded-card border border-mist-200 bg-mist-50 px-4 py-3">
@@ -81,6 +87,9 @@ export default async function AccessPage({ searchParams, params }: AccessPagePro
               <p className="text-xs text-ink-400">
                 {t("accessPage.pending.whatNext")}
               </p>
+              {requestSubmitted ? (
+                <p className="text-xs text-emerald-600">{t("accessPage.pending.requestSubmitted")}</p>
+              ) : null}
             </div>
             <Link
               href={buildLocalePathname(locale, "/access")}

@@ -116,7 +116,11 @@
     "parishioner": "Parishioner",
     "clergy": "Clergy",
     "admin": "Admin",
-    "requested": "Requested"
+    "requested": "Requested",
+    "memberJoinSettings": "Configuración de ingreso de miembros",
+    "memberJoinSettingsDesc": "Controla si quienes ingresan el código parroquial se unen de inmediato o requieren aprobación.",
+    "requireJoinApproval": "Requerir aprobación del administrador para nuevos miembros",
+    "requireJoinApprovalHelp": "Cuando está habilitado, los usuarios que ingresan el código parroquial deben ser aprobados antes de unirse."
   },
   "calendar": {
     "title": "Calendar",
@@ -529,6 +533,28 @@
         "title": "Confiabilidad",
         "description": "Estado del sistema, trabajos y automatizaciones."
       }
+    }
+  },
+  "accessPage": {
+    "title": "Parish access",
+    "subtitle": "A calm onboarding step before you enter the workspace.",
+    "unverified": {
+      "verifySent": "Check your email for a verification link.",
+      "resendCta": "Resend verification email"
+    },
+    "none": {
+      "codeLabel": "Parish code",
+      "codePlaceholder": "Enter parish code",
+      "joinCta": "Join parish",
+      "invalidCode": "Invalid parish code. Try again.",
+      "alreadyMember": "You are already a member of this parish.",
+      "alreadyPending": "Tu solicitud ya está pendiente."
+    },
+    "pending": {
+      "ctaLabel": "We’ll notify you by email.",
+      "whatNext": "You can safely close this tab and return once a leader approves access.",
+      "refreshCta": "Refresh status",
+      "requestSubmitted": "Tu solicitud fue enviada a la administración parroquial para su aprobación."
     }
   }
 }

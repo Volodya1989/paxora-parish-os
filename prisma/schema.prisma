@@ -256,6 +256,7 @@ model Parish {
   defaultLocale             String                  @default("en")
   inviteCode                String?                 @unique
   inviteCodeCreatedAt       DateTime?
+  requireJoinApproval       Boolean                 @default(false)
   deactivatedAt             DateTime?
   createdAt                 DateTime                @default(now())
   emailFromName             String?

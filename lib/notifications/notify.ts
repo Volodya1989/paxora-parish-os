@@ -73,6 +73,46 @@ async function createNotificationsForAudience(
 }
 
 
+
+export async function notifyParishJoinRequestInApp(opts: {
+  parishId: string;
+  parishName: string;
+  requesterId: string;
+  requesterName: string | null;
+  adminUserIds: string[];
+}) {
+  const recipients = opts.adminUserIds.filter((userId) => userId !== opts.requesterId);
+  if (recipients.length === 0) return;
+
+  await createNotificationsForUsers(recipients, {
+    parishId: opts.parishId,
+    type: NotificationType.REQUEST,
+    title: `New join request for ${opts.parishName}`,
+    description: opts.requesterName ?? "A user requested access",
+    href: "/profile"
+  });
+}
+
+export async function notifyParishJoinDecisionInApp(opts: {
+  parishId: string;
+  parishName: string;
+  userId: string;
+  decision: "APPROVED" | "REJECTED";
+}) {
+  const description =
+    opts.decision === "APPROVED"
+      ? `You've been approved to join ${opts.parishName}.`
+      : `Your request to join ${opts.parishName} was not approved. If this is a mistake, please contact the church office.`;
+
+  await createNotificationsForUsers([opts.userId], {
+    parishId: opts.parishId,
+    type: NotificationType.REQUEST,
+    title: opts.decision === "APPROVED" ? "Join request approved" : "Join request not approved",
+    description,
+    href: "/access"
+  });
+}
+
 export async function notifyGroupInviteSentInApp(opts: {
   parishId: string;
   groupId: string;

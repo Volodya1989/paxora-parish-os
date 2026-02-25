@@ -6,6 +6,7 @@ import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
 import { profileDatesSchema, type ProfileDatesInput } from "@/lib/validation/profile";
 import { isMissingColumnError } from "@/lib/prisma/errors";
+import { upsertMembershipNotificationsWithFallback } from "@/lib/prisma/membershipFallback";
 
 type UpdateProfileSettingsInput = {
   notificationsEnabled: boolean;
@@ -97,27 +98,11 @@ export async function updateProfileSettings({
         notifyRequestPush: true
       }
     }),
-    prisma.membership.upsert({
-      where: {
-        parishId_userId: {
-          parishId,
-          userId: session.user.id
-        }
-      },
-      update: {
-        notifyEmailEnabled: notificationsEnabled,
-        weeklyDigestEnabled
-      },
-      create: {
-        parishId,
-        userId: session.user.id,
-        notifyEmailEnabled: notificationsEnabled,
-        weeklyDigestEnabled
-      },
-      select: {
-        notifyEmailEnabled: true,
-        weeklyDigestEnabled: true
-      }
+    upsertMembershipNotificationsWithFallback(prisma, {
+      parishId,
+      userId: session.user.id,
+      notifyEmailEnabled: notificationsEnabled,
+      weeklyDigestEnabled
     })
   ]);
 

@@ -124,7 +124,11 @@
     "parishioner": "Parishioner",
     "clergy": "Clergy",
     "admin": "Admin",
-    "requested": "Requested"
+    "requested": "Requested",
+    "memberJoinSettings": "Member join settings",
+    "memberJoinSettingsDesc": "Control whether parish code entries join immediately or require approval.",
+    "requireJoinApproval": "Require admin approval for new members",
+    "requireJoinApprovalHelp": "When enabled, users who enter the parish code must be approved before joining."
   },
   "calendar": {
     "title": "Calendar",
@@ -1076,13 +1080,15 @@
       "codeLabel": "Parish code",
       "codePlaceholder": "Enter parish code",
       "joinCta": "Join parish",
-      "invalidCode": "Invalid parish code. Try again.",
-      "alreadyMember": "You are already a member of this parish."
+      "invalidCode": "Invalid parish code. Please contact your parish for a valid code.",
+      "alreadyMember": "You are already a member of this parish.",
+      "alreadyPending": "Your request is already pending."
     },
     "pending": {
       "ctaLabel": "We’ll notify you by email.",
       "whatNext": "You can safely close this tab and return once a leader approves access.",
-      "refreshCta": "Refresh status"
+      "refreshCta": "Refresh status",
+      "requestSubmitted": "Your request was received and is pending approval."
     }
   },
   "accessGate": {
