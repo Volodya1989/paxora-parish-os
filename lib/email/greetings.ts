@@ -1,5 +1,4 @@
 import type { GreetingType, PrismaClient } from "@prisma/client";
-import { sendEmail } from "@/lib/email/emailService";
 import { getAppUrl } from "@/lib/email/utils";
 import { renderGreetingEmail } from "@/emails/templates/greetings";
 
@@ -8,6 +7,7 @@ export function isGreetingEmailDuplicateError(error: unknown) {
 }
 
 type GreetingDb = Pick<PrismaClient, "greetingEmailLog">;
+type SendEmailFn = typeof import("@/lib/email/emailService").sendEmail;
 
 export async function sendGreetingEmailIfEligible(
   input: {
@@ -23,11 +23,11 @@ export async function sendGreetingEmailIfEligible(
   },
   deps: {
     db?: GreetingDb;
-    sendEmailFn?: typeof sendEmail;
+    sendEmailFn?: SendEmailFn;
   } = {}
 ) {
   const db = deps.db ?? (await import("@/server/db/prisma")).prisma;
-  const sendEmailFn = deps.sendEmailFn ?? sendEmail;
+  const sendEmailFn = deps.sendEmailFn ?? (await import("@/lib/email/emailService")).sendEmail;
 
   const existingLog = await db.greetingEmailLog.findUnique({
     where: {
