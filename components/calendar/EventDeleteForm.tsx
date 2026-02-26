@@ -9,12 +9,16 @@ import { Drawer } from "@/components/ui/Drawer";
 import { useToast } from "@/components/ui/Toast";
 import { deleteEvent } from "@/server/actions/events";
 import { initialEventActionState } from "@/server/actions/eventState";
-import type { EventDetail } from "@/lib/queries/events";
 import { useTranslations } from "@/lib/i18n/provider";
 import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 
+type EventDeleteTarget = {
+  id: string;
+  title: string;
+};
+
 type EventDeleteFormProps = {
-  event: EventDetail;
+  event: EventDeleteTarget;
 };
 
 export default function EventDeleteForm({ event }: EventDeleteFormProps) {
@@ -71,7 +75,7 @@ export default function EventDeleteForm({ event }: EventDeleteFormProps) {
   const handleCancel = () => {
     setConfirmOpen(false);
     startTransition(() => {
-      router.back();
+      router.push("/calendar");
     });
   };
 
