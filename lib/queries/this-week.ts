@@ -11,6 +11,7 @@ import { getGratitudeSpotlight } from "@/lib/queries/gratitude";
 import { listUnreadCountsForRooms } from "@/lib/queries/chat";
 import { listEventsByRange } from "@/lib/queries/events";
 import { buildAvatarImagePath } from "@/lib/storage/avatar";
+import { getThisWeekBadgeDateRanges } from "@/lib/this-week/badgeDateRanges";
 
 export type TaskPreview = {
   id: string;
@@ -68,6 +69,10 @@ export type ThisWeekData = {
     tasksDone: number;
     tasksTotal: number;
     completionPct: number;
+  };
+  badges: {
+    announcements: number;
+    events: number;
   };
   pendingTaskApprovals: number;
   pendingAccessRequests: number;
@@ -130,6 +135,7 @@ export async function getThisWeekDataForUser({
   effectiveRole?: ParishRole | null;
 }): Promise<ThisWeekData> {
   const week = await getWeekForSelection(parishId, weekSelection, now);
+  const { announcementsStartUtc, eventsStartUtc, eventsEndUtc } = getThisWeekBadgeDateRanges(now);
 
   const membership =
     effectiveRole !== undefined
@@ -157,7 +163,9 @@ export async function getThisWeekDataForUser({
     pendingAccessRequests,
     pendingEventRequests,
     gratitudeSpotlight,
-    coordinatorStatus
+    coordinatorStatus,
+    announcementsBadgeCount,
+    eventsBadgeCount
   ] = await Promise.all([
     prisma.task.findMany({
       where: {
@@ -306,7 +314,27 @@ export async function getThisWeekDataForUser({
         })
       : Promise.resolve(0),
     getGratitudeSpotlight({ parishId, weekId: week.id }),
-    isCoordinatorInParish(parishId, userId)
+    isCoordinatorInParish(parishId, userId),
+    prisma.announcement.count({
+      where: {
+        parishId,
+        archivedAt: null,
+        publishedAt: {
+          not: null,
+          gte: announcementsStartUtc
+        }
+      }
+    }),
+    prisma.event.count({
+      where: {
+        parishId,
+        deletedAt: null,
+        startsAt: {
+          gte: eventsStartUtc,
+          lte: eventsEndUtc
+        }
+      }
+    })
   ]);
 
   const dueByDefault = new Date(week.endsOn.getTime() - 1);
@@ -400,6 +428,10 @@ export async function getThisWeekDataForUser({
       tasksDone,
       tasksTotal,
       completionPct
+    },
+    badges: {
+      announcements: announcementsBadgeCount,
+      events: eventsBadgeCount
     },
     pendingTaskApprovals:
       membership?.role && ["ADMIN", "SHEPHERD"].includes(membership.role)

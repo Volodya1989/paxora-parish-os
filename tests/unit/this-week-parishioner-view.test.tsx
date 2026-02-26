@@ -69,6 +69,10 @@ test("Parishioner view renders quick blocks and ordered sections", () => {
           tasksTotal: 3,
           completionPct: 0
         },
+        badges: {
+          announcements: 1,
+          events: 1
+        },
         pendingTaskApprovals: 0,
         pendingAccessRequests: 0,
         pendingEventRequests: 0,
