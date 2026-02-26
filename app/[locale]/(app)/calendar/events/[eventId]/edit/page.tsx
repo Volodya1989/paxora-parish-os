@@ -68,18 +68,25 @@ export default async function EditEventPage({ params, searchParams }: EditEventP
       ).map((membershipRecord) => membershipRecord.group);
   const canCreateGroupEvents = isLeader || groupOptions.length > 0;
 
+  const instanceStart =
+    query?.instanceStart && !Number.isNaN(new Date(query.instanceStart).getTime())
+      ? new Date(query.instanceStart)
+      : null;
+  const durationMs = event.endsAt.getTime() - event.startsAt.getTime();
+  const eventForForm = instanceStart
+    ? {
+        ...event,
+        startsAt: instanceStart,
+        endsAt: new Date(instanceStart.getTime() + durationMs)
+      }
+    : event;
+
   return (
     <div className="space-y-6">
       <SectionTitle title="Edit event" subtitle="Update calendar details" />
       <Card>
         <EventEditForm
-          event={{
-            ...event,
-            startsAt:
-              query?.instanceStart && !Number.isNaN(new Date(query.instanceStart).getTime())
-                ? new Date(query.instanceStart)
-                : event.startsAt
-          }}
+          event={eventForForm}
           groupOptions={groupOptions}
           canCreatePublicEvents={isLeader}
           canCreatePrivateEvents={isLeader}
