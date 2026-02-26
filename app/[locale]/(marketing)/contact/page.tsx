@@ -6,7 +6,7 @@ import { buildLocalePathname } from "@/lib/i18n/routing";
 
 export const metadata: Metadata = {
   title: "Contact | Paxora Parish Center App",
-  description: "Request pilot access or ask for a guided demo.",
+  description: "Request early access or schedule a guided demo for your parish team.",
   openGraph: { title: "Contact | Paxora Parish Center App", images: ["/og/marketing-default.svg"] },
   twitter: { card: "summary_large_image", images: ["/og/marketing-default.svg"] }
 };
@@ -24,13 +24,21 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
       <p className="text-body">{t("marketing.contact.description")}</p>
       <div className="rounded-card border border-mist-200 bg-mist-50 p-4 text-sm text-ink-700">
         <p>
-          Support email: <a href={`mailto:${APP_STORE_SUPPORT_EMAIL}`}>{APP_STORE_SUPPORT_EMAIL}</a>
+          {t("marketing.contact.supportLine")} <a className="underline underline-offset-4" href={`mailto:${APP_STORE_SUPPORT_EMAIL}`}>{APP_STORE_SUPPORT_EMAIL}</a>
         </p>
         <p className="mt-2">
-          Legal: <a href={privacyPath}>Privacy Policy</a> · <a href={termsPath}>Terms of Service</a>
+          {t("marketing.contact.legalLine")} <a className="underline underline-offset-4" href={privacyPath}>{t("marketing.nav.privacy")}</a> · <a className="underline underline-offset-4" href={termsPath}>{t("marketing.nav.terms")}</a>
         </p>
       </div>
-      <ContactForm />
+      <ContactForm
+        labels={{
+          name: t("marketing.contact.form.name"),
+          parish: t("marketing.contact.form.parish"),
+          email: t("marketing.contact.form.email"),
+          message: t("marketing.contact.form.message"),
+          submit: t("marketing.contact.form.submit")
+        }}
+      />
     </section>
   );
 }

@@ -131,7 +131,7 @@ Paste and customize for each submission:
 > The app is account-gated and used by parish communities with role-based access.
 >
 > **Account deletion**
-> Users can delete their account in-app via **Profile → Delete account** by typing `DELETE` to confirm. Deletion support is available at **support@paxora.app**.
+> Users can delete their account in-app via **Profile → Delete account** by typing `DELETE` to confirm. Deletion support is available at **support@paxora.com**.
 >
 > **Support and legal**
 > Support URL: `https://<public-site-domain>/en/contact`
@@ -154,7 +154,7 @@ Paste and customize for each submission:
 Source of truth: [`docs/mobile/app-store-connect-metadata.md`](./app-store-connect-metadata.md)
 
 - **Support URL:** `https://<public-site-domain>/en/contact`
-- **Support email:** `support@paxora.app`
+- **Support email:** `support@paxora.com`
 - **Privacy policy URL:** `https://<public-site-domain>/en/privacy`
 - **Terms URL:** `https://<public-site-domain>/en/terms`
 - **Account deletion discoverability reference:** `https://<public-site-domain>/en/profile`
