@@ -1187,6 +1187,16 @@
     "toastDescription": "El evento fue eliminado del calendario.",
     "errorToastTitle": "No se pudo eliminar el evento"
   },
+  "eventRecurrence": {
+    "editTitle": "Editar evento recurrente",
+    "editDescription": "Elige si deseas actualizar solo esta ocurrencia o toda la serie.",
+    "deleteTitle": "Eliminar evento recurrente",
+    "deleteDescription": "Elige si deseas eliminar solo esta ocurrencia o toda la serie.",
+    "thisEvent": "Este evento",
+    "thisEventHint": "Solo esta ocurrencia se verá afectada.",
+    "thisSeries": "Esta serie",
+    "thisSeriesHint": "Todas las ocurrencias de la serie se verán afectadas."
+  },
   "eventCreateDialog": {
     "title": "Nuevo evento",
     "description": "Agrega un servicio o reunión parroquial al horario compartido.",

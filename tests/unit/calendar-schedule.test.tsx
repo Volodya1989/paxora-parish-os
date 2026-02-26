@@ -25,7 +25,9 @@ const event = {
   recurrenceUntil: null,
   rsvpResponse: null,
   rsvpTotalCount: 3,
-  canManage: true
+  canManage: true,
+  recurrenceParentId: null,
+  isRecurring: true
 };
 
 const weekRange = {

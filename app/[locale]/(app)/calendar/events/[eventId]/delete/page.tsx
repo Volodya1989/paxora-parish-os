@@ -12,10 +12,12 @@ type DeleteEventPageProps = {
   params: Promise<{
     eventId: string;
   }>;
+  searchParams?: Promise<{ instanceStart?: string }>;
 };
 
-export default async function DeleteEventPage({ params }: DeleteEventPageProps) {
+export default async function DeleteEventPage({ params, searchParams }: DeleteEventPageProps) {
   const { eventId } = await params;
+  const query = searchParams ? await searchParams : undefined;
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -70,7 +72,15 @@ export default async function DeleteEventPage({ params }: DeleteEventPageProps) 
   return (
     <div className="space-y-6">
       <SectionTitle title="Delete event" subtitle="Remove a calendar item" />
-      <EventDeleteForm event={authorization.event} />
+      <EventDeleteForm
+        event={{
+          ...authorization.event,
+          isRecurring:
+            authorization.event.recurrenceFreq !== "NONE" ||
+            Boolean(authorization.event.recurrenceParentId),
+          occurrenceStartsAt: query?.instanceStart ?? authorization.event.startsAt.toISOString()
+        }}
+      />
     </div>
   );
 }
