@@ -1187,6 +1187,16 @@
     "toastDescription": "Подію прибрано з календаря.",
     "errorToastTitle": "Не вдалося видалити подію"
   },
+  "eventRecurrence": {
+    "editTitle": "Редагувати повторювану подію",
+    "editDescription": "Виберіть: оновити лише цю подію чи всю серію.",
+    "deleteTitle": "Видалити повторювану подію",
+    "deleteDescription": "Виберіть: видалити лише цю подію чи всю серію.",
+    "thisEvent": "Ця подія",
+    "thisEventHint": "Зміниться лише цей показ.",
+    "thisSeries": "Ця серія",
+    "thisSeriesHint": "Зміняться всі покази в серії."
+  },
   "eventCreateDialog": {
     "title": "Нова подія",
     "description": "Додайте службу або парафіяльну зустріч до спільного розкладу.",

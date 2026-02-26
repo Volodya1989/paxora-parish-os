@@ -36,7 +36,9 @@ const sampleEvent = {
   recurrenceUntil: null,
   rsvpResponse: null,
   rsvpTotalCount: 0,
-  canManage: true
+  canManage: true,
+  recurrenceParentId: null,
+  isRecurring: false
 };
 
 test("Calendar view toggle renders week layout by default", () => {
