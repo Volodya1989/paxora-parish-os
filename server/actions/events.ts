@@ -324,7 +324,7 @@ export async function updateEvent(
     recurrenceInterval: formData.get("recurrenceInterval"),
     recurrenceByWeekday: formData.get("recurrenceByWeekday"),
     recurrenceUntil: formData.get("recurrenceUntil"),
-    scope: formData.get("scope"),
+    scope: formData.get("scope") ?? undefined,
     occurrenceStartsAt: formData.get("occurrenceStartsAt")
   });
 
@@ -746,7 +746,7 @@ export async function deleteEvent(
 
   const parsed = deleteEventSchema.safeParse({
     eventId: formData.get("eventId"),
-    scope: formData.get("scope"),
+    scope: formData.get("scope") ?? undefined,
     occurrenceStartsAt: formData.get("occurrenceStartsAt")
   });
 
