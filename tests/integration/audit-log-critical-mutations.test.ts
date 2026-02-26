@@ -94,11 +94,19 @@ beforeEach(async () => {
     return;
   }
 
+  if (setupFailureReason) {
+    return;
+  }
+
   await resetDatabase();
 });
 
 after(async () => {
   if (!hasDatabase) {
+    return;
+  }
+
+  if (setupFailureReason) {
     return;
   }
 
