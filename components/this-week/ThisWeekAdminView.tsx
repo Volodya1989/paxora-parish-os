@@ -294,7 +294,7 @@ export default function ThisWeekAdminView({
             label: t("thisWeek.announcements"),
             href: routes.announcements,
             summary: announcementsSummary,
-            count: publishedAnnouncements.length,
+            count: data.badges.announcements,
             icon: <MegaphoneIcon className="h-5 w-5" />,
             accentClass: "border-amber-200 bg-amber-50/60 text-amber-700"
           },
@@ -303,7 +303,7 @@ export default function ThisWeekAdminView({
             label: t("thisWeek.services"),
             href: routes.calendar,
             summary: servicesSummary,
-            count: upcomingCount,
+            count: data.badges.events,
             icon: <CalendarIcon className="h-5 w-5" />,
             accentClass: "border-teal-200 bg-teal-50/60 text-teal-700"
           },

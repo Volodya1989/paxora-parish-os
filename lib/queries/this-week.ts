@@ -7,10 +7,12 @@ import { prisma } from "@/server/db/prisma";
 import { isCoordinatorInParish } from "@/server/db/groups";
 import { getWeekForSelection, type WeekSelection } from "@/domain/week";
 import { getNow } from "@/lib/time/getNow";
+import { getWeekRange } from "@/lib/date/calendar";
 import { getGratitudeSpotlight } from "@/lib/queries/gratitude";
 import { listUnreadCountsForRooms } from "@/lib/queries/chat";
 import { listEventsByRange } from "@/lib/queries/events";
 import { buildAvatarImagePath } from "@/lib/storage/avatar";
+import { getThisWeekBadgeDateRanges } from "@/lib/this-week/badgeDateRanges";
 
 export type TaskPreview = {
   id: string;
@@ -68,6 +70,10 @@ export type ThisWeekData = {
     tasksDone: number;
     tasksTotal: number;
     completionPct: number;
+  };
+  badges: {
+    announcements: number;
+    events: number;
   };
   pendingTaskApprovals: number;
   pendingAccessRequests: number;
@@ -130,6 +136,8 @@ export async function getThisWeekDataForUser({
   effectiveRole?: ParishRole | null;
 }): Promise<ThisWeekData> {
   const week = await getWeekForSelection(parishId, weekSelection, now);
+  const { start: calendarWeekStart, end: calendarWeekEnd } = getWeekRange({ now });
+  const { announcementsStartUtc } = getThisWeekBadgeDateRanges(now);
 
   const membership =
     effectiveRole !== undefined
@@ -157,7 +165,9 @@ export async function getThisWeekDataForUser({
     pendingAccessRequests,
     pendingEventRequests,
     gratitudeSpotlight,
-    coordinatorStatus
+    coordinatorStatus,
+    announcementsBadgeCount,
+    weekEventsForBadge
   ] = await Promise.all([
     prisma.task.findMany({
       where: {
@@ -306,8 +316,27 @@ export async function getThisWeekDataForUser({
         })
       : Promise.resolve(0),
     getGratitudeSpotlight({ parishId, weekId: week.id }),
-    isCoordinatorInParish(parishId, userId)
+    isCoordinatorInParish(parishId, userId),
+    prisma.announcement.count({
+      where: {
+        parishId,
+        archivedAt: null,
+        publishedAt: {
+          not: null,
+          gte: announcementsStartUtc,
+          lte: now
+        }
+      }
+    }),
+    listEventsByRange({
+      parishId,
+      start: calendarWeekStart,
+      end: calendarWeekEnd,
+      userId
+    })
   ]);
+
+  const eventsBadgeCount = weekEventsForBadge.filter((event) => event.startsAt >= now).length;
 
   const dueByDefault = new Date(week.endsOn.getTime() - 1);
   const taskPreviews: TaskPreview[] = tasks.map((task) => {
@@ -400,6 +429,10 @@ export async function getThisWeekDataForUser({
       tasksDone,
       tasksTotal,
       completionPct
+    },
+    badges: {
+      announcements: announcementsBadgeCount,
+      events: eventsBadgeCount
     },
     pendingTaskApprovals:
       membership?.role && ["ADMIN", "SHEPHERD"].includes(membership.role)
