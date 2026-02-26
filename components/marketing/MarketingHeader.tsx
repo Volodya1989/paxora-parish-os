@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { Locale } from "@/lib/i18n/config";
 import { buildLocalePathname } from "@/lib/i18n/routing";
@@ -25,7 +26,7 @@ export default function MarketingHeader({
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-4 md:px-8">
         <div className="flex items-center justify-between gap-3">
           <Link href={buildLocalePathname(locale, "/")} className="flex min-w-0 items-center gap-3">
-            <img src="/icon.png" alt="Paxora logo" className="h-10 w-10 rounded-md object-contain" />
+            <Image src="/icon.png" alt="Paxora logo" width={40} height={40} className="h-10 w-10 rounded-md object-contain" />
             <div className="min-w-0">
               <p className="truncate text-base font-semibold text-ink-900">Paxora Parish Center App</p>
               <p className="truncate text-xs text-ink-500">{brandTagline}</p>

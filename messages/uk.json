@@ -960,13 +960,13 @@
       "requestEarlyAccess": "Запитати ранній доступ"
     },
     "nav": {
-      "features": "Features",
-      "pricing": "Pricing",
-      "about": "About",
-      "demo": "Demo",
-      "contact": "Contact",
-      "privacy": "Privacy",
-      "terms": "Terms"
+      "features": "Функції",
+      "pricing": "Ціни",
+      "about": "Про нас",
+      "demo": "Демо",
+      "contact": "Контакти",
+      "privacy": "Конфіденційність",
+      "terms": "Умови"
     },
     "hero": {
       "eyebrow": "Партнерська програма раннього доступу",
@@ -1032,11 +1032,11 @@
       }
     },
     "about": {
-      "title": "About Paxora Parish Center App",
-      "missionTitle": "Mission",
+      "title": "Про Paxora Parish Center App",
+      "missionTitle": "Місія",
       "mission": "Ми створюємо програму, яка дає духовенству та працівникам чітку видимість, спільну відповідальність і спокійніший щотижневий ритм роботи.",
-      "storyTitle": "Our story",
-      "story": "Paxora started from real parish coordination pain: too many WhatsApp threads, spreadsheets, and last-minute calls. We are building practical tools for Ukrainian and English-speaking parish communities."
+      "storyTitle": "Наша історія",
+      "story": "Paxora народилася з реального болю парафіяльної координації: надто багато чатів, таблиць і термінових дзвінків. Ми створюємо практичні інструменти для українськомовних, англомовних та іспаномовних парафіяльних спільнот."
     },
     "demo": {
       "title": "Запланувати кероване демо",
