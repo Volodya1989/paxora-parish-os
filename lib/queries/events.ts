@@ -37,6 +37,8 @@ export type CalendarEvent = {
   rsvpResponse: EventRsvpResponse | null;
   rsvpTotalCount: number;
   canManage: boolean;
+  recurrenceParentId: string | null;
+  isRecurring: boolean;
 };
 
 export type EventDetail = {
@@ -57,6 +59,8 @@ export type EventDetail = {
   rsvpResponse: EventRsvpResponse | null;
   rsvpTotalCount: number;
   canManage: boolean;
+  recurrenceParentId: string | null;
+  isRecurring: boolean;
 };
 
 type ListEventsByRangeInput = {
@@ -174,6 +178,9 @@ type EventRecord = {
   recurrenceInterval: number;
   recurrenceByWeekday: number[];
   recurrenceUntil: Date | null;
+  recurrenceParentId: string | null;
+  recurrenceOriginalStartsAt: Date | null;
+  recurrenceExceptions?: Array<{ occurrenceStartsAt: Date }>;
   rsvps?: Array<{ response: EventRsvpResponse }>;
 };
 
@@ -201,6 +208,9 @@ function expandRecurringEvent(
       ? event.recurrenceByWeekday
       : [eventLocal.getDay()];
   const interval = Math.max(event.recurrenceInterval || 1, 1);
+  const excludedStarts = new Set(
+    (event.recurrenceExceptions ?? []).map((item) => item.occurrenceStartsAt.toISOString())
+  );
 
   const instances: Array<{ startsAt: Date; endsAt: Date }> = [];
 
@@ -241,6 +251,10 @@ function expandRecurringEvent(
       continue;
     }
 
+    if (excludedStarts.has(occurrenceStart.toISOString())) {
+      continue;
+    }
+
     if (event.recurrenceUntil && occurrenceStart > event.recurrenceUntil) {
       continue;
     }
@@ -267,6 +281,7 @@ export async function listEventsByRange({
       deletedAt: null,
       OR: [
         {
+          recurrenceParentId: null,
           recurrenceFreq: "NONE",
           startsAt: {
             gte: start,
@@ -274,6 +289,7 @@ export async function listEventsByRange({
           }
         },
         {
+          recurrenceParentId: null,
           recurrenceFreq: { in: ["DAILY", "WEEKLY"] },
           startsAt: {
             lt: end
@@ -287,6 +303,13 @@ export async function listEventsByRange({
                 ]
               }
             : {})
+        },
+        {
+          recurrenceParentId: { not: null },
+          startsAt: {
+            gte: start,
+            lt: end
+          }
         }
       ],
       ...(visibilityFilter ? { AND: [visibilityFilter] } : {})
@@ -306,6 +329,13 @@ export async function listEventsByRange({
       recurrenceInterval: true,
       recurrenceByWeekday: true,
       recurrenceUntil: true,
+      recurrenceParentId: true,
+      recurrenceOriginalStartsAt: true,
+      recurrenceExceptions: {
+        select: {
+          occurrenceStartsAt: true
+        }
+      },
       group: {
         select: {
           id: true,
@@ -365,7 +395,9 @@ export async function listEventsByRange({
       rsvpTotalCount,
       canManage:
         context.isLeader ||
-        (event.group?.id ? context.groupIds.includes(event.group.id) : false)
+        (event.group?.id ? context.groupIds.includes(event.group.id) : false),
+      recurrenceParentId: event.recurrenceParentId,
+      isRecurring: event.recurrenceFreq !== "NONE" || Boolean(event.recurrenceParentId)
     }));
   });
 
@@ -412,6 +444,7 @@ export async function getEventById({
       recurrenceInterval: true,
       recurrenceByWeekday: true,
       recurrenceUntil: true,
+      recurrenceParentId: true,
       group: {
         select: {
           id: true,
@@ -475,6 +508,8 @@ export async function getEventById({
     rsvpResponse,
     rsvpTotalCount,
     canManage:
-      context.isLeader || (event.group?.id ? context.groupIds.includes(event.group.id) : false)
+      context.isLeader || (event.group?.id ? context.groupIds.includes(event.group.id) : false),
+    recurrenceParentId: event.recurrenceParentId,
+    isRecurring: event.recurrenceFreq !== "NONE" || Boolean(event.recurrenceParentId)
   };
 }

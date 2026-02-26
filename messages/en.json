@@ -1187,6 +1187,16 @@
     "toastDescription": "The event has been removed from the calendar.",
     "errorToastTitle": "Unable to remove event"
   },
+  "eventRecurrence": {
+    "editTitle": "Edit recurring event",
+    "editDescription": "Choose whether to update only this occurrence or the entire series.",
+    "deleteTitle": "Delete recurring event",
+    "deleteDescription": "Choose whether to remove only this occurrence or the entire series.",
+    "thisEvent": "This event",
+    "thisEventHint": "Only this occurrence is affected.",
+    "thisSeries": "This series",
+    "thisSeriesHint": "All occurrences in the series are affected."
+  },
   "eventCreateDialog": {
     "title": "New event",
     "description": "Add a service or parish gathering to the shared schedule.",
