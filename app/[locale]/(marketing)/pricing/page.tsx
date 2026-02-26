@@ -1,16 +1,14 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import PilotBanner from "@/components/marketing/PilotBanner";
 import Card from "@/components/ui/Card";
 import { getMarketingCopy } from "@/lib/marketing/content";
-import { buildLocalePathname } from "@/lib/i18n/routing";
+import { buildLocalePathname, getLocaleFromParam } from "@/lib/i18n/routing";
+import { buildMarketingMetadata } from "@/lib/marketing/seo";
 
-export const metadata: Metadata = {
-  title: "Pricing | Paxora Parish Center App",
-  description: "Paxora Parish Center App is a parish management app built for modern parish life and now onboarding partner parishes in early access.",
-  openGraph: { title: "Pricing | Paxora Parish Center App", images: ["/og/marketing-default.svg"] },
-  twitter: { card: "summary_large_image", images: ["/og/marketing-default.svg"] }
-};
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale: localeParam } = await params;
+  return buildMarketingMetadata(getLocaleFromParam(localeParam), "pricing");
+}
 
 export default async function PricingPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale: localeParam } = await params;

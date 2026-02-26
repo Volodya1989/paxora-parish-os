@@ -951,8 +951,8 @@
     "weekdaySun": "Sun"
   },
   "marketing": {
-    "brandTagline": "Operational clarity for parish teams",
-    "pilotBanner": "Early Access Partner Program now onboarding a limited cohort of parishes.",
+    "brandTagline": "Professional parish coordination platform",
+    "pilotBanner": "Early Access Partner Program: now onboarding partner parishes in a limited early access cohort.",
     "cta": {
       "scheduleDemo": "Schedule a Demo",
       "contactUs": "Contact us",
@@ -969,11 +969,11 @@
       "terms": "Terms"
     },
     "hero": {
-      "eyebrow": "Early Access Partner Program",
-      "title": "Confident weekly coordination for parish life",
-      "description": "Paxora helps clergy, staff, and volunteers stay aligned across This Week, tasks, events, groups, requests, and pastoral communication—without administrative overload.",
-      "mockTitle": "Weekly parish operations",
-      "mockSubtitle": "Live overview for clergy and staff"
+      "eyebrow": "Parish Management Software for Catholic communities",
+      "title": "Parish management software for calm weekly coordination",
+      "description": "Paxora is a parish coordination platform for clergy, parish staff, and ministry leaders who need clear weekly execution without administrative overload.",
+      "mockTitle": "Weekly parish dashboard",
+      "mockSubtitle": "Tasks, events, groups, and follow-up in one view"
     },
     "features": {
       "thisWeek": {
@@ -1014,29 +1014,29 @@
       }
     },
     "featuresPage": {
-      "title": "Core tools for healthy parish coordination",
-      "description": "From weekly planning to pastoral follow-up, Paxora keeps your team focused on ministry rather than scattered logistics."
+      "title": "Core tools for professional parish coordination",
+      "description": "Paxora brings weekly planning, communication, and follow-through into one parish coordination platform."
     },
     "pricing": {
-      "title": "Early Access Program",
-      "pilotBanner": "Now onboarding a limited early-access cohort of partner parishes.",
+      "title": "Early Access Partner Program",
+      "pilotBanner": "Now onboarding partner parishes in a limited early access cohort.",
       "tiers": {
         "pro": {
-          "title": "Future Pro Tier",
-          "description": "Planned subscription tier with expanded administration controls, reporting, and support options as the platform matures."
+          "title": "Future Pro Plan",
+          "description": "A planned subscription plan with expanded reporting, administration controls, and support options as Paxora grows."
         },
         "earlyAccess": {
           "title": "Early Access Partner",
-          "description": "Structured onboarding, implementation guidance, and priority support while your team launches with Paxora."
+          "description": "Structured onboarding, implementation guidance, and priority support for parishes launching Paxora now."
         }
       }
     },
     "about": {
-      "title": "About Paxora Parish Center App",
+      "title": "About Paxora",
       "missionTitle": "Mission",
-      "mission": "We build software that gives clergy and staff clear visibility, shared accountability, and calmer week-to-week operations.",
-      "storyTitle": "Our story",
-      "story": "Paxora started from real parish coordination pain: too many WhatsApp threads, spreadsheets, and last-minute calls. We are building practical tools for parish communities. The app is currently available in English, Spanish, and Ukrainian, and we plan to expand language support as needed."
+      "mission": "Paxora equips parish teams with practical software to coordinate ministry clearly, serve people consistently, and lead each week with confidence.",
+      "storyTitle": "Why we built it",
+      "story": "Paxora was shaped by real parish operations: scattered chats, spreadsheets, and last-minute updates. We built a focused church management app so clergy and leaders can move from reactive coordination to steady pastoral execution."
     },
     "demo": {
       "title": "Book a guided demo",
@@ -1058,7 +1058,7 @@
     },
     "contact": {
       "title": "Contact",
-      "description": "Tell us about your parish context and goals. We will follow up with next steps for early access or a guided demo.",
+      "description": "Tell us about your parish goals and current workflow. We will recommend a practical next step for early access or a guided demo.",
       "supportLine": "Support email:",
       "legalLine": "Legal:",
       "form": {
@@ -1067,13 +1067,38 @@
         "email": "Email",
         "message": "Message",
         "submit": "Send message"
-      }
+      },
+      "responseExpectation": "We respond within 1–2 business days."
     },
     "footer": {
       "copy": "© {year} Paxora Parish Center App.",
       "supportLabel": "Support:"
     },
-    "languageSwitcherLabel": "Select language"
+    "languageSwitcherLabel": "Select language",
+    "home": {
+      "aboutTitle": "About Paxora",
+      "aboutBody": "Mission-driven software for clergy and parish leaders who want pastoral clarity, accountable follow-through, and healthier weekly operations.",
+      "dataTitle": "Data responsibility",
+      "dataBody": "We design with responsible access controls, clear permissions, and practical safeguards so parish information stays protected and appropriately shared."
+    },
+    "meta": {
+      "homeTitle": "Parish Management Software | Paxora",
+      "homeDescription": "Paxora is parish management software for clergy and parish teams, delivering calm weekly coordination without administrative overload.",
+      "featuresTitle": "Parish Coordination Platform Features | Paxora",
+      "featuresDescription": "Explore Paxora’s weekly dashboard, tasks, groups, events, role-based access, and automated greetings for parish coordination.",
+      "pricingTitle": "Catholic Parish Software Pricing | Paxora",
+      "pricingDescription": "Review Paxora’s early access partner program for Catholic parishes adopting practical parish management software.",
+      "aboutTitle": "About Paxora Parish Software",
+      "aboutDescription": "Learn Paxora’s mission and approach to professional, pastoral parish coordination software.",
+      "demoTitle": "Parish Software Demo | Paxora",
+      "demoDescription": "Book a guided demo of Paxora, the church management app for clergy, staff, and ministry leaders.",
+      "contactTitle": "Contact Paxora Parish Software",
+      "contactDescription": "Contact Paxora about early access, demos, and parish coordination planning. We reply within 1–2 business days.",
+      "privacyTitle": "Privacy Policy | Paxora",
+      "privacyDescription": "Read the Paxora privacy policy for our parish management software and early access partner program.",
+      "termsTitle": "Terms of Service | Paxora",
+      "termsDescription": "Read Paxora terms for parish software access, usage responsibilities, and program participation."
+    }
   },
   "moderation": {
     "reportSubmitted": "Report submitted",
