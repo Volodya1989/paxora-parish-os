@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { getServerSession } from "next-auth";
-import Card from "@/components/ui/Card";
 import SectionTitle from "@/components/ui/SectionTitle";
 import Button from "@/components/ui/Button";
 import EmptyState from "@/components/ui/EmptyState";
@@ -24,7 +23,7 @@ export default async function DeleteEventPage({ params }: DeleteEventPageProps) 
 
   const event = await getEventById({ id: eventId, userId: session.user.id });
 
-  if (!event || event.parishId !== session.user.activeParishId || !event.canManage) {
+  if (!event || event.parishId !== session.user.activeParishId) {
     return (
       <div className="section-gap">
         <EmptyState
@@ -43,12 +42,7 @@ export default async function DeleteEventPage({ params }: DeleteEventPageProps) 
   return (
     <div className="space-y-6">
       <SectionTitle title="Delete event" subtitle="Remove a calendar item" />
-      <Card>
-        <div className="space-y-4">
-          <h2 className="text-lg font-semibold text-ink-900">{event.title}</h2>
-          <EventDeleteForm event={event} />
-        </div>
-      </Card>
+      <EventDeleteForm event={event} />
     </div>
   );
 }
