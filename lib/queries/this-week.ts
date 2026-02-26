@@ -135,7 +135,10 @@ export async function getThisWeekDataForUser({
   effectiveRole?: ParishRole | null;
 }): Promise<ThisWeekData> {
   const week = await getWeekForSelection(parishId, weekSelection, now);
-  const { announcementsStartUtc, eventsStartUtc, eventsEndUtc } = getThisWeekBadgeDateRanges(now);
+  const { announcementsStartUtc, eventsStartUtc, eventsEndExclusive } = getThisWeekBadgeDateRanges({
+    now,
+    weekEndsOn: week.endsOn
+  });
 
   const membership =
     effectiveRole !== undefined
@@ -332,7 +335,7 @@ export async function getThisWeekDataForUser({
         deletedAt: null,
         startsAt: {
           gte: eventsStartUtc,
-          lte: eventsEndUtc
+          lt: eventsEndExclusive
         }
       }
     })
