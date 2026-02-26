@@ -17,7 +17,6 @@ import { getTranslations } from "@/lib/i18n/server";
 import type { Locale } from "@/lib/i18n/config";
 import { buildLocalePathname } from "@/lib/i18n/routing";
 import { buildEventsSummary } from "@/lib/this-week/eventsSummary";
-import { getUpcomingEventsSnapshot } from "@/lib/this-week/upcomingEvents";
 
 type ThisWeekParishionerViewProps = {
   data: ThisWeekData;
@@ -65,12 +64,6 @@ export default function ThisWeekParishionerView({
     if (a.dueBy) return -1;
     if (b.dueBy) return 1;
     return a.title.localeCompare(b.title);
-  });
-
-  const { upcomingCount } = getUpcomingEventsSnapshot({
-    events: data.events,
-    fallbackEvent: data.nextUpcomingEvent,
-    now
   });
 
   // Generate summaries for quick blocks
@@ -121,7 +114,7 @@ export default function ThisWeekParishionerView({
             label: t("thisWeek.announcements"),
             href: routes.announcements,
             summary: announcementsSummary,
-            count: publishedAnnouncements.length,
+            count: data.badges.announcements,
             icon: <MegaphoneIcon className="h-4 w-4" />,
             accentClass: "border-amber-200 bg-amber-50/70 text-amber-700"
           },
@@ -130,7 +123,7 @@ export default function ThisWeekParishionerView({
             label: t("thisWeek.services"),
             href: routes.calendar,
             summary: servicesSummary,
-            count: upcomingCount,
+            count: data.badges.events,
             icon: <CalendarIcon className="h-4 w-4" />,
             accentClass: "border-emerald-200 bg-emerald-50/70 text-emerald-700"
           },
