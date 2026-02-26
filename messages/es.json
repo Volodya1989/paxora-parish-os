@@ -951,8 +951,8 @@
     "weekdaySun": "Dom"
   },
   "marketing": {
-    "brandTagline": "Claridad operativa para equipos parroquiales",
-    "pilotBanner": "El Programa de Socios de Acceso Anticipado está incorporando una cohorte limitada de parroquias.",
+    "brandTagline": "Plataforma profesional de coordinación parroquial",
+    "pilotBanner": "Programa de Socios de Acceso Anticipado: estamos incorporando parroquias en una cohorte limitada.",
     "cta": {
       "scheduleDemo": "Agendar una demo",
       "contactUs": "Contáctanos",
@@ -969,11 +969,11 @@
       "terms": "Términos"
     },
     "hero": {
-      "eyebrow": "Programa de Socios de Acceso Anticipado",
-      "title": "Coordinación semanal confiable para la vida parroquial",
-      "description": "Paxora ayuda al clero, al personal y a los voluntarios a mantenerse alineados en Esta Semana, tareas, eventos, grupos, solicitudes y comunicación pastoral, sin sobrecarga administrativa.",
-      "mockTitle": "Operaciones semanales parroquiales",
-      "mockSubtitle": "Resumen en vivo para clero y personal"
+      "eyebrow": "Software de gestión parroquial diseñado para comunidades litúrgicas y parroquiales.",
+      "title": "Software parroquial para una coordinación semanal serena",
+      "description": "Paxora es una plataforma de coordinación parroquial para clero, personal parroquial y líderes ministeriales que necesitan ejecución semanal clara sin sobrecarga administrativa.",
+      "mockTitle": "Panel semanal parroquial",
+      "mockSubtitle": "Tareas, eventos, grupos y seguimiento en una sola vista"
     },
     "features": {
       "thisWeek": {
@@ -1014,29 +1014,29 @@
       }
     },
     "featuresPage": {
-      "title": "Herramientas clave para una coordinación parroquial saludable",
-      "description": "Desde la planificación semanal hasta el seguimiento pastoral, Paxora ayuda a tu equipo a enfocarse en el ministerio y no en la logística dispersa."
+      "title": "Herramientas clave para coordinación parroquial profesional",
+      "description": "Paxora reúne planificación semanal, comunicación y seguimiento en una sola plataforma de coordinación parroquial."
     },
     "pricing": {
-      "title": "Programa de Acceso Anticipado",
-      "pilotBanner": "Estamos incorporando una cohorte limitada de parroquias socias en acceso anticipado.",
+      "title": "Programa de Socios de Acceso Anticipado",
+      "pilotBanner": "Ahora incorporando parroquias socias en una cohorte limitada de acceso anticipado.",
       "tiers": {
         "pro": {
-          "title": "Nivel Pro futuro",
-          "description": "Nivel de suscripción planificado con controles administrativos, reportes y opciones de soporte ampliadas a medida que la plataforma evoluciona."
+          "title": "Plan Pro futuro",
+          "description": "Plan de suscripción previsto con reportes, controles administrativos y soporte ampliado a medida que Paxora crece."
         },
         "earlyAccess": {
           "title": "Socio de Acceso Anticipado",
-          "description": "Incorporación estructurada, guía de implementación y soporte prioritario mientras tu equipo lanza Paxora."
+          "description": "Incorporación estructurada, guía de implementación y soporte prioritario para parroquias que lanzan Paxora ahora."
         }
       }
     },
     "about": {
-      "title": "Acerca de Paxora Parish Center App",
+      "title": "Sobre Paxora",
       "missionTitle": "Misión",
-      "mission": "Construimos software que brinda al clero y al personal visibilidad clara, responsabilidad compartida y operaciones semanales más tranquilas.",
-      "storyTitle": "Nuestra historia",
-      "story": "Paxora nació del dolor real de la coordinación parroquial: demasiados grupos de WhatsApp, hojas de cálculo y llamadas de último minuto. Estamos creando herramientas prácticas para comunidades parroquiales. La app está disponible actualmente en inglés, español y ucraniano, y planeamos ampliar el soporte de idiomas según sea necesario."
+      "mission": "Paxora equipa a los equipos parroquiales con software práctico para coordinar el ministerio con claridad, servir con constancia y liderar cada semana con confianza.",
+      "storyTitle": "Por qué lo creamos",
+      "story": "Paxora nació de la operación real de las parroquias: chats dispersos, hojas de cálculo y avisos de último minuto. Creamos una app de gestión eclesial enfocada para que el clero y los líderes pasen de una coordinación reactiva a una ejecución pastoral estable."
     },
     "demo": {
       "title": "Agenda una demo guiada",
@@ -1058,7 +1058,7 @@
     },
     "contact": {
       "title": "Contacto",
-      "description": "Cuéntanos el contexto y los objetivos de tu parroquia. Te responderemos con los siguientes pasos para acceso anticipado o una demo guiada.",
+      "description": "Cuéntanos tus objetivos parroquiales y flujo actual. Recomendaremos un siguiente paso práctico para acceso anticipado o demo guiada.",
       "supportLine": "Correo de soporte:",
       "legalLine": "Legal:",
       "form": {
@@ -1067,13 +1067,38 @@
         "email": "Correo electrónico",
         "message": "Mensaje",
         "submit": "Enviar mensaje"
-      }
+      },
+      "responseExpectation": "Respondemos en 1–2 días hábiles."
     },
     "footer": {
       "copy": "© {year} Paxora Parish Center App.",
       "supportLabel": "Soporte:"
     },
-    "languageSwitcherLabel": "Seleccionar idioma"
+    "languageSwitcherLabel": "Seleccionar idioma",
+    "home": {
+      "aboutTitle": "Sobre Paxora",
+      "aboutBody": "Software con misión para clero y líderes parroquiales que buscan claridad pastoral, seguimiento responsable y operaciones semanales más sanas.",
+      "dataTitle": "Responsabilidad de datos",
+      "dataBody": "Diseñamos con controles de acceso responsables, permisos claros y salvaguardas prácticas para proteger y compartir correctamente la información parroquial."
+    },
+    "meta": {
+      "homeTitle": "Software de Gestión Parroquial | Paxora",
+      "homeDescription": "Paxora es software de gestión parroquial para clero y equipos parroquiales, con coordinación semanal serena sin sobrecarga administrativa.",
+      "featuresTitle": "Funciones de Coordinación Parroquial | Paxora",
+      "featuresDescription": "Explora panel semanal, tareas, grupos, eventos, acceso por roles y saludos automáticos de Paxora para la coordinación parroquial.",
+      "pricingTitle": "Precios de Software Parroquial Católico | Paxora",
+      "pricingDescription": "Revisa el programa de acceso anticipado de Paxora para parroquias católicas que adoptan software parroquial práctico.",
+      "aboutTitle": "Sobre el Software Parroquial Paxora",
+      "aboutDescription": "Conoce la misión y enfoque de Paxora para una coordinación parroquial profesional y pastoral.",
+      "demoTitle": "Demo de Software Parroquial | Paxora",
+      "demoDescription": "Agenda una demo guiada de Paxora, la app de gestión eclesial para clero, personal y líderes ministeriales.",
+      "contactTitle": "Contacto de Software Parroquial Paxora",
+      "contactDescription": "Contacta a Paxora para acceso anticipado, demos y planificación de coordinación parroquial. Respondemos en 1–2 días hábiles.",
+      "privacyTitle": "Política de Privacidad | Paxora",
+      "privacyDescription": "Lee la política de privacidad de Paxora para nuestro software de gestión parroquial y programa de acceso anticipado.",
+      "termsTitle": "Términos de Servicio | Paxora",
+      "termsDescription": "Lee los términos de Paxora sobre acceso, uso responsable y participación en el programa."
+    }
   },
   "moderation": {
     "reportSubmitted": "Reporte enviado",

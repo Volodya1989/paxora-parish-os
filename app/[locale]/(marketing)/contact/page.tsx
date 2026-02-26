@@ -1,15 +1,13 @@
-import type { Metadata } from "next";
 import ContactForm from "@/components/marketing/ContactForm";
 import { getMarketingCopy } from "@/lib/marketing/content";
 import { APP_STORE_SUPPORT_EMAIL, APP_STORE_PATHS } from "@/lib/mobile/appStoreMetadata";
-import { buildLocalePathname } from "@/lib/i18n/routing";
+import { buildLocalePathname, getLocaleFromParam } from "@/lib/i18n/routing";
+import { buildMarketingMetadata } from "@/lib/marketing/seo";
 
-export const metadata: Metadata = {
-  title: "Contact | Paxora Parish Center App",
-  description: "Request early access or schedule a guided demo for your parish team.",
-  openGraph: { title: "Contact | Paxora Parish Center App", images: ["/og/marketing-default.svg"] },
-  twitter: { card: "summary_large_image", images: ["/og/marketing-default.svg"] }
-};
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale: localeParam } = await params;
+  return buildMarketingMetadata(getLocaleFromParam(localeParam), "contact");
+}
 
 export default async function ContactPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale: localeParam } = await params;
@@ -26,6 +24,7 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
         <p>
           {t("marketing.contact.supportLine")} <a className="underline underline-offset-4" href={`mailto:${APP_STORE_SUPPORT_EMAIL}`}>{APP_STORE_SUPPORT_EMAIL}</a>
         </p>
+        <p className="mt-2">{t("marketing.contact.responseExpectation")}</p>
         <p className="mt-2">
           {t("marketing.contact.legalLine")} <a className="underline underline-offset-4" href={privacyPath}>{t("marketing.nav.privacy")}</a> · <a className="underline underline-offset-4" href={termsPath}>{t("marketing.nav.terms")}</a>
         </p>

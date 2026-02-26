@@ -1,13 +1,11 @@
-import type { Metadata } from "next";
 import { getLocaleFromParam } from "@/lib/i18n/routing";
 import { privacyContent } from "@/lib/marketing/legalContent";
+import { buildMarketingMetadata } from "@/lib/marketing/seo";
 
-export const metadata: Metadata = {
-  title: "Privacy | Paxora Parish Center App",
-  description: "Privacy policy for Paxora Parish Center App and the Early Access Partner Program.",
-  openGraph: { title: "Privacy | Paxora Parish Center App", images: ["/og/marketing-default.svg"] },
-  twitter: { card: "summary_large_image", images: ["/og/marketing-default.svg"] }
-};
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale: localeParam } = await params;
+  return buildMarketingMetadata(getLocaleFromParam(localeParam), "privacy");
+}
 
 export default async function PrivacyPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale: localeParam } = await params;
@@ -28,7 +26,6 @@ export default async function PrivacyPage({ params }: { params: Promise<{ locale
           ))}
         </div>
       ))}
-
     </section>
   );
 }

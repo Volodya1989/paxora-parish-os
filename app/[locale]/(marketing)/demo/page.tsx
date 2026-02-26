@@ -1,14 +1,12 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { getMarketingCopy } from "@/lib/marketing/content";
-import { buildLocalePathname } from "@/lib/i18n/routing";
+import { buildLocalePathname, getLocaleFromParam } from "@/lib/i18n/routing";
+import { buildMarketingMetadata } from "@/lib/marketing/seo";
 
-export const metadata: Metadata = {
-  title: "Demo | Paxora Parish Center App",
-  description: "Schedule a guided demo for your parish leadership team.",
-  openGraph: { title: "Demo | Paxora Parish Center App", images: ["/og/marketing-default.svg"] },
-  twitter: { card: "summary_large_image", images: ["/og/marketing-default.svg"] }
-};
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale: localeParam } = await params;
+  return buildMarketingMetadata(getLocaleFromParam(localeParam), "demo");
+}
 
 export default async function DemoPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale: localeParam } = await params;

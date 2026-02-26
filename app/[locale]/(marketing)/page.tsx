@@ -1,38 +1,20 @@
-import type { Metadata } from "next";
 import Link from "next/link";
-import { getServerSession } from "next-auth";
 import PilotBanner from "@/components/marketing/PilotBanner";
 import Card from "@/components/ui/Card";
 import MarketingMockFrame from "@/components/marketing/MarketingMockFrame";
-import { authOptions } from "@/server/auth/options";
 import { getMarketingCopy } from "@/lib/marketing/content";
-import { buildLocalePathname } from "@/lib/i18n/routing";
-import { redirect } from "next/navigation";
+import { buildLocalePathname, getLocaleFromParam } from "@/lib/i18n/routing";
+import { buildMarketingMetadata } from "@/lib/marketing/seo";
 
-export const metadata: Metadata = {
-  title: "Paxora Parish Center App | Parish management app built for modern parish life",
-  description: "Parish management app built for modern parish life, with calm weekly coordination for This Week, tasks, events, requests, and parish hub.",
-  openGraph: {
-    title: "Paxora Parish Center App",
-    description: "Parish management app built for modern parish life.",
-    images: ["/og/marketing-default.svg"]
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Paxora Parish Center App",
-    description: "Parish management app built for modern parish life.",
-    images: ["/og/marketing-default.svg"]
-  }
-};
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale: localeParam } = await params;
+  return buildMarketingMetadata(getLocaleFromParam(localeParam), "home");
+}
 
 export default async function MarketingHome({ params }: { params: Promise<{ locale: string }> }) {
-  const session = await getServerSession(authOptions);
   const { locale: localeParam } = await params;
   const { locale, t } = getMarketingCopy(localeParam);
 
-  if (session?.user?.id) {
-    redirect(buildLocalePathname(locale, "/this-week"));
-  }
 
   const features = ["thisWeek", "serveTasks", "groupsChat", "calendarEvents", "requests", "rolesPermissions", "notifications", "automatedGreetings"] as const;
 
@@ -53,10 +35,7 @@ export default async function MarketingHome({ params }: { params: Promise<{ loca
             </Link>
           </div>
         </div>
-        <MarketingMockFrame
-          title={t("marketing.hero.mockTitle")}
-          subtitle={t("marketing.hero.mockSubtitle")}
-        />
+        <MarketingMockFrame title={t("marketing.hero.mockTitle")} subtitle={t("marketing.hero.mockSubtitle")} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -66,6 +45,17 @@ export default async function MarketingHome({ params }: { params: Promise<{ loca
             <p className="mt-2 text-sm text-ink-600">{t(`marketing.features.${key}.description`)}</p>
           </Card>
         ))}
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="space-y-3">
+          <h2 className="text-h3">{t("marketing.home.aboutTitle")}</h2>
+          <p className="text-sm text-ink-600">{t("marketing.home.aboutBody")}</p>
+        </Card>
+        <Card className="space-y-3">
+          <h2 className="text-h3">{t("marketing.home.dataTitle")}</h2>
+          <p className="text-sm text-ink-600">{t("marketing.home.dataBody")}</p>
+        </Card>
       </div>
     </section>
   );

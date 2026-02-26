@@ -1,13 +1,12 @@
-import type { Metadata } from "next";
 import Card from "@/components/ui/Card";
 import { getMarketingCopy } from "@/lib/marketing/content";
+import { getLocaleFromParam } from "@/lib/i18n/routing";
+import { buildMarketingMetadata } from "@/lib/marketing/seo";
 
-export const metadata: Metadata = {
-  title: "Features | Paxora Parish Center App",
-  description: "Explore features in the parish management app built for modern parish life.",
-  openGraph: { title: "Features | Paxora Parish Center App", images: ["/og/marketing-default.svg"] },
-  twitter: { card: "summary_large_image", images: ["/og/marketing-default.svg"] }
-};
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale: localeParam } = await params;
+  return buildMarketingMetadata(getLocaleFromParam(localeParam), "features");
+}
 
 export default async function FeaturesPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale: localeParam } = await params;
@@ -23,7 +22,7 @@ export default async function FeaturesPage({ params }: { params: Promise<{ local
           <Card key={key} className="space-y-3">
             <h2 className="text-h3">{t(`marketing.features.${key}.title`)}</h2>
             <p className="text-sm text-ink-600">{t(`marketing.features.${key}.description`)}</p>
-                      </Card>
+          </Card>
         ))}
       </div>
     </section>
