@@ -346,10 +346,13 @@ export async function updateEvent(
     },
     select: {
       id: true,
+      title: true,
       groupId: true,
       visibility: true,
       startsAt: true,
       recurrenceFreq: true,
+      recurrenceInterval: true,
+      recurrenceByWeekday: true,
       recurrenceParentId: true,
       recurrenceOriginalStartsAt: true
     }
@@ -463,23 +466,81 @@ export async function updateEvent(
   const week = await getOrCreateWeekForDate(parishId, startsAt);
 
   if (scope === "THIS_SERIES" && isRecurringSeries) {
-    await prisma.event.update({
-      where: { id: baseEventId },
-      data: {
-        title: parsed.data.title,
-        startsAt,
-        endsAt,
-        location: parsed.data.location,
-        summary: parsed.data.summary ?? null,
-        visibility: parsed.data.visibility,
-        groupId: parsed.data.visibility === "GROUP" ? group?.id ?? null : null,
-        type: parsed.data.type,
-        recurrenceFreq: recurrence.recurrenceFreq,
-        recurrenceInterval: recurrence.recurrenceInterval,
-        recurrenceByWeekday: recurrence.recurrenceByWeekday,
-        recurrenceUntil: recurrence.recurrenceUntil,
-        weekId: week.id
+    const newVisibility = parsed.data.visibility;
+    const newGroupId = newVisibility === "GROUP" ? group?.id ?? null : null;
+
+    await prisma.$transaction(async (tx) => {
+      // Fetch current base event to detect schedule changes.
+      const baseEvent = existing.recurrenceParentId
+        ? await tx.event.findUniqueOrThrow({
+            where: { id: baseEventId },
+            select: {
+              startsAt: true,
+              recurrenceFreq: true,
+              recurrenceInterval: true,
+              recurrenceByWeekday: true
+            }
+          })
+        : existing;
+
+      await tx.event.update({
+        where: { id: baseEventId },
+        data: {
+          title: parsed.data.title,
+          startsAt,
+          endsAt,
+          location: parsed.data.location,
+          summary: parsed.data.summary ?? null,
+          visibility: newVisibility,
+          groupId: newGroupId,
+          type: parsed.data.type,
+          recurrenceFreq: recurrence.recurrenceFreq,
+          recurrenceInterval: recurrence.recurrenceInterval,
+          recurrenceByWeekday: recurrence.recurrenceByWeekday,
+          recurrenceUntil: recurrence.recurrenceUntil,
+          weekId: week.id
+        }
+      });
+
+      // Clear stale exceptions when the recurrence schedule changed,
+      // since old occurrenceStartsAt timestamps no longer match.
+      const scheduleChanged =
+        startsAt.getTime() !== baseEvent.startsAt.getTime() ||
+        recurrence.recurrenceFreq !== baseEvent.recurrenceFreq ||
+        recurrence.recurrenceInterval !== (baseEvent.recurrenceInterval ?? 1) ||
+        JSON.stringify(recurrence.recurrenceByWeekday) !==
+          JSON.stringify(baseEvent.recurrenceByWeekday);
+
+      if (scheduleChanged) {
+        await tx.eventRecurrenceException.deleteMany({
+          where: { eventId: baseEventId }
+        });
       }
+
+      // Propagate visibility and group changes to existing overrides
+      // so they stay consistent with the series.
+      await tx.event.updateMany({
+        where: {
+          recurrenceParentId: baseEventId,
+          deletedAt: null
+        },
+        data: {
+          visibility: newVisibility,
+          groupId: newGroupId
+        }
+      });
+
+      await auditLog(tx, {
+        parishId,
+        actorUserId: userId,
+        action: AUDIT_ACTIONS.EVENT_UPDATED,
+        targetType: AUDIT_TARGET_TYPES.EVENT,
+        targetId: baseEventId,
+        metadata: {
+          scope: "THIS_SERIES",
+          title: parsed.data.title
+        }
+      });
     });
   } else if (existing.recurrenceParentId && scope === "THIS_EVENT") {
     await prisma.event.update({
@@ -568,6 +629,21 @@ export async function updateEvent(
         recurrenceByWeekday: recurrence.recurrenceByWeekday,
         recurrenceUntil: recurrence.recurrenceUntil,
         weekId: week.id
+      }
+    });
+  }
+
+  // Audit log for non-THIS_SERIES paths (THIS_SERIES logs inside its own transaction above).
+  if (!(scope === "THIS_SERIES" && isRecurringSeries)) {
+    await auditLog(prisma, {
+      parishId,
+      actorUserId: userId,
+      action: AUDIT_ACTIONS.EVENT_UPDATED,
+      targetType: AUDIT_TARGET_TYPES.EVENT,
+      targetId: existing.id,
+      metadata: {
+        scope,
+        title: parsed.data.title
       }
     });
   }
