@@ -86,6 +86,12 @@ before(async () => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     setupFailureReason = `integration setup failed: ${errorMessage}`;
+
+    try {
+      await prisma.$disconnect();
+    } catch {
+      // Best-effort disconnect when setup partially initialized Prisma.
+    }
   }
 });
 
@@ -112,7 +118,11 @@ after(async () => {
   }
 
   if (!setupFailureReason) {
-    await resetDatabase();
+    try {
+      await resetDatabase();
+    } catch {
+      // Ignore teardown reset failures to avoid non-TAP hard failures in CI.
+    }
   }
 
   try {
