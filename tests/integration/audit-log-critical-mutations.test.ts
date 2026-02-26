@@ -1,4 +1,4 @@
-import { after, before, mock, test } from "node:test";
+import { after, before, beforeEach, mock, test } from "node:test";
 import assert from "node:assert/strict";
 import { prisma } from "@/server/db/prisma";
 import { applyMigrations } from "../_helpers/migrate";
@@ -30,6 +30,7 @@ mock.module("next/cache", {
 async function resetDatabase() {
   await prisma.auditLog.deleteMany();
   await prisma.notification.deleteMany();
+  await prisma.eventRecurrenceException.deleteMany();
   await prisma.event.deleteMany();
   await prisma.task.deleteMany();
   await prisma.groupMembership.deleteMany();
@@ -56,6 +57,14 @@ before(async () => {
   taskActions = await loadModuleFromRoot("server/actions/tasks");
   memberActions = await loadModuleFromRoot("app/actions/members");
   await prisma.$connect();
+  await resetDatabase();
+});
+
+beforeEach(async () => {
+  if (!hasDatabase) {
+    return;
+  }
+
   await resetDatabase();
 });
 

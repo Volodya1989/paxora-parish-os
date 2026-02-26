@@ -6,7 +6,7 @@ import { authOptions } from "@/server/auth/options";
 import { getWeekForSelection, type WeekSelection } from "@/domain/week";
 import { getWeekEnd, getWeekLabel, getWeekStartMonday } from "@/lib/date/week";
 import { isParishLeader } from "@/lib/permissions";
-import { createEventSchema, updateEventSchema } from "@/lib/validation/events";
+import { createEventSchema, deleteEventSchema, updateEventSchema } from "@/lib/validation/events";
 import { parseParishDateTime } from "@/lib/time/parish";
 import {
   createEvent as createEventRecord,
@@ -127,6 +127,17 @@ function resolveRecurrence(input: {
     recurrenceByWeekday,
     recurrenceUntil
   };
+}
+
+type EventScope = "THIS_EVENT" | "THIS_SERIES";
+
+function parseOccurrenceStartsAt(value: string | null | undefined): Date | null {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
 export async function listWeekEvents(weekSelection: WeekSelection = "current") {
@@ -312,7 +323,9 @@ export async function updateEvent(
     recurrenceFreq: formData.get("recurrenceFreq"),
     recurrenceInterval: formData.get("recurrenceInterval"),
     recurrenceByWeekday: formData.get("recurrenceByWeekday"),
-    recurrenceUntil: formData.get("recurrenceUntil")
+    recurrenceUntil: formData.get("recurrenceUntil"),
+    scope: formData.get("scope"),
+    occurrenceStartsAt: formData.get("occurrenceStartsAt")
   });
 
   if (!parsed.success) {
@@ -335,7 +348,10 @@ export async function updateEvent(
       id: true,
       groupId: true,
       visibility: true,
-      startsAt: true
+      startsAt: true,
+      recurrenceFreq: true,
+      recurrenceParentId: true,
+      recurrenceOriginalStartsAt: true
     }
   });
 
@@ -414,26 +430,122 @@ export async function updateEvent(
     };
   }
 
+  const scope: EventScope = parsed.data.scope;
+  const baseEventId = existing.recurrenceParentId ?? existing.id;
+  const isRecurringSeries = existing.recurrenceFreq !== "NONE" || Boolean(existing.recurrenceParentId);
+  const occurrenceStartsAt = parseOccurrenceStartsAt(parsed.data.occurrenceStartsAt);
+
   const week = await getOrCreateWeekForDate(parishId, startsAt);
 
-  await prisma.event.update({
-    where: { id: existing.id },
-    data: {
-      title: parsed.data.title,
-      startsAt,
-      endsAt,
-      location: parsed.data.location,
-      summary: parsed.data.summary ?? null,
-      visibility: parsed.data.visibility,
-      groupId: parsed.data.visibility === "GROUP" ? group?.id ?? null : null,
-      type: parsed.data.type,
-      recurrenceFreq: recurrence.recurrenceFreq,
-      recurrenceInterval: recurrence.recurrenceInterval,
-      recurrenceByWeekday: recurrence.recurrenceByWeekday,
-      recurrenceUntil: recurrence.recurrenceUntil,
-      weekId: week.id
-    }
-  });
+  if (scope === "THIS_SERIES" && isRecurringSeries) {
+    await prisma.event.update({
+      where: { id: baseEventId },
+      data: {
+        title: parsed.data.title,
+        startsAt,
+        endsAt,
+        location: parsed.data.location,
+        summary: parsed.data.summary ?? null,
+        visibility: parsed.data.visibility,
+        groupId: parsed.data.visibility === "GROUP" ? group?.id ?? null : null,
+        type: parsed.data.type,
+        recurrenceFreq: recurrence.recurrenceFreq,
+        recurrenceInterval: recurrence.recurrenceInterval,
+        recurrenceByWeekday: recurrence.recurrenceByWeekday,
+        recurrenceUntil: recurrence.recurrenceUntil,
+        weekId: week.id
+      }
+    });
+  } else if (existing.recurrenceParentId && scope === "THIS_EVENT") {
+    await prisma.event.update({
+      where: { id: existing.id },
+      data: {
+        title: parsed.data.title,
+        startsAt,
+        endsAt,
+        location: parsed.data.location,
+        summary: parsed.data.summary ?? null,
+        visibility: parsed.data.visibility,
+        groupId: parsed.data.visibility === "GROUP" ? group?.id ?? null : null,
+        type: parsed.data.type,
+        recurrenceFreq: "NONE",
+        recurrenceInterval: 1,
+        recurrenceByWeekday: [],
+        recurrenceUntil: null,
+        weekId: week.id
+      }
+    });
+  } else if (existing.recurrenceFreq !== "NONE" && scope === "THIS_EVENT") {
+    const targetOccurrenceStartsAt = occurrenceStartsAt ?? existing.startsAt;
+    await prisma.$transaction(async (tx) => {
+      await tx.eventRecurrenceException.upsert({
+        where: {
+          eventId_occurrenceStartsAt: {
+            eventId: baseEventId,
+            occurrenceStartsAt: targetOccurrenceStartsAt
+          }
+        },
+        create: {
+          eventId: baseEventId,
+          occurrenceStartsAt: targetOccurrenceStartsAt
+        },
+        update: {}
+      });
+
+      const existingOverride = await tx.event.findFirst({
+        where: {
+          recurrenceParentId: baseEventId,
+          recurrenceOriginalStartsAt: targetOccurrenceStartsAt,
+          deletedAt: null
+        },
+        select: { id: true }
+      });
+
+      const overrideData = {
+        parishId,
+        weekId: week.id,
+        title: parsed.data.title,
+        startsAt,
+        endsAt,
+        location: parsed.data.location,
+        summary: parsed.data.summary ?? null,
+        visibility: parsed.data.visibility,
+        groupId: parsed.data.visibility === "GROUP" ? group?.id ?? null : null,
+        type: parsed.data.type,
+        recurrenceFreq: "NONE" as const,
+        recurrenceInterval: 1,
+        recurrenceByWeekday: [],
+        recurrenceUntil: null,
+        recurrenceParentId: baseEventId,
+        recurrenceOriginalStartsAt: targetOccurrenceStartsAt
+      };
+
+      if (existingOverride) {
+        await tx.event.update({ where: { id: existingOverride.id }, data: overrideData });
+      } else {
+        await tx.event.create({ data: overrideData });
+      }
+    });
+  } else {
+    await prisma.event.update({
+      where: { id: existing.id },
+      data: {
+        title: parsed.data.title,
+        startsAt,
+        endsAt,
+        location: parsed.data.location,
+        summary: parsed.data.summary ?? null,
+        visibility: parsed.data.visibility,
+        groupId: parsed.data.visibility === "GROUP" ? group?.id ?? null : null,
+        type: parsed.data.type,
+        recurrenceFreq: recurrence.recurrenceFreq,
+        recurrenceInterval: recurrence.recurrenceInterval,
+        recurrenceByWeekday: recurrence.recurrenceByWeekday,
+        recurrenceUntil: recurrence.recurrenceUntil,
+        weekId: week.id
+      }
+    });
+  }
 
   revalidatePath("/calendar");
   revalidatePath(`/events/${existing.id}`);
@@ -465,6 +577,8 @@ export async function resolveEventDeleteAuthorization({
         id: string;
         title: string;
         startsAt: Date;
+        recurrenceFreq: "NONE" | "DAILY" | "WEEKLY";
+        recurrenceParentId: string | null;
       };
     }
 > {
@@ -478,7 +592,9 @@ export async function resolveEventDeleteAuthorization({
       parishId: true,
       groupId: true,
       title: true,
-      startsAt: true
+      startsAt: true,
+      recurrenceFreq: true,
+      recurrenceParentId: true
     }
   });
 
@@ -492,7 +608,9 @@ export async function resolveEventDeleteAuthorization({
       event: {
         id: existing.id,
         title: existing.title,
-        startsAt: existing.startsAt
+        startsAt: existing.startsAt,
+        recurrenceFreq: existing.recurrenceFreq,
+        recurrenceParentId: existing.recurrenceParentId
       }
     };
   }
@@ -511,7 +629,9 @@ export async function resolveEventDeleteAuthorization({
     event: {
       id: existing.id,
       title: existing.title,
-      startsAt: existing.startsAt
+      startsAt: existing.startsAt,
+      recurrenceFreq: existing.recurrenceFreq,
+      recurrenceParentId: existing.recurrenceParentId
     }
   };
 }
@@ -523,16 +643,20 @@ export async function deleteEvent(
   const session = await getServerSession(authOptions);
   const { userId, parishId } = assertSession(session);
 
-  const eventId = formData.get("eventId");
+  const parsed = deleteEventSchema.safeParse({
+    eventId: formData.get("eventId"),
+    scope: formData.get("scope"),
+    occurrenceStartsAt: formData.get("occurrenceStartsAt")
+  });
 
-  if (typeof eventId !== "string" || eventId.trim().length === 0) {
+  if (!parsed.success) {
     return { status: "error", message: "Event not found." };
   }
 
   const membership = await requireParishMembership(userId, parishId);
 
   const authorization = await resolveEventDeleteAuthorization({
-    eventId,
+    eventId: parsed.data.eventId,
     parishId,
     userId,
     userRole: membership.role
@@ -549,11 +673,46 @@ export async function deleteEvent(
     };
   }
 
+  const scope: EventScope = parsed.data.scope;
+  const baseEventId = authorization.event.recurrenceParentId ?? authorization.event.id;
+  const occurrenceStartsAt = parseOccurrenceStartsAt(parsed.data.occurrenceStartsAt);
+  const isRecurringSeries =
+    authorization.event.recurrenceFreq !== "NONE" || Boolean(authorization.event.recurrenceParentId);
+
   await prisma.$transaction(async (tx) => {
-    await tx.event.update({
-      where: { id: authorization.event.id },
-      data: { deletedAt: new Date() }
-    });
+    if (scope === "THIS_SERIES" && isRecurringSeries) {
+      await tx.event.updateMany({
+        where: {
+          OR: [{ id: baseEventId }, { recurrenceParentId: baseEventId }],
+          deletedAt: null
+        },
+        data: { deletedAt: new Date() }
+      });
+    } else if (authorization.event.recurrenceParentId && scope === "THIS_EVENT") {
+      await tx.event.update({
+        where: { id: authorization.event.id },
+        data: { deletedAt: new Date() }
+      });
+    } else if (authorization.event.recurrenceFreq !== "NONE" && scope === "THIS_EVENT") {
+      await tx.eventRecurrenceException.upsert({
+        where: {
+          eventId_occurrenceStartsAt: {
+            eventId: baseEventId,
+            occurrenceStartsAt: occurrenceStartsAt ?? authorization.event.startsAt
+          }
+        },
+        create: {
+          eventId: baseEventId,
+          occurrenceStartsAt: occurrenceStartsAt ?? authorization.event.startsAt
+        },
+        update: {}
+      });
+    } else {
+      await tx.event.update({
+        where: { id: authorization.event.id },
+        data: { deletedAt: new Date() }
+      });
+    }
 
     await auditLog(tx, {
       parishId,
