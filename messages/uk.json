@@ -1184,7 +1184,8 @@
   },
   "eventDelete": {
     "toastTitle": "Подію видалено",
-    "toastDescription": "Подію прибрано з календаря."
+    "toastDescription": "Подію прибрано з календаря.",
+    "errorToastTitle": "Не вдалося видалити подію"
   },
   "eventCreateDialog": {
     "title": "Нова подія",

@@ -9,12 +9,16 @@ import { Drawer } from "@/components/ui/Drawer";
 import { useToast } from "@/components/ui/Toast";
 import { deleteEvent } from "@/server/actions/events";
 import { initialEventActionState } from "@/server/actions/eventState";
-import type { EventDetail } from "@/lib/queries/events";
 import { useTranslations } from "@/lib/i18n/provider";
 import { useMediaQuery } from "@/lib/ui/useMediaQuery";
 
+type EventDeleteTarget = {
+  id: string;
+  title: string;
+};
+
 type EventDeleteFormProps = {
-  event: EventDetail;
+  event: EventDeleteTarget;
 };
 
 export default function EventDeleteForm({ event }: EventDeleteFormProps) {
@@ -23,8 +27,9 @@ export default function EventDeleteForm({ event }: EventDeleteFormProps) {
   const router = useRouter();
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const [state, formAction] = useActionState(deleteEvent, initialEventActionState);
-  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(true);
   const handledSuccess = useRef(false);
+  const handledError = useRef<string | null>(null);
   const [, startTransition] = useTransition();
 
   useEffect(() => {
@@ -47,79 +52,94 @@ export default function EventDeleteForm({ event }: EventDeleteFormProps) {
       router.push("/calendar");
       router.refresh();
     });
-  }, [addToast, router, startTransition, state]);
+  }, [addToast, router, startTransition, state, t]);
+
+  useEffect(() => {
+    if (state.status !== "error" || !state.message) {
+      handledError.current = null;
+      return;
+    }
+
+    if (handledError.current === state.message) {
+      return;
+    }
+
+    handledError.current = state.message;
+    addToast({
+      title: t("eventDelete.errorToastTitle"),
+      description: state.message,
+      status: "error"
+    });
+  }, [addToast, state.message, state.status, t]);
+
+  const handleCancel = () => {
+    setConfirmOpen(false);
+    startTransition(() => {
+      router.push("/calendar");
+    });
+  };
 
   return (
-    <form id="event-delete-form" className="space-y-4" action={formAction}>
+    <form id="event-delete-form" action={formAction}>
       <input type="hidden" name="eventId" value={event.id} />
-      <p className="text-sm text-ink-500">
-        {t("confirm.deleteEventBody")}
-      </p>
-      {state.status === "error" ? (
-        <p role="alert" className="text-sm text-rose-600">
-          {state.message}
-        </p>
-      ) : null}
-      <DeleteActions
-        onCancel={() => router.push("/calendar")}
-        onDeleteRequest={() => setConfirmOpen(true)}
-      />
 
       {isDesktop ? (
         <Modal
           open={confirmOpen}
-          onClose={() => setConfirmOpen(false)}
+          onClose={handleCancel}
           title={t("confirm.deleteEventTitle")}
           footer={
-            <>
-              <Button variant="secondary" onClick={() => setConfirmOpen(false)}>{t("buttons.cancel")}</Button>
-              <Button type="submit" form="event-delete-form" variant="danger">
-                {t("confirm.deleteButton")}
-              </Button>
-            </>
+            <DeleteFooter onCancel={handleCancel} />
           }
         >
-          <p className="text-sm text-ink-600">{t("confirm.deleteEvent")}</p>
+          <div className="space-y-3">
+            <p className="text-sm text-ink-600">{t("confirm.deleteEventBody")}</p>
+            <p className="text-xs font-medium text-ink-700">{event.title}</p>
+            {state.status === "error" ? (
+              <p role="alert" className="text-sm text-rose-600">
+                {state.message}
+              </p>
+            ) : null}
+          </div>
         </Modal>
       ) : (
         <Drawer
           open={confirmOpen}
-          onClose={() => setConfirmOpen(false)}
+          onClose={handleCancel}
           title={t("confirm.deleteEventTitle")}
           footer={
-            <>
-              <Button variant="secondary" onClick={() => setConfirmOpen(false)}>{t("buttons.cancel")}</Button>
-              <Button type="submit" form="event-delete-form" variant="danger">
-                {t("confirm.deleteButton")}
-              </Button>
-            </>
+            <DeleteFooter onCancel={handleCancel} />
           }
         >
-          <p className="text-sm text-ink-600">{t("confirm.deleteEvent")}</p>
+          <div className="space-y-3">
+            <p className="text-sm text-ink-600">{t("confirm.deleteEventBody")}</p>
+            <p className="text-xs font-medium text-ink-700">{event.title}</p>
+            {state.status === "error" ? (
+              <p role="alert" className="text-sm text-rose-600">
+                {state.message}
+              </p>
+            ) : null}
+          </div>
         </Drawer>
       )}
     </form>
   );
 }
 
-function DeleteActions({
-  onCancel,
-  onDeleteRequest
-}: {
+function DeleteFooter({ onCancel }: {
   onCancel: () => void;
-  onDeleteRequest: () => void;
 }) {
   const t = useTranslations();
   const { pending } = useFormStatus();
 
   return (
-    <div className="flex justify-end gap-2">
-      <Button type="button" variant="ghost" onClick={onCancel} disabled={pending}>
+    <>
+      <Button type="button" variant="secondary" onClick={onCancel} disabled={pending}>
         {t("buttons.cancel")}
       </Button>
-      <Button type="button" variant="danger" onClick={onDeleteRequest} disabled={pending}>
+      <Button type="submit" form="event-delete-form" variant="danger" isLoading={pending} disabled={pending}>
         {t("confirm.deleteButton")}
       </Button>
-    </div>
+    </>
   );
 }

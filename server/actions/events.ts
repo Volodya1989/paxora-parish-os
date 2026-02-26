@@ -444,6 +444,78 @@ export async function updateEvent(
   };
 }
 
+type EventDeleteAuthorizationInput = {
+  eventId: string;
+  parishId: string;
+  userId: string;
+  userRole: "ADMIN" | "SHEPHERD" | "MEMBER";
+};
+
+export async function resolveEventDeleteAuthorization({
+  eventId,
+  parishId,
+  userId,
+  userRole
+}: EventDeleteAuthorizationInput): Promise<
+  | { status: "not_found" }
+  | { status: "forbidden" }
+  | {
+      status: "authorized";
+      event: {
+        id: string;
+        title: string;
+        startsAt: Date;
+      };
+    }
+> {
+  const existing = await prisma.event.findFirst({
+    where: {
+      id: eventId,
+      deletedAt: null
+    },
+    select: {
+      id: true,
+      parishId: true,
+      groupId: true,
+      title: true,
+      startsAt: true
+    }
+  });
+
+  if (!existing || existing.parishId !== parishId) {
+    return { status: "not_found" };
+  }
+
+  if (isParishLeader(userRole)) {
+    return {
+      status: "authorized",
+      event: {
+        id: existing.id,
+        title: existing.title,
+        startsAt: existing.startsAt
+      }
+    };
+  }
+
+  const existingMembership = existing.groupId
+    ? await getGroupMembership(existing.groupId, userId)
+    : null;
+  const isGroupMember = existingMembership?.status === "ACTIVE";
+
+  if (!isGroupMember) {
+    return { status: "forbidden" };
+  }
+
+  return {
+    status: "authorized",
+    event: {
+      id: existing.id,
+      title: existing.title,
+      startsAt: existing.startsAt
+    }
+  };
+}
+
 export async function deleteEvent(
   _: EventActionState,
   formData: FormData
@@ -458,33 +530,19 @@ export async function deleteEvent(
   }
 
   const membership = await requireParishMembership(userId, parishId);
-  const isLeader = isParishLeader(membership.role);
 
-  const existing = await prisma.event.findFirst({
-    where: {
-      id: eventId,
-      parishId,
-      deletedAt: null
-    },
-    select: {
-      id: true,
-      groupId: true,
-      title: true,
-      startsAt: true
-    }
+  const authorization = await resolveEventDeleteAuthorization({
+    eventId,
+    parishId,
+    userId,
+    userRole: membership.role
   });
 
-  if (!existing) {
+  if (authorization.status === "not_found") {
     return { status: "error", message: "Event not found." };
   }
 
-  const existingMembership = existing.groupId
-    ? await getGroupMembership(existing.groupId, userId)
-    : null;
-  const canManageExisting =
-    isLeader || (existingMembership?.status === "ACTIVE" && Boolean(existingMembership));
-
-  if (!canManageExisting) {
+  if (authorization.status === "forbidden") {
     return {
       status: "error",
       message: "You do not have permission to delete this event."
@@ -493,7 +551,7 @@ export async function deleteEvent(
 
   await prisma.$transaction(async (tx) => {
     await tx.event.update({
-      where: { id: existing.id },
+      where: { id: authorization.event.id },
       data: { deletedAt: new Date() }
     });
 
@@ -502,16 +560,16 @@ export async function deleteEvent(
       actorUserId: userId,
       action: AUDIT_ACTIONS.EVENT_DELETED,
       targetType: AUDIT_TARGET_TYPES.EVENT,
-      targetId: existing.id,
+      targetId: authorization.event.id,
       metadata: {
-        title: existing.title,
-        startsAt: existing.startsAt.toISOString()
+        title: authorization.event.title,
+        startsAt: authorization.event.startsAt.toISOString()
       }
     });
   });
 
   revalidatePath("/calendar");
-  revalidatePath(`/events/${existing.id}`);
+  revalidatePath(`/events/${authorization.event.id}`);
 
   return {
     status: "success",

@@ -1184,7 +1184,8 @@
   },
   "eventDelete": {
     "toastTitle": "Evento eliminado",
-    "toastDescription": "El evento fue eliminado del calendario."
+    "toastDescription": "El evento fue eliminado del calendario.",
+    "errorToastTitle": "No se pudo eliminar el evento"
   },
   "eventCreateDialog": {
     "title": "Nuevo evento",
