@@ -9,7 +9,7 @@ export function getUtcEndOfDay(date: Date): Date {
 export function getThisWeekBadgeDateRanges(now: Date) {
   const todayStartUtc = getUtcStartOfDay(now);
 
-  const announcementsStartUtc = new Date(todayStartUtc);
+  const announcementsStartUtc = new Date(now);
   announcementsStartUtc.setUTCDate(announcementsStartUtc.getUTCDate() - 14);
 
   const eventsEndUtc = new Date(todayStartUtc);
@@ -17,7 +17,7 @@ export function getThisWeekBadgeDateRanges(now: Date) {
 
   return {
     announcementsStartUtc,
-    eventsStartUtc: todayStartUtc,
+    eventsStartUtc: now,
     eventsEndUtc: getUtcEndOfDay(eventsEndUtc)
   };
 }

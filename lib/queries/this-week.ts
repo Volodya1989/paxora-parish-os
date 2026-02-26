@@ -321,7 +321,8 @@ export async function getThisWeekDataForUser({
         archivedAt: null,
         publishedAt: {
           not: null,
-          gte: announcementsStartUtc
+          gte: announcementsStartUtc,
+          lte: now
         }
       }
     }),
