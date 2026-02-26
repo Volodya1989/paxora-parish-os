@@ -951,13 +951,13 @@
     "weekdaySun": "Dom"
   },
   "marketing": {
-    "brandTagline": "Al servicio de las personas, anclado en los pastores",
-    "pilotBanner": "El programa piloto está abierto para parroquias asociadas.",
+    "brandTagline": "Claridad operativa para equipos parroquiales",
+    "pilotBanner": "El Programa de Socios de Acceso Anticipado está incorporando una cohorte limitada de parroquias.",
     "cta": {
-      "requestPilot": "Solicitar acceso piloto",
-      "scheduleDemo": "Agendar una demostración",
+      "scheduleDemo": "Agendar una demo",
       "contactUs": "Contáctanos",
-      "contactUsForDemo": "Contáctanos para una demostración"
+      "contactUsForDemo": "Contáctanos para una demo",
+      "requestEarlyAccess": "Solicitar acceso anticipado"
     },
     "nav": {
       "features": "Funciones",
@@ -969,74 +969,111 @@
       "terms": "Términos"
     },
     "hero": {
-      "eyebrow": "Creado para parroquias piloto",
-      "title": "Coordinación semanal tranquila para la vida parroquial",
-      "description": "App de gestión parroquial diseñada para la vida parroquial moderna. Paxora ayuda al clero, personal y voluntarios a alinearse en Esta Semana, tareas de servicio, eventos y solicitudes sin sobrecarga administrativa.",
-      "visualPlaceholder": "Captura de pantalla del producto — reemplazar con imagen real de la app."
+      "eyebrow": "Programa de Socios de Acceso Anticipado",
+      "title": "Coordinación semanal confiable para la vida parroquial",
+      "description": "Paxora ayuda al clero, al personal y a los voluntarios a mantenerse alineados en Esta Semana, tareas, eventos, grupos, solicitudes y comunicación pastoral, sin sobrecarga administrativa.",
+      "mockTitle": "Operaciones semanales parroquiales",
+      "mockSubtitle": "Resumen en vivo para clero y personal"
     },
     "features": {
       "thisWeek": {
-        "title": "Esta semana",
-        "description": "Un inicio semanal compartido con compromisos, actualizaciones y prioridades."
+        "title": "Esta Semana",
+        "description": "Centro semanal compartido para compromisos, prioridades y seguimiento pastoral."
       },
       "serveTasks": {
-        "title": "Servicio / Tareas",
-        "description": "Responsabilidad clara para tareas ministeriales y oportunidades de voluntariado."
+        "title": "Tareas / Tablero de servicio",
+        "description": "Responsabilidad clara, coordinación de voluntarios y seguimiento de avances ministeriales."
       },
       "groupsChat": {
         "title": "Grupos / Chat",
-        "description": "Grupos ministeriales con chat enfocado, actualizaciones y coordinación de miembros."
+        "description": "Comunicación enfocada por grupos con actualizaciones, contexto y coordinación de miembros."
       },
       "calendarEvents": {
         "title": "Calendario / Eventos",
-        "description": "Contexto semanal del calendario para servicios y eventos parroquiales."
+        "description": "Programación semanal y mensual unificada para liturgia, ministerios y eventos parroquiales."
       },
       "requests": {
         "title": "Solicitudes",
-        "description": "Vías simples para solicitudes pastorales y prácticas de la parroquia."
+        "description": "Solicitudes pastorales y prácticas estructuradas con visibilidad para líderes y responsables."
       },
       "parishHub": {
         "title": "Centro parroquial",
-        "description": "Centro principal para enlaces, acceso al boletín y recursos clave de la parroquia."
+        "description": "Espacio central para enlaces, documentos, boletín y recursos clave de la parroquia."
+      },
+      "rolesPermissions": {
+        "title": "Roles y permisos",
+        "description": "Controles administrativos para clero, personal y líderes delegados con acceso por roles."
+      },
+      "notifications": {
+        "title": "Notificaciones",
+        "description": "Recordatorios oportunos y avisos en la app para mantener a los ministerios informados."
+      },
+      "automatedGreetings": {
+        "title": "Saludos y recordatorios automatizados",
+        "description": "Programa saludos por cumpleaños, aniversario y santo, con recordatorios para un cuidado pastoral constante."
       }
     },
     "featuresPage": {
-      "title": "Todo lo que tu parroquia necesita cada semana",
-      "description": "Estos módulos trabajan juntos para que tu equipo pueda servir a las personas, no perseguir logística."
+      "title": "Herramientas clave para una coordinación parroquial saludable",
+      "description": "Desde la planificación semanal hasta el seguimiento pastoral, Paxora ayuda a tu equipo a enfocarse en el ministerio y no en la logística dispersa."
     },
     "pricing": {
-      "title": "Precios del piloto",
-      "pilotBanner": "Actualmente en piloto: incorporando un número limitado de parroquias asociadas.",
+      "title": "Programa de Acceso Anticipado",
+      "pilotBanner": "Estamos incorporando una cohorte limitada de parroquias socias en acceso anticipado.",
       "tiers": {
-        "pilot": {
-          "title": "Parroquia piloto",
-          "description": "Incorporación guiada, ciclo de retroalimentación y soporte prioritario durante el piloto."
-        },
         "pro": {
           "title": "Nivel Pro futuro",
-          "description": "Planeado para después del piloto con opciones ampliadas de administración y soporte."
+          "description": "Nivel de suscripción planificado con controles administrativos, reportes y opciones de soporte ampliadas a medida que la plataforma evoluciona."
+        },
+        "earlyAccess": {
+          "title": "Socio de Acceso Anticipado",
+          "description": "Incorporación estructurada, guía de implementación y soporte prioritario mientras tu equipo lanza Paxora."
         }
       }
     },
     "about": {
       "title": "Acerca de Paxora Parish Center App",
       "missionTitle": "Misión",
-      "mission": "Construimos una app de gestión parroquial que restaura la responsabilidad compartida y el ritmo tranquilo en la vida parroquial.",
+      "mission": "Construimos software que brinda al clero y al personal visibilidad clara, responsabilidad compartida y operaciones semanales más tranquilas.",
       "storyTitle": "Nuestra historia",
-      "story": "Paxora nació del dolor real de la coordinación parroquial: demasiados grupos de WhatsApp, hojas de cálculo y llamadas de último minuto. Estamos construyendo herramientas prácticas para comunidades parroquiales de habla hispana, ucraniana e inglesa."
+      "story": "Paxora nació del dolor real de la coordinación parroquial: demasiados grupos de WhatsApp, hojas de cálculo y llamadas de último minuto. Estamos creando herramientas prácticas para comunidades parroquiales. La app está disponible actualmente en inglés, español y ucraniano, y planeamos ampliar el soporte de idiomas según sea necesario."
     },
     "demo": {
-      "title": "Agenda una demostración guiada",
-      "description": "Mira cómo Esta Semana, tareas, solicitudes y comunicación se integran para tu equipo de liderazgo.",
-      "placeholder": "Captura de pantalla o recorrido de la demostración"
+      "title": "Agenda una demo guiada",
+      "description": "Descubre cómo la planificación semanal, la coordinación de servicio y el seguimiento pastoral se integran en una sola plataforma.",
+      "steps": {
+        "1": {
+          "title": "Revisión del flujo de liderazgo",
+          "description": "Mapeamos tu proceso actual de coordinación e identificamos mejoras inmediatas."
+        },
+        "2": {
+          "title": "Recorrido de funcionalidades",
+          "description": "Mostramos Esta Semana, Tareas, Grupos, Calendario, Solicitudes y saludos automatizados en contexto."
+        },
+        "3": {
+          "title": "Plan de lanzamiento",
+          "description": "Recibes pasos prácticos de implementación para tu equipo parroquial."
+        }
+      }
     },
     "contact": {
-      "title": "Contáctanos",
-      "description": "Cuéntanos sobre tu parroquia y nos comunicaremos para planificar la incorporación al piloto."
+      "title": "Contacto",
+      "description": "Cuéntanos el contexto y los objetivos de tu parroquia. Te responderemos con los siguientes pasos para acceso anticipado o una demo guiada.",
+      "supportLine": "Correo de soporte:",
+      "legalLine": "Legal:",
+      "form": {
+        "name": "Nombre",
+        "parish": "Parroquia",
+        "email": "Correo electrónico",
+        "message": "Mensaje",
+        "submit": "Enviar mensaje"
+      }
     },
     "footer": {
-      "copy": "© Paxora Parish Center App. Programa piloto en curso."
-    }
+      "copy": "© {year} Paxora Parish Center App.",
+      "supportLabel": "Soporte:"
+    },
+    "languageSwitcherLabel": "Seleccionar idioma"
   },
   "moderation": {
     "reportSubmitted": "Reporte enviado",

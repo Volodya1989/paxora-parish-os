@@ -7,7 +7,7 @@ import { buildLocalePathname } from "@/lib/i18n/routing";
 
 export const metadata: Metadata = {
   title: "Pricing | Paxora Parish Center App",
-  description: "Paxora Parish Center App is a parish management app built for modern parish life and currently onboarding pilot parishes.",
+  description: "Paxora Parish Center App is a parish management app built for modern parish life and now onboarding partner parishes in early access.",
   openGraph: { title: "Pricing | Paxora Parish Center App", images: ["/og/marketing-default.svg"] },
   twitter: { card: "summary_large_image", images: ["/og/marketing-default.svg"] }
 };
@@ -22,8 +22,8 @@ export default async function PricingPage({ params }: { params: Promise<{ locale
       <PilotBanner message={t("marketing.pricing.pilotBanner")} />
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
-          <h2 className="text-h3">{t("marketing.pricing.tiers.pilot.title")}</h2>
-          <p className="mt-2 text-sm text-ink-600">{t("marketing.pricing.tiers.pilot.description")}</p>
+          <h2 className="text-h3">{t("marketing.pricing.tiers.earlyAccess.title")}</h2>
+          <p className="mt-2 text-sm text-ink-600">{t("marketing.pricing.tiers.earlyAccess.description")}</p>
         </Card>
         <Card>
           <h2 className="text-h3">{t("marketing.pricing.tiers.pro.title")}</h2>

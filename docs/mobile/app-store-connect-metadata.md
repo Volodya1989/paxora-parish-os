@@ -7,7 +7,7 @@ Use this as copy/paste source for iOS App Store Connect legal/support metadata.
 > Base URL: `https://<public-site-domain>` (must match `NEXT_PUBLIC_SITE_URL` in production)
 
 - **Support URL:** `https://<public-site-domain>/en/contact`
-- **Support email:** `support@paxora.app`
+- **Support email:** `support@paxora.com`
 - **Privacy Policy URL:** `https://<public-site-domain>/en/privacy`
 - **Terms of Use URL:** `https://<public-site-domain>/en/terms`
 - **Account deletion URL (discoverability reference):** `https://<public-site-domain>/en/profile`
@@ -27,7 +27,7 @@ When deletion is confirmed:
 2. Profile/account ownership links are removed.
 3. Historical parish records (events, tasks, messages) remain for parish continuity and are reassigned to **Deleted User**.
 
-For deletion help or parish-level data removal requests, users can email **support@paxora.app**.
+For deletion help or parish-level data removal requests, users can email **support@paxora.com**.
 
 Target response time for deletion support requests: **within 7 calendar days**.
 

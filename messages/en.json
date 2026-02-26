@@ -951,13 +951,13 @@
     "weekdaySun": "Sun"
   },
   "marketing": {
-    "brandTagline": "People-serving, shepherd-anchored",
-    "pilotBanner": "Pilot program is open for early parish partners.",
+    "brandTagline": "Operational clarity for parish teams",
+    "pilotBanner": "Early Access Partner Program now onboarding a limited cohort of parishes.",
     "cta": {
-      "requestPilot": "Request Pilot Access",
       "scheduleDemo": "Schedule a Demo",
       "contactUs": "Contact us",
-      "contactUsForDemo": "Contact us for a demo"
+      "contactUsForDemo": "Contact us for a demo",
+      "requestEarlyAccess": "Request Early Access"
     },
     "nav": {
       "features": "Features",
@@ -969,74 +969,111 @@
       "terms": "Terms"
     },
     "hero": {
-      "eyebrow": "Built for pilot parishes",
-      "title": "Calm weekly coordination for parish life",
-      "description": "Parish management app built for modern parish life. Paxora helps clergy, staff, and volunteers align on This Week, service tasks, events, and requests without admin overload.",
-      "visualPlaceholder": "Product screenshot placeholder — replace with real in-app capture."
+      "eyebrow": "Early Access Partner Program",
+      "title": "Confident weekly coordination for parish life",
+      "description": "Paxora helps clergy, staff, and volunteers stay aligned across This Week, tasks, events, groups, requests, and pastoral communication—without administrative overload.",
+      "mockTitle": "Weekly parish operations",
+      "mockSubtitle": "Live overview for clergy and staff"
     },
     "features": {
       "thisWeek": {
         "title": "This Week",
-        "description": "A shared weekly home with commitments, updates, and priorities."
+        "description": "A shared weekly command center for commitments, priorities, and pastoral follow-through."
       },
       "serveTasks": {
-        "title": "Serve / Tasks",
-        "description": "Clear ownership for ministry tasks and volunteer opportunities."
+        "title": "Tasks / Serve Board",
+        "description": "Clear ownership, volunteer coordination, and progress tracking for ministry tasks."
       },
       "groupsChat": {
         "title": "Groups / Chat",
-        "description": "Ministry groups with focused chat, updates, and member coordination."
+        "description": "Focused group communication with updates, context, and member coordination."
       },
       "calendarEvents": {
         "title": "Calendar / Events",
-        "description": "Weekly calendar context for services and parish events."
+        "description": "Unified weekly and monthly scheduling for liturgy, ministries, and parish events."
       },
       "requests": {
         "title": "Requests",
-        "description": "Simple pathways for pastoral and practical parish requests."
+        "description": "Structured pastoral and practical requests with visibility for leaders and responders."
       },
       "parishHub": {
         "title": "Parish Hub",
-        "description": "Central hub for links, bulletin access, and key parish resources."
+        "description": "A central home for links, documents, bulletin access, and key parish resources."
+      },
+      "rolesPermissions": {
+        "title": "Roles & Permissions",
+        "description": "Administrative controls for clergy, staff, and delegated leaders with role-based access."
+      },
+      "notifications": {
+        "title": "Notifications",
+        "description": "Timely reminders and in-app notifications to keep ministries aligned and informed."
+      },
+      "automatedGreetings": {
+        "title": "Automated Greetings & Reminders",
+        "description": "Schedule birthday, anniversary, and name-day greetings with reminders for consistent pastoral care."
       }
     },
     "featuresPage": {
-      "title": "Everything your parish needs each week",
-      "description": "These modules work together so your team can serve people, not chase logistics."
+      "title": "Core tools for healthy parish coordination",
+      "description": "From weekly planning to pastoral follow-up, Paxora keeps your team focused on ministry rather than scattered logistics."
     },
     "pricing": {
-      "title": "Pilot pricing",
-      "pilotBanner": "Currently in pilot: onboarding a limited number of partner parishes.",
+      "title": "Early Access Program",
+      "pilotBanner": "Now onboarding a limited early-access cohort of partner parishes.",
       "tiers": {
-        "pilot": {
-          "title": "Pilot Partner",
-          "description": "Guided onboarding, feedback loop, and priority support during pilot."
-        },
         "pro": {
           "title": "Future Pro Tier",
-          "description": "Planned for post-pilot with expanded administration and support options."
+          "description": "Planned subscription tier with expanded administration controls, reporting, and support options as the platform matures."
+        },
+        "earlyAccess": {
+          "title": "Early Access Partner",
+          "description": "Structured onboarding, implementation guidance, and priority support while your team launches with Paxora."
         }
       }
     },
     "about": {
       "title": "About Paxora Parish Center App",
       "missionTitle": "Mission",
-      "mission": "We build a parish management app that restores shared responsibility and calm rhythm in parish life.",
+      "mission": "We build software that gives clergy and staff clear visibility, shared accountability, and calmer week-to-week operations.",
       "storyTitle": "Our story",
-      "story": "Paxora started from real parish coordination pain: too many WhatsApp threads, spreadsheets, and last-minute calls. We are building practical tools for Ukrainian and English-speaking parish communities."
+      "story": "Paxora started from real parish coordination pain: too many WhatsApp threads, spreadsheets, and last-minute calls. We are building practical tools for parish communities. The app is currently available in English, Spanish, and Ukrainian, and we plan to expand language support as needed."
     },
     "demo": {
       "title": "Book a guided demo",
-      "description": "See how This Week, tasks, requests, and communication come together for your leadership team.",
-      "placeholder": "Demo screenshot or walkthrough placeholder"
+      "description": "See how weekly planning, service coordination, and pastoral follow-up work together in one platform.",
+      "steps": {
+        "1": {
+          "title": "Leadership workflow review",
+          "description": "We map your current coordination process and identify immediate wins."
+        },
+        "2": {
+          "title": "Feature walkthrough",
+          "description": "We show This Week, Tasks, Groups, Calendar, Requests, and automated greetings in context."
+        },
+        "3": {
+          "title": "Launch plan",
+          "description": "You receive practical onboarding steps for your parish team."
+        }
+      }
     },
     "contact": {
-      "title": "Contact us",
-      "description": "Tell us about your parish and we will reach out to plan pilot onboarding."
+      "title": "Contact",
+      "description": "Tell us about your parish context and goals. We will follow up with next steps for early access or a guided demo.",
+      "supportLine": "Support email:",
+      "legalLine": "Legal:",
+      "form": {
+        "name": "Name",
+        "parish": "Parish",
+        "email": "Email",
+        "message": "Message",
+        "submit": "Send message"
+      }
     },
     "footer": {
-      "copy": "© Paxora Parish Center App. Pilot program in progress."
-    }
+      "copy": "© {year} Paxora Parish Center App.",
+      "supportLabel": "Support:"
+    },
+    "languageSwitcherLabel": "Select language"
   },
   "moderation": {
     "reportSubmitted": "Report submitted",

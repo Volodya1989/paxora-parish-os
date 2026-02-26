@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 export default async function FeaturesPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale: localeParam } = await params;
   const { t } = getMarketingCopy(localeParam);
-  const sections = ["thisWeek", "serveTasks", "groupsChat", "calendarEvents", "requests", "parishHub"] as const;
+  const sections = ["thisWeek", "serveTasks", "groupsChat", "calendarEvents", "requests", "rolesPermissions", "notifications", "automatedGreetings", "parishHub"] as const;
 
   return (
     <section className="space-y-6">
@@ -23,10 +23,7 @@ export default async function FeaturesPage({ params }: { params: Promise<{ local
           <Card key={key} className="space-y-3">
             <h2 className="text-h3">{t(`marketing.features.${key}.title`)}</h2>
             <p className="text-sm text-ink-600">{t(`marketing.features.${key}.description`)}</p>
-            <div className="rounded-card border border-dashed border-mist-300 bg-mist-100 p-4 text-xs text-ink-500">
-              TODO: Replace with production screenshot for {t(`marketing.features.${key}.title`)}.
-            </div>
-          </Card>
+                      </Card>
         ))}
       </div>
     </section>

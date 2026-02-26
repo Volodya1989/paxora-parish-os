@@ -21,7 +21,7 @@ test("app store metadata maps to stable default-locale URLs", () => {
 
   const urls = getAppStoreMetadataUrls();
 
-  assert.equal(APP_STORE_SUPPORT_EMAIL, "support@paxora.app");
+  assert.equal(APP_STORE_SUPPORT_EMAIL, "support@paxora.com");
   assert.equal(urls.supportUrl, "https://app.paxora.example/en/contact");
   assert.equal(urls.privacyPolicyUrl, "https://app.paxora.example/en/privacy");
   assert.equal(urls.termsOfUseUrl, "https://app.paxora.example/en/terms");

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import PilotBanner from "@/components/marketing/PilotBanner";
 import Card from "@/components/ui/Card";
+import MarketingMockFrame from "@/components/marketing/MarketingMockFrame";
 import { authOptions } from "@/server/auth/options";
 import { getMarketingCopy } from "@/lib/marketing/content";
 import { buildLocalePathname } from "@/lib/i18n/routing";
@@ -33,7 +34,7 @@ export default async function MarketingHome({ params }: { params: Promise<{ loca
     redirect(buildLocalePathname(locale, "/this-week"));
   }
 
-  const features = ["thisWeek", "serveTasks", "groupsChat", "calendarEvents"] as const;
+  const features = ["thisWeek", "serveTasks", "groupsChat", "calendarEvents", "requests", "rolesPermissions", "notifications", "automatedGreetings"] as const;
 
   return (
     <section className="space-y-8">
@@ -45,16 +46,17 @@ export default async function MarketingHome({ params }: { params: Promise<{ loca
           <p className="text-body">{t("marketing.hero.description")}</p>
           <div className="flex flex-wrap gap-3">
             <Link href={buildLocalePathname(locale, "/sign-up")} className="rounded-button bg-primary-700 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600">
-              {t("marketing.cta.requestPilot")}
+              {t("marketing.cta.requestEarlyAccess")}
             </Link>
             <Link href={buildLocalePathname(locale, "/demo")} className="rounded-button border border-mist-300 bg-white px-4 py-2 text-sm font-medium text-ink-900 hover:bg-mist-50">
               {t("marketing.cta.scheduleDemo")}
             </Link>
           </div>
         </div>
-        <div className="rounded-card border border-dashed border-mist-300 bg-mist-100 p-6 text-sm text-ink-500">
-          {t("marketing.hero.visualPlaceholder")}
-        </div>
+        <MarketingMockFrame
+          title={t("marketing.hero.mockTitle")}
+          subtitle={t("marketing.hero.mockSubtitle")}
+        />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">

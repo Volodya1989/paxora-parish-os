@@ -2,7 +2,7 @@ import { defaultLocale } from "@/lib/i18n/config";
 import { buildLocalePathname } from "@/lib/i18n/routing";
 import { getSiteUrl } from "@/lib/marketing/site";
 
-export const APP_STORE_SUPPORT_EMAIL = "support@paxora.app";
+export const APP_STORE_SUPPORT_EMAIL = "support@paxora.com";
 
 export const APP_STORE_PATHS = {
   support: "/contact",

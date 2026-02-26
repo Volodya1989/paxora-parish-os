@@ -20,8 +20,9 @@ export default async function DemoPage({ params }: { params: Promise<{ locale: s
       <p className="text-body">{t("marketing.demo.description")}</p>
       <div className="grid gap-4 md:grid-cols-3">
         {[1, 2, 3].map((item) => (
-          <div key={item} className="rounded-card border border-dashed border-mist-300 bg-mist-100 p-6 text-xs text-ink-500">
-            {t("marketing.demo.placeholder")}
+          <div key={item} className="rounded-card border border-mist-200 bg-white p-6 text-sm text-ink-600">
+            <p className="font-medium text-ink-900">{t(`marketing.demo.steps.${item}.title`)}</p>
+            <p className="mt-2">{t(`marketing.demo.steps.${item}.description`)}</p>
           </div>
         ))}
       </div>
