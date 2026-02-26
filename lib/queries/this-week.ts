@@ -7,6 +7,7 @@ import { prisma } from "@/server/db/prisma";
 import { isCoordinatorInParish } from "@/server/db/groups";
 import { getWeekForSelection, type WeekSelection } from "@/domain/week";
 import { getNow } from "@/lib/time/getNow";
+import { getWeekRange } from "@/lib/date/calendar";
 import { getGratitudeSpotlight } from "@/lib/queries/gratitude";
 import { listUnreadCountsForRooms } from "@/lib/queries/chat";
 import { listEventsByRange } from "@/lib/queries/events";
@@ -135,6 +136,7 @@ export async function getThisWeekDataForUser({
   effectiveRole?: ParishRole | null;
 }): Promise<ThisWeekData> {
   const week = await getWeekForSelection(parishId, weekSelection, now);
+  const { start: calendarWeekStart, end: calendarWeekEnd } = getWeekRange({ now });
   const { announcementsStartUtc } = getThisWeekBadgeDateRanges(now);
 
   const membership =
@@ -328,8 +330,8 @@ export async function getThisWeekDataForUser({
     }),
     listEventsByRange({
       parishId,
-      start: week.startsOn,
-      end: week.endsOn,
+      start: calendarWeekStart,
+      end: calendarWeekEnd,
       userId
     })
   ]);
