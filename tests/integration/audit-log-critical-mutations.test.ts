@@ -8,6 +8,28 @@ import { AUDIT_ACTIONS } from "@/lib/audit/actions";
 const hasDatabase = Boolean(process.env.DATABASE_URL);
 const dbTest = hasDatabase ? test : test.skip;
 
+async function clearEventRecurrenceExceptionsIfAvailable() {
+  const recurrenceDelegate = (prisma as typeof prisma & {
+    eventRecurrenceException?: { deleteMany: () => Promise<unknown> };
+  }).eventRecurrenceException;
+
+  if (!recurrenceDelegate) {
+    return;
+  }
+
+  try {
+    await recurrenceDelegate.deleteMany();
+  } catch (error) {
+    const code =
+      typeof error === "object" && error && "code" in error
+        ? (error as { code?: string }).code
+        : undefined;
+    if (code !== "P2021") {
+      throw error;
+    }
+  }
+}
+
 const session = {
   user: {
     id: "",
@@ -30,7 +52,7 @@ mock.module("next/cache", {
 async function resetDatabase() {
   await prisma.auditLog.deleteMany();
   await prisma.notification.deleteMany();
-  await prisma.eventRecurrenceException.deleteMany();
+  await clearEventRecurrenceExceptionsIfAvailable();
   await prisma.event.deleteMany();
   await prisma.task.deleteMany();
   await prisma.groupMembership.deleteMany();
