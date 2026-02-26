@@ -93,12 +93,18 @@ function EventDetailContent({
         </Link>
         {event.canManage ? (
           <>
-            <Link href={`/calendar/events/${event.id}/edit`} className="flex-1">
+            <Link
+              href={`/calendar/events/${event.id}/edit?instanceStart=${encodeURIComponent(event.startsAt.toISOString())}`}
+              className="flex-1"
+            >
               <Button type="button" variant="ghost" className="w-full">
                 {t("buttons.edit")}
               </Button>
             </Link>
-            <Link href={`/calendar/events/${event.id}/delete`} className="flex-1">
+            <Link
+              href={`/calendar/events/${event.id}/delete?instanceStart=${encodeURIComponent(event.startsAt.toISOString())}`}
+              className="flex-1"
+            >
               <Button type="button" variant="danger" className="w-full">
                 {t("buttons.delete")}
               </Button>

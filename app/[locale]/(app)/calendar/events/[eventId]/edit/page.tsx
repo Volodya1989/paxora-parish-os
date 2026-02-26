@@ -15,10 +15,12 @@ type EditEventPageProps = {
   params: Promise<{
     eventId: string;
   }>;
+  searchParams?: Promise<{ instanceStart?: string }>;
 };
 
-export default async function EditEventPage({ params }: EditEventPageProps) {
+export default async function EditEventPage({ params, searchParams }: EditEventPageProps) {
   const { eventId } = await params;
+  const query = searchParams ? await searchParams : undefined;
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -71,7 +73,13 @@ export default async function EditEventPage({ params }: EditEventPageProps) {
       <SectionTitle title="Edit event" subtitle="Update calendar details" />
       <Card>
         <EventEditForm
-          event={event}
+          event={{
+            ...event,
+            startsAt:
+              query?.instanceStart && !Number.isNaN(new Date(query.instanceStart).getTime())
+                ? new Date(query.instanceStart)
+                : event.startsAt
+          }}
           groupOptions={groupOptions}
           canCreatePublicEvents={isLeader}
           canCreatePrivateEvents={isLeader}

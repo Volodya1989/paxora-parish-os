@@ -45,6 +45,8 @@ type EventFormProps = {
   canCreatePrivateEvents: boolean;
   canCreateGroupEvents: boolean;
   defaultType?: "SERVICE" | "EVENT";
+  scope?: "THIS_EVENT" | "THIS_SERIES";
+  occurrenceStartsAt?: string;
 };
 
 export default function EventForm({
@@ -60,7 +62,9 @@ export default function EventForm({
   canCreatePublicEvents,
   canCreatePrivateEvents,
   canCreateGroupEvents,
-  defaultType = "EVENT"
+  defaultType = "EVENT",
+  scope = "THIS_EVENT",
+  occurrenceStartsAt
 }: EventFormProps) {
   const t = useTranslations();
   const { addToast } = useToast();
@@ -307,6 +311,10 @@ export default function EventForm({
   return (
     <form ref={formRef} className="space-y-3" action={formAction}>
       {event?.id ? <input type="hidden" name="eventId" value={event.id} /> : null}
+      {event?.id ? <input type="hidden" name="scope" value={scope} /> : null}
+      {event?.id && occurrenceStartsAt ? (
+        <input type="hidden" name="occurrenceStartsAt" value={occurrenceStartsAt} />
+      ) : null}
 
       {/* Section: Basics */}
       <fieldset className="space-y-3 rounded-xl border border-mist-100 bg-mist-50/40 p-3">
