@@ -435,6 +435,31 @@ export async function updateEvent(
   const isRecurringSeries = existing.recurrenceFreq !== "NONE" || Boolean(existing.recurrenceParentId);
   const occurrenceStartsAt = parseOccurrenceStartsAt(parsed.data.occurrenceStartsAt);
 
+  // When editing the whole series via an override, verify the user can manage the parent event.
+  if (scope === "THIS_SERIES" && existing.recurrenceParentId && !isLeader) {
+    const parentEvent = await prisma.event.findFirst({
+      where: { id: existing.recurrenceParentId, parishId, deletedAt: null },
+      select: { groupId: true }
+    });
+
+    if (!parentEvent) {
+      return { status: "error", message: "Parent event not found." };
+    }
+
+    const parentGroupMembership = parentEvent.groupId
+      ? await getGroupMembership(parentEvent.groupId, userId)
+      : null;
+    const canManageParent =
+      !parentEvent.groupId || parentGroupMembership?.status === "ACTIVE";
+
+    if (!canManageParent) {
+      return {
+        status: "error",
+        message: "You do not have permission to edit this series."
+      };
+    }
+  }
+
   const week = await getOrCreateWeekForDate(parishId, startsAt);
 
   if (scope === "THIS_SERIES" && isRecurringSeries) {
@@ -678,6 +703,31 @@ export async function deleteEvent(
   const occurrenceStartsAt = parseOccurrenceStartsAt(parsed.data.occurrenceStartsAt);
   const isRecurringSeries =
     authorization.event.recurrenceFreq !== "NONE" || Boolean(authorization.event.recurrenceParentId);
+
+  // When deleting the whole series via an override, verify the user can manage the parent event.
+  if (scope === "THIS_SERIES" && authorization.event.recurrenceParentId && !isParishLeader(membership.role)) {
+    const parentEvent = await prisma.event.findFirst({
+      where: { id: authorization.event.recurrenceParentId, parishId, deletedAt: null },
+      select: { groupId: true }
+    });
+
+    if (!parentEvent) {
+      return { status: "error", message: "Parent event not found." };
+    }
+
+    const parentGroupMembership = parentEvent.groupId
+      ? await getGroupMembership(parentEvent.groupId, userId)
+      : null;
+    const canManageParent =
+      !parentEvent.groupId || parentGroupMembership?.status === "ACTIVE";
+
+    if (!canManageParent) {
+      return {
+        status: "error",
+        message: "You do not have permission to delete this series."
+      };
+    }
+  }
 
   await prisma.$transaction(async (tx) => {
     if (scope === "THIS_SERIES" && isRecurringSeries) {
