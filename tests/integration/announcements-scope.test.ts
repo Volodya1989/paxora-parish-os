@@ -3,11 +3,11 @@ import assert from "node:assert/strict";
 import { prisma } from "@/server/db/prisma";
 import { listAnnouncements, getAnnouncement } from "@/lib/queries/announcements";
 import { resolveAnnouncementAudience } from "@/lib/notifications/audience";
-import { loadModuleFromRoot } from "../_helpers/load-module";
 import { applyMigrations } from "../_helpers/migrate";
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
-const dbTest = hasDatabase ? test : test.skip;
+const dbTest = (name: string, fn: () => Promise<void>) =>
+  hasDatabase ? test(name, { concurrency: false }, fn) : test.skip(name, fn);
 
 const session = {
   user: {
@@ -53,7 +53,7 @@ let actions: any;
 before(async () => {
   if (!hasDatabase) return;
   await applyMigrations();
-  actions = await loadModuleFromRoot("server/actions/announcements");
+  actions = await import("@/server/actions/announcements");
   await prisma.$connect();
   await resetDatabase();
 });
@@ -234,4 +234,53 @@ dbTest("announcement reactions enforce access and provide counts", async () => {
 
   const second = await actions.toggleAnnouncementReaction({ announcementId: announcement.id, emoji: "🙏" });
   assert.equal(second.reactions.length, 0);
+});
+
+dbTest("cross-parish users cannot view or react to announcements", async () => {
+  const parishA = await prisma.parish.create({ data: { name: "St Alpha", slug: "st-alpha" } });
+  const parishB = await prisma.parish.create({ data: { name: "St Beta", slug: "st-beta" } });
+
+  const author = await prisma.user.create({
+    data: { email: "author.scope@test.com", passwordHash: "x", activeParishId: parishA.id }
+  });
+  const outsider = await prisma.user.create({
+    data: { email: "outsider.cross@test.com", passwordHash: "x", activeParishId: parishA.id }
+  });
+
+  await prisma.membership.create({
+    data: { parishId: parishA.id, userId: author.id, role: "ADMIN" }
+  });
+
+  await prisma.membership.create({
+    data: { parishId: parishB.id, userId: outsider.id, role: "MEMBER" }
+  });
+
+  const announcement = await prisma.announcement.create({
+    data: {
+      parishId: parishA.id,
+      title: "Members only",
+      body: "Scoped",
+      scopeType: "PARISH",
+      createdById: author.id,
+      publishedAt: new Date()
+    }
+  });
+
+  const list = await listAnnouncements({ parishId: parishA.id, userId: outsider.id, status: "published" });
+  assert.equal(list.length, 0);
+
+  const detail = await getAnnouncement({
+    parishId: parishA.id,
+    userId: outsider.id,
+    announcementId: announcement.id
+  });
+  assert.equal(detail, null);
+
+  session.user.id = outsider.id;
+  session.user.activeParishId = parishA.id;
+
+  await assert.rejects(
+    actions.toggleAnnouncementReaction({ announcementId: announcement.id, emoji: "🙏" }),
+    /Not found/
+  );
 });
