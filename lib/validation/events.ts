@@ -49,6 +49,16 @@ const optionalDateText = z.preprocess(
   z.string().trim().min(1).optional()
 );
 
+const eventScope = z.preprocess(
+  (value) => {
+    if (value === null || value === undefined) {
+      return undefined;
+    }
+    return value;
+  },
+  z.enum(["THIS_EVENT", "THIS_SERIES"]).default("THIS_EVENT")
+);
+
 const recurrenceByWeekday = z.preprocess(
   (value) => {
     if (value === null || value === undefined) {
@@ -107,12 +117,12 @@ export const createEventSchema = z.object({
 
 export const updateEventSchema = createEventSchema.extend({
   eventId: z.string().min(1),
-  scope: z.enum(["THIS_EVENT", "THIS_SERIES"]).default("THIS_EVENT"),
+  scope: eventScope,
   occurrenceStartsAt: optionalDateText
 });
 
 export const deleteEventSchema = z.object({
   eventId: z.string().min(1),
-  scope: z.enum(["THIS_EVENT", "THIS_SERIES"]).default("THIS_EVENT"),
+  scope: eventScope,
   occurrenceStartsAt: optionalDateText
 });
