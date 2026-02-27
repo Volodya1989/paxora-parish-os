@@ -242,12 +242,14 @@ export async function notifyAnnouncementPublishedInApp(opts: {
 
   const announcement = await prisma.announcement.findFirst({
     where: { id: announcementId, parishId },
-    select: { audienceUserIds: true }
+    select: { audienceUserIds: true, scopeType: true, chatChannelId: true }
   });
   if (!announcement) return;
 
   const recipients = await resolveAnnouncementAudience({
     parishId,
+    scopeType: announcement.scopeType,
+    chatChannelId: announcement.chatChannelId,
     audienceUserIds: announcement.audienceUserIds,
     actorId: publisherId
   });

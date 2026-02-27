@@ -7,6 +7,7 @@ import { prisma } from "@/server/db/prisma";
 import { getParishMembership } from "@/server/db/groups";
 import { isParishLeader } from "@/lib/permissions";
 import { getNow as defaultGetNow } from "@/lib/time/getNow";
+import { listChannelsForUser } from "@/lib/queries/chat";
 import {
   createAnnouncementSchema,
   deleteAnnouncementSchema,
@@ -20,6 +21,8 @@ import { notifyAnnouncementPublishedInApp } from "@/lib/notifications/notify";
 import { sanitizeAnnouncementHtml, stripHtmlToText } from "@/lib/sanitize/html";
 import { sendEmail } from "@/lib/email/emailService";
 import { renderAnnouncementEmail } from "@/emails/templates/announcement";
+import { canAccessAnnouncement, listChatAudienceMemberIds } from "@/lib/announcements/access";
+import { REACTION_EMOJIS } from "@/lib/chat/reactions";
 
 function assertSession(session: Session | null) {
   if (!session?.user?.id || !session.user.activeParishId) {
@@ -55,6 +58,59 @@ function buildDraftTitle(title: string | undefined, now: Date) {
 
   const suffix = now.toISOString().replace(/[-:TZ.]/g, "");
   return `New Announcement ${suffix}`;
+}
+
+const REACTION_SET = new Set<string>(REACTION_EMOJIS);
+
+async function assertScopeAccess(input: {
+  parishId: string;
+  scopeType: "PARISH" | "CHAT";
+  chatChannelId?: string;
+}) {
+  if (input.scopeType !== "CHAT") {
+    return null;
+  }
+
+  if (!input.chatChannelId) {
+    throw new Error("Chat scope requires a channel.");
+  }
+
+  const channel = await prisma.chatChannel.findFirst({
+    where: {
+      id: input.chatChannelId,
+      parishId: input.parishId
+    },
+    select: { id: true }
+  });
+
+  if (!channel) {
+    throw new Error("Selected chat was not found in this parish.");
+  }
+
+  return channel.id;
+}
+
+async function buildAnnouncementReactionSummary(announcementId: string, userId: string) {
+  const [counts, reacted] = await Promise.all([
+    prisma.announcementReaction.groupBy({
+      by: ["emoji"],
+      where: { announcementId },
+      _count: { _all: true }
+    }),
+    prisma.announcementReaction.findMany({
+      where: { announcementId, userId },
+      select: { emoji: true }
+    })
+  ]);
+
+  const reactedSet = new Set(reacted.map((entry) => entry.emoji));
+  const countMap = new Map(counts.map((entry) => [entry.emoji, entry._count._all]));
+
+  return REACTION_EMOJIS.flatMap((emoji) => {
+    const count = countMap.get(emoji);
+    if (!count) return [];
+    return [{ emoji, count, reactedByMe: reactedSet.has(emoji) }];
+  });
 }
 
 export async function createAnnouncementDraft(input: {
@@ -216,6 +272,8 @@ export async function unarchiveAnnouncement(input: { id: string }) {
 
 export async function createAnnouncement(input: {
   parishId: string;
+  scopeType?: "PARISH" | "CHAT";
+  chatChannelId?: string;
   title: string;
   body: string;
   bodyHtml?: string;
@@ -229,6 +287,8 @@ export async function createAnnouncement(input: {
 
   const parsed = createAnnouncementSchema.safeParse({
     parishId: input.parishId,
+    scopeType: input.scopeType,
+    chatChannelId: input.chatChannelId,
     title: input.title,
     body: input.body,
     bodyHtml: input.bodyHtml,
@@ -247,6 +307,21 @@ export async function createAnnouncement(input: {
 
   await requireParishLeader(userId, parishId);
 
+  const chatChannelId = await assertScopeAccess({
+    parishId,
+    scopeType: parsed.data.scopeType,
+    chatChannelId: parsed.data.chatChannelId
+  });
+
+  const allowedAudienceIds =
+    parsed.data.scopeType === "CHAT" && chatChannelId
+      ? await listChatAudienceMemberIds(chatChannelId)
+      : null;
+  const scopedAudienceIds =
+    allowedAudienceIds === null
+      ? parsed.data.audienceUserIds ?? []
+      : (parsed.data.audienceUserIds ?? []).filter((id) => allowedAudienceIds.includes(id));
+
   const now = (input.getNow ?? defaultGetNow)();
 
   const sanitizedHtml = parsed.data.bodyHtml
@@ -261,11 +336,13 @@ export async function createAnnouncement(input: {
   const announcement = await prisma.announcement.create({
     data: {
       parishId,
+      scopeType: parsed.data.scopeType,
+      chatChannelId,
       title: parsed.data.title,
       body: parsed.data.body,
       bodyHtml: sanitizedHtml,
       bodyText: plainText,
-      audienceUserIds: parsed.data.audienceUserIds ?? [],
+      audienceUserIds: scopedAudienceIds,
       createdById: userId,
       publishedAt: parsed.data.published ? now : null,
       createdAt: now,
@@ -298,6 +375,8 @@ export async function createAnnouncement(input: {
 
 export async function updateAnnouncement(input: {
   id: string;
+  scopeType?: "PARISH" | "CHAT";
+  chatChannelId?: string;
   title: string;
   body: string;
   bodyHtml?: string;
@@ -311,6 +390,8 @@ export async function updateAnnouncement(input: {
 
   const parsed = updateAnnouncementSchema.safeParse({
     id: input.id,
+    scopeType: input.scopeType,
+    chatChannelId: input.chatChannelId,
     title: input.title,
     body: input.body,
     bodyHtml: input.bodyHtml,
@@ -324,6 +405,21 @@ export async function updateAnnouncement(input: {
   }
 
   await requireParishLeader(userId, parishId);
+
+  const chatChannelId = await assertScopeAccess({
+    parishId,
+    scopeType: parsed.data.scopeType,
+    chatChannelId: parsed.data.chatChannelId
+  });
+
+  const allowedAudienceIds =
+    parsed.data.scopeType === "CHAT" && chatChannelId
+      ? await listChatAudienceMemberIds(chatChannelId)
+      : null;
+  const scopedAudienceIds =
+    allowedAudienceIds === null
+      ? parsed.data.audienceUserIds ?? []
+      : (parsed.data.audienceUserIds ?? []).filter((id) => allowedAudienceIds.includes(id));
 
   const now = (input.getNow ?? defaultGetNow)();
 
@@ -343,10 +439,12 @@ export async function updateAnnouncement(input: {
     },
     data: {
       title: parsed.data.title,
+      scopeType: parsed.data.scopeType,
+      chatChannelId,
       body: parsed.data.body,
       bodyHtml: sanitizedHtml,
       bodyText: plainText,
-      audienceUserIds: parsed.data.audienceUserIds ?? [],
+      audienceUserIds: scopedAudienceIds,
       publishedAt: parsed.data.published ? now : null,
       updatedAt: now
     }
@@ -407,6 +505,8 @@ export async function sendAnnouncementEmail(input: { announcementId: string }) {
       body: true,
       bodyHtml: true,
       bodyText: true,
+      scopeType: true,
+      chatChannelId: true,
       audienceUserIds: true,
       publishedAt: true
     }
@@ -416,7 +516,14 @@ export async function sendAnnouncementEmail(input: { announcementId: string }) {
     throw new Error("Not found");
   }
 
-  const audienceIds = announcement.audienceUserIds;
+  const allowedAudienceIds =
+    announcement.scopeType === "CHAT" && announcement.chatChannelId
+      ? await listChatAudienceMemberIds(announcement.chatChannelId)
+      : null;
+  const audienceIds =
+    allowedAudienceIds === null
+      ? announcement.audienceUserIds
+      : announcement.audienceUserIds.filter((id) => allowedAudienceIds.includes(id));
   if (!audienceIds || audienceIds.length === 0) {
     throw new Error("No recipients selected. Please select an audience first.");
   }
@@ -555,7 +662,7 @@ export async function sendTestAnnouncementEmail(input: { announcementId: string 
   return { status: result.status, email: user.email };
 }
 
-export async function getAnnouncementPeople(input: { parishId: string }) {
+export async function getAnnouncementPeople(input: { parishId: string; chatChannelId?: string }) {
   const session = await getServerSession(authOptions);
   const { userId, parishId } = assertSession(session);
 
@@ -565,8 +672,15 @@ export async function getAnnouncementPeople(input: { parishId: string }) {
 
   await requireParishLeader(userId, parishId);
 
+  const allowedUserIds = input.chatChannelId
+    ? await listChatAudienceMemberIds(input.chatChannelId)
+    : null;
+
   const memberships = await prisma.membership.findMany({
-    where: { parishId },
+    where: {
+      parishId,
+      ...(allowedUserIds ? { userId: { in: allowedUserIds } } : {})
+    },
     orderBy: [{ user: { name: "asc" } }, { user: { email: "asc" } }],
     select: {
       user: {
@@ -584,4 +698,66 @@ export async function getAnnouncementPeople(input: { parishId: string }) {
     name: m.user.name,
     email: m.user.email
   }));
+}
+
+export async function listAnnouncementScopeChannels(input: { parishId: string }) {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  if (parishId !== input.parishId) {
+    throw new Error("Unauthorized");
+  }
+
+  await requireParishLeader(userId, parishId);
+
+  const channels = await listChannelsForUser(parishId, userId);
+  return channels.map((channel) => ({
+    id: channel.id,
+    name: channel.group ? `${channel.group.name} · ${channel.name}` : channel.name,
+    type: channel.type
+  }));
+}
+
+export async function toggleAnnouncementReaction(input: { announcementId: string; emoji: string }) {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  if (!REACTION_SET.has(input.emoji)) {
+    throw new Error("Invalid reaction");
+  }
+
+  const hasAccess = await canAccessAnnouncement({
+    announcementId: input.announcementId,
+    parishId,
+    userId
+  });
+
+  if (!hasAccess) {
+    throw new Error("Not found");
+  }
+
+  const existing = await prisma.announcementReaction.findUnique({
+    where: {
+      announcementId_userId_emoji: {
+        announcementId: input.announcementId,
+        userId,
+        emoji: input.emoji
+      }
+    }
+  });
+
+  if (existing) {
+    await prisma.announcementReaction.delete({ where: { id: existing.id } });
+  } else {
+    await prisma.announcementReaction.create({
+      data: {
+        announcementId: input.announcementId,
+        userId,
+        emoji: input.emoji
+      }
+    });
+  }
+
+  const reactions = await buildAnnouncementReactionSummary(input.announcementId, userId);
+  return { announcementId: input.announcementId, reactions };
 }

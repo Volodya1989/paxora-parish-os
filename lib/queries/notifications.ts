@@ -1,4 +1,5 @@
 import { prisma } from "@/server/db/prisma";
+import { buildAnnouncementVisibilityWhere } from "@/lib/announcements/access";
 import { Prisma, NotificationType } from "@prisma/client";
 import { getParishMembership } from "@/server/db/groups";
 import { isParishLeader } from "@/lib/permissions";
@@ -261,9 +262,8 @@ async function getNewAnnouncementItems(
 
   const announcements = await prisma.announcement.findMany({
     where: {
-      parishId,
+      ...buildAnnouncementVisibilityWhere({ parishId, userId, status: "published" }),
       publishedAt: { not: null, gt: since },
-      archivedAt: null
     },
     select: {
       id: true,

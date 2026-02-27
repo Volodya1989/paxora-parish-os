@@ -25,6 +25,8 @@ export default async function AnnouncementEditPage({
   const { announcementId } = await params;
   const announcement = await getAnnouncement({
     parishId: session.user.activeParishId,
+    userId: session.user.id,
+    includeAll: true,
     announcementId
   });
 

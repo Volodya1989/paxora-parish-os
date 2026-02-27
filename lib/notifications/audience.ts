@@ -92,19 +92,33 @@ export async function resolveChatAudience(opts: {
 
 export async function resolveAnnouncementAudience(opts: {
   parishId: string;
+  scopeType?: "PARISH" | "CHAT";
+  chatChannelId?: string | null;
   audienceUserIds?: string[] | null;
   actorId?: string;
 }): Promise<AudienceRecipient[]> {
   const audienceIds = (opts.audienceUserIds ?? []).filter(Boolean);
-  const recipients =
-    audienceIds.length > 0
-      ? (
-        await prisma.membership.findMany({
-          where: { parishId: opts.parishId, userId: { in: audienceIds } },
-          select: { userId: true }
-        })
-      ).map((membership) => ({ userId: membership.userId, reason: "announcement_audience" as const }))
-      : await resolveParishAudience(opts.parishId);
+  let recipients: AudienceRecipient[];
+
+  if (opts.scopeType === "CHAT" && opts.chatChannelId) {
+    const chatAudience = await resolveChatAudience({ channelId: opts.chatChannelId });
+    const allowed = new Set(chatAudience.map((recipient) => recipient.userId));
+    const selected =
+      audienceIds.length > 0
+        ? audienceIds.filter((userId) => allowed.has(userId))
+        : [...allowed];
+    recipients = selected.map((userId) => ({ userId, reason: "announcement_audience" as const }));
+  } else {
+    recipients =
+      audienceIds.length > 0
+        ? (
+            await prisma.membership.findMany({
+              where: { parishId: opts.parishId, userId: { in: audienceIds } },
+              select: { userId: true }
+            })
+          ).map((membership) => ({ userId: membership.userId, reason: "announcement_audience" as const }))
+        : await resolveParishAudience(opts.parishId);
+  }
 
   return withoutActor(dedupeRecipients(recipients), opts.actorId);
 }

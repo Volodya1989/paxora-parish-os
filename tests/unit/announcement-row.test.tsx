@@ -15,7 +15,11 @@ const baseAnnouncement: AnnouncementListItem = {
   createdAt: new Date("2024-03-10T10:00:00.000Z"),
   updatedAt: new Date("2024-03-11T12:00:00.000Z"),
   publishedAt: null,
+  scopeType: "PARISH",
+  chatChannelId: null,
+  chatChannelName: null,
   archivedAt: null,
+  reactions: [],
   createdBy: {
     id: "user-1",
     name: "St. Anne Office"

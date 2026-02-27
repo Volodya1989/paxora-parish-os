@@ -1,4 +1,5 @@
 import { prisma } from "@/server/db/prisma";
+import { buildAnnouncementVisibilityWhere } from "@/lib/announcements/access";
 import { Prisma } from "@prisma/client";
 import { listEligibleChatChannelsForUser } from "@/lib/notifications/chat-membership";
 
@@ -75,9 +76,8 @@ async function getNewAnnouncementsCount(userId: string, parishId: string): Promi
 
   return prisma.announcement.count({
     where: {
-      parishId,
+      ...buildAnnouncementVisibilityWhere({ parishId, userId, status: "published" }),
       publishedAt: { not: null, gt: since },
-      archivedAt: null
     }
   });
 }

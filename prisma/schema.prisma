@@ -161,6 +161,11 @@ enum ChatChannelMembershipRole {
   MODERATOR
 }
 
+enum AnnouncementScopeType {
+  PARISH
+  CHAT
+}
+
 enum AccessRequestStatus {
   PENDING
   APPROVED
@@ -392,6 +397,7 @@ model User {
   taskActivities           TaskActivity[]
   digestsCreated           Digest[]                 @relation("DigestAuthor")
   createdAnnouncements     Announcement[]           @relation("AnnouncementAuthor")
+  announcementReactions    AnnouncementReaction[]
   eventRsvps               EventRsvp[]
   eventReminders           EventReminder[]
   chatMessages             ChatMessage[]
@@ -793,6 +799,7 @@ model ChatChannel {
   pinnedMessage ChatPinnedMessage?
   readStates    ChatRoomReadState[]
   notifications Notification[]
+  announcements Announcement[]
 
   @@unique([parishId, groupId, type], name: "ChatChannel_parish_group_type")
   @@index([parishId])
@@ -1201,6 +1208,8 @@ model Digest {
 model Announcement {
   id              String    @id @default(cuid())
   parishId        String
+  scopeType       AnnouncementScopeType @default(PARISH)
+  chatChannelId   String?
   title           String
   body            String?
   bodyHtml        String?
@@ -1214,9 +1223,28 @@ model Announcement {
 
   parish    Parish     @relation(fields: [parishId], references: [id])
   createdBy User?      @relation("AnnouncementAuthor", fields: [createdById], references: [id])
+  chatChannel ChatChannel? @relation(fields: [chatChannelId], references: [id], onDelete: SetNull)
   emailLogs EmailLog[]
+  reactions AnnouncementReaction[]
 
   @@index([parishId, publishedAt])
+  @@index([parishId, scopeType])
+  @@index([chatChannelId])
+}
+
+model AnnouncementReaction {
+  id             String   @id @default(cuid())
+  announcementId String
+  userId         String
+  emoji          String
+  createdAt      DateTime @default(now())
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, userId, emoji])
+  @@index([announcementId])
+  @@index([userId])
 }
 
 model ContentReport {

@@ -1,6 +1,6 @@
 import { prisma } from "@/server/db/prisma";
 import { sendPushToUsers, type PushPayload } from "./sendPush";
-import { resolveChatAudience } from "@/lib/notifications/audience";
+import { resolveAnnouncementAudience, resolveChatAudience } from "@/lib/notifications/audience";
 import { getChatNotificationCopy } from "@/lib/notifications/chat-membership";
 
 
@@ -167,14 +167,23 @@ export async function notifyAnnouncementPublished(opts: {
   parishId: string;
   publisherId: string;
 }) {
-  const { title, parishId, publisherId } = opts;
+  const { title, parishId, publisherId, announcementId } = opts;
 
-  const members = await prisma.membership.findMany({
-    where: { parishId },
-    select: { userId: true }
+  const announcement = await prisma.announcement.findFirst({
+    where: { id: announcementId, parishId },
+    select: { scopeType: true, chatChannelId: true }
   });
 
-  const recipientIds = members.map((m) => m.userId).filter((id) => id !== publisherId);
+  if (!announcement) return;
+
+  const recipients = await resolveAnnouncementAudience({
+    parishId,
+    scopeType: announcement.scopeType,
+    chatChannelId: announcement.chatChannelId,
+    actorId: publisherId
+  });
+
+  const recipientIds = recipients.map((recipient) => recipient.userId);
 
   if (recipientIds.length === 0) return;
 

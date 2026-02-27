@@ -9,6 +9,7 @@ import { cn } from "@/lib/ui/cn";
 import type { AnnouncementListItem } from "@/lib/queries/announcements";
 import { useTranslations } from "@/lib/i18n/provider";
 import ReportContentButton from "@/components/moderation/ReportContentButton";
+import { REACTION_EMOJIS } from "@/lib/chat/reactions";
 
 type AnnouncementRowProps = {
   announcement: AnnouncementListItem;
@@ -16,6 +17,7 @@ type AnnouncementRowProps = {
   onArchive: (id: string) => void;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onToggleReaction?: (id: string, emoji: string) => void;
   isBusy?: boolean;
   isReadOnly?: boolean;
   showReportAction?: boolean;
@@ -41,6 +43,7 @@ export default function AnnouncementRow({
   onArchive,
   onEdit,
   onDelete,
+  onToggleReaction,
   isBusy = false,
   isReadOnly = false,
   showReportAction = false
@@ -71,6 +74,11 @@ export default function AnnouncementRow({
               {isPublished ? t("common.published") : t("common.draft")}
             </Badge>
           )}
+          <Badge tone="neutral">
+            {announcement.scopeType === "CHAT"
+              ? announcement.chatChannelName ?? "Chat"
+              : "Parish"}
+          </Badge>
         </div>
 
         {hasRichContent && expanded ? (
@@ -95,6 +103,40 @@ export default function AnnouncementRow({
         <p className="text-xs text-ink-400">
           {announcement.createdBy?.name ?? "Parish staff"} · {timestamp}
         </p>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {announcement.reactions.map((reaction) => (
+            <button
+              key={`${announcement.id}-${reaction.emoji}`}
+              type="button"
+              onClick={() => onToggleReaction?.(announcement.id, reaction.emoji)}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs",
+                reaction.reactedByMe
+                  ? "border-primary-300 bg-primary-50 text-primary-700"
+                  : "border-mist-200 text-ink-600 hover:bg-mist-50"
+              )}
+            >
+              <span>{reaction.emoji}</span>
+              <span>{reaction.count}</span>
+            </button>
+          ))}
+          {onToggleReaction ? (
+            <div className="flex gap-1">
+              {REACTION_EMOJIS.map((emoji) => (
+                <button
+                  key={`${announcement.id}-add-${emoji}`}
+                  type="button"
+                  onClick={() => onToggleReaction(announcement.id, emoji)}
+                  className="rounded-full border border-mist-200 px-2 py-1 text-xs hover:bg-mist-50"
+                  aria-label={`React with ${emoji}`}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
       </div>
 
       {isReadOnly ? (
