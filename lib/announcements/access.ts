@@ -29,9 +29,20 @@ export function buildAnnouncementVisibilityWhere(input: {
   includeArchived?: boolean;
   includeAll?: boolean;
 }): Prisma.AnnouncementWhereInput {
+  const membershipGuard: Prisma.AnnouncementWhereInput = {
+    parish: {
+      memberships: {
+        some: {
+          userId: input.userId
+        }
+      }
+    }
+  };
+
   if (input.includeAll) {
     return {
       parishId: input.parishId,
+      ...membershipGuard,
       ...(input.includeArchived ? {} : { archivedAt: null }),
       ...(input.status === "draft"
         ? { publishedAt: null }
@@ -43,6 +54,7 @@ export function buildAnnouncementVisibilityWhere(input: {
 
   return {
     parishId: input.parishId,
+    ...membershipGuard,
     ...(input.includeArchived ? {} : { archivedAt: null }),
     ...(input.status === "draft"
       ? { publishedAt: null }
@@ -95,11 +107,29 @@ export async function listChatAudienceMemberIds(channelId: string): Promise<stri
       where: { groupId: channel.groupId, status: "ACTIVE" },
       select: { userId: true }
     });
-    return members.map((member) => member.userId);
+
+    const allowedMemberships = await prisma.membership.findMany({
+      where: {
+        parishId: channel.parishId,
+        userId: { in: members.map((member) => member.userId) }
+      },
+      select: { userId: true }
+    });
+
+    return allowedMemberships.map((member) => member.userId);
   }
 
   const explicitMembers = await prisma.chatChannelMembership.findMany({
-    where: { channelId },
+    where: {
+      channelId,
+      user: {
+        memberships: {
+          some: {
+            parishId: channel.parishId
+          }
+        }
+      }
+    },
     select: { userId: true }
   });
 
