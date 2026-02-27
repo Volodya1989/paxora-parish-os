@@ -1,5 +1,6 @@
 import { after, before, mock, test } from "node:test";
 import assert from "node:assert/strict";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { prisma } from "@/server/db/prisma";
 import { listAnnouncements, getAnnouncement } from "@/lib/queries/announcements";
 import { resolveAnnouncementAudience } from "@/lib/notifications/audience";
@@ -17,9 +18,21 @@ const session = {
   }
 };
 
+const sessionStore = new AsyncLocalStorage<{ id: string; activeParishId: string }>();
+
+function withSession<T>(user: { id: string; activeParishId: string }, fn: () => Promise<T>) {
+  return sessionStore.run<Promise<T>>(user, fn);
+}
+
 mock.module("next-auth", {
   namedExports: {
-    getServerSession: async () => session
+    getServerSession: async () => {
+      const store = sessionStore.getStore();
+      if (store) {
+        return { user: { id: store.id, activeParishId: store.activeParishId } };
+      }
+      return session;
+    }
   }
 });
 
@@ -170,18 +183,19 @@ dbTest("chat scope filters audience selection for email/notifications", async ()
     data: { parishId: parish.id, groupId: group.id, type: "GROUP", name: "Servers chat" }
   });
 
-  session.user.id = admin.id;
-  session.user.activeParishId = parish.id;
-
-  const created = await actions.createAnnouncement({
-    parishId: parish.id,
-    title: "Servers only",
-    body: "Scoped",
-    scopeType: "CHAT",
-    chatChannelId: channel.id,
-    audienceUserIds: [inChat.id, outChat.id],
-    published: true
-  });
+  const created = await withSession<any>(
+    { id: admin.id, activeParishId: parish.id },
+    () =>
+      actions.createAnnouncement({
+        parishId: parish.id,
+        title: "Servers only",
+        body: "Scoped",
+        scopeType: "CHAT",
+        chatChannelId: channel.id,
+        audienceUserIds: [inChat.id, outChat.id],
+        published: true
+      })
+  );
 
   const stored = await prisma.announcement.findUnique({ where: { id: created.id } });
   assert.deepEqual(stored?.audienceUserIds, [inChat.id]);
@@ -225,15 +239,16 @@ dbTest("announcement reactions enforce access and provide counts", async () => {
     }
   });
 
-  session.user.id = member.id;
-  session.user.activeParishId = parish.id;
-
-  const first = await actions.toggleAnnouncementReaction({ announcementId: announcement.id, emoji: "🙏" });
+  const first = await withSession<any>({ id: member.id, activeParishId: parish.id }, () =>
+    actions.toggleAnnouncementReaction({ announcementId: announcement.id, emoji: "🙏" })
+  );
   assert.equal(first.reactions[0]?.emoji, "🙏");
   assert.equal(first.reactions[0]?.count, 1);
   assert.equal(first.reactions[0]?.reactedByMe, true);
 
-  const second = await actions.toggleAnnouncementReaction({ announcementId: announcement.id, emoji: "🙏" });
+  const second = await withSession<any>({ id: member.id, activeParishId: parish.id }, () =>
+    actions.toggleAnnouncementReaction({ announcementId: announcement.id, emoji: "🙏" })
+  );
   assert.equal(second.reactions.length, 0);
 });
 
@@ -277,11 +292,10 @@ dbTest("cross-parish users cannot view or react to announcements", async () => {
   });
   assert.equal(detail, null);
 
-  session.user.id = outsider.id;
-  session.user.activeParishId = parishA.id;
-
   await assert.rejects(
-    actions.toggleAnnouncementReaction({ announcementId: announcement.id, emoji: "🙏" }),
+    withSession({ id: outsider.id, activeParishId: parishA.id }, () =>
+      actions.toggleAnnouncementReaction({ announcementId: announcement.id, emoji: "🙏" })
+    ),
     /Not found/
   );
 });
