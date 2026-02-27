@@ -36,6 +36,9 @@ mock.module("@/lib/email/emailService", {
 });
 
 async function resetDatabase() {
+  await prisma.notification.deleteMany();
+  await prisma.deliveryAttempt.deleteMany();
+  await prisma.emailLog.deleteMany();
   await prisma.announcementReaction.deleteMany();
   await prisma.announcement.deleteMany();
   await prisma.chatReaction.deleteMany();
