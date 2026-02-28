@@ -58,6 +58,9 @@ export default function AnnouncementRow({
   const [expanded, setExpanded] = useState(false);
   const hasRichContent = Boolean(announcement.bodyHtml);
   const excerptText = buildExcerpt(announcement.bodyText ?? announcement.body);
+  const reactions = announcement.reactions ?? [];
+  const hasReactions = reactions.length > 0;
+  const showReactionPicker = Boolean(onToggleReaction) && expanded;
 
   return (
     <Card
@@ -105,23 +108,25 @@ export default function AnnouncementRow({
         </p>
 
         <div className="flex flex-wrap items-center gap-2">
-          {announcement.reactions.map((reaction) => (
-            <button
-              key={`${announcement.id}-${reaction.emoji}`}
-              type="button"
-              onClick={() => onToggleReaction?.(announcement.id, reaction.emoji)}
-              className={cn(
-                "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs",
-                reaction.reactedByMe
-                  ? "border-primary-300 bg-primary-50 text-primary-700"
-                  : "border-mist-200 text-ink-600 hover:bg-mist-50"
-              )}
-            >
-              <span>{reaction.emoji}</span>
-              <span>{reaction.count}</span>
-            </button>
-          ))}
-          {onToggleReaction ? (
+          {hasReactions
+            ? reactions.map((reaction) => (
+                <button
+                  key={`${announcement.id}-${reaction.emoji}`}
+                  type="button"
+                  onClick={() => onToggleReaction?.(announcement.id, reaction.emoji)}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs",
+                    reaction.reactedByMe
+                      ? "border-primary-300 bg-primary-50 text-primary-700"
+                      : "border-mist-200 text-ink-600 hover:bg-mist-50"
+                  )}
+                >
+                  <span>{reaction.emoji}</span>
+                  <span>{reaction.count}</span>
+                </button>
+              ))
+            : null}
+          {showReactionPicker ? (
             <div className="flex gap-1">
               {REACTION_EMOJIS.map((emoji) => (
                 <button
