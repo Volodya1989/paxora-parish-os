@@ -6,7 +6,8 @@ import { useToast } from "@/components/ui/Toast";
 import {
   createAnnouncementComment,
   deleteAnnouncementComment,
-  listAnnouncementComments
+  listAnnouncementComments,
+  updateAnnouncementComment
 } from "@/server/actions/announcements";
 
 type AnnouncementComment = {
@@ -52,6 +53,8 @@ export default function AnnouncementComments({
   const [content, setContent] = useState("");
   const [busy, setBusy] = useState(false);
   const [threadOpen, setThreadOpen] = useState(defaultOpen);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState("");
 
   const effectiveCount = loaded ? comments.length : initialCount;
 
@@ -125,6 +128,36 @@ export default function AnnouncementComments({
     }
   };
 
+  const onStartEdit = (commentId: string, initialContent: string) => {
+    setEditingCommentId(commentId);
+    setEditingContent(initialContent);
+  };
+
+  const onCancelEdit = () => {
+    setEditingCommentId(null);
+    setEditingContent("");
+  };
+
+  const onSaveEdit = async (commentId: string) => {
+    setBusy(true);
+    try {
+      const updated = await updateAnnouncementComment({
+        commentId,
+        content: editingContent
+      });
+      setComments((prev) => prev.map((item) => (item.id === commentId ? updated : item)));
+      onCancelEdit();
+    } catch (error: any) {
+      addToast({
+        title: "Edit failed",
+        description: error?.message ?? "Please try again.",
+        status: "error"
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (!threadOpen) {
     return (
       <button
@@ -160,7 +193,26 @@ export default function AnnouncementComments({
                 <span>
                   <span className="font-semibold text-ink-700">{comment.author.name}</span> · {formatTimestamp(comment.createdAt)}
                 </span>
-                {canDelete ? (
+                {comment.author.id === currentUserId ? (
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => onStartEdit(comment.id, comment.content)}
+                      disabled={busy}
+                      className="text-primary-600 hover:underline disabled:opacity-50"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onDelete(comment.id)}
+                      disabled={busy}
+                      className="text-rose-600 hover:underline disabled:opacity-50"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ) : canDelete ? (
                   <button
                     type="button"
                     onClick={() => onDelete(comment.id)}
@@ -171,7 +223,32 @@ export default function AnnouncementComments({
                   </button>
                 ) : null}
               </div>
-              <p className="mt-2 whitespace-pre-wrap text-sm text-ink-700">{comment.content}</p>
+              {editingCommentId === comment.id ? (
+                <div className="mt-2 space-y-2">
+                  <textarea
+                    value={editingContent}
+                    onChange={(event) => setEditingContent(event.target.value)}
+                    rows={3}
+                    maxLength={1000}
+                    className="w-full rounded-card border border-mist-200 bg-white px-3 py-2 text-sm text-ink-800 focus:border-primary-300 focus:outline-none"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="ghost" size="sm" onClick={onCancelEdit} disabled={busy}>
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => onSaveEdit(comment.id)}
+                      disabled={busy || !editingContent.trim()}
+                    >
+                      Save
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-2 whitespace-pre-wrap text-sm text-ink-700">{comment.content}</p>
+              )}
             </div>
           );
         })}

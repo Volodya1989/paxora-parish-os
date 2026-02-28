@@ -17,7 +17,8 @@ import {
   updateAnnouncementStatusSchema,
   listAnnouncementCommentsSchema,
   createAnnouncementCommentSchema,
-  deleteAnnouncementCommentSchema
+  deleteAnnouncementCommentSchema,
+  updateAnnouncementCommentSchema
 } from "@/lib/validation/announcements";
 import { notifyAnnouncementPublished } from "@/lib/push/notify";
 import { notifyAnnouncementPublishedInApp } from "@/lib/notifications/notify";
@@ -934,3 +935,69 @@ export async function deleteAnnouncementComment(input: { commentId: string }) {
   await prisma.announcementComment.delete({ where: { id: comment.id } });
   revalidatePath("/announcements");
 }
+
+
+export async function updateAnnouncementComment(input: { commentId: string; content: string }) {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  const parsed = updateAnnouncementCommentSchema.safeParse(input);
+  if (!parsed.success) {
+    throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
+  }
+
+  const comment = await prisma.announcementComment.findUnique({
+    where: { id: parsed.data.commentId },
+    select: {
+      id: true,
+      authorId: true,
+      announcementId: true
+    }
+  });
+
+  if (!comment) {
+    throw new Error("Not found");
+  }
+
+  await requirePublishedAnnouncementAccess({
+    announcementId: comment.announcementId,
+    parishId,
+    userId
+  });
+
+  if (comment.authorId !== userId) {
+    throw new Error("Forbidden");
+  }
+
+  const updated = await prisma.announcementComment.update({
+    where: { id: comment.id },
+    data: { content: parsed.data.content },
+    select: {
+      id: true,
+      content: true,
+      createdAt: true,
+      updatedAt: true,
+      author: {
+        select: {
+          id: true,
+          name: true,
+          email: true
+        }
+      }
+    }
+  });
+
+  revalidatePath("/announcements");
+
+  return {
+    id: updated.id,
+    content: updated.content,
+    createdAt: updated.createdAt.toISOString(),
+    updatedAt: updated.updatedAt.toISOString(),
+    author: {
+      id: updated.author.id,
+      name: updated.author.name ?? updated.author.email ?? "Parish member"
+    }
+  };
+}
+

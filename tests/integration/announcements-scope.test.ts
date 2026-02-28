@@ -295,6 +295,12 @@ dbTest("announcement comments enforce scoped visibility and deletion rules", asy
   assert.equal(listed.length, 1);
   assert.equal(listed[0]?.author.id, member.id);
 
+  const edited = await actions.updateAnnouncementComment({
+    commentId: created.id,
+    content: "Edited comment"
+  });
+  assert.equal(edited.content, "Edited comment");
+
   session.user.id = outsider.id;
   await assert.rejects(
     actions.listAnnouncementComments({ announcementId: announcement.id }),
@@ -302,6 +308,10 @@ dbTest("announcement comments enforce scoped visibility and deletion rules", asy
   );
   await assert.rejects(
     actions.createAnnouncementComment({ announcementId: announcement.id, content: "hi" }),
+    /Not found/
+  );
+  await assert.rejects(
+    actions.updateAnnouncementComment({ commentId: created.id, content: "hack" }),
     /Not found/
   );
 
@@ -360,8 +370,21 @@ dbTest("announcement comments reject invalid content and enforce own-comment del
     content: "Valid comment"
   });
 
+  await assert.rejects(
+    actions.updateAnnouncementComment({ commentId: comment.id, content: "   " }),
+    /Comment is required/
+  );
+
   session.user.id = memberB.id;
+  await assert.rejects(actions.updateAnnouncementComment({ commentId: comment.id, content: "nope" }), /Forbidden/);
   await assert.rejects(actions.deleteAnnouncementComment({ commentId: comment.id }), /Forbidden/);
+
+  session.user.id = memberA.id;
+  const updatedByOwner = await actions.updateAnnouncementComment({
+    commentId: comment.id,
+    content: "Owner edit"
+  });
+  assert.equal(updatedByOwner.content, "Owner edit");
 
   session.user.id = admin.id;
   await actions.deleteAnnouncementComment({ commentId: comment.id });

@@ -89,3 +89,20 @@ export const createAnnouncementCommentSchema = z.object({
 export const deleteAnnouncementCommentSchema = z.object({
   commentId: z.string().min(1)
 });
+
+
+export const updateAnnouncementCommentSchema = z.object({
+  commentId: z.string().min(1),
+  content: z.preprocess(
+    (value) => {
+      if (typeof value !== "string") {
+        return value;
+      }
+      return value.trim();
+    },
+    z
+      .string()
+      .min(1, "Comment is required")
+      .max(ANNOUNCEMENT_COMMENT_MAX_LENGTH, `Comment must be ${ANNOUNCEMENT_COMMENT_MAX_LENGTH} characters or fewer`)
+  )
+});
