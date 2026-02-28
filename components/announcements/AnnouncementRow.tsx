@@ -132,7 +132,7 @@ export default function AnnouncementRow({
                 <button
                   key={`${announcement.id}-add-${emoji}`}
                   type="button"
-                  onClick={() => onToggleReaction(announcement.id, emoji)}
+                  onClick={() => onToggleReaction?.(announcement.id, emoji)}
                   className="rounded-full border border-mist-200 px-2 py-1 text-xs hover:bg-mist-50"
                   aria-label={`React with ${emoji}`}
                 >
