@@ -160,12 +160,13 @@ export default function AnnouncementRow({
               </h3>
 
               {isReadOnly && showReportAction ? (
-                <div className="-mr-1 shrink-0 self-start">
+                <div className="-mr-1 shrink-0">
                   <Dropdown>
                     <DropdownTrigger
                       iconOnly
                       aria-label="More actions"
-                      className="-mt-0.5 inline-flex h-10 w-10 items-start justify-center rounded-md p-2 text-ink-500 leading-none transition hover:bg-mist-50 active:bg-mist-100 focus-ring"
+                      // Nudge by 1px so the kebab optically aligns with the title's first baseline across wrapped titles.
+                      className="-mt-[1px] inline-flex h-10 w-10 items-start justify-center rounded-md p-2 text-muted-foreground leading-none transition hover:bg-muted/40 active:bg-muted/60 focus-ring"
                       onPointerDown={(event) => event.stopPropagation()}
                       onClick={(event) => event.stopPropagation()}
                     >
