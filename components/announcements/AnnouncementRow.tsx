@@ -162,11 +162,13 @@ export default function AnnouncementRow({
               {isReadOnly && showReportAction ? (
                 <div className="-mr-1 shrink-0">
                   <Dropdown>
+                    {/* Align kebab with title first baseline: items-start pins to top,
+                        mt-[1px] nudges the mid-line ⋯ glyph down to optically match
+                        the title cap-height across 1-3 line wraps (GitHub-style). */}
                     <DropdownTrigger
                       iconOnly
                       aria-label="More actions"
-                      // Nudge by 1px so the kebab optically aligns with the title's first baseline across wrapped titles.
-                      className="-mt-[1px] inline-flex h-10 w-10 items-start justify-center rounded-md p-2 text-muted-foreground leading-none transition hover:bg-muted/40 active:bg-muted/60 focus-ring"
+                      className="mt-[1px] inline-flex h-10 w-10 items-start justify-center rounded-md p-2 text-muted-foreground leading-tight transition hover:bg-muted/40 active:bg-muted/60 focus-ring"
                       onPointerDown={(event) => event.stopPropagation()}
                       onClick={(event) => event.stopPropagation()}
                     >
