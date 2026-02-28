@@ -28,12 +28,6 @@ mock.module("next/cache", {
   }
 });
 
-mock.module("@/lib/email/emailService", {
-  namedExports: {
-    sendEmail: async () => ({ status: "SENT" })
-  }
-});
-
 async function resetDatabase() {
   await prisma.announcementReaction.deleteMany();
   await prisma.announcement.deleteMany();
