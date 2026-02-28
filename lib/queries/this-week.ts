@@ -13,6 +13,7 @@ import { listUnreadCountsForRooms } from "@/lib/queries/chat";
 import { listEventsByRange } from "@/lib/queries/events";
 import { buildAvatarImagePath } from "@/lib/storage/avatar";
 import { getThisWeekBadgeDateRanges } from "@/lib/this-week/badgeDateRanges";
+import { buildAnnouncementVisibilityWhere } from "@/lib/announcements/access";
 
 export type TaskPreview = {
   id: string;
@@ -222,10 +223,7 @@ export async function getThisWeekDataForUser({
       };
     }),
     prisma.announcement.findMany({
-      where: {
-        parishId,
-        archivedAt: null
-      },
+      where: buildAnnouncementVisibilityWhere({ parishId, userId }),
       orderBy: [{ updatedAt: "desc" }],
       take: 6,
       select: {
@@ -319,8 +317,7 @@ export async function getThisWeekDataForUser({
     isCoordinatorInParish(parishId, userId),
     prisma.announcement.count({
       where: {
-        parishId,
-        archivedAt: null,
+        ...buildAnnouncementVisibilityWhere({ parishId, userId, status: "published" }),
         publishedAt: {
           not: null,
           gte: announcementsStartUtc,

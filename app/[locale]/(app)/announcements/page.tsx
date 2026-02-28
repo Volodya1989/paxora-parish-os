@@ -38,8 +38,15 @@ export default async function AnnouncementsPage({
 
   const canManage = isParishLeader(membership.role);
   const [drafts, published] = await Promise.all([
-    canManage ? listAnnouncements({ parishId, status: "draft" }) : Promise.resolve([]),
-    listAnnouncements({ parishId, status: "published" })
+    canManage
+      ? listAnnouncements({ parishId, userId: session.user.id, status: "draft", includeAll: true })
+      : Promise.resolve([]),
+    listAnnouncements({
+      parishId,
+      userId: session.user.id,
+      status: "published",
+      includeAll: canManage
+    })
   ]);
 
   return (

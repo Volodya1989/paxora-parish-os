@@ -6,6 +6,7 @@ import { authOptions } from "@/server/auth/options";
 import { prisma } from "@/server/db/prisma";
 import { getGroupMembership, getParishMembership } from "@/server/db/groups";
 import { isParishLeader } from "@/lib/permissions";
+import { canAccessAnnouncement } from "@/lib/announcements/access";
 import { requireAdminOrShepherd } from "@/server/auth/permissions";
 import type { ContentReportStatus } from "@prisma/client";
 import { notifyContentReportSubmittedInApp } from "@/lib/notifications/notify";
@@ -96,18 +97,13 @@ async function ensureCanReportChatMessage(parishId: string, userId: string, cont
 }
 
 async function ensureCanReportAnnouncement(parishId: string, userId: string, contentId: string) {
-  const [membership, announcement] = await Promise.all([
+  const [membership, canAccess] = await Promise.all([
     getParishMembership(parishId, userId),
-    prisma.announcement.findFirst({
-      where: {
-        id: contentId,
-        parishId,
-        archivedAt: null,
-        publishedAt: {
-          not: null
-        }
-      },
-      select: { id: true }
+    canAccessAnnouncement({
+      announcementId: contentId,
+      parishId,
+      userId,
+      status: "published"
     })
   ]);
 
@@ -115,7 +111,7 @@ async function ensureCanReportAnnouncement(parishId: string, userId: string, con
     throw new Error("Unauthorized");
   }
 
-  if (!announcement) {
+  if (!canAccess) {
     throw new Error("Not found");
   }
 }

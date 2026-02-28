@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Label from "@/components/ui/Label";
+import Select from "@/components/ui/Select";
 import { useToast } from "@/components/ui/Toast";
 import AudiencePicker from "@/components/announcements/AudiencePicker";
 import type { AnnouncementDetail } from "@/lib/queries/announcements";
@@ -13,6 +14,7 @@ import {
   createAnnouncement,
   updateAnnouncement,
   getAnnouncementPeople,
+  listAnnouncementScopeChannels,
   sendTestAnnouncementEmail,
   sendAnnouncementEmail
 } from "@/server/actions/announcements";
@@ -44,9 +46,12 @@ export default function AnnouncementForm({ parishId, announcement }: Announcemen
   const [publishNow, setPublishNow] = useState(
     announcement ? Boolean(announcement.publishedAt) : true
   );
+  const [scopeType, setScopeType] = useState<"PARISH" | "CHAT">(announcement?.scopeType ?? "PARISH");
+  const [chatChannelId, setChatChannelId] = useState<string>(announcement?.chatChannelId ?? "");
   const [audienceUserIds, setAudienceUserIds] = useState<string[]>(
     announcement?.audienceUserIds ?? []
   );
+  const [scopeChannels, setScopeChannels] = useState<Array<{ id: string; name: string }>>([]);
   const [people, setPeople] = useState<Person[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -63,11 +68,25 @@ export default function AnnouncementForm({ parishId, announcement }: Announcemen
   // Fetch people list for audience picker
   useEffect(() => {
     let cancelled = false;
-    getAnnouncementPeople({ parishId }).then((result) => {
-      if (!cancelled) setPeople(result);
-    }).catch(() => {});
+    Promise.all([
+      getAnnouncementPeople({ parishId, chatChannelId: scopeType === "CHAT" ? chatChannelId : undefined }),
+      listAnnouncementScopeChannels({ parishId })
+    ])
+      .then(([peopleResult, channelsResult]) => {
+        if (!cancelled) {
+          setPeople(peopleResult);
+          setScopeChannels(channelsResult.map((item) => ({ id: item.id, name: item.name })));
+        }
+      })
+      .catch(() => {});
     return () => { cancelled = true; };
-  }, [parishId]);
+  }, [parishId, scopeType, chatChannelId]);
+
+  useEffect(() => {
+    if (scopeType === "PARISH") return;
+    const allowedIds = new Set(people.map((person) => person.userId));
+    setAudienceUserIds((current) => current.filter((id) => allowedIds.has(id)));
+  }, [scopeType, people]);
 
   const handleEditorChange = (html: string, text: string) => {
     setBodyHtml(html);
@@ -89,6 +108,11 @@ export default function AnnouncementForm({ parishId, announcement }: Announcemen
       return;
     }
 
+    if (scopeType === "CHAT" && !chatChannelId) {
+      setError("Please select a chat for chat-scoped announcements.");
+      return;
+    }
+
     setError(null);
 
     startTransition(async () => {
@@ -100,6 +124,8 @@ export default function AnnouncementForm({ parishId, announcement }: Announcemen
             body: trimmedText,
             bodyHtml,
             bodyText: trimmedText,
+            scopeType,
+            chatChannelId: scopeType === "CHAT" ? chatChannelId : undefined,
             audienceUserIds,
             published: publishNow
           });
@@ -115,6 +141,8 @@ export default function AnnouncementForm({ parishId, announcement }: Announcemen
             body: trimmedText,
             bodyHtml,
             bodyText: trimmedText,
+            scopeType,
+            chatChannelId: scopeType === "CHAT" ? chatChannelId : undefined,
             audienceUserIds,
             published: publishNow
           });
@@ -237,6 +265,32 @@ export default function AnnouncementForm({ parishId, announcement }: Announcemen
           onChange={handleEditorChange}
           placeholder="Share the details parishioners need to know."
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="scopeType">Scope</Label>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Select
+            id="scopeType"
+            value={scopeType}
+            onChange={(event) => setScopeType(event.currentTarget.value as "PARISH" | "CHAT")}
+          >
+            <option value="PARISH">Parish-wide</option>
+            <option value="CHAT">Specific chat</option>
+          </Select>
+          {scopeType === "CHAT" ? (
+            <Select
+              value={chatChannelId}
+              onChange={(event) => setChatChannelId(event.currentTarget.value)}
+              required
+            >
+              <option value="" disabled>Select chat</option>
+              {scopeChannels.map((channel) => (
+                <option key={channel.id} value={channel.id}>{channel.name}</option>
+              ))}
+            </Select>
+          ) : null}
+        </div>
       </div>
 
       <div className="space-y-2">

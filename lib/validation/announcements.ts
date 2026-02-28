@@ -23,6 +23,8 @@ const optionalTrimmedText = z.preprocess(
 
 export const createAnnouncementSchema = z.object({
   parishId: z.string().min(1),
+  scopeType: z.enum(["PARISH", "CHAT"]).default("PARISH"),
+  chatChannelId: z.string().min(1).optional(),
   title: requiredTrimmedText,
   body: requiredTrimmedText,
   bodyHtml: optionalTrimmedText,
@@ -33,6 +35,8 @@ export const createAnnouncementSchema = z.object({
 
 export const updateAnnouncementSchema = z.object({
   id: z.string().min(1),
+  scopeType: z.enum(["PARISH", "CHAT"]).default("PARISH"),
+  chatChannelId: z.string().min(1).optional(),
   title: requiredTrimmedText,
   body: requiredTrimmedText,
   bodyHtml: optionalTrimmedText,

@@ -12,6 +12,7 @@ import {
   archiveAnnouncement,
   deleteAnnouncement,
   setAnnouncementPublished,
+  toggleAnnouncementReaction,
   unarchiveAnnouncement
 } from "@/server/actions/announcements";
 import type { AnnouncementListItem, AnnouncementStatus } from "@/lib/queries/announcements";
@@ -130,6 +131,12 @@ export default function AnnouncementsView({
     setDeleteTarget(null);
   };
 
+  const handleToggleReaction = async (announcementId: string, emoji: string) => {
+    await runAnnouncementAction(announcementId, async () => {
+      await toggleAnnouncementReaction({ announcementId, emoji });
+    });
+  };
+
   return (
     <div className="section-gap">
       <PageShell
@@ -185,6 +192,7 @@ export default function AnnouncementsView({
                         onDelete={(id) =>
                           setDeleteTarget(drafts.find((item) => item.id === id) ?? null)
                         }
+                        onToggleReaction={handleToggleReaction}
                         isBusy={pendingId === announcement.id}
                       />
                     ))
@@ -216,6 +224,7 @@ export default function AnnouncementsView({
                         onDelete={(id) =>
                           setDeleteTarget(published.find((item) => item.id === id) ?? null)
                         }
+                        onToggleReaction={handleToggleReaction}
                         isBusy={pendingId === announcement.id}
                       />
                     ))
@@ -237,6 +246,7 @@ export default function AnnouncementsView({
                     announcement={announcement}
                     onTogglePublish={handleTogglePublish}
                     onArchive={handleArchive}
+                    onToggleReaction={handleToggleReaction}
                     isBusy={pendingId === announcement.id}
                     showReportAction
                     isReadOnly

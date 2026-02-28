@@ -119,8 +119,8 @@ dbTest("draft and published lists update with publish and archive actions", asyn
   session.user.id = user.id;
   session.user.activeParishId = parish.id;
 
-  const draftList = await listAnnouncements({ parishId: parish.id, status: "draft" });
-  const publishedList = await listAnnouncements({ parishId: parish.id, status: "published" });
+  const draftList = await listAnnouncements({ parishId: parish.id, userId: user.id, status: "draft" });
+  const publishedList = await listAnnouncements({ parishId: parish.id, userId: user.id, status: "published" });
 
   assert.equal(draftList.length, 1);
   assert.equal(draftList[0]?.id, draft.id);
@@ -133,8 +133,8 @@ dbTest("draft and published lists update with publish and archive actions", asyn
     getNow: () => now
   });
 
-  const updatedDraftList = await listAnnouncements({ parishId: parish.id, status: "draft" });
-  const updatedPublishedList = await listAnnouncements({ parishId: parish.id, status: "published" });
+  const updatedDraftList = await listAnnouncements({ parishId: parish.id, userId: user.id, status: "draft" });
+  const updatedPublishedList = await listAnnouncements({ parishId: parish.id, userId: user.id, status: "published" });
   assert.equal(updatedDraftList.length, 0);
   assert.equal(updatedPublishedList.length, 2);
 
@@ -144,6 +144,7 @@ dbTest("draft and published lists update with publish and archive actions", asyn
   await actions.archiveAnnouncement({ id: published.id, getNow: () => now });
   const afterArchivePublished = await listAnnouncements({
     parishId: parish.id,
+    userId: user.id,
     status: "published"
   });
   assert.equal(afterArchivePublished.length, 1);
@@ -152,6 +153,7 @@ dbTest("draft and published lists update with publish and archive actions", asyn
   await actions.unarchiveAnnouncement({ id: published.id });
   const afterUndoArchive = await listAnnouncements({
     parishId: parish.id,
+    userId: user.id,
     status: "published"
   });
   assert.equal(afterUndoArchive.length, 2);

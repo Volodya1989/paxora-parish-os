@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@/components/ui/Dropdown";
@@ -9,6 +10,7 @@ import { cn } from "@/lib/ui/cn";
 import type { AnnouncementListItem } from "@/lib/queries/announcements";
 import { useTranslations } from "@/lib/i18n/provider";
 import ReportContentButton from "@/components/moderation/ReportContentButton";
+import { REACTION_EMOJIS } from "@/lib/chat/reactions";
 
 type AnnouncementRowProps = {
   announcement: AnnouncementListItem;
@@ -16,10 +18,14 @@ type AnnouncementRowProps = {
   onArchive: (id: string) => void;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onToggleReaction?: (id: string, emoji: string) => void;
   isBusy?: boolean;
   isReadOnly?: boolean;
   showReportAction?: boolean;
 };
+
+const LONG_PRESS_MS = 500;
+const LONG_PRESS_MOVE_THRESHOLD = 12;
 
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat("en-US", {
@@ -41,6 +47,7 @@ export default function AnnouncementRow({
   onArchive,
   onEdit,
   onDelete,
+  onToggleReaction,
   isBusy = false,
   isReadOnly = false,
   showReportAction = false
@@ -55,14 +62,94 @@ export default function AnnouncementRow({
   const [expanded, setExpanded] = useState(false);
   const hasRichContent = Boolean(announcement.bodyHtml);
   const excerptText = buildExcerpt(announcement.bodyText ?? announcement.body);
+  const reactions = announcement.reactions ?? [];
+  const hasReactions = reactions.length > 0;
+  const [reactionPickerOpen, setReactionPickerOpen] = useState(false);
+  const [pickerPosition, setPickerPosition] = useState<{ top: number; left: number } | null>(
+    null
+  );
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startPointRef = useRef<{ x: number; y: number } | null>(null);
+
+  const clearLongPressTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  const closeReactionPicker = useCallback(() => {
+    setReactionPickerOpen(false);
+  }, []);
+
+  useEffect(() => clearLongPressTimer, [clearLongPressTimer]);
+
+  const openReactionPicker = useCallback(() => {
+    if (!onToggleReaction || !cardRef.current) return;
+
+    const rect = cardRef.current.getBoundingClientRect();
+    const pickerWidth = 250;
+    const horizontalMargin = 12;
+    const top = Math.max(8, rect.top - 52);
+    const left = Math.min(
+      window.innerWidth - pickerWidth - horizontalMargin,
+      Math.max(horizontalMargin, rect.left)
+    );
+
+    setPickerPosition({ top, left });
+    setReactionPickerOpen(true);
+  }, [onToggleReaction]);
+
+  const handlePointerDown = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (!onToggleReaction || event.button !== 0) return;
+
+      startPointRef.current = { x: event.clientX, y: event.clientY };
+      clearLongPressTimer();
+      timerRef.current = setTimeout(() => {
+        openReactionPicker();
+      }, LONG_PRESS_MS);
+    },
+    [clearLongPressTimer, onToggleReaction, openReactionPicker]
+  );
+
+  const handlePointerMove = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (!startPointRef.current) return;
+      const deltaX = Math.abs(event.clientX - startPointRef.current.x);
+      const deltaY = Math.abs(event.clientY - startPointRef.current.y);
+      if (deltaX > LONG_PRESS_MOVE_THRESHOLD || deltaY > LONG_PRESS_MOVE_THRESHOLD) {
+        clearLongPressTimer();
+      }
+    },
+    [clearLongPressTimer]
+  );
+
+  const handlePointerEnd = useCallback(() => {
+    clearLongPressTimer();
+    startPointRef.current = null;
+  }, [clearLongPressTimer]);
 
   return (
-    <Card
+    <>
+      <div ref={cardRef}>
+        <Card
       className={cn(
         "flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between",
         isBusy && "opacity-70"
       )}
-    >
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerEnd}
+        onPointerCancel={handlePointerEnd}
+        onPointerLeave={handlePointerEnd}
+        onContextMenu={(event) => {
+          if (onToggleReaction) {
+            event.preventDefault();
+          }
+        }}
+      >
       <div className="min-w-0 flex-1 space-y-2">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="text-base font-semibold text-ink-900">{announcement.title}</h3>
@@ -71,6 +158,11 @@ export default function AnnouncementRow({
               {isPublished ? t("common.published") : t("common.draft")}
             </Badge>
           )}
+          <Badge tone="neutral">
+            {announcement.scopeType === "CHAT"
+              ? announcement.chatChannelName ?? "Chat"
+              : "Parish"}
+          </Badge>
         </div>
 
         {hasRichContent && expanded ? (
@@ -95,6 +187,27 @@ export default function AnnouncementRow({
         <p className="text-xs text-ink-400">
           {announcement.createdBy?.name ?? "Parish staff"} · {timestamp}
         </p>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {hasReactions
+            ? reactions.map((reaction) => (
+                <button
+                  key={`${announcement.id}-${reaction.emoji}`}
+                  type="button"
+                  onClick={() => onToggleReaction?.(announcement.id, reaction.emoji)}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs",
+                    reaction.reactedByMe
+                      ? "border-primary-300 bg-primary-50 text-primary-700"
+                      : "border-mist-200 text-ink-600 hover:bg-mist-50"
+                  )}
+                >
+                  <span>{reaction.emoji}</span>
+                  <span>{reaction.count}</span>
+                </button>
+              ))
+            : null}
+        </div>
       </div>
 
       {isReadOnly ? (
@@ -153,6 +266,37 @@ export default function AnnouncementRow({
           </Dropdown>
         </div>
       )}
-    </Card>
+        </Card>
+      </div>
+
+      {reactionPickerOpen && pickerPosition
+        ? createPortal(
+            <>
+              <div className="fixed inset-0 z-[9998] bg-black/10" onClick={closeReactionPicker} />
+              <div
+                className="fixed z-[9999] flex items-center gap-1 rounded-full border border-mist-200 bg-white px-2 py-1 shadow-xl"
+                style={{ top: pickerPosition.top, left: pickerPosition.left }}
+                onClick={(event) => event.stopPropagation()}
+              >
+                {REACTION_EMOJIS.map((emoji) => (
+                  <button
+                    key={`${announcement.id}-add-${emoji}`}
+                    type="button"
+                    onClick={() => {
+                      onToggleReaction?.(announcement.id, emoji);
+                      closeReactionPicker();
+                    }}
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-lg transition hover:bg-mist-50 active:scale-110"
+                    aria-label={`React with ${emoji}`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </>,
+            document.body
+          )
+        : null}
+    </>
   );
 }

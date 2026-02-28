@@ -110,7 +110,7 @@ export async function getHomeSummary({
       }
     }),
     listEventsForWeek({ parishId, getNow: () => now, userId: actorUserId }),
-    listAnnouncements({ parishId, status: "published" })
+    listAnnouncements({ parishId, userId: actorUserId, status: "published" })
   ]);
 
   const taskSummary = taskCounts.reduce(
