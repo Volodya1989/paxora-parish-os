@@ -21,27 +21,41 @@ const optionalTrimmedText = z.preprocess(
   z.string().optional()
 );
 
+const nullToUndefined = (value: unknown) => (value === null ? undefined : value);
+
+const announcementScopeSchema = z.preprocess(
+  nullToUndefined,
+  z.enum(["PARISH", "CHAT"]).default("PARISH")
+);
+
+const optionalChannelIdSchema = z.preprocess(nullToUndefined, z.string().min(1).optional());
+
+const audienceUserIdsSchema = z.preprocess(
+  nullToUndefined,
+  z.array(z.string().min(1)).optional().default([])
+);
+
 export const createAnnouncementSchema = z.object({
   parishId: z.string().min(1),
-  scopeType: z.enum(["PARISH", "CHAT"]).default("PARISH"),
-  chatChannelId: z.string().min(1).optional(),
+  scopeType: announcementScopeSchema,
+  chatChannelId: optionalChannelIdSchema,
   title: requiredTrimmedText,
   body: requiredTrimmedText,
   bodyHtml: optionalTrimmedText,
   bodyText: optionalTrimmedText,
-  audienceUserIds: z.array(z.string().min(1)).optional().default([]),
+  audienceUserIds: audienceUserIdsSchema,
   published: z.preprocess((value) => value === "true" || value === true, z.boolean())
 });
 
 export const updateAnnouncementSchema = z.object({
   id: z.string().min(1),
-  scopeType: z.enum(["PARISH", "CHAT"]).default("PARISH"),
-  chatChannelId: z.string().min(1).optional(),
+  scopeType: announcementScopeSchema,
+  chatChannelId: optionalChannelIdSchema,
   title: requiredTrimmedText,
   body: requiredTrimmedText,
   bodyHtml: optionalTrimmedText,
   bodyText: optionalTrimmedText,
-  audienceUserIds: z.array(z.string().min(1)).optional().default([]),
+  audienceUserIds: audienceUserIdsSchema,
   published: z.preprocess((value) => value === "true" || value === true, z.boolean())
 });
 
