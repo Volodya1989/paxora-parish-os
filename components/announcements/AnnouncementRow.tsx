@@ -11,6 +11,7 @@ import type { AnnouncementListItem } from "@/lib/queries/announcements";
 import { useTranslations } from "@/lib/i18n/provider";
 import ReportContentDialog from "@/components/moderation/ReportContentDialog";
 import { REACTION_EMOJIS } from "@/lib/chat/reactions";
+import AnnouncementComments from "@/components/announcements/AnnouncementComments";
 
 type AnnouncementRowProps = {
   announcement: AnnouncementListItem;
@@ -22,6 +23,8 @@ type AnnouncementRowProps = {
   isBusy?: boolean;
   isReadOnly?: boolean;
   showReportAction?: boolean;
+  currentUserId: string;
+  canModerateComments: boolean;
 };
 
 const LONG_PRESS_MS = 500;
@@ -50,7 +53,9 @@ export default function AnnouncementRow({
   onToggleReaction,
   isBusy = false,
   isReadOnly = false,
-  showReportAction = false
+  showReportAction = false,
+  currentUserId,
+  canModerateComments
 }: AnnouncementRowProps) {
   const t = useTranslations();
   const isPublished = Boolean(announcement.publishedAt);
@@ -228,6 +233,17 @@ export default function AnnouncementRow({
               ))
             : null}
         </div>
+
+        {isPublished ? (
+          <AnnouncementComments
+            announcementId={announcement.id}
+            announcementAuthorId={announcement.createdBy?.id}
+            currentUserId={currentUserId}
+            canModerateAll={canModerateComments}
+            initialCount={announcement.commentsCount ?? 0}
+            isOpen={expanded || !canToggleExpanded}
+          />
+        ) : null}
 
         {canToggleExpanded ? (
           <button

@@ -25,12 +25,16 @@ type AnnouncementsViewProps = {
   drafts: AnnouncementListItem[];
   published: AnnouncementListItem[];
   canManage?: boolean;
+  currentUserId: string;
+  canModerateComments: boolean;
 };
 
 export default function AnnouncementsView({
   drafts,
   published,
-  canManage = true
+  canManage = true,
+  currentUserId,
+  canModerateComments
 }: AnnouncementsViewProps) {
   const t = useTranslations();
   const [activeTab, setActiveTab] = useState<AnnouncementStatus>("draft");
@@ -194,6 +198,8 @@ export default function AnnouncementsView({
                         }
                         onToggleReaction={handleToggleReaction}
                         isBusy={pendingId === announcement.id}
+                        currentUserId={currentUserId}
+                        canModerateComments={canModerateComments}
                       />
                     ))
                   )}
@@ -226,6 +232,8 @@ export default function AnnouncementsView({
                         }
                         onToggleReaction={handleToggleReaction}
                         isBusy={pendingId === announcement.id}
+                        currentUserId={currentUserId}
+                        canModerateComments={canModerateComments}
                       />
                     ))
                   )}
@@ -250,6 +258,8 @@ export default function AnnouncementsView({
                     isBusy={pendingId === announcement.id}
                     showReportAction
                     isReadOnly
+                    currentUserId={currentUserId}
+                    canModerateComments={canModerateComments}
                   />
                 ))
               )}

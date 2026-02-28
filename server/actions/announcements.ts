@@ -14,14 +14,17 @@ import {
   sendAnnouncementEmailSchema,
   sendTestAnnouncementEmailSchema,
   updateAnnouncementSchema,
-  updateAnnouncementStatusSchema
+  updateAnnouncementStatusSchema,
+  listAnnouncementCommentsSchema,
+  createAnnouncementCommentSchema,
+  deleteAnnouncementCommentSchema
 } from "@/lib/validation/announcements";
 import { notifyAnnouncementPublished } from "@/lib/push/notify";
 import { notifyAnnouncementPublishedInApp } from "@/lib/notifications/notify";
 import { sanitizeAnnouncementHtml, stripHtmlToText } from "@/lib/sanitize/html";
 import { sendEmail } from "@/lib/email/emailService";
 import { renderAnnouncementEmail } from "@/emails/templates/announcement";
-import { canAccessAnnouncement, listChatAudienceMemberIds } from "@/lib/announcements/access";
+import { buildAnnouncementVisibilityWhere, canAccessAnnouncement, listChatAudienceMemberIds } from "@/lib/announcements/access";
 import { REACTION_EMOJIS } from "@/lib/chat/reactions";
 
 function assertSession(session: Session | null) {
@@ -111,6 +114,33 @@ async function buildAnnouncementReactionSummary(announcementId: string, userId: 
     if (!count) return [];
     return [{ emoji, count, reactedByMe: reactedSet.has(emoji) }];
   });
+}
+
+async function requirePublishedAnnouncementAccess(input: {
+  announcementId: string;
+  parishId: string;
+  userId: string;
+}) {
+  const announcement = await prisma.announcement.findFirst({
+    where: {
+      id: input.announcementId,
+      ...buildAnnouncementVisibilityWhere({
+        parishId: input.parishId,
+        userId: input.userId,
+        status: "published"
+      })
+    },
+    select: {
+      id: true,
+      createdById: true
+    }
+  });
+
+  if (!announcement) {
+    throw new Error("Not found");
+  }
+
+  return announcement;
 }
 
 export async function createAnnouncementDraft(input: {
@@ -760,4 +790,147 @@ export async function toggleAnnouncementReaction(input: { announcementId: string
 
   const reactions = await buildAnnouncementReactionSummary(input.announcementId, userId);
   return { announcementId: input.announcementId, reactions };
+}
+
+
+
+export async function listAnnouncementComments(input: { announcementId: string }) {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  const parsed = listAnnouncementCommentsSchema.safeParse(input);
+  if (!parsed.success) {
+    throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
+  }
+
+  await requirePublishedAnnouncementAccess({
+    announcementId: parsed.data.announcementId,
+    parishId,
+    userId
+  });
+
+  const comments = await prisma.announcementComment.findMany({
+    where: { announcementId: parsed.data.announcementId },
+    orderBy: [{ createdAt: "asc" }],
+    select: {
+      id: true,
+      content: true,
+      createdAt: true,
+      updatedAt: true,
+      author: {
+        select: {
+          id: true,
+          name: true,
+          email: true
+        }
+      }
+    }
+  });
+
+  return comments.map((comment) => ({
+    id: comment.id,
+    content: comment.content,
+    createdAt: comment.createdAt.toISOString(),
+    updatedAt: comment.updatedAt.toISOString(),
+    author: {
+      id: comment.author.id,
+      name: comment.author.name ?? comment.author.email ?? "Parish member"
+    }
+  }));
+}
+
+export async function createAnnouncementComment(input: { announcementId: string; content: string }) {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  const parsed = createAnnouncementCommentSchema.safeParse(input);
+  if (!parsed.success) {
+    throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
+  }
+
+  await requirePublishedAnnouncementAccess({
+    announcementId: parsed.data.announcementId,
+    parishId,
+    userId
+  });
+
+  const comment = await prisma.announcementComment.create({
+    data: {
+      announcementId: parsed.data.announcementId,
+      authorId: userId,
+      content: parsed.data.content
+    },
+    select: {
+      id: true,
+      content: true,
+      createdAt: true,
+      updatedAt: true,
+      author: {
+        select: {
+          id: true,
+          name: true,
+          email: true
+        }
+      }
+    }
+  });
+
+  revalidatePath("/announcements");
+
+  return {
+    id: comment.id,
+    content: comment.content,
+    createdAt: comment.createdAt.toISOString(),
+    updatedAt: comment.updatedAt.toISOString(),
+    author: {
+      id: comment.author.id,
+      name: comment.author.name ?? comment.author.email ?? "Parish member"
+    }
+  };
+}
+
+export async function deleteAnnouncementComment(input: { commentId: string }) {
+  const session = await getServerSession(authOptions);
+  const { userId, parishId } = assertSession(session);
+
+  const parsed = deleteAnnouncementCommentSchema.safeParse(input);
+  if (!parsed.success) {
+    throw new Error(parsed.error.errors[0]?.message ?? "Invalid input");
+  }
+
+  const comment = await prisma.announcementComment.findUnique({
+    where: { id: parsed.data.commentId },
+    select: {
+      id: true,
+      authorId: true,
+      announcementId: true,
+      announcement: {
+        select: {
+          createdById: true
+        }
+      }
+    }
+  });
+
+  if (!comment) {
+    throw new Error("Not found");
+  }
+
+  await requirePublishedAnnouncementAccess({
+    announcementId: comment.announcementId,
+    parishId,
+    userId
+  });
+
+  const membership = await requireParishMembership(userId, parishId);
+  const canDeleteAny =
+    isParishLeader(membership.role) ||
+    comment.announcement.createdById === userId;
+
+  if (!canDeleteAny && comment.authorId !== userId) {
+    throw new Error("Forbidden");
+  }
+
+  await prisma.announcementComment.delete({ where: { id: comment.id } });
+  revalidatePath("/announcements");
 }

@@ -62,3 +62,30 @@ export const sendAnnouncementEmailSchema = z.object({
 export const sendTestAnnouncementEmailSchema = z.object({
   announcementId: z.string().min(1)
 });
+
+
+export const ANNOUNCEMENT_COMMENT_MAX_LENGTH = 1000;
+
+export const listAnnouncementCommentsSchema = z.object({
+  announcementId: z.string().min(1)
+});
+
+export const createAnnouncementCommentSchema = z.object({
+  announcementId: z.string().min(1),
+  content: z.preprocess(
+    (value) => {
+      if (typeof value !== "string") {
+        return value;
+      }
+      return value.trim();
+    },
+    z
+      .string()
+      .min(1, "Comment is required")
+      .max(ANNOUNCEMENT_COMMENT_MAX_LENGTH, `Comment must be ${ANNOUNCEMENT_COMMENT_MAX_LENGTH} characters or fewer`)
+  )
+});
+
+export const deleteAnnouncementCommentSchema = z.object({
+  commentId: z.string().min(1)
+});

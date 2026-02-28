@@ -58,7 +58,13 @@ export default async function AnnouncementsPage({
       subtitle={t("announcements.subtitle")}
       gradientClass="from-amber-500 via-amber-400 to-orange-400"
     >
-      <AnnouncementsView drafts={drafts} published={published} canManage={canManage} />
+      <AnnouncementsView
+        drafts={drafts}
+        published={published}
+        canManage={canManage}
+        currentUserId={session.user.id}
+        canModerateComments={canManage}
+      />
     </ParishionerPageLayout>
   );
 }

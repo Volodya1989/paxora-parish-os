@@ -20,6 +20,7 @@ const baseAnnouncement: AnnouncementListItem = {
   chatChannelName: null,
   archivedAt: null,
   reactions: [],
+  commentsCount: 0,
   createdBy: {
     id: "user-1",
     name: "St. Anne Office"
@@ -32,7 +33,9 @@ test("AnnouncementRow renders title, status chip, and actions", () => {
       createElement(AnnouncementRow, {
         announcement: baseAnnouncement,
         onTogglePublish: () => undefined,
-        onArchive: () => undefined
+        onArchive: () => undefined,
+        currentUserId: "user-1",
+        canModerateComments: false
       })
     )
   );
@@ -51,7 +54,9 @@ test("AnnouncementRow includes publish toggle for drafts", () => {
       createElement(AnnouncementRow, {
         announcement: baseAnnouncement,
         onTogglePublish: () => undefined,
-        onArchive: () => undefined
+        onArchive: () => undefined,
+        currentUserId: "user-1",
+        canModerateComments: false
       })
     )
   );

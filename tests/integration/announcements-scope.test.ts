@@ -29,6 +29,7 @@ mock.module("next/cache", {
 });
 
 async function resetDatabase() {
+  await prisma.announcementComment.deleteMany();
   await prisma.announcementReaction.deleteMany();
   await prisma.announcement.deleteMany();
   await prisma.chatReaction.deleteMany();
@@ -228,4 +229,142 @@ dbTest("announcement reactions enforce access and provide counts", async () => {
 
   const second = await actions.toggleAnnouncementReaction({ announcementId: announcement.id, emoji: "🙏" });
   assert.equal(second.reactions.length, 0);
+});
+
+
+dbTest("announcement comments enforce scoped visibility and deletion rules", async () => {
+  const parish = await prisma.parish.create({ data: { name: "St Comments", slug: "st-comments" } });
+  const admin = await prisma.user.create({
+    data: { email: "admin.comments@test.com", passwordHash: "x", activeParishId: parish.id }
+  });
+  const author = await prisma.user.create({
+    data: { email: "author.comments@test.com", passwordHash: "x", activeParishId: parish.id }
+  });
+  const member = await prisma.user.create({
+    data: { email: "member.comments@test.com", passwordHash: "x", activeParishId: parish.id }
+  });
+  const outsider = await prisma.user.create({
+    data: { email: "outsider.comments@test.com", passwordHash: "x", activeParishId: parish.id }
+  });
+
+  await prisma.membership.createMany({
+    data: [
+      { parishId: parish.id, userId: admin.id, role: "ADMIN" },
+      { parishId: parish.id, userId: author.id, role: "MEMBER" },
+      { parishId: parish.id, userId: member.id, role: "MEMBER" },
+      { parishId: parish.id, userId: outsider.id, role: "MEMBER" }
+    ]
+  });
+
+  const group = await prisma.group.create({
+    data: { parishId: parish.id, createdById: admin.id, name: "Readers" }
+  });
+  await prisma.groupMembership.createMany({
+    data: [
+      { groupId: group.id, userId: author.id, status: "ACTIVE", role: "PARISHIONER" },
+      { groupId: group.id, userId: member.id, status: "ACTIVE", role: "PARISHIONER" }
+    ]
+  });
+
+  const channel = await prisma.chatChannel.create({
+    data: { parishId: parish.id, groupId: group.id, type: "GROUP", name: "Readers chat" }
+  });
+
+  const announcement = await prisma.announcement.create({
+    data: {
+      parishId: parish.id,
+      scopeType: "CHAT",
+      chatChannelId: channel.id,
+      title: "Readers only",
+      body: "Scoped post",
+      createdById: author.id,
+      publishedAt: new Date()
+    }
+  });
+
+  session.user.id = member.id;
+  session.user.activeParishId = parish.id;
+
+  const created = await actions.createAnnouncementComment({
+    announcementId: announcement.id,
+    content: "Thanks for sharing"
+  });
+  assert.equal(created.content, "Thanks for sharing");
+
+  const listed = await actions.listAnnouncementComments({ announcementId: announcement.id });
+  assert.equal(listed.length, 1);
+  assert.equal(listed[0]?.author.id, member.id);
+
+  session.user.id = outsider.id;
+  await assert.rejects(
+    actions.listAnnouncementComments({ announcementId: announcement.id }),
+    /Not found/
+  );
+  await assert.rejects(
+    actions.createAnnouncementComment({ announcementId: announcement.id, content: "hi" }),
+    /Not found/
+  );
+
+  session.user.id = author.id;
+  await actions.deleteAnnouncementComment({ commentId: created.id });
+  const afterDelete = await prisma.announcementComment.findUnique({ where: { id: created.id } });
+  assert.equal(afterDelete, null);
+});
+
+dbTest("announcement comments reject invalid content and enforce own-comment delete", async () => {
+  const parish = await prisma.parish.create({ data: { name: "St Limits", slug: "st-limits" } });
+  const admin = await prisma.user.create({
+    data: { email: "admin.limits@test.com", passwordHash: "x", activeParishId: parish.id }
+  });
+  const memberA = await prisma.user.create({
+    data: { email: "membera.limits@test.com", passwordHash: "x", activeParishId: parish.id }
+  });
+  const memberB = await prisma.user.create({
+    data: { email: "memberb.limits@test.com", passwordHash: "x", activeParishId: parish.id }
+  });
+
+  await prisma.membership.createMany({
+    data: [
+      { parishId: parish.id, userId: admin.id, role: "ADMIN" },
+      { parishId: parish.id, userId: memberA.id, role: "MEMBER" },
+      { parishId: parish.id, userId: memberB.id, role: "MEMBER" }
+    ]
+  });
+
+  const announcement = await prisma.announcement.create({
+    data: {
+      parishId: parish.id,
+      scopeType: "PARISH",
+      title: "All parish",
+      body: "Post",
+      createdById: admin.id,
+      publishedAt: new Date()
+    }
+  });
+
+  session.user.id = memberA.id;
+  session.user.activeParishId = parish.id;
+
+  await assert.rejects(
+    actions.createAnnouncementComment({ announcementId: announcement.id, content: "   " }),
+    /Comment is required/
+  );
+
+  await assert.rejects(
+    actions.createAnnouncementComment({ announcementId: announcement.id, content: "x".repeat(1001) }),
+    /characters or fewer/
+  );
+
+  const comment = await actions.createAnnouncementComment({
+    announcementId: announcement.id,
+    content: "Valid comment"
+  });
+
+  session.user.id = memberB.id;
+  await assert.rejects(actions.deleteAnnouncementComment({ commentId: comment.id }), /Forbidden/);
+
+  session.user.id = admin.id;
+  await actions.deleteAnnouncementComment({ commentId: comment.id });
+  const removed = await prisma.announcementComment.findUnique({ where: { id: comment.id } });
+  assert.equal(removed, null);
 });
