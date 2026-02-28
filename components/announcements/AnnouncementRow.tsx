@@ -9,7 +9,7 @@ import Card from "@/components/ui/Card";
 import { cn } from "@/lib/ui/cn";
 import type { AnnouncementListItem } from "@/lib/queries/announcements";
 import { useTranslations } from "@/lib/i18n/provider";
-import ReportContentButton from "@/components/moderation/ReportContentButton";
+import ReportContentDialog from "@/components/moderation/ReportContentDialog";
 import { REACTION_EMOJIS } from "@/lib/chat/reactions";
 
 type AnnouncementRowProps = {
@@ -61,9 +61,12 @@ export default function AnnouncementRow({
 
   const [expanded, setExpanded] = useState(false);
   const hasRichContent = Boolean(announcement.bodyHtml);
+  const fullBodyText = announcement.bodyText ?? announcement.body ?? "";
+  const canToggleExpanded = hasRichContent && fullBodyText.length > 120;
   const excerptText = buildExcerpt(announcement.bodyText ?? announcement.body);
   const reactions = announcement.reactions ?? [];
   const hasReactions = reactions.length > 0;
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [reactionPickerOpen, setReactionPickerOpen] = useState(false);
   const [pickerPosition, setPickerPosition] = useState<{ top: number; left: number } | null>(
     null
@@ -174,16 +177,6 @@ export default function AnnouncementRow({
           <p className="text-sm text-ink-500">{excerptText}</p>
         )}
 
-        {hasRichContent ? (
-          <button
-            type="button"
-            onClick={() => setExpanded(!expanded)}
-            className="text-xs font-medium text-primary-600 hover:text-primary-700 transition"
-          >
-            {expanded ? "Show less" : "Read more"}
-          </button>
-        ) : null}
-
         <p className="text-xs text-ink-400">
           {announcement.createdBy?.name ?? "Parish staff"} · {timestamp}
         </p>
@@ -208,11 +201,35 @@ export default function AnnouncementRow({
               ))
             : null}
         </div>
+
+        {canToggleExpanded ? (
+          <button
+            type="button"
+            onClick={() => setExpanded(!expanded)}
+            className="w-full rounded-button border border-mist-200 px-3 py-2 text-sm font-medium text-primary-600 transition hover:bg-mist-50 hover:text-primary-700"
+            aria-label={expanded ? "Show less announcement content" : "Read more announcement content"}
+          >
+            {expanded ? "Show less" : "Read more"}
+          </button>
+        ) : null}
       </div>
 
       {isReadOnly ? (
         showReportAction ? (
-          <ReportContentButton contentType="ANNOUNCEMENT" contentId={announcement.id} variant="secondary" />
+          <Dropdown>
+            <DropdownTrigger
+              iconOnly
+              aria-label="Announcement actions"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-button border border-mist-200 text-ink-500 transition hover:bg-mist-50 focus-ring"
+            >
+              ⋯
+            </DropdownTrigger>
+            <DropdownMenu ariaLabel="Announcement actions">
+              <DropdownItem onClick={() => setReportDialogOpen(true)}>
+                {t("common.reportContent")}
+              </DropdownItem>
+            </DropdownMenu>
+          </Dropdown>
         ) : null
       ) : (
         <div className="flex items-center gap-2">
@@ -268,6 +285,15 @@ export default function AnnouncementRow({
       )}
         </Card>
       </div>
+
+      {showReportAction ? (
+        <ReportContentDialog
+          open={reportDialogOpen}
+          onOpenChange={setReportDialogOpen}
+          contentType="ANNOUNCEMENT"
+          contentId={announcement.id}
+        />
+      ) : null}
 
       {reactionPickerOpen && pickerPosition
         ? createPortal(
