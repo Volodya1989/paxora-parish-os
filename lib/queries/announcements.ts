@@ -26,6 +26,7 @@ export type AnnouncementListItem = {
   publishedAt: Date | null;
   archivedAt: Date | null;
   reactions: ReactionSummary[];
+  commentsCount: number;
   createdBy: {
     id: string;
     name: string;
@@ -46,10 +47,22 @@ export type AnnouncementDetail = {
   updatedAt: Date;
   publishedAt: Date | null;
   reactions: ReactionSummary[];
+  commentsCount: number;
   createdBy: {
     id: string;
     name: string;
   } | null;
+};
+
+export type AnnouncementCommentItem = {
+  id: string;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
+  author: {
+    id: string;
+    name: string;
+  };
 };
 
 export type AnnouncementDeliverySummary = {
@@ -156,6 +169,9 @@ export async function getAnnouncement({
           name: true,
           email: true
         }
+      },
+      _count: {
+        select: { comments: true }
       }
     }
   });
@@ -172,6 +188,7 @@ export async function getAnnouncement({
     chatChannelName: announcement.chatChannel?.name ?? null,
     audienceUserIds: announcement.audienceUserIds ?? [],
     reactions: reactionsByAnnouncement.get(announcement.id) ?? [],
+    commentsCount: announcement._count.comments,
     createdBy: announcement.createdBy
       ? {
           id: announcement.createdBy.id,
@@ -210,6 +227,9 @@ export async function listAnnouncements({ parishId, userId, status, includeAll, 
           name: true,
           email: true
         }
+      },
+      _count: {
+        select: { comments: true }
       }
     }
   });
@@ -224,6 +244,7 @@ export async function listAnnouncements({ parishId, userId, status, includeAll, 
     bodyText: announcement.bodyText ?? null,
     chatChannelName: announcement.chatChannel?.name ?? null,
     reactions: reactionsByAnnouncement.get(announcement.id) ?? [],
+    commentsCount: announcement._count.comments,
     createdBy: announcement.createdBy
       ? {
           id: announcement.createdBy.id,
@@ -255,4 +276,56 @@ export async function getAnnouncementDeliverySummary(
     failedCount,
     totalCount: sentCount + failedCount
   };
+}
+
+
+export async function listAnnouncementComments({
+  parishId,
+  userId,
+  announcementId
+}: {
+  parishId: string;
+  userId: string;
+  announcementId: string;
+}): Promise<AnnouncementCommentItem[] | null> {
+  const hasAccess = await prisma.announcement.findFirst({
+    where: {
+      id: announcementId,
+      ...buildAnnouncementVisibilityWhere({ parishId, userId, status: "published" })
+    },
+    select: { id: true }
+  });
+
+  if (!hasAccess) {
+    return null;
+  }
+
+  const comments = await prisma.announcementComment.findMany({
+    where: { announcementId },
+    orderBy: [{ createdAt: "asc" }],
+    select: {
+      id: true,
+      content: true,
+      createdAt: true,
+      updatedAt: true,
+      author: {
+        select: {
+          id: true,
+          name: true,
+          email: true
+        }
+      }
+    }
+  });
+
+  return comments.map((comment) => ({
+    id: comment.id,
+    content: comment.content,
+    createdAt: comment.createdAt,
+    updatedAt: comment.updatedAt,
+    author: {
+      id: comment.author.id,
+      name: comment.author.name ?? comment.author.email ?? "Parish member"
+    }
+  }));
 }

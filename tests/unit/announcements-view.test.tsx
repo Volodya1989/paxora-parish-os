@@ -28,7 +28,9 @@ test("Parishioner announcements view hides create actions", () => {
           createElement(AnnouncementsView, {
             drafts: [],
             published: [],
-            canManage: false
+            canManage: false,
+            currentUserId: "user-1",
+            canModerateComments: false
           })
         )
       )

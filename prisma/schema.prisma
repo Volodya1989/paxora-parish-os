@@ -397,6 +397,7 @@ model User {
   taskActivities           TaskActivity[]
   digestsCreated           Digest[]                 @relation("DigestAuthor")
   createdAnnouncements     Announcement[]           @relation("AnnouncementAuthor")
+  announcementComments     AnnouncementComment[]
   announcementReactions    AnnouncementReaction[]
   eventRsvps               EventRsvp[]
   eventReminders           EventReminder[]
@@ -1225,11 +1226,28 @@ model Announcement {
   createdBy User?      @relation("AnnouncementAuthor", fields: [createdById], references: [id])
   chatChannel ChatChannel? @relation(fields: [chatChannelId], references: [id], onDelete: SetNull)
   emailLogs EmailLog[]
+  comments AnnouncementComment[]
   reactions AnnouncementReaction[]
 
   @@index([parishId, publishedAt])
   @@index([parishId, scopeType])
   @@index([chatChannelId])
+}
+
+model AnnouncementComment {
+  id             String   @id @default(cuid())
+  announcementId String
+  authorId       String
+  content        String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  author       User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([announcementId])
+  @@index([authorId])
+  @@index([createdAt])
 }
 
 model AnnouncementReaction {
