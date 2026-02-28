@@ -162,11 +162,13 @@ export default function AnnouncementRow({
               {isReadOnly && showReportAction ? (
                 <div className="-mr-1 shrink-0">
                   <Dropdown>
+                    {/* Match the title's text-base leading-tight so the ⋯ glyph sits
+                        in an identical 20px line-box, pinned to flex-start alongside the
+                        first line of the title.  h-10 w-10 keeps the 44px touch target. */}
                     <DropdownTrigger
                       iconOnly
                       aria-label="More actions"
-                      // Nudge by 1px so the kebab optically aligns with the title's first baseline across wrapped titles.
-                      className="-mt-[1px] inline-flex h-10 w-10 items-start justify-center rounded-md p-2 text-muted-foreground leading-none transition hover:bg-muted/40 active:bg-muted/60 focus-ring"
+                      className="inline-flex h-10 w-10 items-start justify-center rounded-md text-base text-muted-foreground leading-tight transition hover:bg-muted/40 active:bg-muted/60 focus-ring"
                       onPointerDown={(event) => event.stopPropagation()}
                       onClick={(event) => event.stopPropagation()}
                     >
