@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@/components/ui/Dropdown";
@@ -22,6 +23,9 @@ type AnnouncementRowProps = {
   isReadOnly?: boolean;
   showReportAction?: boolean;
 };
+
+const LONG_PRESS_MS = 500;
+const LONG_PRESS_MOVE_THRESHOLD = 12;
 
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat("en-US", {
@@ -60,15 +64,92 @@ export default function AnnouncementRow({
   const excerptText = buildExcerpt(announcement.bodyText ?? announcement.body);
   const reactions = announcement.reactions ?? [];
   const hasReactions = reactions.length > 0;
-  const showReactionPicker = Boolean(onToggleReaction) && expanded;
+  const [reactionPickerOpen, setReactionPickerOpen] = useState(false);
+  const [pickerPosition, setPickerPosition] = useState<{ top: number; left: number } | null>(
+    null
+  );
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startPointRef = useRef<{ x: number; y: number } | null>(null);
+
+  const clearLongPressTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  const closeReactionPicker = useCallback(() => {
+    setReactionPickerOpen(false);
+  }, []);
+
+  useEffect(() => clearLongPressTimer, [clearLongPressTimer]);
+
+  const openReactionPicker = useCallback(() => {
+    if (!onToggleReaction || !cardRef.current) return;
+
+    const rect = cardRef.current.getBoundingClientRect();
+    const pickerWidth = 250;
+    const horizontalMargin = 12;
+    const top = Math.max(8, rect.top - 52);
+    const left = Math.min(
+      window.innerWidth - pickerWidth - horizontalMargin,
+      Math.max(horizontalMargin, rect.left)
+    );
+
+    setPickerPosition({ top, left });
+    setReactionPickerOpen(true);
+  }, [onToggleReaction]);
+
+  const handlePointerDown = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (!onToggleReaction || event.button !== 0) return;
+
+      startPointRef.current = { x: event.clientX, y: event.clientY };
+      clearLongPressTimer();
+      timerRef.current = setTimeout(() => {
+        openReactionPicker();
+      }, LONG_PRESS_MS);
+    },
+    [clearLongPressTimer, onToggleReaction, openReactionPicker]
+  );
+
+  const handlePointerMove = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (!startPointRef.current) return;
+      const deltaX = Math.abs(event.clientX - startPointRef.current.x);
+      const deltaY = Math.abs(event.clientY - startPointRef.current.y);
+      if (deltaX > LONG_PRESS_MOVE_THRESHOLD || deltaY > LONG_PRESS_MOVE_THRESHOLD) {
+        clearLongPressTimer();
+      }
+    },
+    [clearLongPressTimer]
+  );
+
+  const handlePointerEnd = useCallback(() => {
+    clearLongPressTimer();
+    startPointRef.current = null;
+  }, [clearLongPressTimer]);
 
   return (
-    <Card
+    <>
+      <div ref={cardRef}>
+        <Card
       className={cn(
         "flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between",
         isBusy && "opacity-70"
       )}
-    >
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerEnd}
+        onPointerCancel={handlePointerEnd}
+        onPointerLeave={handlePointerEnd}
+        onContextMenu={(event) => {
+          if (onToggleReaction) {
+            event.preventDefault();
+          }
+        }}
+      >
       <div className="min-w-0 flex-1 space-y-2">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="text-base font-semibold text-ink-900">{announcement.title}</h3>
@@ -126,21 +207,6 @@ export default function AnnouncementRow({
                 </button>
               ))
             : null}
-          {showReactionPicker ? (
-            <div className="flex gap-1">
-              {REACTION_EMOJIS.map((emoji) => (
-                <button
-                  key={`${announcement.id}-add-${emoji}`}
-                  type="button"
-                  onClick={() => onToggleReaction?.(announcement.id, emoji)}
-                  className="rounded-full border border-mist-200 px-2 py-1 text-xs hover:bg-mist-50"
-                  aria-label={`React with ${emoji}`}
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          ) : null}
         </div>
       </div>
 
@@ -200,6 +266,37 @@ export default function AnnouncementRow({
           </Dropdown>
         </div>
       )}
-    </Card>
+        </Card>
+      </div>
+
+      {reactionPickerOpen && pickerPosition
+        ? createPortal(
+            <>
+              <div className="fixed inset-0 z-[9998] bg-black/10" onClick={closeReactionPicker} />
+              <div
+                className="fixed z-[9999] flex items-center gap-1 rounded-full border border-mist-200 bg-white px-2 py-1 shadow-xl"
+                style={{ top: pickerPosition.top, left: pickerPosition.left }}
+                onClick={(event) => event.stopPropagation()}
+              >
+                {REACTION_EMOJIS.map((emoji) => (
+                  <button
+                    key={`${announcement.id}-add-${emoji}`}
+                    type="button"
+                    onClick={() => {
+                      onToggleReaction?.(announcement.id, emoji);
+                      closeReactionPicker();
+                    }}
+                    className="flex h-9 w-9 items-center justify-center rounded-full text-lg transition hover:bg-mist-50 active:scale-110"
+                    aria-label={`React with ${emoji}`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </>,
+            document.body
+          )
+        : null}
+    </>
   );
 }
