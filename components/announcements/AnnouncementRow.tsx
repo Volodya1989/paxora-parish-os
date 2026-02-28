@@ -9,7 +9,7 @@ import Card from "@/components/ui/Card";
 import { cn } from "@/lib/ui/cn";
 import type { AnnouncementListItem } from "@/lib/queries/announcements";
 import { useTranslations } from "@/lib/i18n/provider";
-import ReportContentButton from "@/components/moderation/ReportContentButton";
+import ReportContentDialog from "@/components/moderation/ReportContentDialog";
 import { REACTION_EMOJIS } from "@/lib/chat/reactions";
 
 type AnnouncementRowProps = {
@@ -61,9 +61,12 @@ export default function AnnouncementRow({
 
   const [expanded, setExpanded] = useState(false);
   const hasRichContent = Boolean(announcement.bodyHtml);
+  const fullBodyText = announcement.bodyText ?? announcement.body ?? "";
+  const canToggleExpanded = hasRichContent && fullBodyText.length > 120;
   const excerptText = buildExcerpt(announcement.bodyText ?? announcement.body);
   const reactions = announcement.reactions ?? [];
   const hasReactions = reactions.length > 0;
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [reactionPickerOpen, setReactionPickerOpen] = useState(false);
   const [pickerPosition, setPickerPosition] = useState<{ top: number; left: number } | null>(
     null
@@ -135,35 +138,59 @@ export default function AnnouncementRow({
     <>
       <div ref={cardRef}>
         <Card
-      className={cn(
-        "flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between",
-        isBusy && "opacity-70"
-      )}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerEnd}
-        onPointerCancel={handlePointerEnd}
-        onPointerLeave={handlePointerEnd}
-        onContextMenu={(event) => {
-          if (onToggleReaction) {
-            event.preventDefault();
-          }
-        }}
-      >
-      <div className="min-w-0 flex-1 space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-base font-semibold text-ink-900">{announcement.title}</h3>
-          {isReadOnly ? null : (
-            <Badge tone={isPublished ? "success" : "warning"}>
-              {isPublished ? t("common.published") : t("common.draft")}
-            </Badge>
+          className={cn(
+            "flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between",
+            isBusy && "opacity-70"
           )}
-          <Badge tone="neutral">
-            {announcement.scopeType === "CHAT"
-              ? announcement.chatChannelName ?? "Chat"
-              : "Parish"}
-          </Badge>
-        </div>
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerEnd}
+          onPointerCancel={handlePointerEnd}
+          onPointerLeave={handlePointerEnd}
+          onContextMenu={(event) => {
+            if (onToggleReaction) {
+              event.preventDefault();
+            }
+          }}
+        >
+          <div className="min-w-0 flex-1 space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="min-w-0 flex-1 text-base font-semibold leading-tight text-ink-900">
+                {announcement.title}
+              </h3>
+
+              {isReadOnly && showReportAction ? (
+                <div className="-mr-1 shrink-0 self-start">
+                  <Dropdown>
+                    <DropdownTrigger
+                      iconOnly
+                      aria-label="More actions"
+                      className="-mt-0.5 inline-flex h-10 w-10 items-start justify-center rounded-md p-2 text-ink-500 leading-none transition hover:bg-mist-50 active:bg-mist-100 focus-ring"
+                      onPointerDown={(event) => event.stopPropagation()}
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      ⋯
+                    </DropdownTrigger>
+                    <DropdownMenu ariaLabel="Announcement actions">
+                      <DropdownItem onClick={() => setReportDialogOpen(true)}>
+                        {t("common.reportContent")}
+                      </DropdownItem>
+                    </DropdownMenu>
+                  </Dropdown>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {isReadOnly ? null : (
+                <Badge tone={isPublished ? "success" : "warning"}>
+                  {isPublished ? t("common.published") : t("common.draft")}
+                </Badge>
+              )}
+              <Badge tone="neutral">
+                {announcement.scopeType === "CHAT" ? announcement.chatChannelName ?? "Chat" : "Parish"}
+              </Badge>
+            </div>
 
         {hasRichContent && expanded ? (
           <div
@@ -173,16 +200,6 @@ export default function AnnouncementRow({
         ) : (
           <p className="text-sm text-ink-500">{excerptText}</p>
         )}
-
-        {hasRichContent ? (
-          <button
-            type="button"
-            onClick={() => setExpanded(!expanded)}
-            className="text-xs font-medium text-primary-600 hover:text-primary-700 transition"
-          >
-            {expanded ? "Show less" : "Read more"}
-          </button>
-        ) : null}
 
         <p className="text-xs text-ink-400">
           {announcement.createdBy?.name ?? "Parish staff"} · {timestamp}
@@ -208,14 +225,21 @@ export default function AnnouncementRow({
               ))
             : null}
         </div>
+
+        {canToggleExpanded ? (
+          <button
+            type="button"
+            onClick={() => setExpanded(!expanded)}
+            className="w-full rounded-button border border-mist-200 px-3 py-2 text-sm font-medium text-primary-600 transition hover:bg-mist-50 hover:text-primary-700"
+            aria-label={expanded ? "Show less announcement content" : "Read more announcement content"}
+          >
+            {expanded ? "Show less" : "Read more"}
+          </button>
+        ) : null}
       </div>
 
-      {isReadOnly ? (
-        showReportAction ? (
-          <ReportContentButton contentType="ANNOUNCEMENT" contentId={announcement.id} variant="secondary" />
-        ) : null
-      ) : (
-        <div className="flex items-center gap-2">
+          {isReadOnly ? null : (
+            <div className="flex items-center gap-2">
           <Button
             size="sm"
             variant="secondary"
@@ -238,6 +262,8 @@ export default function AnnouncementRow({
                 "inline-flex h-9 w-9 items-center justify-center rounded-button border border-mist-200 text-ink-500 transition hover:bg-mist-50 focus-ring",
                 isBusy && "cursor-not-allowed opacity-50"
               )}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => event.stopPropagation()}
               disabled={isBusy}
             >
               ⋯
@@ -264,10 +290,19 @@ export default function AnnouncementRow({
               ) : null}
             </DropdownMenu>
           </Dropdown>
-        </div>
-      )}
+            </div>
+          )}
         </Card>
       </div>
+
+      {showReportAction ? (
+        <ReportContentDialog
+          open={reportDialogOpen}
+          onOpenChange={setReportDialogOpen}
+          contentType="ANNOUNCEMENT"
+          contentId={announcement.id}
+        />
+      ) : null}
 
       {reactionPickerOpen && pickerPosition
         ? createPortal(
