@@ -36,14 +36,14 @@ export default function AnnouncementComments({
   currentUserId,
   canModerateAll,
   initialCount,
-  isOpen
+  defaultOpen = false
 }: {
   announcementId: string;
   announcementAuthorId?: string;
   currentUserId: string;
   canModerateAll: boolean;
   initialCount: number;
-  isOpen: boolean;
+  defaultOpen?: boolean;
 }) {
   const { addToast } = useToast();
   const [comments, setComments] = useState<AnnouncementComment[]>([]);
@@ -51,6 +51,7 @@ export default function AnnouncementComments({
   const [loaded, setLoaded] = useState(false);
   const [content, setContent] = useState("");
   const [busy, setBusy] = useState(false);
+  const [threadOpen, setThreadOpen] = useState(defaultOpen);
 
   const effectiveCount = loaded ? comments.length : initialCount;
 
@@ -72,9 +73,15 @@ export default function AnnouncementComments({
   }, [addToast, announcementId]);
 
   useEffect(() => {
-    if (!isOpen || loaded) return;
+    if (!threadOpen || loaded) return;
     void loadComments();
-  }, [isOpen, loaded, loadComments]);
+  }, [threadOpen, loaded, loadComments]);
+
+  useEffect(() => {
+    if (defaultOpen) {
+      setThreadOpen(true);
+    }
+  }, [defaultOpen]);
 
   const canDeleteAny = useMemo(
     () => canModerateAll || (announcementAuthorId ? announcementAuthorId === currentUserId : false),
@@ -118,13 +125,30 @@ export default function AnnouncementComments({
     }
   };
 
-  if (!isOpen) {
-    return <p className="text-xs text-ink-500">{effectiveCount} comments</p>;
+  if (!threadOpen) {
+    return (
+      <button
+        type="button"
+        onClick={() => setThreadOpen(true)}
+        className="text-xs text-ink-500 underline-offset-2 hover:underline"
+      >
+        {effectiveCount} comments
+      </button>
+    );
   }
 
   return (
     <div className="space-y-3 rounded-card border border-mist-100 bg-mist-50 p-3">
-      <p className="text-sm font-semibold text-ink-800">Comments ({effectiveCount})</p>
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-semibold text-ink-800">Comments ({effectiveCount})</p>
+        <button
+          type="button"
+          onClick={() => setThreadOpen(false)}
+          className="text-xs text-ink-500 underline-offset-2 hover:underline"
+        >
+          Hide
+        </button>
+      </div>
       {loading ? <p className="text-sm text-ink-500">Loading comments…</p> : null}
       {!loading && comments.length === 0 ? <p className="text-sm text-ink-500">No comments yet.</p> : null}
       <div className="space-y-2">

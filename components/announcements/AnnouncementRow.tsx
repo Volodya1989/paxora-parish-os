@@ -241,7 +241,7 @@ export default function AnnouncementRow({
             currentUserId={currentUserId}
             canModerateAll={canModerateComments}
             initialCount={announcement.commentsCount ?? 0}
-            isOpen={expanded || !canToggleExpanded}
+            defaultOpen={expanded}
           />
         ) : null}
 
