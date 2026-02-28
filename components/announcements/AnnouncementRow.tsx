@@ -154,29 +154,31 @@ export default function AnnouncementRow({
           }}
         >
           <div className="min-w-0 flex-1 space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="min-w-0 flex-1 text-base font-semibold leading-tight text-ink-900">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+              <h3 className="min-w-0 text-base font-semibold leading-tight text-ink-900">
                 {announcement.title}
               </h3>
 
               {isReadOnly && showReportAction ? (
                 <div className="-mr-1 shrink-0">
-                  <Dropdown>
-                    <DropdownTrigger
-                      iconOnly
-                      aria-label="More actions"
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-md text-base text-muted-foreground leading-tight transition hover:bg-muted/40 active:bg-muted/60 focus-ring"
-                      onPointerDown={(event) => event.stopPropagation()}
-                      onClick={(event) => event.stopPropagation()}
-                    >
-                      ⋯
-                    </DropdownTrigger>
-                    <DropdownMenu ariaLabel="Announcement actions">
-                      <DropdownItem onClick={() => setReportDialogOpen(true)}>
-                        {t("common.reportContent")}
-                      </DropdownItem>
-                    </DropdownMenu>
-                  </Dropdown>
+                  <div className="relative h-5 w-10">
+                    <Dropdown>
+                      <DropdownTrigger
+                        iconOnly
+                        aria-label="More actions"
+                        className="absolute right-0 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-md text-base text-muted-foreground leading-tight transition hover:bg-muted/40 active:bg-muted/60 focus-ring"
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        ⋯
+                      </DropdownTrigger>
+                      <DropdownMenu ariaLabel="Announcement actions">
+                        <DropdownItem onClick={() => setReportDialogOpen(true)}>
+                          {t("common.reportContent")}
+                        </DropdownItem>
+                      </DropdownMenu>
+                    </Dropdown>
+                  </div>
                 </div>
               ) : null}
             </div>
