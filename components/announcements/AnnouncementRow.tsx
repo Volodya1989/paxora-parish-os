@@ -165,7 +165,7 @@ export default function AnnouncementRow({
                     <DropdownTrigger
                       iconOnly
                       aria-label="More actions"
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-md p-2 text-ink-500 leading-none transition hover:bg-mist-50 active:bg-mist-100 focus-ring"
+                      className="inline-flex h-10 w-10 items-start justify-center rounded-md p-2 pt-1.5 text-ink-500 leading-none transition hover:bg-mist-50 active:bg-mist-100 focus-ring"
                       onPointerDown={(event) => event.stopPropagation()}
                       onClick={(event) => event.stopPropagation()}
                     >
