@@ -138,35 +138,58 @@ export default function AnnouncementRow({
     <>
       <div ref={cardRef}>
         <Card
-      className={cn(
-        "flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between",
-        isBusy && "opacity-70"
-      )}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerEnd}
-        onPointerCancel={handlePointerEnd}
-        onPointerLeave={handlePointerEnd}
-        onContextMenu={(event) => {
-          if (onToggleReaction) {
-            event.preventDefault();
-          }
-        }}
-      >
-      <div className="min-w-0 flex-1 space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-base font-semibold text-ink-900">{announcement.title}</h3>
-          {isReadOnly ? null : (
-            <Badge tone={isPublished ? "success" : "warning"}>
-              {isPublished ? t("common.published") : t("common.draft")}
-            </Badge>
+          className={cn(
+            "flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between",
+            isBusy && "opacity-70"
           )}
-          <Badge tone="neutral">
-            {announcement.scopeType === "CHAT"
-              ? announcement.chatChannelName ?? "Chat"
-              : "Parish"}
-          </Badge>
-        </div>
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerEnd}
+          onPointerCancel={handlePointerEnd}
+          onPointerLeave={handlePointerEnd}
+          onContextMenu={(event) => {
+            if (onToggleReaction) {
+              event.preventDefault();
+            }
+          }}
+        >
+          <div className="min-w-0 flex-1 space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-base font-semibold text-ink-900">{announcement.title}</h3>
+                  {isReadOnly ? null : (
+                    <Badge tone={isPublished ? "success" : "warning"}>
+                      {isPublished ? t("common.published") : t("common.draft")}
+                    </Badge>
+                  )}
+                  <Badge tone="neutral">
+                    {announcement.scopeType === "CHAT"
+                      ? announcement.chatChannelName ?? "Chat"
+                      : "Parish"}
+                  </Badge>
+                </div>
+              </div>
+
+              {isReadOnly && showReportAction ? (
+                <Dropdown>
+                  <DropdownTrigger
+                    iconOnly
+                    aria-label="More actions"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-md text-ink-500 transition hover:bg-mist-50 active:bg-mist-100 focus-ring"
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    ⋯
+                  </DropdownTrigger>
+                  <DropdownMenu ariaLabel="Announcement actions">
+                    <DropdownItem onClick={() => setReportDialogOpen(true)}>
+                      {t("common.reportContent")}
+                    </DropdownItem>
+                  </DropdownMenu>
+                </Dropdown>
+              ) : null}
+            </div>
 
         {hasRichContent && expanded ? (
           <div
@@ -214,25 +237,8 @@ export default function AnnouncementRow({
         ) : null}
       </div>
 
-      {isReadOnly ? (
-        showReportAction ? (
-          <Dropdown>
-            <DropdownTrigger
-              iconOnly
-              aria-label="Announcement actions"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-button border border-mist-200 text-ink-500 transition hover:bg-mist-50 focus-ring"
-            >
-              ⋯
-            </DropdownTrigger>
-            <DropdownMenu ariaLabel="Announcement actions">
-              <DropdownItem onClick={() => setReportDialogOpen(true)}>
-                {t("common.reportContent")}
-              </DropdownItem>
-            </DropdownMenu>
-          </Dropdown>
-        ) : null
-      ) : (
-        <div className="flex items-center gap-2">
+          {isReadOnly ? null : (
+            <div className="flex items-center gap-2">
           <Button
             size="sm"
             variant="secondary"
@@ -255,6 +261,8 @@ export default function AnnouncementRow({
                 "inline-flex h-9 w-9 items-center justify-center rounded-button border border-mist-200 text-ink-500 transition hover:bg-mist-50 focus-ring",
                 isBusy && "cursor-not-allowed opacity-50"
               )}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => event.stopPropagation()}
               disabled={isBusy}
             >
               ⋯
@@ -281,8 +289,8 @@ export default function AnnouncementRow({
               ) : null}
             </DropdownMenu>
           </Dropdown>
-        </div>
-      )}
+            </div>
+          )}
         </Card>
       </div>
 
