@@ -7,8 +7,7 @@ import { loadModuleFromRoot } from "../_helpers/load-module";
 import { applyMigrations } from "../_helpers/migrate";
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
-const dbTest = (name: string, fn: () => Promise<void>) =>
-  hasDatabase ? test(name, { concurrency: false }, fn) : test.skip(name, fn);
+const dbTest = hasDatabase ? test : test.skip;
 
 const session = {
   user: {
