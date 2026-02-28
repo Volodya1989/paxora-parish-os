@@ -155,28 +155,16 @@ export default function AnnouncementRow({
         >
           <div className="min-w-0 flex-1 space-y-2">
             <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="text-base font-semibold text-ink-900">{announcement.title}</h3>
-                  {isReadOnly ? null : (
-                    <Badge tone={isPublished ? "success" : "warning"}>
-                      {isPublished ? t("common.published") : t("common.draft")}
-                    </Badge>
-                  )}
-                  <Badge tone="neutral">
-                    {announcement.scopeType === "CHAT"
-                      ? announcement.chatChannelName ?? "Chat"
-                      : "Parish"}
-                  </Badge>
-                </div>
-              </div>
+              <h3 className="min-w-0 flex-1 text-base font-semibold leading-tight text-ink-900">
+                {announcement.title}
+              </h3>
 
               {isReadOnly && showReportAction ? (
                 <Dropdown>
                   <DropdownTrigger
                     iconOnly
                     aria-label="More actions"
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-md text-ink-500 transition hover:bg-mist-50 active:bg-mist-100 focus-ring"
+                    className="-mr-1 inline-flex h-10 w-10 self-start items-center justify-center rounded-md p-2 text-ink-500 leading-none transition hover:bg-mist-50 active:bg-mist-100 focus-ring"
                     onPointerDown={(event) => event.stopPropagation()}
                     onClick={(event) => event.stopPropagation()}
                   >
@@ -189,6 +177,17 @@ export default function AnnouncementRow({
                   </DropdownMenu>
                 </Dropdown>
               ) : null}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {isReadOnly ? null : (
+                <Badge tone={isPublished ? "success" : "warning"}>
+                  {isPublished ? t("common.published") : t("common.draft")}
+                </Badge>
+              )}
+              <Badge tone="neutral">
+                {announcement.scopeType === "CHAT" ? announcement.chatChannelName ?? "Chat" : "Parish"}
+              </Badge>
             </div>
 
         {hasRichContent && expanded ? (
