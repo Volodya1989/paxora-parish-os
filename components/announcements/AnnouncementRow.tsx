@@ -160,22 +160,24 @@ export default function AnnouncementRow({
               </h3>
 
               {isReadOnly && showReportAction ? (
-                <Dropdown>
-                  <DropdownTrigger
-                    iconOnly
-                    aria-label="More actions"
-                    className="-mr-1 inline-flex h-10 w-10 self-start items-center justify-center rounded-md p-2 text-ink-500 leading-none transition hover:bg-mist-50 active:bg-mist-100 focus-ring"
-                    onPointerDown={(event) => event.stopPropagation()}
-                    onClick={(event) => event.stopPropagation()}
-                  >
-                    ⋯
-                  </DropdownTrigger>
-                  <DropdownMenu ariaLabel="Announcement actions">
-                    <DropdownItem onClick={() => setReportDialogOpen(true)}>
-                      {t("common.reportContent")}
-                    </DropdownItem>
-                  </DropdownMenu>
-                </Dropdown>
+                <div className="-mr-1 shrink-0 self-start">
+                  <Dropdown>
+                    <DropdownTrigger
+                      iconOnly
+                      aria-label="More actions"
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-md p-2 text-ink-500 leading-none transition hover:bg-mist-50 active:bg-mist-100 focus-ring"
+                      onPointerDown={(event) => event.stopPropagation()}
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      ⋯
+                    </DropdownTrigger>
+                    <DropdownMenu ariaLabel="Announcement actions">
+                      <DropdownItem onClick={() => setReportDialogOpen(true)}>
+                        {t("common.reportContent")}
+                      </DropdownItem>
+                    </DropdownMenu>
+                  </Dropdown>
+                </div>
               ) : null}
             </div>
 
